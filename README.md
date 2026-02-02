@@ -11,10 +11,8 @@
 
 ## 📑 Tabela de Conteúdos
 - [Visão Geral](#-visão-geral)
-- [Histórico de Alterações](#-histórico-de-alterações)
 - [Especificações Técnicas](#-especificações-técnicas)
 - [Detalhamento de Requisitos](#-detalhamento-de-requisitos)
-- [Interface de Programação (API)](#-interface-de-programação-api)
 - [Equipe de Desenvolvimento](#-equipe-de-desenvolvimento)
 
 ---
