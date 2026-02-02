@@ -25,4 +25,3 @@ O **S.I.G.E (Sistema Integrado de Gestão de Empenhos)** é uma aplicação web 
 - Empenhos  
 - Ordens de Entrega  
 
-O sistema garante consistência automática entre as entidades e controle rigoroso de saldos financeiros e quantitativos.
