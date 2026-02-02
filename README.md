@@ -1,27 +1,70 @@
-# 📦 S.I.G.E
-### Sistema Integrado de Gestão de Empenhos
+# S.I.G.E — Sistema Integrado de Gestão de Empenho 🍽️
+
+> **Plataforma centralizada para gestão de aquisições e fluxo orçamentário do Restaurante Universitário (UFAC).**
+
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.1-blue?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-em_desenvolvimento-green?style=for-the-badge)
+![Local](https://img.shields.io/badge/local-Rio_Branco--AC-red?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT%20%2F%20BSD%20%2F%20GPL-lightgrey?style=for-the-badge)
 
 ---
 
-<p align="center">
-
-![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)
-![Django](https://img.shields.io/badge/Django-4.x-green?logo=django)
-![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)
-![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?logo=mysql)
-![License](https://img.shields.io/badge/license-Acadêmico-lightgrey)
-![Status](https://img.shields.io/badge/status-Em%20Desenvolvimento-yellow)
-
-</p>
+## 📑 Tabela de Conteúdos
+- [Visão Geral](#-visão-geral)
+- [Histórico de Alterações](#-histórico-de-alterações)
+- [Especificações Técnicas](#-especificações-técnicas)
+- [Detalhamento de Requisitos](#-detalhamento-de-requisitos)
+- [Interface de Programação (API)](#-interface-de-programação-api)
+- [Equipe de Desenvolvimento](#-equipe-de-desenvolvimento)
 
 ---
 
-## 📌 Sobre o Projeto
+## 📖 Visão Geral
 
-O **S.I.G.E (Sistema Integrado de Gestão de Empenhos)** é uma aplicação web desenvolvida para centralizar e automatizar o controle de:
+O **S.I.G.E** é uma solução de software projetada para modernizar a gestão do Restaurante Universitário da **Universidade Federal do Acre (UFAC)**. O foco do sistema é o domínio da aquisição de gêneros alimentícios, substituindo processos manuais e planilhas descentralizadas que geravam erros de busca e falta de controle orçamentário.
 
-- Licitações  
-- Atas de Registro de Preço (ARP)  
-- Empenhos  
-- Ordens de Entrega  
+### Objetivos Principais:
+* **Centralização:** Interligar Licitação, ARP, Empenho e Ordens de Entrega.
+* **Integridade:** Impedir a reserva de saldos superiores ao disponível em Ata (ARP).
+* **Auditabilidade:** Rastrear cada inclusão, reforço ou anulação de empenho.
 
+---
+
+## 🛠️ Especificações Técnicas
+
+A stack tecnológica foi escolhida visando a futura integração com os sistemas do **NTI (Núcleo de Tecnologia da Informação)** da UFAC:
+
+* **Linguagem:** ![Python](https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54) (Licença PSFL)
+* **Backend:** ![Django](https://img.shields.io/badge/django-%23092e20.svg?style=flat-square&logo=django&logoColor=white) (Licença BSD)
+* **Frontend:** ![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat-square&logo=react&logoColor=%2361DAFB) (Licença MIT)
+* **Banco de Dados:** ![MySQL](https://img.shields.io/badge/mysql-%2300f.svg?style=flat-square&logo=mysql&logoColor=white) (Licença GPL)
+* **Modelagem:** MySQL Workbench
+* **IDE:** Visual Studio Code
+
+---
+
+## 📋 Detalhamento de Requisitos
+
+### Requisitos Funcionais (RF)
+* **[1] Gestão de Licitação:** Cadastro de editais, fornecedores e catálogo de produtos (unidade de medida, categoria e valor).
+* **[2] ARP (Ata de Registro de Preços):** Geração automática de atas por fornecedor, permitindo o acompanhamento do saldo financeiro total.
+* **[3] Operações de Empenho:**
+    * **Inclusão:** Criação da reserva inicial de saldo (Mínimo de 1.00 unidade).
+    * **Reforço:** Adição de saldo a itens já empenhados.
+    * **Anulação:** Devolução total ou parcial do saldo do empenho para a ARP.
+* **[4] Ordem de Entrega:** Registro da entrega física. Itens solicitados mas não entregues ("sobras") retornam automaticamente ao saldo do empenho.
+
+### Requisitos Não Funcionais (RNF)
+* **[1] API de Integração:** Disponibilidade de endpoints para sistemas externos (Estoque/Contabilidade).
+* **[2] Interface Padronizada:** UX focada na clareza visual para processos administrativos complexos.
+
+## 👥 Equipe de Desenvolvimento
+
+* **Andrey da Cunha Marques**
+* **Carlos Eduardo Marin Bezerra**
+* **Gabriela Santos de Oliveira**
+* **João Vitor Ferreira da Silva**
+* **Marcos Antonio da Silva Manuares**
+
+---
+**Rio Branco - AC, 2026**
