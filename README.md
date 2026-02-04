@@ -2,7 +2,6 @@
 
 > **Plataforma centralizada para gestão de aquisições e fluxo orçamentário do Restaurante Universitário (UFAC).**
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.1-blue?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-em_desenvolvimento-green?style=for-the-badge)
 ![Local](https://img.shields.io/badge/local-Rio_Branco--AC-red?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT%20%2F%20BSD%20%2F%20GPL-lightgrey?style=for-the-badge)
