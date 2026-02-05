@@ -54,6 +54,11 @@ A stack tecnológica foi escolhida visando a futura integração com os sistemas
 ### Requisitos Não Funcionais (RNF)
 * **[1] API de Integração:** Disponibilidade de endpoints para sistemas externos (Estoque/Contabilidade).
 * **[2] Interface Padronizada:** UX focada na clareza visual para processos administrativos complexos.
+---
+
+## Diagrama Entidade Relacionamento (DER)
+
+<img src="Artefatos\DER\Sige-Diagrama-Entidade-Relacionamento.png" alt="Imagem do DER do sistema SIGE">
 
 ## 👥 Equipe de Desenvolvimento
 
@@ -64,4 +69,5 @@ A stack tecnológica foi escolhida visando a futura integração com os sistemas
 * **Marcos Antonio da Silva Manuares**
 
 ---
+
 **Rio Branco - AC, 2026**
