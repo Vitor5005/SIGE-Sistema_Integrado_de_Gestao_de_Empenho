@@ -19,6 +19,9 @@ class Fornecedor(models.Model):
     telefone = models.CharField(max_length=20,blank=True,null=True)
     email = models.EmailField(max_length=255,blank=True,null=True)
     endereco = models.ForeignKey(Endereco, on_delete=models.PROTECT,related_name='fornecedores')
+    
+    def __str__(self):
+        return f"{self.razao_social} - {self.cnpj}"
 
 class ItemGenerico(models.Model):
     catmat = models.CharField(max_length = 6, unique=True, blank=False, null=False)
@@ -49,3 +52,5 @@ class ItemGenerico(models.Model):
     )
     categoria = models.CharField(max_length=5, choices=categorias_de_alimento, blank=False, null=False)
     
+    def __str__(self):
+        return f"{self.catmat} - {self.descricao}"
