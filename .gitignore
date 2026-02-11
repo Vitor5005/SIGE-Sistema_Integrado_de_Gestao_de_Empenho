@@ -132,3 +132,9 @@ static/
 .vscode
 sige-api/cadastro/migrations/0001_initial.py
 sige-api/cadastro/migrations/0002_itemgenerico_alter_fornecedor_cnpj.py
+sige-api/empenho/migrations/0001_initial.py
+sige-api/empenho/migrations/0002_alter_ata_unique_together_remove_ata_fornecedor_and_more.py
+sige-api/empenho/migrations/0003_initial.py
+sige-api/empenho/migrations/0004_operacaoitem.py
+sige-api/licitacao/migrations/0001_initial.py
+sige-api/sige.db
