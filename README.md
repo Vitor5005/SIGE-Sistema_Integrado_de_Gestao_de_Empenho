@@ -60,6 +60,22 @@ A stack tecnológica foi escolhida visando a futura integração com os sistemas
 
 <img src="Artefatos\DER\Sige-Diagrama-Entidade-Relacionamento.png" alt="Imagem do DER do sistema SIGE">
 
+## Modelo .env 
+
+DB_NAME=sige
+DB_USER=root
+DB_PASSWORD=root
+DB_HOST=db
+DB_PORT=3306
+
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_EMAIL=admin@gmail.com
+DJANGO_SUPERUSER_PASSWORD=admin
+
+DEBUG=True
+DJANGO_SECRET_KEY=chave_super_secreta_aqui
+
+
 ## 👥 Equipe de Desenvolvimento
 
 * **Andrey da Cunha Marques**
