@@ -120,6 +120,7 @@ __pycache__/
 *.pyc
 __localcode
 venv
+.env
 .DS_Store
 local_settings.py
 _local_settings.py
