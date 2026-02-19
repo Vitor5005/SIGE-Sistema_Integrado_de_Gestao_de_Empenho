@@ -18,16 +18,18 @@ services:
       timeout: 5s
       retries: 10
 
-  web:
-      build: .
+  api:
+      build: 
+        context: ./sige-api
+        dockerfile: Dockerfile
       container_name: sige_api
       entrypoint: ["/entrypoint.sh"] # <-- Mude aqui!
       volumes:
-        - .:/app
+        - ./sige-api:/app
       ports:
         - "8000:8000"
-      env_file:
-        - .env
+      #env_file:
+      #  - .env
       depends_on:
         db:
           condition: service_healthy
