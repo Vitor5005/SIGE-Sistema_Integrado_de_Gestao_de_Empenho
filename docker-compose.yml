@@ -19,20 +19,30 @@ services:
       retries: 10
 
   api:
-      build: 
-        context: ./sige-api
-        dockerfile: Dockerfile
-      container_name: sige_api
-      entrypoint: ["/entrypoint.sh"] # <-- Mude aqui!
-      volumes:
-        - ./sige-api:/app
-      ports:
-        - "8000:8000"
-      #env_file:
-      #  - .env
-      depends_on:
-        db:
-          condition: service_healthy
+    build: 
+      context: ./sige-api
+      dockerfile: Dockerfile
+    container_name: sige_api
+    entrypoint: ["/entrypoint.sh"]
+    volumes:
+      - ./sige-api:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DB_NAME: sige
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_HOST: db
+      DB_PORT: 3306
+      DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_EMAIL: admin@gmail.com
+      DJANGO_SUPERUSER_PASSWORD: admin
+      DEBUG: "True"
+      DJANGO_SECRET_KEY: chave_super_secreta_aqui
+    depends_on:
+      - db
+    command: python manage.py runserver 0.0.0.0:8000
+
 
 volumes:
   mysql_data:
