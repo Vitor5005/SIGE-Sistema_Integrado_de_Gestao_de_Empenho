@@ -37,7 +37,8 @@ class ItemGenerico(models.Model):
         ("CX", "Caixa (CX)"),
         ("FND", "Fardo (FND)"),
         ("GAR", "Garrafa (GAR)"),
-        ("lata", "Lata")
+        ("lata", "Lata"),
+        ("un", "Unidade (UN)"),
     )
     unidade_medida = models.CharField(max_length=5, choices=unidades_de_medida, default="KG", blank=False, null=False)
     
@@ -48,7 +49,8 @@ class ItemGenerico(models.Model):
         ("Oli", "Óleos, Azeites e Vinagres"), 
         ("MolCo", "Molhos e Condimentos"),
         ("Fr","Frutas"), 
-        ("Le","Legumes")
+        ("Le","Legumes"),
+        ("Pr","Proteínas")
     )
     categoria = models.CharField(max_length=5, choices=categorias_de_alimento, blank=False, null=False)
     
