@@ -2,7 +2,7 @@ from django.contrib import admin
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
 
 class EnderecoAdmin(admin.ModelAdmin):
-    list_display = ("id", "lagradouro", "numero", "bairro", "cep", "municipio", "estado")
+    list_display = ("id", "logradouro", "numero", "bairro", "cep", "municipio", "estado")
     list_display_links = ("id", "lagradouro")
     search_fields = ("id",)
     
