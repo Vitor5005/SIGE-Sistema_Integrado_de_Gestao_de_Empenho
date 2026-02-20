@@ -1,13 +1,16 @@
 from rest_framework import serializers
 from entrega.models import OrdemEntrega, ItemOrdem
-
+from empenho.serializers import EmpenhoSerializer, ItemEmpenhoSerializer
 class OrdemEntregaSerializer(serializers.ModelSerializer):
+    empenho = EmpenhoSerializer()
     class Meta:
         model = OrdemEntrega
-        fields = ['empenho', 'codigo', 'status', 'data_emissao', 'data_entrega', 'valor_total_executado']
+        fields = '__all__'
 
 class ItemOrdemSerializer(serializers.ModelSerializer):
+    ordem_entrega = OrdemEntregaSerializer()
+    item_empenho = ItemEmpenhoSerializer()
     class Meta:
         model = ItemOrdem
-        fields = ['ordem_entrega', 'item_empenho', 'quantidade_solicitada', 'quantidade_entregue', 'observacao']
+        fields = '__all__'
 

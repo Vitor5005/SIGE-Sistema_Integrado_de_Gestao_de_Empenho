@@ -1,17 +1,21 @@
 from rest_framework import serializers
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
+from licitacao.serializers import AtaSerializer
 
 class EmpenhoSerializer(serializers.ModelSerializer):
+    ata = AtaSerializer()
     class Meta:
         model = Empenho
-        fields = ['codigo', 'ata', 'valor_total', 'saldo_utilizado']
+        fields = '__all__'
 
 class ItemEmpenhoSerializer(serializers.ModelSerializer):
+    empenho = EmpenhoSerializer()
     class Meta:
         model = ItemEmpenho
-        fields = ['empenho', 'item_ata', 'quantidade_atual']
+        fields = '__all__'
 
 class OperacaoItemSerializer(serializers.ModelSerializer):
+    item_empenho = ItemEmpenhoSerializer()
     class Meta:
         model = OperacaoItem
-        fields = ["item_empenho", "tipo", "valor", "data"]
+        fields = '__all__'

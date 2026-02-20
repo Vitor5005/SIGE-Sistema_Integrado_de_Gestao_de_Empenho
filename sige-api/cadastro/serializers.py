@@ -4,16 +4,17 @@ from cadastro.models import Endereco, Fornecedor, ItemGenerico
 class EnderecoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Endereco
-        fields = ['lagradouro', 'numero', 'bairro', 'cep', 'municipio', 'estado']
+        fields = '__all__'
 
 class FornecedorSerializer(serializers.ModelSerializer):
+    endereco = EnderecoSerializer()
     class Meta:
         model = Fornecedor
-        fields = ['razao_social', 'nome_fantasia', 'cnpj', 'telefone', 'email', 'endereco']
+        fields = '__all__'
 
 class ItemGenericoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ItemGenerico
-        fields = ['catmat', 'descricao', 'unidade_medida', 'categoria']
+        fields = '__all__'
 
     
