@@ -25,7 +25,7 @@ class ItemOrdem(models.Model):
     observacao = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.ordem_entrega.codigo} - {self.item_empenho.codigo}"
+        return f"{self.ordem_entrega.codigo} - {self.item_empenho}"
 
     
 # Create your models here.

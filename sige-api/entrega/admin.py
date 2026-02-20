@@ -2,9 +2,9 @@ from django.contrib import admin
 from entrega.models import OrdemEntrega, ItemOrdem
 
 class OrdemEntregaAdmin(admin.ModelAdmin):
-    list_display = ("id", "codigo", "empenho", "status", "data_emissao", "data_entrega", "valor_total_executado")
-    list_display_links = ("id", "codigo")
-    search_fields = ("id", "codigo")
+    list_display = ("id", "empenho", "status", "data_emissao", "data_entrega", "valor_total_executado")
+    list_display_links = ("id",)
+    search_fields = ("id",)
     
 admin.site.register(OrdemEntrega, OrdemEntregaAdmin)
 
