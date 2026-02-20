@@ -2,7 +2,7 @@ from django.db import models
 
 # Create your models here.
 class Endereco(models.Model):
-    logradouro = models.CharField(max_length=255)
+    lagradouro = models.CharField(max_length=255)
     numero = models.CharField(max_length=20)
     bairro = models.CharField(max_length=100)
     cep = models.CharField(max_length=8)

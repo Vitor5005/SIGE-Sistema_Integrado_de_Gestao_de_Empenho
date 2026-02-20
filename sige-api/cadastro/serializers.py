@@ -4,7 +4,7 @@ from cadastro.models import Endereco, Fornecedor, ItemGenerico
 class EnderecoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Endereco
-        fields = ['logradouro', 'numero', 'bairro', 'cep', 'municipio', 'estado']
+        fields = ['lagradouro', 'numero', 'bairro', 'cep', 'municipio', 'estado']
 
 class FornecedorSerializer(serializers.ModelSerializer):
     class Meta:
