@@ -1,5 +1,11 @@
 #!/bin/sh
 
+echo "Aguardando banco de dados..."
+
+while ! nc -z db 3306; do
+  sleep 2
+done
+
 echo "Banco de dados pronto! Iniciando as migrações..."
 python manage.py migrate
 
