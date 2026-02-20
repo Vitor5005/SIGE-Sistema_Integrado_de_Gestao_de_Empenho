@@ -16,25 +16,6 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-# from rest_framework.routers import DefaultRouter
-# from cadastro.views import EnderecoViewSet, FornecedorViewSet, ItemGenericoViewSet
-# from licitacao.views import LicitacaoViewSet, AtaViewSet, ItemAtaViewSet
-# from entrega.views import EntregaViewSet, ItemEntregaViewSet 
-# from empenho.views import EmpenhoViewSet, ItemEmpenhoViewSet, OperacaoItemViewSet
-
-
-# router = DefaultRouter()
-# router.register(r'enderecos', EnderecoViewSet)
-# router.register(r'fornecedores', FornecedorViewSet)
-# router.register(r'itens-genericos', ItemGenericoViewSet)
-# router.register(r'licitacoes', LicitacaoViewSet)
-# router.register(r'atas', AtaViewSet)
-# router.register(r'itens-ata', ItemAtaViewSet)
-# router.register(r'entregas', EntregaViewSet)
-# router.register(r'itens-entrega', ItemEntregaViewSet)
-# router.register(r'empenhos', EmpenhoViewSet)
-# router.register(r'itens-empenho', ItemEmpenhoViewSet)
-# router.register(r'operacoes-item', OperacaoItemViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -43,5 +24,4 @@ urlpatterns = [
     path('api/v1/', include('entrega.urls')),
     path('api/v1/', include('licitacao.urls')),
     path('api-auth/', include('rest_framework.urls')),
-    #path('', include(router.urls))
 ]
