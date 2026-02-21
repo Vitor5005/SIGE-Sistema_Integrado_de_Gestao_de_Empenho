@@ -38,14 +38,14 @@
   cursor: pointer;
   &:hover{
     color: var(--azul-claro);
-    font-size: 16px;
+    font-size: 15px;
     transition: ease-in-out 0.4s;
   }
 }
 .selecionado{
   background-color: var(--branco);
   color: var(--azul-escuro);
-  font-size: 16px;
+  font-size: 15px;
   transition: ease-in-out 0.4s;
   padding: 5px 10px;
   border-radius: 20px;
