@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { Navegacao } from '../../service/utils/navegacao';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-visualizar-licitacao',
@@ -10,9 +9,9 @@ import { Navegacao } from '../../service/utils/navegacao';
 })
 export class VisualizarLicitacao {
 
-  constructor(private navegacao: Navegacao) {}
+  constructor(private router: Router) {}
 
   enviarPara(rota: string) {
-    this.navegacao.enviarPara(rota);
+    this.router.navigate([rota]);
   }
 }

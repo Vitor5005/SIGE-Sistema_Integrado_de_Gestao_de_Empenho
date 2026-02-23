@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
-import { Navegacao } from '../../service/utils/navegacao';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-visualizar-atas',
@@ -10,10 +10,10 @@ import { Navegacao } from '../../service/utils/navegacao';
 })
 export class VisualizarAtas {
 
-  constructor(private navegacao: Navegacao) {}
+  constructor(private router: Router) {}
 
   enviarPara(rota: string) {
-    this.navegacao.enviarPara(rota);
+    this.router.navigate([rota]);
   }
 
 }
