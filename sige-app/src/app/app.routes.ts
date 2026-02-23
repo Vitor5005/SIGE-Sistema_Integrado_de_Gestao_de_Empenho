@@ -3,6 +3,7 @@ import { AdicionarLicitacao } from './component/adicionar-licitacao/adicionar-li
 import { VisualizarLicitacoes } from './component/visualizar-licitacoes/visualizar-licitacoes';
 import { VisualizarLicitacao } from './component/visualizar-licitacao/visualizar-licitacao';
 import { VisualizarAtas } from './component/visualizar-atas/visualizar-atas';
+import { VisualizarAta } from './component/visualizar-ata/visualizar-ata';
 
 export const routes: Routes = [
   {
@@ -20,5 +21,9 @@ export const routes: Routes = [
   {
     path: "visualizar-atas",
     component: VisualizarAtas
+  },
+  {
+    path: 'visualizar-ata',
+    component: VisualizarAta
   }
 ];

@@ -10,7 +10,7 @@ import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 })
 export class VisualizarLicitacoes {
   
-  constructor(public navegacao: Navegacao) {}
+  constructor(private navegacao: Navegacao) {}
 
   enviarPara(rota: string){
     this.navegacao.enviarPara(rota);
