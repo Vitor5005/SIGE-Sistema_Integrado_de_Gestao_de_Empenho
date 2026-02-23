@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { Navegacao } from '../../service/utils/navegacao';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-licitacoes',
@@ -10,10 +10,10 @@ import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 })
 export class VisualizarLicitacoes {
   
-  constructor(private navegacao: Navegacao) {}
+  constructor(private router: Router) {}
 
   enviarPara(rota: string){
-    this.navegacao.enviarPara(rota);
+    this.router.navigate([rota]);
   }
 
 }
