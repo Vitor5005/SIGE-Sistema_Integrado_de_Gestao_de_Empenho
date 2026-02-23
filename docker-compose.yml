@@ -42,6 +42,19 @@ services:
     depends_on:
       - db
     command: python manage.py runserver 0.0.0.0:8000
+  app:
+    build: 
+      context: ./sige-app
+      dockerfile: Dockerfile
+    container_name: sige_app
+    volumes:
+      - ./sige-app:/app
+      - /app/node_modules
+    ports:
+      - "4200:4200"
+    depends_on:
+      - api
+    command: npm start
 
 
 volumes:
