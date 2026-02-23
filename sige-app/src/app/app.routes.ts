@@ -4,6 +4,7 @@ import { VisualizarLicitacoes } from './component/visualizar-licitacoes/visualiz
 import { VisualizarLicitacao } from './component/visualizar-licitacao/visualizar-licitacao';
 import { VisualizarAtas } from './component/visualizar-atas/visualizar-atas';
 import { VisualizarAta } from './component/visualizar-ata/visualizar-ata';
+import { VisualizarEmpenhos } from './component/visualizar-empenhos/visualizar-empenhos';
 
 export const routes: Routes = [
   {
@@ -25,5 +26,9 @@ export const routes: Routes = [
   {
     path: 'visualizar-ata',
     component: VisualizarAta
+  },
+  {
+    path: 'visualizar-empenhos',
+    component: VisualizarEmpenhos
   }
 ];
