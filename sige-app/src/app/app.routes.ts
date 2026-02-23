@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { AdicionarLicitacao } from './component/adicionar-licitacao/adicionar-licitacao';
-import { Licitacoes } from './component/licitacoes/licitacoes';
+import { VisualizarLicitacoes } from './component/visualizar-licitacoes/visualizar-licitacoes';
 
 export const routes: Routes = [
   {
@@ -8,7 +8,7 @@ export const routes: Routes = [
     component: AdicionarLicitacao
   },
   {
-    path: 'licitacoes',
-    component: Licitacoes
+    path: 'visualizar-licitacoes',
+    component: VisualizarLicitacoes
   }
 ];
