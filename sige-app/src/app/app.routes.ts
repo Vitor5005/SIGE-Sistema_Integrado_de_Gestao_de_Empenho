@@ -8,6 +8,10 @@ import { VisualizarEmpenhos } from './component/visualizar-empenhos/visualizar-e
 
 export const routes: Routes = [
   {
+    path: '',
+    component: VisualizarLicitacoes
+  },
+  {
     path: 'adicionar-licitacao',
     component: AdicionarLicitacao
   },
