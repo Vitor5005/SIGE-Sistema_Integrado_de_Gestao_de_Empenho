@@ -167,15 +167,38 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="entregaModalLabel">Entrega de Produtos</h1>
+                    <h1 class="modal-title fs-5" id="entregaModalLabel"><i class="bi bi-truck"></i> SOLICITAR ENTREGA
+                    </h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    ...
+                    <form action="">
+
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- display, flex-direction e gap temporarios -->
+                            <label for="alimento1" style="margin: 0;">
+                                <span>Frango </span>
+                                <span style="font-size: 0.7em;">(KG)</span>
+                            </label>
+                            <input type="number" id="alimento1" name="alimento1" min="0" max="500"
+                                placeholder="Quantidade a ser entregue (KG)" style="margin: 0;">
+                        </div>
+
+                        <div style="display: flex; flex-direction: column;">
+                            <!-- display, flex-direction e gap temporarios -->
+                            <label for="alimento2" style="margin: 0;">
+                                <span>Carne Bovina </span>
+                                <span style="font-size: 0.7em;">(KG)</span>
+                            </label>
+                            <input type="number" id="alimento2" name="alimento2" min="0" max="500"
+                                placeholder="Quantidade a ser entregue (KG)" style="margin: 0;">
+                        </div>
+
+                    </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary">Save changes</button>
+                <div class="modal-footer" style="justify-content: center;"> <!-- centralizando o botão do modal -->
+                    <button type="button" class="btn btn-primary"><i class="bi bi-check-lg"></i> Confirmar
+                        Pedido</button>
                 </div>
             </div>
         </div>
