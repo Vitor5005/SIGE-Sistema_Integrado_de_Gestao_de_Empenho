@@ -1,16 +1,17 @@
-<body>
-
-  <h3>LICITAÇÕES</h3>
-
+<body class="listagem">
+  <div class="container-titulo">
+    <h3>LICITAÇÕES</h3>
+    <hr>
+  </div>
   <app-barra-pesquisa></app-barra-pesquisa>
   <!-- Tabela da licitações cadastradas no sistema -->
 
-  <table class="table">
-    <thead>
+  <table class="tabela">
+    <thead >
       <tr>
         <th scope="col">Identificação</th>
         <th scope="col">Validade</th>
-        <th scope="col">descricao</th>
+        <th scope="col">Descricao</th>
       </tr>
     </thead>
     <tbody>
@@ -18,7 +19,7 @@
         <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
         <td>
           <div>
-            <p>LIC-XXX-XXX</p>
+            <p >LIC-XXX-XXX</p>
             <small>cadastrada: xx/xx/xxxxx</small>
           </div>
         </td>
@@ -47,7 +48,7 @@
         <td><i class="bi bi-clock"></i> 12 meses</td>
         <td>Lorem ipsum dolor sit amet, consectetur adipiscing elit...</td>
       </tr>
-      
+
     </tbody>
   </table>
 

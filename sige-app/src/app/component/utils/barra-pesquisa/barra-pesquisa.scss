@@ -1,0 +1,52 @@
+.container-pesquisar{
+  background-color: var(--branco);
+  width: 85vw;
+  display: flex;
+  justify-content: space-between;
+  justify-self: center;
+  align-items: center;
+  height: 100px;
+  border-radius: 25px;
+  box-shadow: var(--box-shadow);
+  padding: 20px 30px;
+  font-size: 16px;
+  font-weight: bold;
+
+  input{
+    width: 350px;
+    height: 40px;
+    border-radius: 20px;
+    background-color: var(--branco);
+    border: var(--borda1);
+    padding: 0 15px;
+  }
+  .filtro {
+    margin-left: 30px;
+    width: 120px;
+    height: 40px;
+    border-radius: 20px;
+    background-color: var(--branco);
+    border: var(--borda1);
+    font-size: 16px;
+    font-weight: bold;
+    i{
+      font-size: 20px;
+    }
+  }
+  .exportar{
+    width: 200px;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 40px;
+    border-radius: 20px;
+    background-color: var(--branco);
+    border: var(--borda1);
+    i{
+      font-size: 20px;
+    }
+  }
+}
