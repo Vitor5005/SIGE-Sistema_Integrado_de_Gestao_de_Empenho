@@ -1,0 +1,62 @@
+<body class="listagem">
+    <div class="container-titulo">
+        <h3>FORNECEDORES</h3>
+        <hr>
+    </div>
+    <app-barra-pesquisa></app-barra-pesquisa>
+    <!-- Tabela da licitações cadastradas no sistema -->
+
+    <table class="tabela">
+        <thead>
+            <tr>
+                <th scope="col">Nome Fantasia</th>
+                <th scope="col">CNPJ</th>
+                <th scope="col">Telefone</th>
+                <th scope="col">Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr (click)="enviarPara('/visualizar-fornecedor')" style="cursor: pointer;">
+                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
+                <td>
+                    <h5>Nome Fornecedor 1</h5>
+                </td>
+                <td>XX.XXX.XXX/XXXX-XX</td>
+                <td>(DD) 9 XXXX-XXXX</td>
+                <td>fornecedor@gmail.com</td>
+            </tr>
+
+            <tr (click)="enviarPara('/visualizar-fornecedor')" style="cursor: pointer;">
+                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
+                <td>
+                    <h5>Nome Fornecedor 2</h5>
+                </td>
+                <td>XX.XXX.XXX/XXXX-XX</td>
+                <td>(DD) 9 XXXX-XXXX</td>
+                <td>fornecedor@gmail.com</td>
+            </tr>
+
+            <tr (click)="enviarPara('/visualizar-fornecedor')" style="cursor: pointer;">
+                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
+                <td>
+                    <h5>Nome Fornecedor 3</h5>
+                </td>
+                <td>XX.XXX.XXX/XXXX-XX</td>
+                <td>(DD) 9 XXXX-XXXX</td>
+                <td>fornecedor@gmail.com</td>
+            </tr>
+
+            <tr (click)="enviarPara('/visualizar-fornecedor')" style="cursor: pointer;">
+                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
+                <td>
+                    <h5>Nome Fornecedor 4</h5>
+                </td>
+                <td>XX.XXX.XXX/XXXX-XX</td>
+                <td>(DD) 9 XXXX-XXXX</td>
+                <td>fornecedor@gmail.com</td>
+            </tr>
+
+        </tbody>
+    </table>
+
+</body>
