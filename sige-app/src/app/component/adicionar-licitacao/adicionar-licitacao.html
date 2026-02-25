@@ -11,7 +11,7 @@
       <hr>
     </div>
     <div class="conteudo">
-      <div class="numeroEvalidade">
+      <div class="grupo-inputs">
         <div class="d-flex flex-column">
           <label>Número da Licitação</label>
           <input type="text">
@@ -37,53 +37,53 @@
       <hr>
     </div>
     <div class="conteudo">
-      <div class="d-flex">
-        <div class="d-flex flex-column">
+      <div class="d-flex grupo-inputs">
+        <div class="d-flex flex-column w-75 ">
           <label>Nome Fantasia</label>
           <input type="text">
         </div>
 
-        <div class="d-flex flex-column">
+        <div class="d-flex flex-column w-25">
           <label>CNPJ</label>
           <input type="text">
         </div>
       </div>
 
-      <div class="d-flex">
-        <div class="d-flex flex-column">
+      <div class="d-flex grupo-inputs">
+        <div class="d-flex flex-column w-75">
           <label>Rua</label>
           <input type="text">
         </div>
 
-        <div class="d-flex flex-column">
+        <div class="d-flex flex-column  w-25">
           <label>Número</label>
           <input type="text">
         </div>
 
       </div>
 
-      <div class="d-flex ">
-        <div class="d-flex flex-column">
+      <div class="d-flex grupo-inputs ">
+        <div class="d-flex flex-column w-50">
           <label>Bairro</label>
           <input type="text">
         </div>
-        <div class="d-flex flex-column">
+        <div class="d-flex flex-column w-50">
           <label>Município</label>
           <input type="text">
         </div>
 
-        <div class="d-flex flex-column">
+        <div class="d-flex flex-column w-50">
           <label>Estado</label>
           <input type="text">
         </div>
       </div>
 
-      <div class="d-flex ">
-        <div class="d-flex flex-column">
+      <div class="d-flex grupo-inputs">
+        <div class="d-flex flex-column w-25">
           <label>Telefone</label>
           <input type="text">
         </div>
-        <div class="d-flex flex-column">
+        <div class="d-flex flex-column w-75">
           <label>E-mail</label>
           <input type="email">
         </div>
@@ -97,66 +97,68 @@
       <hr>
     </div>
 
-    <div>
-      <label>Nome da ARP</label>
+    <div class="numero-arp">
+      <label>Número da ARP</label>
       <input type="text">
     </div>
 
     <!-- aidicionar itens à ARP -->
     <fieldset>
       <legend>Adicionar gênero alimentício</legend>
+      <div class="inserir-itens">
 
-      <div class="d-flex">
-        <div class="d-flex flex-column">
-          <label>CATMAT</label>
-          <input type="text">
+        <div class="d-flex">
+          <div class="d-flex flex-column ">
+            <label>CATMAT</label>
+            <input type="text">
+          </div>
+
+          <div class="d-flex flex-column ">
+            <label>Qtd. Licitada</label>
+            <input type="number">
+          </div>
+
+          <div class="d-flex flex-column ">
+            <label>Valor Unitário (R$)</label>
+            <input type="text">
+          </div>
         </div>
 
-        <div class="d-flex flex-column">
-          <label>Qtd. Licitada</label>
-          <input type="number">
+        <div class="d-flex">
+          <div class="d-flex flex-column ">
+            <label>Marca</label>
+            <input type="text">
+          </div>
+
+          <div class="d-flex flex-column ">
+            <label>Categoria</label>
+            <input type="text">
+          </div>
+
+          <div class="d-flex flex-column ">
+            <label>Unidade de Medida</label>
+            <select>
+              <option></option>
+            </select>
+          </div>
+
+        </div>
+        <div class="d-flex">
+          <div class="d-flex flex-column">
+            <label>Descrição detalhada</label>
+            <textarea rows="2"></textarea>
+          </div>
+
+          <div class="d-flex flex-column">
+            <label>Valor Total</label>
+            <input type="text">
+          </div>
         </div>
 
-        <div class="d-flex flex-column">
-          <label>Valor Unitário (R$)</label>
-          <input type="text">
-        </div>
+        <button type="button">
+          + ADICIONAR GÊNERO À ARP
+        </button>
       </div>
-
-      <div class="d-flex">
-        <div class="d-flex flex-column">
-          <label>Marca</label>
-          <input type="text">
-        </div>
-
-        <div class="d-flex flex-column">
-          <label>Categoria</label>
-          <input type="text">
-        </div>
-
-        <div class="d-flex flex-column">
-          <label>Unidade de Medida</label>
-          <select>
-            <option></option>
-          </select>
-        </div>
-
-      </div>
-      <div class="d-flex">
-        <div class="d-flex flex-column">
-          <label>Descrição detalhada</label>
-          <textarea rows="1"></textarea>
-        </div>
-
-        <div class="d-flex flex-column">
-          <label>Valor Total</label>
-          <input type="text">
-        </div>
-      </div>
-
-      <button type="button">
-        + ADICIONAR GÊNERO À ARP
-      </button>
     </fieldset>
 
     <table class="table">

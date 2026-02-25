@@ -2,7 +2,6 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
   .container-titulo{
       margin-top: 30px;
       width: 80vw;
@@ -20,22 +19,11 @@ body {
       gap: 20px;
       width: 80vw;
       box-shadow: var(--box-shadow);
+      margin-bottom: 30px;
       .subtitulo{
         width: 90%;
         align-self: center;
         color: var(--azul-claro);
-      }
-      fieldset{
-        border: 1px dashed #000000;
-        border-radius: 15px;
-        align-self: center;
-        padding: 20px;
-        gap: 20px;
-        width: 80%;
-        legend{
-          font-size: 18px;
-          color: var(--azul-claro);
-        }
       }
       .conteudo{
         align-self: center;
@@ -43,7 +31,7 @@ body {
         flex-direction: column;
         gap: 20px;
         width: 80%;
-        .numeroEvalidade{
+        .grupo-inputs{
           display: flex;
           gap: 20px;
         }
@@ -59,7 +47,64 @@ body {
           border-radius: 15px;
         }
       }
+      .numero-arp{
+        display: flex;
+       align-items: center;
+        gap: 10px;
+        width: 85%;
+        align-self: center;
+       input{
+          padding: 10px;
+          border: var(--borda1);
+          border-radius: 15px;
+          width: 30%;
+        }
+      }
+      fieldset{
+        border: 1px dashed #000000;
+        border-radius: 15px;
+        align-self: center;
+        padding: 20px;
+        gap: 20px;
+        width: 85%;
+        legend{
+          font-size: 18px;
+          color: var(--azul-claro);
+        }
+        div.inserir-itens{
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+          margin-bottom: 20px;
+          div{
+            gap: 20px;
+            width: 90%;
+          }
+        }
+        input,select{
+          padding: 10px;
+          border: var(--borda1);
+          border-radius: 15px;
+        }
+        textarea{
+          resize: none;
+          width: 100%;
+          border: var(--borda1);
+          border-radius: 15px;
+        }
+        button{
+          align-self: center;
+          padding: 10px 20px;
+          border: none;
+          background-color: var(--azul-escuro);
+          color: var(--branco);
+          border-radius: 15px;
+          font-weight: bold;
+        }
+      }
       table{
+        align-self: center;
         width: 50%;
       }
     }
