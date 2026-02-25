@@ -11,6 +11,7 @@ import { Router } from '@angular/router';
 })
 export class VisualizarEntregas {
 
+
   confirmado: boolean = false;
 
   constructor(private router: Router) { }

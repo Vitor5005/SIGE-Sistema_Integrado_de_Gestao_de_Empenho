@@ -1,0 +1,235 @@
+<body>
+
+    <div>
+        <button routerLink="/visualizar-fornecedores"><i class="bi bi-arrow-left"></i> VISUALIZAR LISTAGEM DE
+            FORNECEDORES</button>
+    </div>
+
+    <div>
+
+        <div>
+            <h4>Nome do Fornecedor 1</h4>
+        </div>
+
+        <div>
+
+            <div style="background-color: rgb(4, 140, 255);"> <!-- Cor definida temporariamente -->
+                <h6 style="color: white;">INFORMAÇÕES GERAIS</h6> <!-- Cor definida temporariamente -->
+            </div>
+
+            <div style="display: flex; gap: 10em;">
+                <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
+                <div>
+                    <span>
+                        CNPJ
+                    </span>
+                    <br>
+                    <span>
+                        XX.XXX.XXX/XXXX-XX
+                    </span>
+                </div>
+
+                <div>
+                    <span>
+                        Telefone
+                    </span>
+                    <br>
+                    <span>
+                        (DD) XXXX-XXXX
+                    </span>
+                </div>
+
+                <div>
+                    <span>
+                        E-MAIL
+                    </span>
+                    <br>
+                    <span>
+                        fornecedor@gmail.com
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div>
+
+            <div style="background-color: rgb(4, 140, 255);"> <!-- Cor definida temporariamente -->
+                <h6 style="color: white;">ENDEREÇO E LOCALIZAÇÃO</h6> <!-- Cor definida temporariamente -->
+            </div>
+
+            <div style="display: flex; gap: 10em;">
+
+                <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
+                <div>
+                    <span>
+                        RUA
+                    </span>
+                    <br>
+                    <span>
+                        Rua Exemplo, 123
+                    </span>
+                </div>
+
+                <div>
+                    <span>
+                        BAIRRO
+                    </span>
+                    <br>
+                    <span>
+                        Bairro Exemplo
+                    </span>
+                </div>
+
+                <div>
+                    <span>
+                        Município
+                    </span>
+                    <br>
+                    <span>
+                        Cidade Exemplo
+                    </span>
+                </div>
+
+                <div>
+                    <span>
+                        Estado
+                    </span>
+                    <br>
+                    <span>
+                        Estado Exemplo
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div>
+            <button data-bs-toggle="modal" data-bs-target="#fornecedorModal">EDITAR INFORMAÇÔES</button>
+        </div>
+
+    </div>
+
+
+    <!-- Modal para edição de informações do fornecedor -->
+
+    <div #myModal class="modal fade" id="fornecedorModal" tabindex="-1" aria-labelledby="fornecedorModalLabel"
+        aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Editar Informações do Fornecedor</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <form action="">
+
+                        <div style="display: flex; gap: 1em;">
+                            <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
+                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
+                                <label for="nomeFantasia">NOME FANTASIA:</label>
+                                <input type="text" id="nomeFantasia" name="nomeFantasia">
+                            </div>
+
+                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
+                                <label for="cnpj">CNPJ:</label>
+                                <input type="text" id="cnpj" name="cnpj">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1em;">
+                            <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
+                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
+                                <label for="rua">RUA:</label>
+                                <input type="text" id="rua" name="rua">
+                            </div>
+
+                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
+                                <label for="numero">NUMERO:</label>
+                                <input type="text" id="numero" name="numero">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1em;">
+                            <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
+                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
+                                <label for="bairro">BAIRRO:</label>
+                                <input type="text" id="bairro" name="bairro">
+                            </div>
+
+                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
+                                <label for="municipio">MUNICIPIO:</label>
+                                <input type="text" id="municipio" name="municipio">
+                            </div>
+
+                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
+                                <label for="estado">ESTADO:</label>
+                                <select type="text" id="estado" name="estado">
+                                    <option value="AC">Acre</option>
+                                    <option value="AL">Alagoas</option>
+                                    <option value="AP">Amapá</option>
+                                    <option value="AM">Amazonas</option>
+                                    <option value="BA">Bahia</option>
+                                    <option value="CE">Ceará</option>
+                                    <option value="DF">Distrito Federal</option>
+                                    <option value="ES">Espírito Santo</option>
+                                    <option value="GO">Goiás</option>
+                                    <option value="MA">Maranhão</option>
+                                    <option value="MT">Mato Grosso</option>
+                                    <option value="MS">Mato Grosso do Sul</option>
+                                    <option value="MG">Minas Gerais</option>
+                                    <option value="PA">Pará</option>
+                                    <option value="PB">Paraíba</option>
+                                    <option value="PR">Paraná</option>
+                                    <option value="PE">Pernambuco</option>
+                                    <option value="PI">Piauí</option>
+                                    <option value="RJ">Rio de Janeiro</option>
+                                    <option value="RN">Rio Grande do Norte</option>
+                                    <option value="RS">Rio Grande do Sul</option>
+                                    <option value="RO">Rondônia</option>
+                                    <option value="RR">Roraima</option>
+                                    <option value="SC">Santa Catarina</option>
+                                    <option value="SP">São Paulo</option>
+                                    <option value="SE">Sergipe</option>
+                                    <option value="TO">Tocantins</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1em;">
+                            <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
+                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
+                                <label for="telefone">TELEFONE:</label>
+                                <input type="text" id="telefone" name="telefone">
+                            </div>
+
+                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
+                                <label for="email">E-MAIL:</label>
+                                <input type="text" id="email" name="email">
+                            </div>
+                        </div>
+
+
+                    </form>
+                </div>
+
+                <div class="modal-footer" style="justify-content: center;"> <!-- centralizando o botão do modal -->
+                    <button type="button">
+                        <i class="bi bi-check-lg"></i> CONFIRMAR ALTERAÇÕES
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
