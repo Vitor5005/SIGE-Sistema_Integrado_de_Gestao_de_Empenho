@@ -3,7 +3,7 @@ import { Endereco } from '../model/endereco';
 import { ICrudService } from './i-crud-service';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../environments/environment.development';
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root',
