@@ -1,0 +1,66 @@
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  .container-titulo{
+      margin-top: 30px;
+      width: 80vw;
+      display: flex;
+      flex-direction: column;
+      hr{
+        color: var(--hr-color);
+      }
+    }
+    section{
+      display: flex;
+      border-radius: 15px;
+      padding: 20px 0;
+      flex-direction: column;
+      gap: 20px;
+      width: 80vw;
+      box-shadow: var(--box-shadow);
+      .subtitulo{
+        width: 90%;
+        align-self: center;
+        color: var(--azul-claro);
+      }
+      fieldset{
+        border: 1px dashed #000000;
+        border-radius: 15px;
+        align-self: center;
+        padding: 20px;
+        gap: 20px;
+        width: 80%;
+        legend{
+          font-size: 18px;
+          color: var(--azul-claro);
+        }
+      }
+      .conteudo{
+        align-self: center;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        width: 80%;
+        .numeroEvalidade{
+          display: flex;
+          gap: 20px;
+        }
+        input{
+          padding: 10px;
+          border: var(--borda1);
+          border-radius: 15px;
+        }
+        textarea{
+          resize: none;
+          width: 100%;
+          border: var(--borda1);
+          border-radius: 15px;
+        }
+      }
+      table{
+        width: 50%;
+      }
+    }
+}

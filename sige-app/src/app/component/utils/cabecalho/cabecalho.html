@@ -3,12 +3,12 @@
   <div class="nav-botoes">
     <ul class="lista-botoes">
       <li><a routerLink="/adicionar-licitacao" routerLinkActive="selecionado" class="botao">Adicionar licitação</a></li>
-      <li><a routerLink="/visualizar-licitacoes" routerLinkActive="selecionado" class="botao selecionado">Licitacoes</a></li>
+      <li><a routerLink="/visualizar-licitacoes" routerLinkActive="selecionado" [routerLinkActiveOptions]="{ exact: true }" class="botao">Licitacoes</a></li>
       <li><a routerLink="/visualizar-atas" class="botao" routerLinkActive="selecionado">ARP´s</a></li>
       <li><a routerLink="/visualizar-empenhos" routerLinkActive="selecionado" class="botao">Empenhos</a></li>
-      <li><a  class="botao" routerLinkActive="selecionado">Entregas</a></li>
-      <li><a  class="botao" routerLinkActive="selecionado">Fornecedores</a></li>
-      <li><a  class="botao" routerLinkActive="selecionado">Gên. Alimentícios</a></li>
+      <li><a  class="botao" >Entregas</a></li>
+      <li><a  class="botao" >Fornecedores</a></li>
+      <li><a  class="botao" >Gên. Alimentícios</a></li>
     </ul>
   </div>
 </header>
