@@ -2,9 +2,10 @@ from django.contrib import admin
 from licitacao.models import Licitacao, Ata, ItemAta
 
 class LicitacaoAdmin(admin.ModelAdmin):
-    list_display = ("id", "numero_licitacao", "validade", "data_abertura")
+    list_display = ("id", "numero_licitacao", "validade", "data_abertura", "descricao")
     list_display_links =  ("id", "numero_licitacao")
     search_fields = ("id", "numero_licitacao")
+    
     
 admin.site.register(Licitacao, LicitacaoAdmin)
 

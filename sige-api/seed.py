@@ -59,7 +59,8 @@ def seed_licitacoes(n=3):
         licitacao = Licitacao.objects.create(
             numero_licitacao=f"LIC{i+1:03d}",
             validade=random.randint(6,24),
-            data_abertura=datetime.now().date() - timedelta(days=random.randint(0,365))
+            data_abertura=datetime.now().date() - timedelta(days=random.randint(0,365)),
+            descricao=f"Descrição da Licitação {i}"
         )
         licitacoes.append(licitacao)
     return licitacoes

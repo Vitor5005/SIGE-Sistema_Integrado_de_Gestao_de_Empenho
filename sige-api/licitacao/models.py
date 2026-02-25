@@ -5,6 +5,7 @@ class Licitacao(models.Model):
     numero_licitacao = models.CharField(max_length=50, unique=True, blank=False, null=False, verbose_name="Número da Licitação")
     validade = models.IntegerField(blank=False, null=False, verbose_name="Validade (em meses)")
     data_abertura = models.DateField(blank=False, null=False, verbose_name="Data de Abertura")
+    descricao = models.TextField(blank=True, null=True, verbose_name="Descrição da Licitação")
 
     def __str__(self):
         return f"Licitacao {self.numero_licitacao} \n Validade: {self.validade} meses \n Data de Abertura: {self.data_abertura}"
