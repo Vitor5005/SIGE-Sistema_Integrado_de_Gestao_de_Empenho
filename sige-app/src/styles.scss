@@ -16,6 +16,7 @@ p {
 // cores padrão:
 :root {
   --azul-escuro: #003058;
+  --font-cinza: #9e9e9e;
   --hr-color: #0067BE;
   --azul-claro: #0067BE; //usado nas fontes e botoes
   --branco: #ffffff;
@@ -74,6 +75,7 @@ p {
 
       small {
         font-weight: normal;
+        color: var(--font-cinza);
       }
 
       span.badge {

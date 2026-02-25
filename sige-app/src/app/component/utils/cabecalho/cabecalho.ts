@@ -9,27 +9,9 @@ import { RouterLink, RouterLinkActive } from "@angular/router";
 })
 export class Cabecalho {
 
-  ngOnInit(): void {
-    const botoes = document.querySelectorAll("a.botao");
-    const urlAtual = window.location.pathname;
+  ngOnInit(){
 
-    botoes.forEach(botao => {
-      const selecionado = document.querySelector("a.botao.selecionado");
-      if(botao.getAttribute('RouterLink') === urlAtual){
-          if (selecionado) {
-          selecionado.classList.remove("selecionado");
-        }
-          botao.classList.add("selecionado");
-        }
-      botao.addEventListener('click', () => {
-        if (selecionado) {
-          selecionado.classList.remove("selecionado");
-        }
-        botao.classList.add("selecionado");
-      });
-    });
-
-  }
+ }
 
 
 

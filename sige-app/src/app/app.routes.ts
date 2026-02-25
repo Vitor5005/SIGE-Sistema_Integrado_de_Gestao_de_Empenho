@@ -13,19 +13,16 @@ import { VisualizarFornecedor } from './component/visualizar-fornecedor/visualiz
 export const routes: Routes = [
   {
     path: '',
+    redirectTo: 'visualizar-licitacoes',
+    pathMatch: 'full'
+  },
+   {
+    path: 'visualizar-licitacoes',
     component: VisualizarLicitacoes
   },
   {
     path: 'adicionar-licitacao',
     component: AdicionarLicitacao
-  },
-  {
-    path: 'visualizar-licitacoes',
-    component: VisualizarLicitacoes
-  },
-  {
-    path: "visualizar-licitacao",
-    component: VisualizarLicitacao
   },
   {
     path: "visualizar-atas",
