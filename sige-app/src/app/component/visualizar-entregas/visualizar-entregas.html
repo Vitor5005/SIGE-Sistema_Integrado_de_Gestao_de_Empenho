@@ -1,0 +1,240 @@
+<body>
+
+    <div>
+        <h5>ENTREGA <i class="bi bi-truck"></i></h5>
+        <hr>
+        <app-barra-pesquisa></app-barra-pesquisa>
+
+        <div>
+            <div>
+
+                <div style="display: flex; gap: 15em;">
+                    <!-- style temporário, remover quando tiver classe apropriada -->
+                    <div style="display: flex; gap: 1.5em; align-items: center; background-color: rgb(229, 178, 35);">
+                        <!-- style temporário, remover quando tiver classe apropriada -->
+                        <span style="font-size: 1.5em; color: white;">PEDIDO DE ENTREGA #ENT-XXX</span>
+                        <!-- alterando tamanho da fonte e cor temporariamente -->
+                        <span style="background-color: rgb(168, 197, 250); font-weight: bold; cursor: pointer;"
+                            (click)="enviarPara('/visualizar-empenho')">EMP-XXX-XX</span>
+                        <!-- alterando cor, negrito temporariamente -->
+                        <span style="background-color: rgb(168, 197, 250); font-weight: bold; cursor: pointer;"
+                            (click)="enviarPara('/visualizar-ata')">ARP-XX-XXXX</span>
+                        <!-- alterando cor, negrito e cursor temporariamente -->
+                    </div>
+
+                    <button #myInput style="color: white; background-color: rgb(0, 175, 38); border: none;"
+                        data-bs-toggle="modal" data-bs-target="#confirmarModal" *ngIf="!confirmado">
+                        <!-- alterando cor, background e borda temporariamente -->
+                        <i class="bi bi-check-circle"></i> CONFIRMAR ENTREGA
+                    </button>
+                </div>
+
+                <div>
+                    <div style="display: flex; gap: 52em;"> <!-- display temporarios -->
+                        <div>
+                            <span style="font-size: 1.5em;">Frango </span>
+                            <span style="font-size: 0.9em;">KG</span>
+                            <!-- alterando tamanho da fonte temporariamente -->
+                        </div>
+
+                        <div style="justify-items: center;"> <!-- justify temporario -->
+                            <p style="margin: 0;">30 kg</p> <!-- margin temporário -->
+                            <span style=>R$ 600,00</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 47.2em;"> <!-- display temporarios -->
+                        <div>
+                            <span style="font-size: 1.5em;">Carne Borvina </span>
+                            <span style="font-size: 0.9em;">KG</span>
+                            <!-- alterando tamanho da fonte temporariamente -->
+                        </div>
+
+                        <div style="justify-items: center;"> <!-- justify temporario -->
+                            <p style="margin: 0;">30 kg</p> <!-- margin temporário -->
+                            <span style=>R$ 600,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div style="display: flex; gap: 15em;">
+                <!-- style temporário, remover quando tiver classe apropriada -->
+                <div style="display: flex; gap: 1.5em; align-items: center; background-color: rgb(0, 175, 38);">
+                    <!-- style temporário, remover quando tiver classe apropriada -->
+                    <span style="font-size: 1.5em; color: white;">PEDIDO DE ENTREGA #ENT-XXX</span>
+                    <!-- alterando tamanho da fonte e cor temporariamente -->
+                    <span style="background-color: rgb(168, 197, 250); font-weight: bold; cursor: pointer;"
+                        (click)="enviarPara('/visualizar-empenho')">EMP-XXX-XX</span>
+                    <!-- alterando cor, negrito temporariamente -->
+                    <span style="background-color: rgb(168, 197, 250); font-weight: bold; cursor: pointer;"
+                        (click)="enviarPara('/visualizar-ata')">ARP-XX-XXXX</span>
+                    <!-- alterando cor, negrito e cursor temporariamente -->
+                </div>
+
+                <button #myInput style="color: white; background-color: rgb(0, 175, 38); border: none;"
+                    *ngIf="confirmado">
+                    <!-- alterando cor, background e borda temporariamente -->
+                    <i class="bi bi-check-circle"></i> CONFIRMAR ENTREGA
+                </button>
+            </div>
+
+            <div>
+                <div style="display: flex; gap: 53em;"> <!-- display e gap temporarios -->
+                    <div>
+                        <span style="font-size: 1.5em;">Arroz </span>
+                        <span style="font-size: 0.9em;">UN</span>
+                        <!-- alterando tamanho da fonte temporariamente -->
+                    </div>
+
+                    <div style="justify-items: center;"> <!-- justify temporario -->
+                        <p style="margin: 0;">10 un</p> <!-- margin temporário -->
+                        <span style=>R$ X00,00</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 52.57em;"> <!-- display e gap temporarios -->
+                    <div>
+                        <span style="font-size: 1.5em;">Feijão </span>
+                        <span style="font-size: 0.9em;">UN</span>
+                        <!-- alterando tamanho da fonte temporariamente -->
+                    </div>
+
+                    <div style="justify-items: center;"> <!-- justify temporario -->
+                        <p style="margin: 0;">20 un </p> <!-- margin temporário -->
+                        <span style=>R$ X00,00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal -->
+
+    <div #myModal class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel"
+        aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h1 class="modal-title fs-5" id="entregaModalLabel">
+                        CONFIRMAR ENTREGA <i class="bi bi-truck"></i>
+                    </h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                </div>
+
+                <div class="modal-body">
+                    <form>
+
+                        <div style="display: flex; flex-direction: column; gap: 2em;">
+                            <!-- display, flex-direction e gap temporários -->
+                            <div style="display: flex; gap: 5em; justify-content: center;">
+                                <!-- display, gap e justify temporários -->
+                                <div>
+                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Gênero Alimenticio</span>
+                                    <!-- alterando tamanho da fonte e cor temporariamente -->
+                                    <div> <!-- margin temporário -->
+                                        <span style="font-size: 1.15em; font-weight: bold;">Frango </span>
+                                        <!-- alterando tamanho da fonte temporariamente -->
+                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
+                                        <!-- alterando tamanho da fonte temporariamente -->
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Quantidade
+                                        Solicitada</span>
+                                    <!-- alterando tamanho da fonte e cor temporariamente -->
+                                    <div> <!-- margin temporário -->
+                                        <span style="font-size: 1.15em; font-weight: bold;">30 </span>
+                                        <!-- alterando tamanho da fonte temporariamente -->
+                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
+                                        <!-- alterando tamanho da fonte temporariamente -->
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Valor Unidade</span>
+                                    <!-- alterando tamanho da fonte e cor temporariamente -->
+                                    <div> <!-- margin temporário -->
+                                        <span style="font-size: 1.15em; font-weight: bold;">R$ 20,00</span>
+                                        <!-- alterando tamanho da fonte temporariamente -->
+                                    </div>
+                                </div>
+
+                                <div style="justify-content: center;">
+                                    <label style="font-size: 1.2em; color: rgb(63, 127, 244);">Quantidade Efertivamente
+                                        Recebida (kg)</label> <!-- alterando tamanho da fonte e cor temporariamente -->
+                                    <div> <!-- margin temporário -->
+                                        <input type="number" class="form-control"
+                                            style="border-color: rgb(63, 127, 244);">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 5em; justify-content: center;">
+                                <!-- display, gap e justify temporários -->
+                                <div>
+                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Gênero Alimenticio</span>
+                                    <!-- alterando tamanho da fonte e cor temporariamente -->
+                                    <div> <!-- margin temporário -->
+                                        <span style="font-size: 1.15em; font-weight: bold;">Carne Bovina </span>
+                                        <!-- alterando tamanho da fonte temporariamente -->
+                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
+                                        <!-- alterando tamanho da fonte temporariamente -->
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Quantidade
+                                        Solicitada</span>
+                                    <!-- alterando tamanho da fonte e cor temporariamente -->
+                                    <div> <!-- margin temporário -->
+                                        <span style="font-size: 1.15em; font-weight: bold;">30 </span>
+                                        <!-- alterando tamanho da fonte temporariamente -->
+                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
+                                        <!-- alterando tamanho da fonte temporariamente -->
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Valor Unidade</span>
+                                    <!-- alterando tamanho da fonte e cor temporariamente -->
+                                    <div> <!-- margin temporário -->
+                                        <span style="font-size: 1.15em; font-weight: bold;">R$ 30,00</span>
+                                        <!-- alterando tamanho da fonte temporariamente -->
+                                    </div>
+                                </div>
+
+                                <div style="justify-content: center;">
+                                    <label style="font-size: 1.2em; color: rgb(63, 127, 244);">Quantidade Efertivamente
+                                        Recebida (kg)</label> <!-- alterando tamanho da fonte e cor temporariamente -->
+                                    <div> <!-- margin temporário -->
+                                        <input type="number" class="form-control"
+                                            style="border-color: rgb(63, 127, 244);">
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </form>
+                </div>
+
+                <div class="modal-footer" style="justify-content: center;">
+                    <button type="button">
+                        <i class="bi bi-check-lg"></i> Confirmar Entrega
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</body>

@@ -2,37 +2,42 @@
 @import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css');
 @import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css');
 
-*{
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   font-family: "Inter", sans-serif;
 }
-p{
+
+p {
   margin: 0;
 }
+
 // cores padrão:
-:root{
+:root {
   --azul-escuro: #003058;
   --font-cinza: #9e9e9e;
   --hr-color: #0067BE;
-  --azul-claro: #0067BE;//usado nas fontes e botoes
+  --azul-claro: #0067BE; //usado nas fontes e botoes
   --branco: #ffffff;
-  --box-shadow: 3px 1px 10px 2px rgba(0,0,0,0.24);//esquema de sombreamento padrao para os componentes
+  --box-shadow: 3px 1px 10px 2px rgba(0, 0, 0, 0.24); //esquema de sombreamento padrao para os componentes
   --borda1: 1px solid #dbdbdb; //borda para botoes com fundo branco
   --cabecalho: linear-gradient(90deg, rgba(0, 103, 190, 1) 0%, rgba(0, 48, 88, 0.95) 100%); //gradiente para o cabecalho
 }
-.listagem{
+
+.listagem {
   display: flex;
   flex-direction: column;
   gap: 30px;
   align-items: center;
-  .container-titulo{
+
+  .container-titulo {
     margin-top: 30px;
     width: 80vw;
     display: flex;
     flex-direction: column;
-    hr{
+
+    hr {
       color: var(--hr-color);
     }
   }
@@ -46,30 +51,52 @@ p{
     width: 83vw;
     display: table;
     text-align: center;
-    thead{
+
+    thead {
       background: var(--cabecalho);
       height: 50px;
       color: var(--branco);
-      th{
+
+      th {
         padding: 10px;
       }
     }
-    td{
+
+    td {
       padding: 10px;
     }
-    p{
+
+    p {
       font-weight: bold;
     }
-    td{
+
+    td {
       font-weight: bold;
-      small{
+
+      small {
         font-weight: normal;
         color: var(--font-cinza);
       }
-      span.badge{
+
+      span.badge {
         padding: 8px 10px;
         font-size: 16px;
       }
     }
   }
+}
+
+
+
+
+//// Efeito de desfoque para o modal
+.modal-backdrop {
+  background: rgba(15, 23, 42, 0.35) !important;
+
+  backdrop-filter: blur(5px) saturate(120%);
+  -webkit-backdrop-filter: blur(5px) saturate(120%);
+}
+
+.modal-backdrop.show {
+  opacity: 1 !important;
 }
