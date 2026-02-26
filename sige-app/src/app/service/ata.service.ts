@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
+import { Ata } from '../model/ata';
 import { ICrudService } from './i-crud-service';
-import { Licitacao } from '../model/licitacao';
 import { Observable } from 'rxjs';
 import { environment } from '../environments/environment';
 import { HttpClient } from '@angular/common/http';
@@ -8,31 +8,32 @@ import { HttpClient } from '@angular/common/http';
 @Injectable({
   providedIn: 'root',
 })
-export class LicitacaoService implements ICrudService<Licitacao> {
+export class AtaService implements ICrudService<Ata> {
 
   constructor(
     private http: HttpClient
   ) {}
+  
+  apiUrl = environment.API_URL + '/atas/';
 
-  apiUrl = environment.API_URL + '/licitacoes/';
-
-  get(): Observable<Licitacao[]> {
-    return this.http.get<Licitacao[]>(this.apiUrl);
+  get(): Observable<Ata[]> {
+    return this.http.get<Ata[]>(this.apiUrl);
   }
 
-  getById(id: string): Observable<Licitacao> {
+  getById(id: string): Observable<Ata> {
     const url = this.apiUrl + id + '/';
-    return this.http.get<Licitacao>(url);
+    return this.http.get<Ata>(url);
   }
 
-  save(item: Licitacao): Observable<Licitacao> {
+  save(item: Ata): Observable<Ata> {
     if (item.id) {
-      return this.http.put<Licitacao>(this.apiUrl, item);
+      return this.http.put<Ata>(this.apiUrl, item);
     }
     else{
-      return this.http.post<Licitacao>(this.apiUrl, item);
+      return this.http.post<Ata>(this.apiUrl, item);
     }
   }
+
   delete(id: number): Observable<void> {
     const url = this.apiUrl + id + '/';
     return this.http.delete<void>(url);
