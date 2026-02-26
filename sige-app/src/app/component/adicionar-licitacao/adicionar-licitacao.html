@@ -14,12 +14,12 @@
       <div class="grupo-inputs">
         <div class="d-flex flex-column">
           <label>Número da Licitação</label>
-          <input type="text">
+          <input type="text" placeholder="Ex.: 001/2026">
         </div>
 
         <div class="d-flex flex-column">
           <label>Validade (em meses)</label>
-          <input type="number">
+          <input type="number" placeholder="12">
         </div>
       </div>
 
@@ -40,12 +40,12 @@
       <div class="d-flex grupo-inputs">
         <div class="d-flex flex-column w-75 ">
           <label>Nome Fantasia</label>
-          <input type="text">
+          <input type="text" >
         </div>
 
         <div class="d-flex flex-column w-25">
           <label>CNPJ</label>
-          <input type="text">
+          <input type="text" placeholder="00.000.000/0000-00">
         </div>
       </div>
 
@@ -81,7 +81,7 @@
       <div class="d-flex grupo-inputs">
         <div class="d-flex flex-column w-25">
           <label>Telefone</label>
-          <input type="text">
+          <input type="text" placeholder="(DD) 9XXXX-XXXX">
         </div>
         <div class="d-flex flex-column w-75">
           <label>E-mail</label>
@@ -160,29 +160,59 @@
         </button>
       </div>
     </fieldset>
+    <div class="itens-adicionados">
+      <table class="">
+        <thead>
+          <tr>
+            <th>CATMAT</th>
+            <th>Gênero</th>
+            <th>Marca</th>
+            <th>Quantidade</th>
+            <th>Valor Unitário</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AS9DJ7</td>
+            <td class="d-flex flex-column">descrição do alimento <small>SECOS/MERCEARIA</small></td>
+            <td>café bocalom</td>
+            <td>100</td>
+            <td>R$ 10,00</td>
+            <td>
+              <i class="bi bi-trash"></i>
+            </td>
+          </tr>
 
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Categoria</th>
-          <th>Marca</th>
-          <th>Quantidade</th>
-          <th>Valor Unitário</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Exemplo</td>
-          <td>Marca X</td>
-          <td>100</td>
-          <td>R$ 10,00</td>
-          <td>
-            <button type="button">🗑</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+          <tr>
+            <td>AS9WED</td>
+            <td class="d-flex flex-column">mistura lactea<small>SECOS/MERCEARIA</small></td>
+            <td>italac</td>
+            <td>110</td>
+            <td>R$ 4,00</td>
+            <td>
+              <i class="bi bi-trash"></i>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
+  <div class="listagem">
+    <div>
+      <table class="tabela">
+        <thead>
+            <tr>
+                <th scope="col" style="vertical-align: top;">FORNECEDORES ADICIONADOS</th>
+            </tr>
+        </thead>
+        <tbody>
+            Nenhum fornecedor adicionado...
+        </tbody>
+        <tbody>
+      </table>
+
+    </div>
+  </div>
 
 </body>
