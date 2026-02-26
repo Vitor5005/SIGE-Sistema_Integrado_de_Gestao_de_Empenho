@@ -16,7 +16,6 @@ export class VisualizarLicitacoes {
   constructor(
     private router: Router,
     private licitacaoService: LicitacaoService,
-    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
@@ -29,7 +28,6 @@ export class VisualizarLicitacoes {
     this.licitacaoService.get().subscribe({
       next: (resposta: Array<Licitacao>) => {
         this.registro = resposta;
-        this.cdr.detectChanges();
       }
     });
   };
