@@ -20,7 +20,7 @@ export class EnderecoService implements ICrudService<Endereco> {
       return this.http.get<Endereco[]>(this.apiUrl);
     }
 
-    getById(id: string): Observable<Endereco> {
+    getById(id: number): Observable<Endereco> {
       const url = this.apiUrl + id + '/';
       return this.http.get<Endereco>(url);
     }

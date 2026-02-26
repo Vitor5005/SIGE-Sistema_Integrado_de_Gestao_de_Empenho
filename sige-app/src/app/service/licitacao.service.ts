@@ -20,7 +20,7 @@ export class LicitacaoService implements ICrudService<Licitacao> {
     return this.http.get<Licitacao[]>(this.apiUrl);
   }
 
-  getById(id: string): Observable<Licitacao> {
+  getById(id: number): Observable<Licitacao> {
     const url = this.apiUrl + id + '/';
     return this.http.get<Licitacao>(url);
   }

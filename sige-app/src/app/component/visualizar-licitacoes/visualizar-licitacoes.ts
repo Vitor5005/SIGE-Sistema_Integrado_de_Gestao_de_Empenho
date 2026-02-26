@@ -36,8 +36,8 @@ export class VisualizarLicitacoes {
     console.log(this.registro);
   }
 
-  enviarPara(rota: string) {
-    this.router.navigate([rota]);
+  enviarPara(rota: string, id: number): void {
+    this.router.navigate([rota], { queryParams: { id } });
   }
 
 }

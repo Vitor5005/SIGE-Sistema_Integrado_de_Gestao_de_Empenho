@@ -20,7 +20,7 @@ export class AtaService implements ICrudService<Ata> {
     return this.http.get<Ata[]>(this.apiUrl);
   }
 
-  getById(id: string): Observable<Ata> {
+  getById(id: number): Observable<Ata> {
     const url = this.apiUrl + id + '/';
     return this.http.get<Ata>(url);
   }
