@@ -12,12 +12,16 @@ export class AtaService implements ICrudService<Ata> {
 
   constructor(
     private http: HttpClient
-  ) {}
-  
+  ) { }
+
   apiUrl = environment.API_URL + '/atas/';
 
-  get(): Observable<Ata[]> {
-    return this.http.get<Ata[]>(this.apiUrl);
+  get(termobusca?: string): Observable<Ata[]> {
+    let url = this.apiUrl;
+    if (termobusca) {
+      url += '?search=' + termobusca;
+    }
+    return this.http.get<Ata[]>(url);
   }
 
   getById(id: number): Observable<Ata> {
@@ -29,7 +33,7 @@ export class AtaService implements ICrudService<Ata> {
     if (item.id) {
       return this.http.put<Ata>(this.apiUrl, item);
     }
-    else{
+    else {
       return this.http.post<Ata>(this.apiUrl, item);
     }
   }
@@ -38,5 +42,5 @@ export class AtaService implements ICrudService<Ata> {
     const url = this.apiUrl + id + '/';
     return this.http.delete<void>(url);
   }
-  
+
 }

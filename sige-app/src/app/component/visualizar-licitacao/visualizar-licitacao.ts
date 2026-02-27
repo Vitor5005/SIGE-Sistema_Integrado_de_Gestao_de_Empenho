@@ -49,7 +49,7 @@ export class VisualizarLicitacao {
   }
 
   getAtas(licitacaoId: number): void {
-    this.ataService.get().subscribe({
+    this.ataService.get(String(licitacaoId)).subscribe({
       next: (resposta: Array<Ata>) => {
         this.atas = resposta;
       }
