@@ -1,0 +1,148 @@
+body{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  .container-btnVoltar{
+    margin-top: 50px;
+    width: 80vw;
+    .btn-voltar{
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      background-color: transparent;
+      border: none;
+      color: var(--font-cinza2);
+      i{
+        font-size: 30px;
+        cursor: pointer;
+      }
+    }
+  }
+  .container1{
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    width: 80vw;
+    align-self: center;
+    box-shadow: var(--box-shadow);
+    border-radius: 20px;
+    .container-numero{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 30px;
+      height: 90px;
+      b{
+        font-size: 30px;
+        color: var(--azul-claro);
+      }
+      button{
+        width: 200px;
+        height: 50px;
+        border: none;
+        box-shadow: var(--box-shadow);
+        background-color: transparent;
+        border-radius: 20px;
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        align-items: center;
+        i{
+          font-size: 20px;
+          font-weight: bold;
+        }
+      }
+    }
+    .container-infos{
+      display: flex;
+      justify-content: space-between;
+      padding: 30px 40px;
+      background-color: #F0F0F0;
+      div{
+        small{
+          color: var(--font-cinza);
+        }
+        p{
+          font-weight: bold;
+        }
+      }
+      .validade-card{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 200px;
+        height: 80px;
+        background-color: var(--branco);
+        box-shadow: var(--box-shadow);
+        padding: 10px;
+        border-radius: 10px;
+        height: auto;
+      }
+        .descricao-card{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 10px;
+        width: 60%;
+        height: 80px;
+        background-color: var(--branco);
+        box-shadow: var(--box-shadow);
+        padding: 10px;
+        border-radius: 10px;
+        height: auto;
+      }
+    }
+  }
+  hr{
+  margin: 30px 0;
+  width: 80vw;
+  display: flex;
+  align-self: center;
+  }
+  .ARP-s{
+    display: flex;
+    flex-direction: column;
+    align-self: center;
+    width: 80vw;
+    .container-atas{
+      box-shadow: var(--box-shadow);
+      padding: 0 20px;
+      border-radius: 20px;
+    }
+    .ata{
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      cursor: point;
+      border-bottom: 1px solid var(--font-cinza);
+      i{
+        cursor: pointer;
+      }
+      .icone-ata{
+        i{
+          font-size: 50px;
+        }
+      }
+      .container-ata{
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        .column{
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 5px;
+        }
+        .line{
+          display: flex;
+        }
+      }
+    }
+  }
+}
