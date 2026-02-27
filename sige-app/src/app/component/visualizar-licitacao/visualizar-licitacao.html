@@ -7,20 +7,19 @@
 
     <div>
         <div>
-            <b>LIC-XXX-XXX</b>
+            <b>{{ licitacao.numero_licitacao }}</b>
             <button> <i class="bi bi-download"></i> Exportar</button>
         </div>
         <div>
             <div>
                 <small>PERIODO DE VALIDADE</small>
-                <p><b>12 MESES</b></p>
+                <p><b>{{ licitacao.validade }} MESES</b></p>
             </div>
 
             <div>
                 <small>DESCRIÇÃO DA LICITAÇÃO</small>
                 <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                    incididunt ut labore et dolore magna aliqua.  Ut enim ad minim veniam, quis nostrud e
+                    {{ licitacao.descricao }}
                 </p>
             </div>
         </div>
@@ -129,6 +128,5 @@
             </div>
         </div>
     </div>
-
 
 </body>
