@@ -8,10 +8,11 @@
   box-sizing: border-box;
   font-family: "Inter", sans-serif;
 }
-
 p {
   margin: 0;
+  margin-bottom: 0;
 }
+
 
 // cores padrão:
 :root {
@@ -69,6 +70,7 @@ p {
 
     p {
       font-weight: bold;
+      margin-bottom: 0;
     }
 
     td {
