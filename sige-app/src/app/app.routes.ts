@@ -26,6 +26,10 @@ export const routes: Routes = [
     component: AdicionarLicitacao
   },
   {
+    path: 'visualizar-licitacao',
+    component: VisualizarLicitacao
+  },
+  {
     path: "visualizar-atas",
     component: VisualizarAtas
   },
