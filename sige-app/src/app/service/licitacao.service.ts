@@ -12,12 +12,16 @@ export class LicitacaoService implements ICrudService<Licitacao> {
 
   constructor(
     private http: HttpClient
-  ) {}
+  ) { }
 
   apiUrl = environment.API_URL + '/licitacoes/';
 
-  get(): Observable<Licitacao[]> {
-    return this.http.get<Licitacao[]>(this.apiUrl);
+  get(termobusca?: string): Observable<Licitacao[]> {
+    let url = this.apiUrl;
+    if (termobusca) {
+      url += '?search=' + termobusca;
+    }
+    return this.http.get<Licitacao[]>(url);
   }
 
   getById(id: number): Observable<Licitacao> {
@@ -29,7 +33,7 @@ export class LicitacaoService implements ICrudService<Licitacao> {
     if (item.id) {
       return this.http.put<Licitacao>(this.apiUrl, item);
     }
-    else{
+    else {
       return this.http.post<Licitacao>(this.apiUrl, item);
     }
   }
@@ -37,5 +41,5 @@ export class LicitacaoService implements ICrudService<Licitacao> {
     const url = this.apiUrl + id + '/';
     return this.http.delete<void>(url);
   }
-  
+
 }
