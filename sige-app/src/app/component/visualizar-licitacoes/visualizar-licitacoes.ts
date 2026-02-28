@@ -1,3 +1,4 @@
+
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { Router } from '@angular/router';
