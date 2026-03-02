@@ -20,3 +20,9 @@ class ItemAtaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ItemAta
         fields = '__all__'
+        
+class itensDaAtaSerializer(serializers.ModelSerializer):
+    item_generico = ItemGenericoSerializer()
+    class Meta:
+        model = ItemAta
+        fields = '__all__'
