@@ -100,10 +100,10 @@ def seed_itens_ata(n=10, atas=None, itens_genericos=None):
 
 def seed_empenhos(n=5, atas=None):
     empenhos = []
-    for i in range(n):
+    for i in range(len(atas)):
         empenho = Empenho.objects.create(
             codigo=f"EMP{i+1:03d}",
-            ata=random.choice(atas),
+            ata=atas[i],
             valor_total=random.uniform(500,2000),
             saldo_utilizado=random.uniform(0,500)
         )
