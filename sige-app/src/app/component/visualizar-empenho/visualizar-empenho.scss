@@ -50,7 +50,7 @@ body{
       }
     }
     .info-fornecedor{
-      width: 85%;
+      width: 89%;
       display: flex;
       justify-content: space-between;
       color: #636363;
@@ -75,5 +75,33 @@ body{
         }
       }
     }
+    .container-tabela-alimentos{
+      width: 90%;
+      .btn-solicitar-entregas{
+        background-color: var(--azul-claro);
+        padding: 10px 20px;
+        border-radius: 20px;
+        border: none;
+        color: #ffffff;
+      }
+      .botoes-acoes{
+        display: flex;
+        gap: 20px;
+        button{
+          border: none;
+          i{
+            flex-direction: column;
+            background-color: transparent;
+          .reforçar{
+            color:  green($color: #000000);
+          }
+          .anular{
+            background-color: red;
+          }
+
+        }
+      }
+    }
   }
+}
 }

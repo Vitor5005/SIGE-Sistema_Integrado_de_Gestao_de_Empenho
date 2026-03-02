@@ -39,10 +39,10 @@
       </div>
     </div>
 
-    <div>
-      <div class="d-flex justify-content-between">
+    <div class="container-tabela-alimentos">
+      <div class="d-flex justify-content-between ">
         <h3>Tabela de Itens</h3>
-        <button #myInput data-bs-toggle="modal" data-bs-target="#entregaModal">
+        <button #myInput data-bs-toggle="modal" class="btn-solicitar-entregas" data-bs-target="#entregaModal">
           <i class="bi bi-truck"></i> SOLICITAR ENTREGA
         </button>
       </div>
@@ -50,6 +50,7 @@
       <table class="table">
         <thead>
           <tr>
+            <th scope="col">Sel.</th>
             <th scope="col">Item</th>
 
             <th scope="col">Valor Unitario</th>
@@ -69,6 +70,9 @@
         <tbody>
           <!-- Exemplo 1 -->
           <tr>
+            <td>
+              <input type="checkbox" name="" id="">
+            </td>
             <td>
               <span>Frango </span>
               <span>(KG)</span>
@@ -91,7 +95,7 @@
             <td>Proteinas</td>
 
             <td>
-              <div>
+              <div class="botoes-acoes">
                 <button><i class="bi bi-plus-circle"></i></button>
 
                 <button><i class="bi bi-x-circle"></i></button>
@@ -101,6 +105,10 @@
 
           <!-- Exemplo 2 -->
           <tr>
+            <td>
+              <input type="checkbox" name="" id="">
+            </td>
+
             <td>
               <span>Carne Bovina </span>
               <span>(KG)</span>
@@ -123,7 +131,7 @@
             <td>Proteinas</td>
 
             <td>
-              <div>
+              <div class="botoes-acoes">
                 <button><i class="bi bi-plus-circle"></i></button>
                 <button><i class="bi bi-x-circle"></i></button>
               </div>
