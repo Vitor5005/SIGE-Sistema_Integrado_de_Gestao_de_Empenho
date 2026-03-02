@@ -103,9 +103,55 @@ body {
           font-weight: bold;
         }
       }
-      table{
+      div.itens-adicionados{
         align-self: center;
-        width: 50%;
+        width: 60%;
+        box-shadow: var(--box-shadow);
+        border-radius: 20px;
+        padding-bottom: 20px;
+        table{
+          align-self: center;
+          width: 100%;
+          height: auto;
+          tr{
+            border-bottom: 1px solid var(--font-cinza);
+            gap: 10px;
+            th{
+              padding: 15px 10px;
+              text-align: center;
+            }
+            td{
+              width: 20%;
+              text-align: center;
+              width: auto;
+              padding: 12px 10px;
+
+            }
+            small {
+              font-size: 12px;
+            font-weight: normal;
+            color: var(--font-cinza);
+          }
+            i{
+              color: #f86d6d;
+              font-size: 20px;
+            }
+          }
+        }
+      }
+    }
+    .listagem{
+      div{
+        border-radius: 20px;
+        box-shadow: var(--box-shadow);
+        margin-bottom: 30px;
+        .tabela{
+          border-radius: 20px;
+          width: 80vw;
+          tbody{
+            margin: 30px;
+          }
+        }
       }
     }
 }

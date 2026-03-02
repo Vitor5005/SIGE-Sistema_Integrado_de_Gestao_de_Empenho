@@ -1,16 +1,15 @@
 <body>
 
-    <div>
-        <button routerLink="/visualizar-atas"><i class="bi bi-arrow-left"></i> VISUALIZAR LISTAGEM DE
+    <div class="container-btnVoltar">
+        <button routerLink="/visualizar-atas" class="btn-voltar"><i class="bi bi-arrow-left"></i> VISUALIZAR LISTAGEM DE
             ARP’s</button>
     </div>
 
-    <div>
+    <div class="container-visualizar-ata">
 
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
+        <div class="cabecalho-arp">
             <div>
-                <span style="font-size: 1.8em;"> <!--Tamanho definido temporariamente -->
+                <span >
                     <i class="bi bi-file-earmark-text"></i> {{ ata.numero_ata }}
                 </span>
             </div>
@@ -19,37 +18,35 @@
 
         <hr>
 
-        <div style="display: flex; gap: 1.5em;">
-            <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
+        <div class="container-cards">
 
-            <div style="background-color: rgb(218, 230, 255); cursor: pointer;"
+            <div class="card-licitacao cards"
                 (click)="enviarPara('/visualizar-licitacao', ata.licitacao.id)">
-                <h5 style="color: rgb(0, 72, 255);">Licitação</h5> <!-- Cor definida temporariamente -->
-                <span style="font-size: 0.9em; color: rgb(122, 143, 255);">
-                    <!--Tamanho e cor definidos temporariamente -->
+                <h5 >Licitação</h5>
+                <span >
                     <i class="bi bi-link-45deg"></i> {{ ata.licitacao.numero_licitacao }}
                 </span>
             </div>
 
-            <div>
+            <div class="card-validade cards">
                 <h5>Validade</h5>
-                <span style="font-size: 0.9em;">{{ ata.licitacao.validade }} Meses</span>
-                <!--Tamanho definido temporariamente -->
-                <div style="background-color: rgb(255, 168, 168);"> <!-- Cor definida temporariamente -->
-                    <span style="color: rgb(194, 5, 5);">expirado</span> <!-- Cor definida temporariamente -->
+                <span class="meses">{{ ata.licitacao.validade }} Meses</span>
+               
+                <div class="span-validade">
+                    <span >expirado</span>
                 </div>
             </div>
 
-            <div style="background-color: rgb(211, 253, 244);"> <!-- Cor definida temporariamente -->
-                <h5 style="color: rgb(10, 63, 11)">Valor Total</h5> <!-- Cor definida temporariamente -->
-                <span style="font-size: 0.9em; color: rgb(57, 134, 15)">R$ {{ ata.ata_saldo_total }}</span>
-                <!--Tamanho definido temporariamente -->
+            <div class="card-valor-total cards">
+                <h5 >Valor Total</h5>
+                <span >R$ {{ ata.ata_saldo_total }}</span>
+
             </div>
 
-            <div style="background-color: rgb(249, 214, 215);"> <!-- Cor definida temporariamente -->
-                <h5 style="color: rgb(72, 18, 19);">Utilizado</h5> <!-- Cor definida temporariamente -->
-                <span style="font-size: 0.9em; color: rgb(159, 11, 11);">
-                    <!-- Tamanho e cor definidos temporariamente -->
+            <div class="card-utilizado cards">
+                <h5 >Utilizado</h5>
+                <span >
+
                     R$ {{ empenho.saldo_utilizado }}
                 </span>
             </div>
@@ -57,51 +54,45 @@
 
         <hr>
 
-        <div style="display: flex; gap: 1.5em;">
+        <div class="informacoes">
             <div>
                 <h5>INFORMAÇÕES DO FORNECEDOR</h5>
-                <p>Razão Social: {{ ata.fornecedor.razao_social }}</p>
-                <p>Nome Fantasia: {{ ata.fornecedor.nome_fantasia }}</p>
-                <p>CNPJ: {{ ata.fornecedor.cnpj }}</p>
-                <p>Telefone: {{ ata.fornecedor.telefone }}</p>
+                <p><b>Razão Social: {{ ata.fornecedor.razao_social }}</b></p>
+                <p><b>Nome Fantasia: {{ ata.fornecedor.nome_fantasia }}</b></p>
+                <p><b>CNPJ: {{ ata.fornecedor.cnpj }}</b></p>
+                <p><b>Telefone: {{ ata.fornecedor.telefone }}</b></p>
             </div>
 
-            <div style="background-color: rgb(19, 47, 108); width: 15em; cursor: pointer;"
+            <div class="card-empenho"
                 (click)="enviarPara('/visualizar-empenho')">
-                <!-- Cor e largura definidos temporariamente -->
-
-                <h4 style="color: white; font-size: 2em;"> <!-- Cor e tamanho definidos temporariamente -->
+                <h4 >
                     Empenho
                 </h4>
-
-                <span style="font-size: 1.3em; color: rgb(123, 140, 223);">
-                    <!--Tamanho e cor definidos temporariamente -->
-                    <i class="bi bi-link-45deg" style="font-size: 1.5em;"></i> {{ empenho.codigo }}
-                    <!--Tamanho definido temporariamente -->
+                <span >
+                    <i class="bi bi-link-45deg" ></i> {{ empenho.codigo }}
                 </span>
             </div>
         </div>
 
-        <div>
+        <div class="container-tabela">
             <h4>Generos Alimenticios</h4>
             <table class="table">
                 <thead>
                     <tr>
-                        <th scope="col" style="vertical-align: top;">Item</th>
-                        <!-- Alinhamento vertical definido temporariamente -->
-                        <th scope="col" style="vertical-align: top;">Quantidade Licitada</th>
-                        <!-- Alinhamento vertical definido temporariamente -->
-                        <th scope="col" style="vertical-align: top;">
+                        <th scope="col" >Item</th>
+                        <th scope="col" >Quantidade Licitada</th>
+
+                        <th scope="col" >
                             <div>
-                                <p style="margin: 0;">Quantidade em Ata</p> <!-- Margem definida temporariamente -->
-                                <span style="font-size: 0.9em; margin: 0;">(Disponivel)</span>
-                                <!-- Tamanho e margem definidos temporariamente -->
+                                <p style="margin: 0;">Quantidade em Ata</p>
+                                <span >(Disponivel)</span>
+
                             </div>
                         </th>
-                        <th scope="col" style="vertical-align: top;">Valor Unitario</th>
-                        <th scope="col" style="vertical-align: top;">Valor Total</th>
+                        <th scope="col" >Valor Unitario</th>
+                        <th scope="col" >Valor Total</th>
 
-                        <!-- Alinhamento vertical definido temporariamente -->
+
                     </tr>
                 </thead>
                 <tbody>

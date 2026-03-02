@@ -1,63 +1,58 @@
 <body>
+  <div class="container-btnVoltar">
+    <button routerLink="/visualizar-licitacoes" class="btn-voltar">
+      <i class="bi bi-arrow-left"></i> VOLTAR PARA LISTAGEM DE LICITAÇÕES
+    </button>
+  </div>
 
-    <div>
-        <button routerLink="/visualizar-licitacoes"><i class="bi bi-arrow-left"></i> VOLTAR PARA LISTAGEM DE
-            LICITAÇÕES</button>
+  <div class="container1">
+    <div class="container-numero">
+      <b>{{ licitacao.numero_licitacao }}</b>
+      <button><i class="bi bi-download"></i> Exportar</button>
     </div>
+    <div class="container-infos">
+      <div class="validade-card">
+        <small>PERIODO DE VALIDADE</small>
+        <p>
+          <b>{{ licitacao.validade }} MESES</b>
+        </p>
+      </div>
 
-    <div>
-        <div>
-            <b>{{ licitacao.numero_licitacao }}</b>
-            <button> <i class="bi bi-download"></i> Exportar</button>
-        </div>
-        <div>
-            <div>
-                <small>PERIODO DE VALIDADE</small>
-                <p><b>{{ licitacao.validade }} MESES</b></p>
-            </div>
-
-            <div>
-                <small>DESCRIÇÃO DA LICITAÇÃO</small>
-                <p>
-                    {{ licitacao.descricao }}
-                </p>
-            </div>
-        </div>
+      <div class="descricao-card">
+        <small>DESCRIÇÃO DA LICITAÇÃO</small>
+        <p>
+          {{ licitacao.descricao }}
+        </p>
+      </div>
     </div>
+  </div>
 
-    <hr>
+  <hr />
 
-    <div>
-        <b>Atas de Registro de Preço (ARP's)</b>
-
-        @for (item of atas; track item.id) {
-
-        <div style="display: flex; gap: 10px; align-items: center; cursor: pointer;"
-            (click)="enviarPara('visualizar-ata', item.id)">
-            <!--Display, Gap e Align definidos temporariamente -->
-            <div>
-                <i class="bi bi-file-earmark-text" style="font-size: 4em;"></i>
-                <!-- Tamanho definido na tag temporariamente -->
+  <div class="ARP-s">
+    <p>Atas de Registro de Preço (ARP's)</p>
+    <div class="container-atas">
+      <div *ngFor="let item of atas" class="ata" (click)="enviarPara('visualizar-ata', item.id)">
+        <div class="container-ata">
+          <div class="icone-ata">
+            <i class="bi bi-file-earmark-text"></i>
+          </div>
+          <div class="column">
+            <div class="line">
+              <h5>{{ item.numero_ata }}</h5>
+              <small>| {{ item.fornecedor.cnpj }}</small>
             </div>
-            <div>
-                <div style="display: flex; gap: 10px;"> <!--Display e Gap definidos temporariamente -->
-                    <h5>{{ item.numero_ata }}</h5>
-                    <small>| {{item.fornecedor.cnpj}} </small>
-                </div>
-                <small>{{ item.fornecedor.nome_fantasia }}</small>
-            </div>
-            <div>
-                <small>SALDO TOTAL</small>
-                <h5>R$ {{ item.ata_saldo_total }}</h5>
-            </div>
-
-            <div>
-                <i class="bi bi-chevron-compact-right" style="font-size: 2em; color: rgb(158, 158, 158);"></i>
-            </div>
-
+            <small>{{ item.fornecedor.nome_fantasia }}</small>
+          </div>
         </div>
-
-        }
+        <div class="d-flex align-items-center gap-2">
+          <div>
+            <small>SALDO TOTAL</small>
+            <h5>R$ {{ item.ata_saldo_total }}</h5>
+          </div>
+          <i class="bi bi-chevron-compact-right fs-5"></i>
+        </div>
+      </div>
     </div>
-
+  </div>
 </body>
