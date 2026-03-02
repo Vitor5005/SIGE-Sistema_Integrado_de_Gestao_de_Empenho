@@ -9,7 +9,7 @@ from .views import (
 router = DefaultRouter()
 
 router.register(r'licitacoes',LicitacaoViewSet)
-router.register(r'atas/valor_empenho', ValorDoEmpenhoViewSet, basename='valor_empenho')
+router.register(r'atas/empenho', ValorDoEmpenhoViewSet, basename='valor_empenho')
 router.register(r'atas', AtaViewSet)
 router.register(r'itematas', ItemAtaViewSet)
 

@@ -23,4 +23,4 @@ class OperacaoItemSerializer(serializers.ModelSerializer):
 class ValorEmpenhoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empenho
-        fields = ['valor_total']
+        fields = ['id', 'codigo','valor_total', 'saldo_utilizado']
