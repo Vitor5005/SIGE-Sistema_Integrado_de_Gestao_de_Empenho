@@ -39,7 +39,7 @@ def seed_fornecedores(n=5, enderecos=None):
         fornecedores.append(fornecedor)
     return fornecedores
 
-def seed_itens_genericos(n=5):
+def seed_itens_genericos(n=20):
     categorias = ['SM', 'Lac', 'Oli', 'Fr', 'Le', 'Pr']
     unidades = ['KG', 'L', 'un', 'PCT', 'CX']
     itens = []
@@ -85,17 +85,18 @@ def seed_atas(n=5, licitacoes=None, fornecedores=None):
         atas.append(ata)
     return atas
 
-def seed_itens_ata(n=10, atas=None, itens_genericos=None):
+def seed_itens_ata(n=random.randint(5,15), atas=None, itens_genericos=None):
     itens_ata = []
-    for i in range(n):
-        item_ata = ItemAta.objects.create(
-            ata=random.choice(atas),
-            item_generico=random.choice(itens_genericos),
-            marca=f"Marca {i}",
-            quantidade_licitada=random.uniform(10,100),
-            valor_unitario=random.uniform(1,20)
-        )
-        itens_ata.append(item_ata)
+    for j in range(len(atas)):
+        for i in range(n):
+            item_ata = ItemAta.objects.create(
+                ata=atas[j],
+                item_generico=random.choice(itens_genericos),
+                marca=f"Marca {i}",
+                quantidade_licitada=random.uniform(10,100),
+                valor_unitario=random.uniform(1,20)
+            )
+            itens_ata.append(item_ata)
     return itens_ata
 
 def seed_empenhos(n=5, atas=None):

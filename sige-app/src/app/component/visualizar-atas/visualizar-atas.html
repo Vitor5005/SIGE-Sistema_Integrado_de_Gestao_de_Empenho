@@ -20,7 +20,7 @@
         <tbody>
 
             @for (item of atas; track item.id) {
-            <tr style="cursor: pointer;" (click)="enviarPara('/visualizar-ata')">
+            <tr style="cursor: pointer;" (click)="enviarPara('/visualizar-ata', item.id)">
                 <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
                 <td>
                     <div>

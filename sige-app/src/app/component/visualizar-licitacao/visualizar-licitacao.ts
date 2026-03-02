@@ -33,8 +33,13 @@ export class VisualizarLicitacao {
     }
   }
 
-  enviarPara(rota: string) {
-    this.router.navigate([rota]);
+  enviarPara(rota: string, id?: number): void {
+    if(id){
+      this.router.navigate([rota], { queryParams: { id } });
+    }
+    else{
+      this.router.navigate([rota]);
+    }
   }
 
   get(id: number): void {

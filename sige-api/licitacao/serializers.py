@@ -2,6 +2,7 @@ from rest_framework import serializers
 from licitacao.models import Licitacao, Ata, ItemAta
 from cadastro.serializers import FornecedorSerializer
 from cadastro.serializers import ItemGenericoSerializer
+from empenho.models import ItemEmpenho
 class LicitacaoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Licitacao
@@ -21,8 +22,15 @@ class ItemAtaSerializer(serializers.ModelSerializer):
         model = ItemAta
         fields = '__all__'
         
-class itensDaAtaSerializer(serializers.ModelSerializer):
+class ItensDaAtaSerializer(serializers.ModelSerializer):
     item_generico = ItemGenericoSerializer()
     class Meta:
         model = ItemAta
+        fields = '__all__'
+        
+        
+class ItensEmpenhoDaAtaSerializer(serializers.ModelSerializer):
+    item_ata = ItensDaAtaSerializer()
+    class Meta:
+        model = ItemEmpenho
         fields = '__all__'
