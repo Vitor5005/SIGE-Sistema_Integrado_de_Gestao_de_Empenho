@@ -10,7 +10,7 @@
         <div class="cabecalho-arp">
             <div>
                 <span >
-                    <i class="bi bi-file-earmark-text"></i> ARP-XXX-XXXX
+                    <i class="bi bi-file-earmark-text"></i> {{ ata.numero_ata }}
                 </span>
             </div>
             <button> <i class="bi bi-download"></i> Exportar</button>
@@ -20,16 +20,18 @@
 
         <div class="container-cards">
 
-            <div class="card-licitacao cards" (click)="enviarPara('/visualizar-licitacao')">
+            <div class="card-licitacao cards"
+                (click)="enviarPara('/visualizar-licitacao', ata.licitacao.id)">
                 <h5 >Licitação</h5>
                 <span >
-                    <i class="bi bi-link-45deg"></i> XX-XXX-XXX
+                    <i class="bi bi-link-45deg"></i> {{ ata.licitacao.numero_licitacao }}
                 </span>
             </div>
 
             <div class="card-validade cards">
                 <h5>Validade</h5>
-                <span class="meses">12 Meses</span>
+                <span class="meses">{{ ata.licitacao.validade }} Meses</span>
+               
                 <div class="span-validade">
                     <span >expirado</span>
                 </div>
@@ -37,7 +39,7 @@
 
             <div class="card-valor-total cards">
                 <h5 >Valor Total</h5>
-                <span >R$ 50.000,00</span>
+                <span >R$ {{ ata.ata_saldo_total }}</span>
 
             </div>
 
@@ -45,10 +47,9 @@
                 <h5 >Utilizado</h5>
                 <span >
 
-                    R$ 20.000,00
+                    R$ {{ empenho.saldo_utilizado }}
                 </span>
             </div>
-
         </div>
 
         <hr>
@@ -56,18 +57,19 @@
         <div class="informacoes">
             <div>
                 <h5>INFORMAÇÕES DO FORNECEDOR</h5>
-                <p><b>Razão Social:</b> Nome Fornecedor 1</p>
-                <p><b>Nome Fantasia:</b> Nome Fantasia Fornecedor 1</p>
-                <p><b>CNPJ:</b> XX.XXX.XXX/XXXX-XX</p>
-                <p><b>Telefone:</b> (DD)9 XXXXX-XXXX</p>
+                <p><b>Razão Social: {{ ata.fornecedor.razao_social }}</b></p>
+                <p><b>Nome Fantasia: {{ ata.fornecedor.nome_fantasia }}</b></p>
+                <p><b>CNPJ: {{ ata.fornecedor.cnpj }}</b></p>
+                <p><b>Telefone: {{ ata.fornecedor.telefone }}</b></p>
             </div>
 
-            <div class="card-empenho" (click)="enviarPara('/visualizar-empenho')">
+            <div class="card-empenho"
+                (click)="enviarPara('/visualizar-empenho')">
                 <h4 >
                     Empenho
                 </h4>
                 <span >
-                    <i class="bi bi-link-45deg" ></i> EMP-XXXX-XXX
+                    <i class="bi bi-link-45deg" ></i> {{ empenho.codigo }}
                 </span>
             </div>
         </div>
@@ -95,42 +97,26 @@
                 </thead>
                 <tbody>
                     <!-- Exemplo 1 -->
+                    @for (item of itens; track $index) {
                     <tr>
                         <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
                         <td>
-                            <span>Arroz Brilhante (5kg)</span>
+                            <span>{{ item.item_ata.item_generico.descricao }}</span>
                         </td>
                         <td>
-                            <span> 1000 KG</span>
+                            <span>{{ item.item_ata.quantidade_licitada }} KG</span>
                         </td>
                         <td>
-                            <span> 800 KG </span>
+                            <span>{{ item.quantidade_atual }} KG</span>
                         </td>
                         <td>
-                            <span>R$ 29,90</span>
+                            <span>R$ {{ item.item_ata.valor_unitario }}</span>
                         </td>
                         <td>
-                            <span>R$ 5.980</span>
+                            <span>R$ {{ item.item_ata.quantidade_licitada * item.item_ata.valor_unitario | number:'1.2-2' }}</span>
                         </td>
                     </tr>
-
-                    <tr>
-                        <td>
-                            <span>Feijão Carioca (1kg)</span>
-                        </td>
-                        <td>
-                            <span> 500 KG</span>
-                        </td>
-                        <td>
-                            <span> 300 KG </span>
-                        </td>
-                        <td>
-                            <span>R$ 8,50</span>
-                        </td>
-                        <td>
-                            <span>R$ 2.550</span>
-                        </td>
-                    </tr>
+                    }
             </table>
         </div>
 

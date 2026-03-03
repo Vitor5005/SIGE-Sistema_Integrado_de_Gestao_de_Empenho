@@ -32,7 +32,7 @@
   <div class="ARP-s">
     <p>Atas de Registro de Preço (ARP's)</p>
     <div class="container-atas">
-      <div *ngFor="let item of atas" class="ata" (click)="enviarPara('visualizar-ata')">
+      <div *ngFor="let item of atas" class="ata" (click)="enviarPara('visualizar-ata', item.id)">
         <div class="container-ata">
           <div class="icone-ata">
             <i class="bi bi-file-earmark-text"></i>

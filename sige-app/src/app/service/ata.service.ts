@@ -1,9 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Ata } from '../model/ata';
 import { ICrudService } from './i-crud-service';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../environments/environment';
 import { HttpClient } from '@angular/common/http';
+import { Empenho } from '../model/empenho';
+import { ItemAta } from '../model/itemAta';
+import { ItemEmpenho } from '../model/itemEmpenho';
 
 @Injectable({
   providedIn: 'root',
@@ -41,6 +44,16 @@ export class AtaService implements ICrudService<Ata> {
   delete(id: number): Observable<void> {
     const url = this.apiUrl + id + '/';
     return this.http.delete<void>(url);
+  }
+
+  getEmpenho(ataId: number): Observable<Empenho> {
+   const url = this.apiUrl + 'empenho/?ata_id=' + ataId;
+   return this.http.get<Empenho>(url);
+  }
+
+  getItens(ataId: number): Observable<ItemEmpenho[]> {
+    const url = this.apiUrl + 'itens_da_ata/?ata_id=' + ataId;
+    return this.http.get<ItemEmpenho[]>(url);
   }
 
 }

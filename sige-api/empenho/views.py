@@ -13,4 +13,5 @@ class ItemEmpenhoViewSet(viewsets.ModelViewSet):
 class OperacaoItemViewSet(viewsets.ModelViewSet):
     queryset = OperacaoItem.objects.all()
     serializer_class = OperacaoItemSerializer
+
     

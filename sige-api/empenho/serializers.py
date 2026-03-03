@@ -19,3 +19,8 @@ class OperacaoItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OperacaoItem
         fields = '__all__'
+
+class ValorEmpenhoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Empenho
+        fields = ['id', 'codigo','valor_total', 'saldo_utilizado']

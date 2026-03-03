@@ -24,8 +24,8 @@ export class VisualizarAtas {
     this.get();
   }
 
-  enviarPara(rota: string) {
-    this.router.navigate([rota]);
+  enviarPara(rota: string, id: number): void {
+    this.router.navigate([rota], { queryParams: { id } });
   }
 
   get(termobusca?: string): void {
