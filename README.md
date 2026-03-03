@@ -33,7 +33,7 @@ A stack tecnológica foi escolhida visando a futura integração com os sistemas
 
 * **Linguagem:** ![Python](https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54) (Licença PSFL)
 * **Backend:** ![Django](https://img.shields.io/badge/django-%23092e20.svg?style=flat-square&logo=django&logoColor=white) (Licença BSD)
-* **Frontend:** ![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat-square&logo=react&logoColor=%2361DAFB) (Licença MIT)
+* **Frontend:** ![Angular](https://img.shields.io/badge/Angular-%23DD0031.svg?style=flat-square&logo=angular&logoColor=white) (Licença MIT)
 * **Banco de Dados:** ![MySQL](https://img.shields.io/badge/mysql-%2300f.svg?style=flat-square&logo=mysql&logoColor=white) (Licença GPL)
 * **Modelagem:** MySQL Workbench
 * **IDE:** Visual Studio Code
