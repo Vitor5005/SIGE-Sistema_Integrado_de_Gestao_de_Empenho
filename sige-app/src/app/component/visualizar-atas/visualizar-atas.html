@@ -1,9 +1,9 @@
 <body class="listagem">
 
-  <div class="container-titulo">
-    <h3>ATAS DE REGISTRO DE PREÇOS</h3>
-    <hr>
-  </div>
+    <div class="container-titulo">
+        <h3>ATAS DE REGISTRO DE PREÇOS</h3>
+        <hr>
+    </div>
 
     <app-barra-pesquisa></app-barra-pesquisa>
 
@@ -19,77 +19,30 @@
         </thead>
         <tbody>
 
-            <!-- Exemplo 1 -->
+            @for (item of atas; track item.id) {
             <tr style="cursor: pointer;" (click)="enviarPara('/visualizar-ata')">
                 <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
                 <td>
                     <div>
-                        <p>ARP-XXX-XXX</p>
-                        <small>cadastrado: xx/xx/xxxxx</small>
+                        <p>{{ item.numero_ata }}</p>
+                        <small>cadastrado: {{ item.licitacao.data_abertura }}</small>
                     </div>
                 </td>
                 <td>
-                    <p>Nome do Fornecedor 1</p>
-                    <small>xx.xxx.xxx/xxxx-xx</small>
+                    <p>{{ item.fornecedor.nome_fantasia }}</p>
+                    <small>{{ item.fornecedor.cnpj }}</small>
                 </td>
-                <td><span class="badge bg-danger">Expirado</span></td>
-                <td><i class="bi bi-clock"></i> 12 meses</td>
-                <td>R$ 50.000,00</td>
-            </tr>
 
-            <!-- Exemplo 2 -->
-            <tr style="cursor: pointer;" (click)="enviarPara('/visualizar-ata')">
-                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                <td>
-                    <div>
-                        <p>ARP-XXX-XXX</p>
-                        <small>cadastrado: xx/xx/xxxxx</small>
-                    </div>
-                </td>
-                <td>
-                    <p>Nome do Fornecedor 2</p>
-                    <small>xx.xxx.xxx/xxxx-xx</small>
-                </td>
-                <td><span class="badge bg-success">Vigente</span></td>
-                <td><i class="bi bi-clock"></i> 12 meses</td>
-                <td>R$ 35.500,00</td>
-            </tr>
+                <td><span [ngClass]="classValidade(item)">{{ 
+                        verificarValidade(item) }}</span></td> 
+                        <!-- Para modoficar as classes da validade
+                             é necessario alterar a função classValidade 
+                             no arquivo visualizar-atas.ts -->
 
-            <!-- Exemplo 3 -->
-            <tr style="cursor: pointer;" (click)="enviarPara('/visualizar-ata')">
-                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                <td>
-                    <div>
-                        <p>ARP-XXX-XXX</p>
-                        <small>cadastrado: xx/xx/xxxxx</small>
-                    </div>
-                </td>
-                <td>
-                    <p>Nome do Fornecedor 3</p>
-                    <small>xx.xxx.xxx/xxxx-xx</small>
-                </td>
-                <td><span class="badge bg-success">Vigente</span></td>
-                <td><i class="bi bi-clock"></i> 12 meses</td>
-                <td>R$ 20.000,00</td>
+                <td><i class="bi bi-clock"></i> {{ item.licitacao.validade }} meses</td>
+                <td>R$ {{ item.ata_saldo_total}}</td>
             </tr>
-
-            <!-- Exemplo 4 -->
-            <tr style="cursor: pointer;" (click)="enviarPara('/visualizar-ata')">
-                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                <td>
-                    <div>
-                        <p>ARP-XXX-XXX</p>
-                        <small>cadastrado: xx/xx/xxxxx</small>
-                    </div>
-                </td>
-                <td>
-                    <p>Nome do Fornecedor 4</p>
-                    <small>xx.xxx.xxx/xxxx-xx</small>
-                </td>
-                <td><span class="badge bg-success">Vigente</span></td>
-                <td><i class="bi bi-clock"></i> 12 meses</td>
-                <td>R$ 10.000,00</td>
-            </tr>
+            }
     </table>
 
 </body>

@@ -10,33 +10,37 @@ import { environment } from '../environments/environment';
 })
 export class EnderecoService implements ICrudService<Endereco> {
 
-    constructor(
-      private http: HttpClient
-    ){}
+  constructor(
+    private http: HttpClient
+  ) { }
 
-    apiUrl = environment.API_URL + '/enderecos/';
+  apiUrl = environment.API_URL + '/enderecos/';
 
-    get(): Observable<Endereco[]> {
-      return this.http.get<Endereco[]>(this.apiUrl);
+  get(termobusca?: string): Observable<Endereco[]> {
+    let url = this.apiUrl;
+    if (termobusca) {
+      url += '?search=' + termobusca;
     }
+    return this.http.get<Endereco[]>(url);
+  }
 
-    getById(id: number): Observable<Endereco> {
-      const url = this.apiUrl + id + '/';
-      return this.http.get<Endereco>(url);
-    }
+  getById(id: number): Observable<Endereco> {
+    const url = this.apiUrl + id + '/';
+    return this.http.get<Endereco>(url);
+  }
 
-    save(item: Endereco): Observable<Endereco> {
-      if (item.id) {
-        return this.http.put<Endereco>(this.apiUrl, item);
-      }
-      else{
-        return this.http.post<Endereco>(this.apiUrl, item);
-      }
+  save(item: Endereco): Observable<Endereco> {
+    if (item.id) {
+      return this.http.put<Endereco>(this.apiUrl, item);
     }
+    else {
+      return this.http.post<Endereco>(this.apiUrl, item);
+    }
+  }
 
-    delete(id: number): Observable<void> {
-      const url = this.apiUrl + id + '/';
-      return this.http.delete<void>(url);
-    }
-    
+  delete(id: number): Observable<void> {
+    const url = this.apiUrl + id + '/';
+    return this.http.delete<void>(url);
+  }
+
 }

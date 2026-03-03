@@ -1,219 +1,212 @@
 <body>
+  <div class="container-btnVoltar">
+    <button routerLink="/visualizar-empenhos" class="btn-voltar">
+      <i class="bi bi-arrow-left"></i> VISUALIZAR LISTAGEM DE EMPENHOS
+    </button>
+  </div>
 
-    <div>
-        <div>
-            <button routerLink="/visualizar-empenhos"><i class="bi bi-arrow-left"></i> VISUALIZAR LISTAGEM DE
-                EMPENHOS</button>
-        </div>
+  <div class="container-empenho">
+    <div class="cabecalho">
+      <div>
+        <span class="nome-fornecedor">Nome do Fornecedor 1</span><br>
+        <span class="numero-empenho">EMP-XXX-XX</span>
+      </div>
 
-        <div style="display: flex; gap: 1.5em; align-items: center;">
-            <!-- style temporário, remover quando tiver classe apropriada -->
-            <span style="font-size: 1.5em; color: rgb(50, 99, 204);">Nome do Fornecedor 1</span>
-            <!-- alterando tamanho da fonte e cor temporariamente -->
-            <span style="background-color: rgb(217, 217, 217); font-weight: bold;">EMP-XXX-XX</span>
-            <!-- alterando cor, negrito temporariamente -->
-            <span style="background-color: rgb(217, 217, 217); font-weight: bold; cursor: pointer;"
-                (click)="enviarPara('/visualizar-ata')">ARP-XX-XXXX</span>
-            <!-- alterando cor, negrito e cursor temporariamente -->
-        </div>
-
-        <div style="display: flex; gap: 9em;"> <!-- display e gap temporarios -->
-            <div>
-
-                <h5>Razão Social: Nome do Fornecedor 1</h5>
-                <h5>CNPJ: XX.XXX.XXX/XXXX-XX</h5>
-                <div style="display: flex; gap: 0.5em;"> <!-- display e gap temporarios -->
-                    <!-- style temporário, remover quando tiver classe apropriada -->
-                    <h5>Telefone: (XX) XXXXX-XXXX</h5>
-                    |
-                    <h5>Email: XXXXXX@gmail.com</h5>
-                </div>
-
-            </div>
-
-            <div style="display: flex; gap: 5em;"> <!-- display e gap temporarios -->
-                <div style="background-color: rgb(167, 198, 255);"> <!-- background temporário -->
-                    <h4 style="color: rgb(0, 16, 189);">Valor Utilizado</h4> <!-- cor temporária -->
-                    <h5>R$ 5.100,00</h5>
-                </div>
-
-                <div style="background-color: rgb(39, 140, 234);"> <!-- background temporário -->
-                    <h4 style="color: white;">Valor Empenhado</h4> <!-- cor temporária -->
-                    <h5 style="color: rgb(12, 221, 106);">R$ 40.100,00</h5> <!-- cor temporária -->
-                </div>
-            </div>
-        </div>
-
-        <div>
-            <div style="display: flex; gap: 46.3em;"> <!-- display e gap temporarios -->
-                <h3>Tabela de Itens</h3>
-                <button #myInput style="color: white; background-color: rgb(0, 90, 174);" data-bs-toggle="modal"
-                    data-bs-target="#entregaModal"><i class="bi bi-truck"></i> SOLICITAR
-                    ENTREGA</button> <!-- background color e color temporarios -->
-            </div>
-
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th scope="col" style="vertical-align: top;">Item</th>
-                        <!-- Alinhamento vertical definido temporariamente -->
-                        <th scope="col" style="vertical-align: top;">Valor Unitario</th>
-                        <!-- Alinhamento vertical definido temporariamente -->
-                        <th scope="col" style="vertical-align: top;">
-                            <div>
-                                <p style="margin: 0;">Quantidade em Ata</p> <!-- Margem definida temporariamente -->
-                                <span style="font-size: 0.9em; margin: 0;">(Disponivel)</span>
-                                <!-- Tamanho e margem definidos temporariamente -->
-                            </div>
-                        </th>
-                        <th scope="col" style="vertical-align: top;">Quantidade Entregue</th>
-                        <!-- Alinhamento vertical definido temporariamente -->
-                        <th scope="col" style="vertical-align: top;">Categoria</th>
-                        <!-- Alinhamento vertical definido temporariamente -->
-                        <th scope="col" style="vertical-align: top;">Ações</th>
-                        <!-- Alinhamento vertical definido temporariamente -->
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Exemplo 1 -->
-                    <tr>
-                        <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                        <td>
-                            <span>Frango </span>
-                            <span style="font-size: 0.7em;">(KG)</span>
-                        </td>
-
-                        <td>
-                            <span>R$ 20,00</span>
-                        </td>
-
-                        <td>
-                            <span>500 </span>
-                            <span style="font-size: 0.7em;">KG</span>
-                        </td>
-
-                        <td>
-                            <span>100 </span>
-                            <span style="font-size: 0.7em;">KG</span>
-                        </td>
-
-                        <td>
-                            Proteinas
-                        </td>
-
-                        <td>
-
-                            <div style="display: flex; gap: 0.7em; font-size: 1.25em;">
-                                <!-- display e gap temporarios -->
-                                <button style="background-color: transparent; border: none; color: rgb(24, 162, 22);"><i
-                                        class="bi bi-plus-circle"></i></button>
-                                <!-- background, border e color temporarios -->
-                                <button style="background-color: transparent; border: none; color: rgb(184, 0, 0);"><i
-                                        class="bi bi-x-circle"></i></button>
-                                <!-- background, border e color temporarios -->
-                            </div>
-
-                        </td>
-                    </tr>
-
-                    <!-- Exemplo 2 -->
-                    <tr>
-                        <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                        <td>
-                            <span>Carne Bovina </span>
-                            <span style="font-size: 0.7em;">(KG)</span>
-                        </td>
-
-                        <td>
-                            <span>R$ 30,00</span>
-                        </td>
-
-                        <td>
-                            <span>800 </span>
-                            <span style="font-size: 0.7em;">KG</span>
-                        </td>
-
-                        <td>
-                            <span>300 </span>
-                            <span style="font-size: 0.7em;">KG</span>
-                        </td>
-
-                        <td>
-                            Proteinas
-                        </td>
-
-                        <td>
-
-                            <div style="display: flex; gap: 0.7em; font-size: 1.25em;">
-                                <!-- display e gap temporarios -->
-                                <button style="background-color: transparent; border: none; color: rgb(24, 162, 22);"><i
-                                        class="bi bi-plus-circle"></i></button>
-                                <!-- background, border e color temporarios -->
-                                <button style="background-color: transparent; border: none; color: rgb(184, 0, 0);"><i
-                                        class="bi bi-x-circle"></i></button>
-                                <!-- background, border e color temporarios -->
-                            </div>
-
-                        </td>
-                    </tr>
-            </table>
-        </div>
-
+      <span (click)="enviarPara('/visualizar-ata')" class="span-arp"><b>ARP-XX-XXXX</b></span>
     </div>
 
-    <!-- Modal -->
-    <div #myModal class="modal fade" id="entregaModal" tabindex="-1" aria-labelledby="entregaModalLabel"
-        aria-hidden="true">
+    <div class="info-fornecedor">
+      <div>
+        <h5><b>Razão Social:</b> Nome do Fornecedor 1</h5>
+        <h5><b>CNPJ:</b> XX.XXX.XXX/XXXX-XX</h5>
+        <div class="d-flex gap-1">
+          <h5><b>Telefone: (XX) XXXXX-XXXX</b></h5>
+          |
+          <h5><b>Email: XXXXXX@gmail.com</b></h5>
+        </div>
+      </div>
 
-        <div class="modal-dialog modal-dialog-centered">
-
-            <div class="modal-content">
-
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="entregaModalLabel">
-                        <i class="bi bi-truck"></i> SOLICITAR ENTREGA
-                    </h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                
-                <div class="modal-body">
-                    <form action="">
-
-                        <!-- Formulario para solicitar entregas -->
-
-                        <div style="display: flex; flex-direction: column;">
-                            <!-- display, flex-direction e gap temporarios -->
-                            <label for="alimento1" style="margin: 0;">
-                                <span>Frango </span>
-                                <span style="font-size: 0.7em;">(KG)</span>
-                            </label>
-                            <input type="number" id="alimento1" name="alimento1" min="0" max="500"
-                                placeholder="Quantidade a ser entregue (KG)" style="margin: 0;">
-                        </div>
-
-                        <div style="display: flex; flex-direction: column;">
-                            <!-- display, flex-direction e gap temporarios -->
-                            <label for="alimento2" style="margin: 0;">
-                                <span>Carne Bovina </span>
-                                <span style="font-size: 0.7em;">(KG)</span>
-                            </label>
-                            <input type="number" id="alimento2" name="alimento2" min="0" max="500"
-                                placeholder="Quantidade a ser entregue (KG)" style="margin: 0;">
-                        </div>
-
-                    </form>
-                </div>
-
-                <div class="modal-footer" style="justify-content: center;"> <!-- centralizando o botão do modal -->
-                    <button type="button">
-                        <i class="bi bi-check-lg"></i> Confirmar Pedido
-                    </button>
-                </div>
-
-            </div>
-
+      <div class="d-flex gap-5 cards-valor">
+        <div class="valor-utilizado">
+          <h4>Valor Utilizado</h4>
+          <p>R$ 5.100,00</p>
         </div>
 
+        <div class="valor-empenhado">
+          <h4>Valor Empenhado</h4>
+          <p>R$ 40.100,00</p>
+        </div>
+      </div>
     </div>
 
+    <div class="container-tabela-alimentos">
+      <div class="d-flex justify-content-between ">
+        <h3>Tabela de Itens</h3>
+        <button #myInput data-bs-toggle="modal" class="btn-solicitar-entregas" data-bs-target="#entregaModal">
+          <i class="bi bi-truck"></i> SOLICITAR ENTREGA
+        </button>
+      </div>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Sel.</th>
+            <th scope="col">Item</th>
+
+            <th scope="col">Valor Unitario</th>
+            <th scope="col">
+              <div>
+                <p class="m-0">Quantidade em Ata</p>
+                <span style="font-size: small;">(Disponivel)</span>
+              </div>
+            </th>
+            <th scope="col" >Quantidade Entregue</th>
+
+            <th scope="col">Categoria</th>
+
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Exemplo 1 -->
+          <tr>
+            <td>
+              <input type="checkbox" name="" id="">
+            </td>
+            <td>
+              <span>Frango </span>
+              <span>(KG)</span>
+            </td>
+
+            <td>
+              <span>R$ 20,00</span>
+            </td>
+
+            <td>
+              <span>500 </span>
+              <span>KG</span>
+            </td>
+
+            <td>
+              <span>100 </span>
+              <span>KG</span>
+            </td>
+
+            <td>Proteinas</td>
+
+            <td>
+              <div class="botoes-acoes">
+                <button><i class="bi bi-plus-circle reforcar"></i></button>
+
+                <button><i class="bi bi-x-circle anular"></i></button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Exemplo 2 -->
+          <tr>
+            <td>
+              <input type="checkbox" name="" id="">
+            </td>
+
+            <td>
+              <span>Carne Bovina </span>
+              <span>(KG)</span>
+            </td>
+
+            <td>
+              <span>R$ 30,00</span>
+            </td>
+
+            <td>
+              <span>800 </span>
+              <span>KG</span>
+            </td>
+
+            <td>
+              <span>300 </span>
+              <span>KG</span>
+            </td>
+
+            <td>Proteinas</td>
+
+            <td>
+              <div class="botoes-acoes">
+                <button><i class="bi bi-plus-circle reforcar"></i></button>
+                <button><i class="bi bi-x-circle anular" ></i></button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div
+    #myModal
+    class="modal fade"
+    id="entregaModal"
+    tabindex="-1"
+    aria-labelledby="entregaModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="entregaModalLabel">
+            <i class="bi bi-truck"></i> SOLICITAR ENTREGA
+          </h1>
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+
+        <div class="modal-body">
+          <form action="">
+            <!-- Formulario para solicitar entregas -->
+
+            <div class="d-flex flex-column">
+              <label for="alimento1">
+                <span>Frango </span>
+                <span style="font-size: 0.7em">(KG)</span>
+              </label>
+              <input
+                type="number"
+                id="alimento1"
+                name="alimento1"
+                min="0"
+                max="500"
+                placeholder="Quantidade a ser entregue (KG)"
+              />
+            </div>
+
+            <div class="d-flex flex-column">
+              <!-- display, flex-direction e gap temporarios -->
+              <label for="alimento2" style="margin: 0">
+                <span>Carne Bovina </span>
+                <span>(KG)</span>
+              </label>
+              <input
+                type="number"
+                id="alimento2"
+                name="alimento2"
+                min="0"
+                max="500"
+                placeholder="Quantidade a ser entregue (KG)"
+              />
+            </div>
+          </form>
+          <small>Valor Total: 0,00</small>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button"><i class="bi bi-check-lg"></i> Confirmar Pedido</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>

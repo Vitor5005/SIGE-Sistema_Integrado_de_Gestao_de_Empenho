@@ -5,9 +5,9 @@
             ARP’s</button>
     </div>
 
-    <div>
+    <div class="container-visualizar-ata">
 
-        <div >
+        <div class="cabecalho-arp">
             <div>
                 <span >
                     <i class="bi bi-file-earmark-text"></i> ARP-XXX-XXXX
@@ -18,30 +18,30 @@
 
         <hr>
 
-        <div >
+        <div class="container-cards">
 
-            <div  (click)="enviarPara('/visualizar-licitacao')">
+            <div class="card-licitacao cards" (click)="enviarPara('/visualizar-licitacao')">
                 <h5 >Licitação</h5>
                 <span >
                     <i class="bi bi-link-45deg"></i> XX-XXX-XXX
                 </span>
             </div>
 
-            <div>
+            <div class="card-validade cards">
                 <h5>Validade</h5>
-                <span>12 Meses</span>
-                <div >
+                <span class="meses">12 Meses</span>
+                <div class="span-validade">
                     <span >expirado</span>
                 </div>
             </div>
 
-            <div >
+            <div class="card-valor-total cards">
                 <h5 >Valor Total</h5>
                 <span >R$ 50.000,00</span>
 
             </div>
 
-            <div >
+            <div class="card-utilizado cards">
                 <h5 >Utilizado</h5>
                 <span >
 
@@ -53,29 +53,26 @@
 
         <hr>
 
-        <div >
+        <div class="informacoes">
             <div>
                 <h5>INFORMAÇÕES DO FORNECEDOR</h5>
-                <p>Razão Social: Nome Fornecedor 1</p>
-                <p>Nome Fantasia: Nome Fantasia Fornecedor 1</p>
-                <p>CNPJ: XX.XXX.XXX/XXXX-XX</p>
-                <p>Telefone: (DD)9 XXXXX-XXXX</p>
+                <p><b>Razão Social:</b> Nome Fornecedor 1</p>
+                <p><b>Nome Fantasia:</b> Nome Fantasia Fornecedor 1</p>
+                <p><b>CNPJ:</b> XX.XXX.XXX/XXXX-XX</p>
+                <p><b>Telefone:</b> (DD)9 XXXXX-XXXX</p>
             </div>
 
-            <div  (click)="enviarPara('/visualizar-empenho')">
-
-
+            <div class="card-empenho" (click)="enviarPara('/visualizar-empenho')">
                 <h4 >
                     Empenho
                 </h4>
-
                 <span >
                     <i class="bi bi-link-45deg" ></i> EMP-XXXX-XXX
                 </span>
             </div>
         </div>
 
-        <div>
+        <div class="container-tabela">
             <h4>Generos Alimenticios</h4>
             <table class="table">
                 <thead>

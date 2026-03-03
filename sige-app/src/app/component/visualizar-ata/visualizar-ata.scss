@@ -18,4 +18,123 @@ body{
       }
     }
   }
+  .container-visualizar-ata{
+    width: 80vw;
+    box-shadow: var(--box-shadow);
+    padding: 30px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    .cabecalho-arp{
+      display: flex;
+      align-items: center;
+      width: 90%;
+      gap: 20px;
+      justify-content: space-between;
+      i{
+        font-size: 40px;
+        color: var(--font-cinza2);
+      }
+      span{
+        font-size: 24px;
+        font-weight: bold;
+      }
+      button{
+        width: 200px;
+        height: 50px;
+        border: none;
+        box-shadow: var(--box-shadow);
+        background-color: transparent;
+        border-radius: 20px;
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        align-items: center;
+        i{
+          font-size: 20px;
+          color: var(--font-cinza2);
+        }
+      }
+    }
+    hr{
+      color: var(--hr-color);
+      width: 90%;
+    }
+    .container-cards{
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
+      width: 90%;
+      .cards{
+        background-color: antiquewhite;
+        height: 100px;
+        width: 200px;
+        padding: 10px 20px;
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        span{
+          padding-left: 10px;
+        }
+      }
+      .card-licitacao{
+        background-color: #DAE6FF;
+        color: var(--azul-claro);
+      }
+      .card-validade{
+        background-color: transparent;
+        box-shadow: var(--box-shadow);
+        position: relative;
+        overflow: hidden;
+        .meses{
+          margin-bottom: 10px;
+        }
+        .span-validade{
+          width: 100%;
+          background-color: #FFA8A8;
+          position: absolute;
+          bottom: 0;
+          left: 0;
+        }
+      }
+      .card-valor-total{
+        background-color: #c7fdf1;
+        color: #0A3F0B;
+      }
+      .card-utilizado{
+        background-color: #ffc6c8;
+        color: #481213;
+      }
+    }
+    .informacoes{
+      display: flex;
+      width: 90%;
+      justify-content: space-between;
+      .card-empenho{
+        box-shadow: var(--box-shadow);
+        padding: 30px;
+        background-color: var(--azul-escuro);
+        color: var(--branco);
+        width: 20%;
+        border-radius: 20px;
+        span{
+          color: #7B8CDF;
+        }
+      }
+      p{
+        margin-bottom: 0;
+      }
+    }
+    .container-tabela{
+      width: 90%;
+      margin-top: 30px;
+      h4{
+        margin: 0;
+      }
+    }
+  }
+
 }
