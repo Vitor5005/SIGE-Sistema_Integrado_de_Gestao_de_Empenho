@@ -12,6 +12,20 @@ from licitacao.models import Licitacao, Ata, ItemAta
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
 from entrega.models import OrdemEntrega, ItemOrdem
 
+MAX_VALOR_MONETARIO = Decimal("1000000.00")
+QTD_LICITADA_MIN = 20
+QTD_LICITADA_MAX = 120
+PCT_EMPENHO_MIN = 5
+PCT_EMPENHO_MAX = 30
+PCT_ENTREGA_CONCLUIDA_MIN = 85
+PCT_ENTREGA_CONCLUIDA_MAX = 100
+PCT_ENTREGA_ESPERA_MIN = 0
+PCT_ENTREGA_ESPERA_MAX = 60
+
+
+def limitar_valor_monetario(valor: Decimal) -> Decimal:
+    return min(valor.quantize(Decimal("0.01")), MAX_VALOR_MONETARIO)
+
 # Dados realistas para o contexto de um restaurante universitário
 NOMES_FORNECEDORES = [
     {"razao": "ALIMENTOS NATURAIS LTDA", "fantasia": "Alimentos Naturais"},
@@ -144,7 +158,7 @@ def seed_itens_ata(atas=None, itens_genericos=None):
         itens_sorteados = random.sample(itens_genericos, k=min(num_itens, len(itens_genericos)))
         
         for item_generico in itens_sorteados:
-            qtd = Decimal(random.randint(100, 500))
+            qtd = Decimal(random.randint(QTD_LICITADA_MIN, QTD_LICITADA_MAX))
             valor_uni = Decimal(random.randint(10, 100)) + Decimal(random.randint(0, 99)) / 100
             
             item_ata = ItemAta.objects.create(
@@ -158,7 +172,7 @@ def seed_itens_ata(atas=None, itens_genericos=None):
             total_acumulado += (qtd * valor_uni)
         
         # ATUALIZAÇÃO CRUCIAL: O saldo da ata é a soma dos itens
-        ata.ata_saldo_total = total_acumulado
+        ata.ata_saldo_total = limitar_valor_monetario(total_acumulado)
         ata.save()
 
     return itens_ata_criados
@@ -190,7 +204,7 @@ def seed_itens_empenho(empenhos=None, itens_ata=None):
         # Empenhamos alguns itens daquela Ata
         for item_ata in random.sample(list(itens_da_ata), k=random.randint(1, len(itens_da_ata))):
             # Quantidade empenhada nunca maior que a licitada
-            qtd_empenhada = item_ata.quantidade_licitada * Decimal(random.randint(10, 50)) / Decimal(100)
+            qtd_empenhada = item_ata.quantidade_licitada * Decimal(random.randint(PCT_EMPENHO_MIN, PCT_EMPENHO_MAX)) / Decimal(100)
             
             item_empenho = ItemEmpenho.objects.create(
                 empenho=empenho,
@@ -201,7 +215,7 @@ def seed_itens_empenho(empenhos=None, itens_ata=None):
             valor_empenhado_total += (qtd_empenhada * item_ata.valor_unitario)
             
         # Atualiza o valor total do empenho com a soma real
-        empenho.valor_total = valor_empenhado_total.quantize(Decimal("0.01"))
+        empenho.valor_total = limitar_valor_monetario(valor_empenhado_total)
 
         # Regra de negócio: saldo utilizado não pode ultrapassar
         # o somatório de (valor_unitario * quantidade_atual) dos itens empenhados.
@@ -214,7 +228,7 @@ def seed_itens_empenho(empenhos=None, itens_ata=None):
         else:
             percentual_utilizado = Decimal(random.randint(1, 95)) / Decimal(100)
             valor_utilizado = (limite_utilizavel * percentual_utilizado).quantize(Decimal("0.01"))
-            empenho.saldo_utilizado = min(valor_utilizado, limite_utilizavel)
+            empenho.saldo_utilizado = min(limitar_valor_monetario(valor_utilizado), limite_utilizavel)
 
         empenho.save()
 
@@ -249,7 +263,7 @@ def seed_operacoes_item(itens_empenho=None):
             operacao = OperacaoItem.objects.create(
                 item_empenho=item_empenho,
                 tipo=tipo,
-                valor=valor,
+                valor=limitar_valor_monetario(valor),
                 data=datetime.now().date() - timedelta(days=random.randint(0, 60))
             )
             operacoes.append(operacao)
@@ -283,7 +297,9 @@ def seed_ordens_entrega(empenhos=None):
                 codigo=f"OE-2026-{10000 + i*2 + j}",
                 status=status,
                 data_entrega=data_entrega,
-                valor_total_executado=empenho.valor_total * Decimal(random.randint(50, 100)) / Decimal(100)
+                valor_total_executado=limitar_valor_monetario(
+                    empenho.valor_total * Decimal(random.randint(50, 100)) / Decimal(100)
+                )
             )
             ordens.append(ordem)
     return ordens
@@ -305,12 +321,12 @@ def seed_itens_ordem(ordens=None, itens_empenho=None):
         for item_empenho in itens_sorteados:
             quantidade_solicitada = item_empenho.quantidade_atual
             
-            # Se ordem está concluída, deve ter entregado pelo menos 80%
+            # Se ordem está concluída, deve ter entregado pelo menos 85%
             if ordem.status == 'con':
-                taxa_entrega = Decimal(random.randint(80, 100)) / Decimal(100)
+                taxa_entrega = Decimal(random.randint(PCT_ENTREGA_CONCLUIDA_MIN, PCT_ENTREGA_CONCLUIDA_MAX)) / Decimal(100)
             else:
-                # Se em espera, pode ter entregado 0 a 100%
-                taxa_entrega = Decimal(random.randint(0, 100)) / Decimal(100)
+                # Se em espera, pode ter entregado de 0% a 60%
+                taxa_entrega = Decimal(random.randint(PCT_ENTREGA_ESPERA_MIN, PCT_ENTREGA_ESPERA_MAX)) / Decimal(100)
             
             quantidade_entregue = quantidade_solicitada * taxa_entrega
             observacao = None
