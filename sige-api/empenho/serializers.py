@@ -4,15 +4,22 @@ from licitacao.serializers import AtaSerializer
 
 class EmpenhoSerializer(serializers.ModelSerializer):
     ata = AtaSerializer()
+    quantidade_itens = serializers.SerializerMethodField()
+    
     class Meta:
         model = Empenho
         fields = '__all__'
+        
+    def get_quantidade_itens(self, instance):
+        return ItemEmpenho.objects.filter(empenho=instance).count()
 
 class ItemEmpenhoSerializer(serializers.ModelSerializer):
     empenho = EmpenhoSerializer()
+    
     class Meta:
         model = ItemEmpenho
         fields = '__all__'
+    
 
 class OperacaoItemSerializer(serializers.ModelSerializer):
     item_empenho = ItemEmpenhoSerializer()
@@ -24,3 +31,4 @@ class ValorEmpenhoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empenho
         fields = ['id', 'codigo','valor_total', 'saldo_utilizado']
+    
