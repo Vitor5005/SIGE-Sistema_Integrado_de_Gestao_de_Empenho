@@ -10,13 +10,12 @@
             <tr>
                 <th scope="col">Identificação</th>
                 <th scope="col">Fornecedor</th>
-                <th scope="col">Gêneros Alimenticios</th>
                 <th scope="col">Valor Utilizado</th>
                 <th scope="col">Valor Empenhado</th>
             </tr>
         </thead>
         <tbody>
-            
+
             @for (item of empenhos; track item.id) {
                 <!-- Exemplo 1 -->
                 <tr style="cursor: pointer;" (click)="enviarPara('visualizar-empenho')">
@@ -26,9 +25,6 @@
                     </td>
                     <td>
                         <span>{{ item.ata.fornecedor.nome_fantasia }}</span>
-                    </td>
-                    <td>
-                        <span> {{ item.quantidade_itens}} </span>
                     </td>
                     <td>
                         <span> {{ item.saldo_utilizado }} </span>

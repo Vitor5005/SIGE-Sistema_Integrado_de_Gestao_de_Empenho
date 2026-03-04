@@ -63,7 +63,12 @@ body{
           color: var(--font-cinza);
         }
         p{
+          width: 100%;
           font-weight: bold;
+          overflow: auto;
+          max-height: 200px;
+          overflow-wrap: break-word;
+          word-break: break-all;
         }
       }
       .validade-card{
@@ -78,7 +83,7 @@ body{
         box-shadow: var(--box-shadow);
         padding: 10px;
         border-radius: 10px;
-        height: auto;
+        height: 90px;
       }
         .descricao-card{
         display: flex;
