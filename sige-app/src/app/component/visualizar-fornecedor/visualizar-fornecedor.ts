@@ -1,5 +1,7 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { FornecedorService } from '../../service/fornecedor.service';
+import { Fornecedor } from '../../model/fornecedor';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
@@ -11,6 +13,16 @@ export class VisualizarFornecedor {
 
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild("myInput") input!: ElementRef;
+
+  constructor(
+    private fornecedorService: FornecedorService
+  ) {}
+
+  fornecedor = <Fornecedor>{};
+
+  ngOnInit(){
+
+  }
 
   ngAfterViewInit() {
 

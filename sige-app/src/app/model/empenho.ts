@@ -7,5 +7,6 @@ export type Empenho = {
     ata: Ata;
     valor_total: number;
     saldo_utilizado: number;
+    quantidade_itens: number;
 
 }

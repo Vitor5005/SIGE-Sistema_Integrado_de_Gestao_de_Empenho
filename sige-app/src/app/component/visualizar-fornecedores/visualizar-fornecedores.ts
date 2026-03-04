@@ -7,7 +7,7 @@ import { CommonModule, JsonPipe } from '@angular/common';
 
 @Component({
   selector: 'app-visualizar-fornecedores',
-  imports: [BarraPesquisa, JsonPipe, CommonModule],
+  imports: [BarraPesquisa, CommonModule],
   templateUrl: './visualizar-fornecedores.html',
   styleUrl: './visualizar-fornecedores.scss',
 })
@@ -26,8 +26,12 @@ export class VisualizarFornecedores {
 
   }
 
-  enviarPara(rota: string) {
-    this.router.navigate([rota]);
+  enviarPara(rota: string, id?: number) {
+    if (id) {
+      this.router.navigate([rota], { queryParams: { id } });
+    } else {
+      this.router.navigate([rota]);
+    }
   }
 
   get(termobusca?: string): void {

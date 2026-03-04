@@ -17,7 +17,7 @@
         </thead>
         <tbody>
             @for (item of fornecedores; track item.id) {
-            <tr (click)="enviarPara('/visualizar-fornecedor')" style="cursor: pointer;">
+            <tr (click)="enviarPara('/visualizar-fornecedor', item.id)" style="cursor: pointer;">
                 <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
                 <td>
                     <h5>{{ item.nome_fantasia }}</h5>
