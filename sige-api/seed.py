@@ -1,7 +1,7 @@
 import os
 import random
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sige_api.settings')
 import django
@@ -22,9 +22,42 @@ PCT_ENTREGA_CONCLUIDA_MAX = 100
 PCT_ENTREGA_ESPERA_MIN = 0
 PCT_ENTREGA_ESPERA_MAX = 60
 
+# Unidades que permitem valores decimais (KG, L)
+# Outras unidades: duzia, cento, un, etc devem ser inteiras
+UNIDADES_DECIMAIS = {"KG", "L", "G", "mL"}
+
 
 def limitar_valor_monetario(valor: Decimal) -> Decimal:
     return min(valor.quantize(Decimal("0.01")), MAX_VALOR_MONETARIO)
+
+
+def arredondar_quantidade_por_unidade(valor: Decimal, unidade: str, permitir_zero: bool = True) -> Decimal:
+    """
+    Arredonda quantidade baseado na unidade de medida:
+    - KG, L, G, mL: permite 2 casas decimais
+    - Outras (duzia, cento, un): apenas inteiros
+    """
+    if unidade in UNIDADES_DECIMAIS:
+        quantidade = valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        if not permitir_zero and quantidade == Decimal("0.00") and valor > Decimal("0"):
+            return Decimal("0.01")
+        return quantidade
+
+    quantidade = valor.to_integral_value(rounding=ROUND_HALF_UP)
+    if not permitir_zero and quantidade == Decimal("0") and valor > Decimal("0"):
+        return Decimal("1")
+    return quantidade
+
+
+def gerar_quantidade_licitada_por_unidade(unidade: str) -> Decimal:
+    """
+    Gera quantidade licitada baseada na unidade:
+    - KG, L, G, mL: valores decimais (ex: 25.50 KG)
+    - Outras (duzia, cento, un): apenas inteiros (ex: 30 dúzias)
+    """
+    if unidade in UNIDADES_DECIMAIS:
+        return Decimal(random.randint(QTD_LICITADA_MIN * 100, QTD_LICITADA_MAX * 100)) / Decimal(100)
+    return Decimal(random.randint(QTD_LICITADA_MIN, QTD_LICITADA_MAX))
 
 # Dados realistas para o contexto de um restaurante universitário
 NOMES_FORNECEDORES = [
@@ -150,6 +183,10 @@ def seed_atas(licitacoes=None, fornecedores=None):
     return atas
 
 def seed_itens_ata(atas=None, itens_genericos=None):
+    """
+    Cria ItemAta respeitando unidades de medida e atualiza Ata.ata_saldo_total
+    CRUCIAL: ata_saldo_total = Σ(quantidade_licitada × valor_unitario) de todos ItemAta
+    """
     marcas = ["Premium", "Padrão", "Integral", "Orgânico"]
     itens_ata_criados = []
     for ata in atas:
@@ -158,7 +195,8 @@ def seed_itens_ata(atas=None, itens_genericos=None):
         itens_sorteados = random.sample(itens_genericos, k=min(num_itens, len(itens_genericos)))
         
         for item_generico in itens_sorteados:
-            qtd = Decimal(random.randint(QTD_LICITADA_MIN, QTD_LICITADA_MAX))
+            # CORRETO: usar função que respeita unidades decimais (KG, L) vs inteiras (duzia, cento, un)
+            qtd = gerar_quantidade_licitada_por_unidade(item_generico.unidade_medida)
             valor_uni = Decimal(random.randint(10, 100)) + Decimal(random.randint(0, 99)) / 100
             
             item_ata = ItemAta.objects.create(
@@ -169,9 +207,10 @@ def seed_itens_ata(atas=None, itens_genericos=None):
                 valor_unitario=valor_uni
             )
             itens_ata_criados.append(item_ata)
+            # Cascata para cima: ItemAta.valor × qtd → Ata.ata_saldo_total
             total_acumulado += (qtd * valor_uni)
         
-        # ATUALIZAÇÃO CRUCIAL: O saldo da ata é a soma dos itens
+        # ATUALIZAÇÃO CRUCIAL: ata_saldo_total = Σ(quantidade_licitada × valor_unitario)
         ata.ata_saldo_total = limitar_valor_monetario(total_acumulado)
         ata.save()
 
@@ -191,8 +230,13 @@ def seed_empenhos(atas=None):
     return empenhos
 
 def seed_itens_empenho(empenhos=None, itens_ata=None):
+    """
+    Cria ItemEmpenho respeitando:
+    - quantidade_atual <= quantidade_licitada (do ItemAta)
+    - Empenho.valor_total = Σ(quantidade_atual × valor_unitario)
+    - saldo_utilizado inicializado em 0 (será recalculado pelas entregas reais)
+    """
     itens_empenho_criados = []
-    empenhos_sem_uso = []
 
     for empenho in empenhos:
         itens_da_ata = ItemAta.objects.filter(ata=empenho.ata)
@@ -203,8 +247,16 @@ def seed_itens_empenho(empenhos=None, itens_ata=None):
         
         # Empenhamos alguns itens daquela Ata
         for item_ata in random.sample(list(itens_da_ata), k=random.randint(1, len(itens_da_ata))):
-            # Quantidade empenhada nunca maior que a licitada
-            qtd_empenhada = item_ata.quantidade_licitada * Decimal(random.randint(PCT_EMPENHO_MIN, PCT_EMPENHO_MAX)) / Decimal(100)
+            # Percentual do que foi licitado
+            qtd_empenhada_bruta = item_ata.quantidade_licitada * Decimal(random.randint(PCT_EMPENHO_MIN, PCT_EMPENHO_MAX)) / Decimal(100)
+            # Arredondar por unidade
+            qtd_empenhada = arredondar_quantidade_por_unidade(
+                qtd_empenhada_bruta,
+                item_ata.item_generico.unidade_medida,
+                permitir_zero=False
+            )
+            # VALIDAÇÃO: quantidade_atual NUNCA pode ser > quantidade_licitada
+            qtd_empenhada = min(qtd_empenhada, item_ata.quantidade_licitada)
             
             item_empenho = ItemEmpenho.objects.create(
                 empenho=empenho,
@@ -212,31 +264,16 @@ def seed_itens_empenho(empenhos=None, itens_ata=None):
                 quantidade_atual=qtd_empenhada
             )
             itens_empenho_criados.append(item_empenho)
+            # Cascata para cima: ItemEmpenho → Empenho.valor_total
             valor_empenhado_total += (qtd_empenhada * item_ata.valor_unitario)
             
-        # Atualiza o valor total do empenho com a soma real
+        # CRUCIAL: Empenho.valor_total = Σ(quantidade_atual × valor_unitario) de todos ItemEmpenho
         empenho.valor_total = limitar_valor_monetario(valor_empenhado_total)
-
-        # Regra de negócio: saldo utilizado não pode ultrapassar
-        # o somatório de (valor_unitario * quantidade_atual) dos itens empenhados.
-        limite_utilizavel = empenho.valor_total
-
-        # Parte dos empenhos fica sem utilização para cenário realista
-        if random.random() < 0.35:
-            empenho.saldo_utilizado = Decimal("0.00")
-            empenhos_sem_uso.append(empenho)
-        else:
-            percentual_utilizado = Decimal(random.randint(1, 95)) / Decimal(100)
-            valor_utilizado = (limite_utilizavel * percentual_utilizado).quantize(Decimal("0.01"))
-            empenho.saldo_utilizado = min(limitar_valor_monetario(valor_utilizado), limite_utilizavel)
-
+        
+        # saldo_utilizado começa em 0 e será recalculado pelas entregas reais (ItemOrdem)
+        # na função recalcular_todos_valores() ao final
+        empenho.saldo_utilizado = Decimal("0.00")
         empenho.save()
-
-    # Garante ao menos um empenho não utilizado (quando houver empenhos)
-    if empenhos and not empenhos_sem_uso:
-        empenho_sorteado = random.choice(empenhos)
-        empenho_sorteado.saldo_utilizado = Decimal("0.00")
-        empenho_sorteado.save(update_fields=["saldo_utilizado"])
 
     return itens_empenho_criados
 
@@ -297,19 +334,22 @@ def seed_ordens_entrega(empenhos=None):
                 codigo=f"OE-2026-{10000 + i*2 + j}",
                 status=status,
                 data_entrega=data_entrega,
-                valor_total_executado=limitar_valor_monetario(
-                    empenho.valor_total * Decimal(random.randint(50, 100)) / Decimal(100)
-                )
+                valor_total_executado=Decimal("0.00")  # Será recalculado pelos ItemOrdem
             )
             ordens.append(ordem)
     return ordens
 
 def seed_itens_ordem(ordens=None, itens_empenho=None):
     """
-    Cria itens de ordem com validações:
-    - quantidade_entregue <= quantidade_solicitada
-    - Se status da ordem é 'con', quantidade_entregue > 0
-    - Se status é 'esp', quantidade_entregue pode ser 0
+    Cria ItemOrdem com validações de cascata:
+    - quantidade_solicitada = quantidade_atual do ItemEmpenho (o que foi empenhado)
+    - VALIDAÇÃO: quantidade_entregue <= quantidade_solicitada (NUNCA entregar mais que solicitou/empenhou)
+    - Se status='con' (concluída): entregou pelo menos 85%
+    - Se status='esp' (espera): pode entregar de 0% a 60%
+    
+    Cascata para CIMA:
+    - ItemOrdem.quantidade_entregue afeta Empenho.saldo_utilizado (na recalcular_todos_valores)
+    - ItemOrdem também afeta OrdemEntrega.valor_total_executado
     """
     itens_ordem = []
     
@@ -319,7 +359,9 @@ def seed_itens_ordem(ordens=None, itens_empenho=None):
         itens_sorteados = random.sample(itens_empenho, k=num_itens)
         
         for item_empenho in itens_sorteados:
+            # CASCATA: quantidade_solicitada = quantidade_atual (do que foi empenhado)
             quantidade_solicitada = item_empenho.quantidade_atual
+            unidade = item_empenho.item_ata.item_generico.unidade_medida
             
             # Se ordem está concluída, deve ter entregado pelo menos 85%
             if ordem.status == 'con':
@@ -328,9 +370,21 @@ def seed_itens_ordem(ordens=None, itens_empenho=None):
                 # Se em espera, pode ter entregado de 0% a 60%
                 taxa_entrega = Decimal(random.randint(PCT_ENTREGA_ESPERA_MIN, PCT_ENTREGA_ESPERA_MAX)) / Decimal(100)
             
-            quantidade_entregue = quantidade_solicitada * taxa_entrega
-            observacao = None
+            quantidade_entregue_bruta = quantidade_solicitada * taxa_entrega
+            quantidade_entregue = arredondar_quantidade_por_unidade(
+                quantidade_entregue_bruta,
+                unidade,
+                permitir_zero=(ordem.status != 'con')
+            )
+            # CASCATA: quantidade_entregue NUNCA pode ser > quantidade_solicitada
+            quantidade_entregue = min(quantidade_entregue, quantidade_solicitada)
             
+            # Força pelo menos 0.01/1 para ordens concluídas
+            if ordem.status == 'con' and quantidade_entregue <= Decimal("0"):
+                quantidade_entregue = Decimal("0.01") if unidade in UNIDADES_DECIMAIS else Decimal("1")
+                quantidade_entregue = min(quantidade_entregue, quantidade_solicitada)
+            
+            observacao = None
             # Se não entregou tudo, adiciona observação
             if quantidade_entregue < quantidade_solicitada:
                 observacao = "Entrega parcial pendente"
@@ -338,12 +392,89 @@ def seed_itens_ordem(ordens=None, itens_empenho=None):
             item_ordem = ItemOrdem.objects.create(
                 ordem_entrega=ordem,
                 item_empenho=item_empenho,
-                quantidade_solicitada=quantidade_solicitada,
-                quantidade_entregue=quantidade_entregue,
+                quantidade_solicitada=quantidade_solicitada,  # = quantidade_atual do ItemEmpenho
+                quantidade_entregue=quantidade_entregue,      # <= quantidade_solicitada
                 observacao=observacao
             )
+            # cascata subindo: ItemOrdem → OrdemEntrega.valor_total_executado e Empenho.saldo_utilizado
             itens_ordem.append(item_ordem)
     return itens_ordem
+
+
+def recalcular_todos_valores():
+    """
+    Recalcula TODOS os valores garantindo total consistência:
+    
+    1. Ata.ata_saldo_total = Σ(quantidade_licitada × valor_unitario) de todos ItemAta
+    2. Empenho.valor_total = Σ(quantidade_atual × valor_unitario) de todos ItemEmpenho
+    3. OrdemEntrega.valor_total_executado = Σ(quantidade_entregue × valor_unitario) dos ItemOrdem daquela ordem
+    4. Empenho.saldo_utilizado = Σ(quantidade_entregue × valor_unitario) de todos ItemOrdem relacionados
+    
+    CASCATA COMPLETA:
+    ItemAta → Ata.ata_saldo_total
+    ItemEmpenho → Empenho.valor_total
+    ItemOrdem → OrdemEntrega.valor_total_executado
+    ItemOrdem → Empenho.saldo_utilizado
+    """
+    print("  → Recalculando todos os valores (garantindo correlação total)...")
+    
+    # 1. Recalcular Ata.ata_saldo_total baseado nos ItemAta
+    print("    ✓ Recalculando ATA saldos (ItemAta → Ata)...")
+    atas = Ata.objects.all()
+    for ata in atas:
+        total_ata = Decimal("0.00")
+        for item_ata in ata.itemata_set.all():
+            # ata_saldo_total = Σ(quantidade_licitada × valor_unitario)
+            valor_item = item_ata.quantidade_licitada * item_ata.valor_unitario
+            total_ata += valor_item
+        
+        ata.ata_saldo_total = limitar_valor_monetario(total_ata)
+        ata.save(update_fields=["ata_saldo_total"])
+    
+    # 2. Recalcular Empenho.valor_total baseado nos ItemEmpenho
+    print("    ✓ Recalculando EMPENHO valores totais (ItemEmpenho → Empenho)...")
+    empenhos = Empenho.objects.all()
+    for empenho in empenhos:
+        total_empenhado = Decimal("0.00")
+        for item_empenho in empenho.itemempenho_set.all():
+            # Empenho.valor_total = Σ(quantidade_atual × valor_unitario do ItemAta)
+            valor_empenhado = item_empenho.quantidade_atual * item_empenho.item_ata.valor_unitario
+            total_empenhado += valor_empenhado
+        
+        empenho.valor_total = limitar_valor_monetario(total_empenhado)
+        empenho.save(update_fields=["valor_total"])
+    
+    # 3. Recalcular OrdemEntrega.valor_total_executado baseado nos ItemOrdem
+    print("    ✓ Recalculando ORDEM valor executado (ItemOrdem → OrdemEntrega)...")
+    ordens = OrdemEntrega.objects.all()
+    for ordem in ordens:
+        total_executado = Decimal("0.00")
+        for item_ordem in ordem.itemordem_set.all():
+            # valor_total_executado = Σ(quantidade_entregue × valor_unitario)
+            valor_item = item_ordem.quantidade_entregue * item_ordem.item_empenho.item_ata.valor_unitario
+            total_executado += valor_item
+        
+        ordem.valor_total_executado = limitar_valor_monetario(total_executado)
+        ordem.save(update_fields=["valor_total_executado"])
+    
+    # 4. Recalcular Empenho.saldo_utilizado baseado nas entregas reais (ItemOrdem)
+    print("    ✓ Recalculando SALDO UTILIZADO (ItemOrdem → Empenho)...")
+    for empenho in empenhos:
+        total_entregue = Decimal("0.00")
+        
+        # Para cada ItemEmpenho deste Empenho, somar o que foi entregue (ItemOrdem)
+        for item_empenho in empenho.itemempenho_set.all():
+            itens_ordem = ItemOrdem.objects.filter(item_empenho=item_empenho)
+            for item_ordem in itens_ordem:
+                # saldo_utilizado = Σ(quantidade_entregue × valor_unitario do ItemAta)
+                total_entregue += (item_ordem.quantidade_entregue * item_empenho.item_ata.valor_unitario)
+        
+        # Saldo utilizado nunca pode ultrapassar o valor_total do empenho
+        empenho.saldo_utilizado = min(
+            limitar_valor_monetario(total_entregue),
+            empenho.valor_total
+        )
+        empenho.save(update_fields=["saldo_utilizado"])
 
 
 def clean_database():
@@ -399,6 +530,9 @@ def seed_all():
     
     print("  → Criando itens de ordem...")
     itens_ordem = seed_itens_ordem(ordens=ordens, itens_empenho=itens_empenho)
+    
+    # CRUCIAL: Recalcular todos os valores para garantir total correlação
+    recalcular_todos_valores()
     
     print("\n✓ Seed concluído com sucesso!")
     print(f"  - {len(enderecos)} endereços criados")
