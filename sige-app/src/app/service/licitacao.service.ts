@@ -30,11 +30,13 @@ export class LicitacaoService implements ICrudService<Licitacao> {
   }
 
   save(item: Licitacao): Observable<Licitacao> {
+    let url = this.apiUrl;
     if (item.id) {
-      return this.http.put<Licitacao>(this.apiUrl, item);
+      url += item.id + '/';
+      return this.http.put<Licitacao>(url, item);
     }
     else {
-      return this.http.post<Licitacao>(this.apiUrl, item);
+      return this.http.post<Licitacao>(url, item);
     }
   }
   delete(id: number): Observable<void> {
