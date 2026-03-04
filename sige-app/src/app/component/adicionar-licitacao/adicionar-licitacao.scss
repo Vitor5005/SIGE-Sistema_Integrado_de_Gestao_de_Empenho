@@ -103,6 +103,9 @@ body {
           font-weight: bold;
         }
       }
+      .vazia{
+        display: none;
+      }
       div.itens-adicionados{
         align-self: center;
         width: 60%;
@@ -135,6 +138,7 @@ body {
             i{
               color: #f86d6d;
               font-size: 20px;
+              cursor: pointer;
             }
           }
         }
