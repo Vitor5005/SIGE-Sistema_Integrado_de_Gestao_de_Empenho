@@ -11,6 +11,11 @@ class FornecedorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fornecedor
         fields = '__all__'
+        
+class FornecedorCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fornecedor
+        fields = '__all__'
 
 class ItemGenericoSerializer(serializers.ModelSerializer):
     class Meta:
