@@ -9,9 +9,9 @@ class EnderecoAdmin(admin.ModelAdmin):
 admin.site.register(Endereco, EnderecoAdmin)
     
 class FornecedorAdmin(admin.ModelAdmin):
-    list_display = ("id", "razao_social", "nome_fantasia", "cnpj", "telefone", "email", "endereco")
-    list_display_links = ("id", "razao_social", "cnpj")
-    search_fields = ("id", "razao_social", "cnpj")
+    list_display = ("id", "nome_fantasia", "cnpj", "telefone", "email", "endereco")
+    list_display_links = ("id", "nome_fantasia", "cnpj")
+    search_fields = ("id", "nome_fantasia", "cnpj")
 
 admin.site.register(Fornecedor, FornecedorAdmin)
 
