@@ -2,10 +2,11 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FornecedorService } from '../../service/fornecedor.service';
 import { Fornecedor } from '../../model/fornecedor';
+import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
-  imports: [RouterLink],
+  imports: [RouterLink,BotaoVoltar],
   templateUrl: './visualizar-fornecedor.html',
   styleUrl: './visualizar-fornecedor.scss',
 })

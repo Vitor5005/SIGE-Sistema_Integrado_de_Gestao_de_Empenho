@@ -1,0 +1,24 @@
+.container-btnVoltar{
+    margin-top: 30px;
+    width: 80vw;
+    background-color: transparent;
+    .btn-voltar{
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      background-color: transparent;
+      border: none;
+      color: var(--font-cinza2);
+      text-decoration: none;
+      cursor: pointer;
+      i{
+        font-size: 30px;
+        cursor: pointer;
+      }
+      &:hover{
+        color: var(--azul-escuro);
+        transition: 0.3s;
+        transform: translateY(-2px);
+      }
+    }
+  }
