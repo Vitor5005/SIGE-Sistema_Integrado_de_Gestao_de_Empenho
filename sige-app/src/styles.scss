@@ -68,9 +68,11 @@ p {
 
     td {
       padding: 10px;
+      width: auto;
     }
 
     p {
+      font-size: 14px;
       font-weight: bold;
       margin-bottom: 0;
     }
@@ -79,7 +81,7 @@ p {
       font-weight: bold;
 
       small {
-        font-weight: normal;
+        font-weight: 500;
         color: var(--font-cinza);
       }
 
@@ -88,11 +90,43 @@ p {
         font-size: 16px;
       }
     }
+    //esconder parte da descrição
+    p.descricao{
+      max-width: 220px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+//Mudança de cor ao passar o cursor na linha + transição fluida
+.tabela tbody tr{
+  transition: background 0.1s ease;
+}
+.tabela tbody tr:hover{
+  background: #c5e4fe;
+}
+
+///impede a quebra da data para outra linha em "CADASTRADO"
+.teste{
+  display: flex;
+  flex-direction: column;
+
+  small {
+    white-space: nowrap;
+    font-size: 10px;
   }
 }
 
-
-
+///Personalização do ícone de edição
+.bi-pencil-square {
+  display: inline-block; 
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.bi-pencil-square:hover{
+  color: #004779;
+  transform: scale(1.2);
+}
 
 //// Efeito de desfoque para o modal
 .modal-backdrop {

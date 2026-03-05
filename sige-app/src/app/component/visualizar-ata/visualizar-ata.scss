@@ -2,22 +2,7 @@ body{
   display: flex;
   flex-direction: column;
   align-items: center;
-  .container-btnVoltar{
-    margin-top: 50px;
-    width: 80vw;
-    .btn-voltar{
-      display: flex;
-      align-items: center;
-      gap: 30px;
-      background-color: transparent;
-      border: none;
-      color: var(--font-cinza2);
-      i{
-        font-size: 30px;
-        cursor: pointer;
-      }
-    }
-  }
+  
   .container-visualizar-ata{
     width: 80vw;
     box-shadow: var(--box-shadow);

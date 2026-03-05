@@ -1,6 +1,6 @@
 from rest_framework import viewsets
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
-from cadastro.serializers import EnderecoSerializer, FornecedorSerializer, ItemGenericoSerializer
+from cadastro.serializers import EnderecoSerializer, FornecedorSerializer, FornecedorCreateSerializer, ItemGenericoSerializer
 
 class EnderecoViewSet(viewsets.ModelViewSet):
     queryset = Endereco.objects.all()
@@ -9,6 +9,14 @@ class EnderecoViewSet(viewsets.ModelViewSet):
 class FornecedorViewSet(viewsets.ModelViewSet):
     queryset = Fornecedor.objects.all()
     serializer_class = FornecedorSerializer
+    
+    def get_serializer_class(self):
+        
+        if self.action in ['create', 'update']:
+            return FornecedorCreateSerializer
+        
+        return FornecedorSerializer
+    
 
 class ItemGenericoViewSet(viewsets.ModelViewSet):
     queryset = ItemGenerico.objects.all()

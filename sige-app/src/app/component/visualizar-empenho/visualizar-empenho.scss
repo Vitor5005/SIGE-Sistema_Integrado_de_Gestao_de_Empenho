@@ -47,6 +47,7 @@ body{
         background-color: #d8d8d8;
         height: 25px;
         font-size: 12px;
+        cursor: pointer;
       }
     }
     .info-fornecedor{
@@ -63,6 +64,10 @@ body{
           justify-content: center;
           padding: 10px;
           border-radius: 20px;
+          p{
+            color: #ee1919;
+            font-weight: 600;
+          }
         }
         .valor-empenhado{
           background-color: #278CEA;
@@ -72,15 +77,24 @@ body{
           justify-content: center;
           padding: 10px;
           border-radius: 20px;
+           p{
+            color: #00ff4c;
+            font-weight: 600;
+          }
         }
       }
     }
     .container-tabela-alimentos{
       width: 90%;
+      h3{
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--font-cinza2);
+      }
       .btn-solicitar-entregas{
         background-color: var(--azul-claro);
         padding: 10px 20px;
-        border-radius: 20px;
+        border-radius: 10px;
         border: none;
         color: #ffffff;
       }
@@ -89,19 +103,51 @@ body{
         gap: 20px;
         button{
           border: none;
+          background-color: transparent;
           i{
             flex-direction: column;
-            background-color: transparent;
-          .reforçar{
-            color:  green($color: #000000);
+          }
+          .reforcar{
+            color: #039e49;
           }
           .anular{
-            background-color: red;
+            color: rgb(252, 0, 0);
           }
-
-        }
       }
     }
   }
 }
+.modal-header{
+  background-color: var(--azul-claro);
+  color: #ffffff;
+  button{
+    color: #ffffff;
+  }
+}
+.modal-body{
+  input{
+    width: 60%;
+    border-radius: 10px;
+    border: none;
+    padding: 5px;
+    box-shadow: var(--box-shadow);
+  }
+  small{
+    color: var(--font-cinza2);
+  }
+}
+.modal-footer{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  button{
+    border: none;
+    border-radius: 20px;
+    background-color: var(--azul-claro);
+    color: #ffffff;
+    width: 90%;
+    padding: 10px;
+  }
+}
+
 }

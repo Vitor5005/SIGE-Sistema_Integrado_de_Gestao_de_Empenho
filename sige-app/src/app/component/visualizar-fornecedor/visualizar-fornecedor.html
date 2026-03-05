@@ -1,235 +1,123 @@
-<body>
+<body class="fornecedor-container">
+  <app-botao-voltar></app-botao-voltar>
 
-    <div>
-        <button routerLink="/visualizar-fornecedores"><i class="bi bi-arrow-left"></i> VISUALIZAR LISTAGEM DE
-            FORNECEDORES</button>
+  <section class="card-fornecedor">
+    <div class="card-header-main">
+      <h1 class="fornecedor-nome">{{ fornecedor.nome_fantasia }}</h1>
     </div>
 
-    <div>
-
-        <div>
-            <h4>Nome do Fornecedor 1</h4>
+    <div class="info-bloco">
+      <div class="faixa-titulo">
+        <h2 class="titulo-secao">INFORMAÇÕES GERAIS</h2>
+      </div>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>CNPJ</label>
+          <span class="dado-valor">{{ fornecedor.cnpj }}</span>
         </div>
-
-        <div>
-
-            <div style="background-color: rgb(4, 140, 255);"> <!-- Cor definida temporariamente -->
-                <h6 style="color: white;">INFORMAÇÕES GERAIS</h6> <!-- Cor definida temporariamente -->
-            </div>
-
-            <div style="display: flex; gap: 10em;">
-                <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
-                <div>
-                    <span>
-                        CNPJ
-                    </span>
-                    <br>
-                    <span>
-                        XX.XXX.XXX/XXXX-XX
-                    </span>
-                </div>
-
-                <div>
-                    <span>
-                        Telefone
-                    </span>
-                    <br>
-                    <span>
-                        (DD) XXXX-XXXX
-                    </span>
-                </div>
-
-                <div>
-                    <span>
-                        E-MAIL
-                    </span>
-                    <br>
-                    <span>
-                        fornecedor@gmail.com
-                    </span>
-
-                </div>
-
-            </div>
-
+        <div class="info-item">
+          <label>TELEFONE</label>
+          <span class="dado-valor">{{ fornecedor.telefone }}</span>
         </div>
-
-        <div>
-
-            <div style="background-color: rgb(4, 140, 255);"> <!-- Cor definida temporariamente -->
-                <h6 style="color: white;">ENDEREÇO E LOCALIZAÇÃO</h6> <!-- Cor definida temporariamente -->
-            </div>
-
-            <div style="display: flex; gap: 10em;">
-
-                <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
-                <div>
-                    <span>
-                        RUA
-                    </span>
-                    <br>
-                    <span>
-                        Rua Exemplo, 123
-                    </span>
-                </div>
-
-                <div>
-                    <span>
-                        BAIRRO
-                    </span>
-                    <br>
-                    <span>
-                        Bairro Exemplo
-                    </span>
-                </div>
-
-                <div>
-                    <span>
-                        Município
-                    </span>
-                    <br>
-                    <span>
-                        Cidade Exemplo
-                    </span>
-                </div>
-
-                <div>
-                    <span>
-                        Estado
-                    </span>
-                    <br>
-                    <span>
-                        Estado Exemplo
-                    </span>
-                </div>
-
-            </div>
-
+        <div class="info-item">
+          <label>E-MAIL</label>
+          <span class="dado-valor">{{ fornecedor.email }}</span>
         </div>
-
-        <div>
-            <button data-bs-toggle="modal" data-bs-target="#fornecedorModal">EDITAR INFORMAÇÔES</button>
-        </div>
-
+      </div>
     </div>
 
-
-    <!-- Modal para edição de informações do fornecedor -->
-
-    <div #myModal class="modal fade" id="fornecedorModal" tabindex="-1" aria-labelledby="fornecedorModalLabel"
-        aria-hidden="true">
-
-        <div class="modal-dialog modal-dialog-centered modal-xl">
-
-            <div class="modal-content">
-
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5">Editar Informações do Fornecedor</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-
-                <div class="modal-body">
-                    <form action="">
-
-                        <div style="display: flex; gap: 1em;">
-                            <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
-                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
-                                <label for="nomeFantasia">NOME FANTASIA:</label>
-                                <input type="text" id="nomeFantasia" name="nomeFantasia">
-                            </div>
-
-                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
-                                <label for="cnpj">CNPJ:</label>
-                                <input type="text" id="cnpj" name="cnpj">
-                            </div>
-                        </div>
-
-                        <div style="display: flex; gap: 1em;">
-                            <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
-                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
-                                <label for="rua">RUA:</label>
-                                <input type="text" id="rua" name="rua">
-                            </div>
-
-                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
-                                <label for="numero">NUMERO:</label>
-                                <input type="text" id="numero" name="numero">
-                            </div>
-                        </div>
-
-                        <div style="display: flex; gap: 1em;">
-                            <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
-                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
-                                <label for="bairro">BAIRRO:</label>
-                                <input type="text" id="bairro" name="bairro">
-                            </div>
-
-                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
-                                <label for="municipio">MUNICIPIO:</label>
-                                <input type="text" id="municipio" name="municipio">
-                            </div>
-
-                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
-                                <label for="estado">ESTADO:</label>
-                                <select type="text" id="estado" name="estado">
-                                    <option value="AC">Acre</option>
-                                    <option value="AL">Alagoas</option>
-                                    <option value="AP">Amapá</option>
-                                    <option value="AM">Amazonas</option>
-                                    <option value="BA">Bahia</option>
-                                    <option value="CE">Ceará</option>
-                                    <option value="DF">Distrito Federal</option>
-                                    <option value="ES">Espírito Santo</option>
-                                    <option value="GO">Goiás</option>
-                                    <option value="MA">Maranhão</option>
-                                    <option value="MT">Mato Grosso</option>
-                                    <option value="MS">Mato Grosso do Sul</option>
-                                    <option value="MG">Minas Gerais</option>
-                                    <option value="PA">Pará</option>
-                                    <option value="PB">Paraíba</option>
-                                    <option value="PR">Paraná</option>
-                                    <option value="PE">Pernambuco</option>
-                                    <option value="PI">Piauí</option>
-                                    <option value="RJ">Rio de Janeiro</option>
-                                    <option value="RN">Rio Grande do Norte</option>
-                                    <option value="RS">Rio Grande do Sul</option>
-                                    <option value="RO">Rondônia</option>
-                                    <option value="RR">Roraima</option>
-                                    <option value="SC">Santa Catarina</option>
-                                    <option value="SP">São Paulo</option>
-                                    <option value="SE">Sergipe</option>
-                                    <option value="TO">Tocantins</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div style="display: flex; gap: 1em;">
-                            <!-- Alinhamento horizontal e espaçamento entre os elementos temporariamente -->
-                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
-                                <label for="telefone">TELEFONE:</label>
-                                <input type="text" id="telefone" name="telefone">
-                            </div>
-
-                            <div style="display: flex; flex-direction: column;"> <!-- display temporario -->
-                                <label for="email">E-MAIL:</label>
-                                <input type="text" id="email" name="email">
-                            </div>
-                        </div>
-
-
-                    </form>
-                </div>
-
-                <div class="modal-footer" style="justify-content: center;"> <!-- centralizando o botão do modal -->
-                    <button type="button">
-                        <i class="bi bi-check-lg"></i> CONFIRMAR ALTERAÇÕES
-                    </button>
-                </div>
-
-            </div>
-
+    <div class="info-bloco">
+      <div class="faixa-titulo">
+        <h2 class="titulo-secao">ENDEREÇO E LOCALIZAÇÃO</h2>
+      </div>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>RUA</label>
+          <span class="dado-valor">{{ fornecedor.endereco.lagradouro }}, {{ fornecedor.endereco.numero }}</span>
         </div>
-
+        <div class="info-item">
+          <label>BAIRRO</label>
+          <span class="dado-valor">{{ fornecedor.endereco.bairro }}</span>
+        </div>
+        <div class="info-item">
+          <label>MUNICÍPIO</label>
+          <span class="dado-valor">{{ fornecedor.endereco.municipio }}</span>
+        </div>
+        <div class="info-item">
+          <label>ESTADO</label>
+          <span class="dado-valor">{{ fornecedor.endereco.estado }}</span>
+        </div>
+      </div>
     </div>
 
+    <div class="footer-acoes">
+      <button class="btn-editar" data-bs-toggle="modal" data-bs-target="#fornecedorModal"
+        (click)="carregar_Fornecedor()">
+        <i class="bi bi-pencil-square"></i> EDITAR INFORMAÇÕES
+      </button>
+    </div>
+  </section>
+
+  <div #myModal class="modal fade" id="fornecedorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content modal-custom">
+        <div class="modal-header-azul">
+          <h2 class="modal-titulo">EDIÇÃO DE FORNECEDOR</h2>
+        </div>
+        <div class="modal-body">
+          <form class="form-fornecedor" #form="ngForm">
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>NOME FANTASIA</label>
+                <input type="text" [(ngModel)]="fornecedor_editar.nome_fantasia" name="nome_fantasia">
+              </div>
+              <div class="form-group flex-1">
+                <label>CNPJ</label>
+                <input type="text" [(ngModel)]="fornecedor_editar.cnpj" name="cnpj">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>RUA</label>
+                <input type="text" [(ngModel)]="endereco_editar.lagradouro" name="logradouro">
+              </div>
+              <div class="form-group flex-1">
+                <label>NÚMERO</label>
+                <input type="text" [(ngModel)]="endereco_editar.numero" name="numero">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>BAIRRO</label>
+                <input type="text" [(ngModel)]="endereco_editar.bairro" name="bairro">
+              </div>
+              <div class="form-group">
+                <label>MUNICÍPIO</label>
+                <input type="text" [(ngModel)]="endereco_editar.municipio" name="municipio">
+              </div>
+              <div class="form-group">
+                <label>ESTADO</label>
+                <input type="text" [(ngModel)]="endereco_editar.estado" name="estado">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>TELEFONE</label>
+                <input type="text" [(ngModel)]="fornecedor_editar.telefone" name="telefone">
+              </div>
+              <div class="form-group flex-2">
+                <label>E-MAIL</label>
+                <input type="email" [(ngModel)]="fornecedor_editar.email" name="email">
+              </div>
+            </div>
+            <div class="form-footer">
+              <button type="submit" class="btn-confirmar" (click)="save()">
+                <i class="bi bi-check-lg"></i> CONFIRMAR ALTERAÇÕES
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>

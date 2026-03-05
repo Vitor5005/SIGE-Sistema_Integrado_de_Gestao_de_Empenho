@@ -10,32 +10,30 @@
             <tr>
                 <th scope="col">Identificação</th>
                 <th scope="col">Fornecedor</th>
-                <th scope="col">Gêneros Alimenticios</th>
                 <th scope="col">Valor Utilizado</th>
                 <th scope="col">Valor Empenhado</th>
             </tr>
         </thead>
         <tbody>
 
-            <!-- Exemplo 1 -->
-            <tr style="cursor: pointer;" (click)="enviarPara('visualizar-empenho')">
-                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                <td>
-                    <span>EMP-XXX-XX</span>
-                </td>
-                <td>
-                    <span>Nome Fornecedor 1</span>
-                </td>
-                <td>
-                    <span>10</span>
-                </td>
-                <td>
-                    <span>R$ 5.100,00</span>
-                </td>
-                <td>
-                    <span>R$ 40.100,00</span>
-                </td>
-            </tr>
+            @for (item of empenhos; track item.id) {
+                <!-- Exemplo 1 -->
+                <tr style="cursor: pointer;" (click)="enviarPara('visualizar-empenho')">
+                    <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
+                    <td>
+                        <span>{{ item.codigo }}</span>
+                    </td>
+                    <td>
+                        <span>{{ item.ata.fornecedor.nome_fantasia }}</span>
+                    </td>
+                    <td>
+                        <span> {{ item.saldo_utilizado }} </span>
+                    </td>
+                    <td>
+                        <span> {{ item.valor_total}} </span>
+                    </td>
+                </tr>
+            }
 
     </table>
 

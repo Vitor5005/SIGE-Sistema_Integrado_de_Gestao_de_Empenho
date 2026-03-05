@@ -10,12 +10,13 @@
     <thead>
       <tr>
         <th scope="col">Identificação</th>
+        <th scope="col">Status</th>
         <th scope="col">Validade</th>
         <th scope="col">Descricao</th>
       </tr>
     </thead>
     <tbody>
-      
+
       @for (item of registro; track item.id) {
         <tr (click)="enviarPara('/visualizar-licitacao', item.id)" style="cursor: pointer;">
           <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
@@ -25,6 +26,8 @@
               <small>cadastrada: {{item.data_abertura}}</small>
             </div>
           </td>
+          <td><span>valido/invalido</span></td>
+          <td></td>
           <td><i class="bi bi-clock"></i> {{item.validade}} Meses </td>
           <td>{{item.descricao}}</td>
         </tr>
@@ -33,6 +36,6 @@
     </tbody>
 
   </table>
-  
+
 
 </body>

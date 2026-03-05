@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ICrudService } from './i-crud-service';
-import { Licitacao } from '../model/licitacao';
+import { Fornecedor } from '../model/fornecedor';
 import { Observable } from 'rxjs';
 import { environment } from '../environments/environment';
 import { HttpClient } from '@angular/common/http';
@@ -8,40 +8,51 @@ import { HttpClient } from '@angular/common/http';
 @Injectable({
   providedIn: 'root',
 })
-export class LicitacaoService implements ICrudService<Licitacao> {
+export class FornecedorService implements ICrudService<Fornecedor> {
 
   constructor(
     private http: HttpClient
   ) { }
 
-  apiUrl = environment.API_URL + '/licitacoes/';
+  apiUrl = environment.API_URL + '/fornecedores/';
 
-  get(termobusca?: string): Observable<Licitacao[]> {
+  get(termobusca?: string): Observable<Fornecedor[]> {
+
     let url = this.apiUrl;
     if (termobusca) {
       url += '?search=' + termobusca;
     }
-    return this.http.get<Licitacao[]>(url);
+    return this.http.get<Fornecedor[]>(url);
+
   }
 
-  getById(id: number): Observable<Licitacao> {
+  getById(id: number): Observable<Fornecedor> {
+
     const url = this.apiUrl + id + '/';
-    return this.http.get<Licitacao>(url);
+    return this.http.get<Fornecedor>(url);
+
   }
 
-  save(item: Licitacao): Observable<Licitacao> {
+  save(item: Fornecedor): Observable<Fornecedor> {
     let url = this.apiUrl;
     if (item.id) {
-      url += item.id + '/';
-      return this.http.put<Licitacao>(url, item);
+      console.log(url);
+      url += item.id + "/"
+      return this.http.patch<Fornecedor>(url, item);
     }
     else {
-      return this.http.post<Licitacao>(url, item);
+      return this.http.post<Fornecedor>(url, item);
     }
+
   }
+
   delete(id: number): Observable<void> {
+
     const url = this.apiUrl + id + '/';
     return this.http.delete<void>(url);
+
   }
+
+
 
 }

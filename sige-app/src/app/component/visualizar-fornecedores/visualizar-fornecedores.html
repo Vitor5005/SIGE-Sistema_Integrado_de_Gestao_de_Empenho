@@ -3,7 +3,6 @@
         <h3>FORNECEDORES</h3>
         <hr>
     </div>
-    <app-barra-pesquisa></app-barra-pesquisa>
     <!-- Tabela da licitações cadastradas no sistema -->
 
     <table class="tabela">
@@ -16,47 +15,17 @@
             </tr>
         </thead>
         <tbody>
-            <tr (click)="enviarPara('/visualizar-fornecedor')" style="cursor: pointer;">
+            @for (item of fornecedores; track item.id) {
+            <tr (click)="enviarPara('/visualizar-fornecedor', item.id)" style="cursor: pointer;">
                 <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
                 <td>
-                    <h5>Nome Fornecedor 1</h5>
+                    <h5>{{ item.nome_fantasia }}</h5>
                 </td>
-                <td>XX.XXX.XXX/XXXX-XX</td>
-                <td>(DD) 9 XXXX-XXXX</td>
-                <td>fornecedor@gmail.com</td>
+                <td>{{ item.cnpj }}</td>
+                <td>{{ item.telefone }}</td>
+                <td>{{ item.email }}</td>
             </tr>
-
-            <tr (click)="enviarPara('/visualizar-fornecedor')" style="cursor: pointer;">
-                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                <td>
-                    <h5>Nome Fornecedor 2</h5>
-                </td>
-                <td>XX.XXX.XXX/XXXX-XX</td>
-                <td>(DD) 9 XXXX-XXXX</td>
-                <td>fornecedor@gmail.com</td>
-            </tr>
-
-            <tr (click)="enviarPara('/visualizar-fornecedor')" style="cursor: pointer;">
-                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                <td>
-                    <h5>Nome Fornecedor 3</h5>
-                </td>
-                <td>XX.XXX.XXX/XXXX-XX</td>
-                <td>(DD) 9 XXXX-XXXX</td>
-                <td>fornecedor@gmail.com</td>
-            </tr>
-
-            <tr (click)="enviarPara('/visualizar-fornecedor')" style="cursor: pointer;">
-                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                <td>
-                    <h5>Nome Fornecedor 4</h5>
-                </td>
-                <td>XX.XXX.XXX/XXXX-XX</td>
-                <td>(DD) 9 XXXX-XXXX</td>
-                <td>fornecedor@gmail.com</td>
-            </tr>
-
+            }
         </tbody>
     </table>
-
 </body>

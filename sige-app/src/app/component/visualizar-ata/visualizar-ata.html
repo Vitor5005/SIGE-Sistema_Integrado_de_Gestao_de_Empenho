@@ -1,9 +1,6 @@
 <body>
 
-    <div class="container-btnVoltar">
-        <button routerLink="/visualizar-atas" class="btn-voltar"><i class="bi bi-arrow-left"></i> VISUALIZAR LISTAGEM DE
-            ARP’s</button>
-    </div>
+  <app-botao-voltar></app-botao-voltar>
 
     <div class="container-visualizar-ata">
 
@@ -31,7 +28,7 @@
             <div class="card-validade cards">
                 <h5>Validade</h5>
                 <span class="meses">{{ ata.licitacao.validade }} Meses</span>
-               
+
                 <div class="span-validade">
                     <span >expirado</span>
                 </div>
@@ -91,8 +88,6 @@
                         </th>
                         <th scope="col" >Valor Unitario</th>
                         <th scope="col" >Valor Total</th>
-
-
                     </tr>
                 </thead>
                 <tbody>
@@ -104,10 +99,10 @@
                             <span>{{ item.item_ata.item_generico.descricao }}</span>
                         </td>
                         <td>
-                            <span>{{ item.item_ata.quantidade_licitada }} KG</span>
+                            <span>{{ item.item_ata.quantidade_licitada }} {{ item.item_ata.item_generico.unidade_medida }}</span>
                         </td>
                         <td>
-                            <span>{{ item.quantidade_atual }} KG</span>
+                            <span>{{ item.item_ata.quantidade_licitada - item.quantidade_atual | number:'1.2-2' }} {{ item.item_ata.item_generico.unidade_medida }}</span>
                         </td>
                         <td>
                             <span>R$ {{ item.item_ata.valor_unitario }}</span>

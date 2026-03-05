@@ -33,11 +33,13 @@ export class AtaService implements ICrudService<Ata> {
   }
 
   save(item: Ata): Observable<Ata> {
+    let url = this.apiUrl;
     if (item.id) {
-      return this.http.put<Ata>(this.apiUrl, item);
+      url += item.id + '/';
+      return this.http.put<Ata>(url, item);
     }
     else {
-      return this.http.post<Ata>(this.apiUrl, item);
+      return this.http.post<Ata>(url, item);
     }
   }
 

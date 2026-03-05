@@ -1,0 +1,187 @@
+.fornecedor-container {
+  padding: 2rem;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  font-family: 'Arial', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+ .container-btnVoltar{
+    margin: 20px 0;
+    width: 80vw;
+    .btn-voltar{
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      background-color: transparent;
+      border: none;
+      color: var(--font-cinza2);
+      i{
+        font-size: 30px;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .card-fornecedor {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+
+    .card-header-main {
+      background: var(--branco);
+      padding: 1.2rem 2rem;
+      border-radius: 10px;
+      box-shadow: var(--box-shadow);
+      width: 80vw;
+      .fornecedor-nome {
+        margin: 0;
+        font-size: 1.7rem;
+        font-weight: 800;
+        color: #000;
+      }
+    }
+
+    .info-bloco {
+      background: var(--branco);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--box-shadow);
+
+      .faixa-titulo {
+        background: var(--cabecalho);
+        padding: 0.8rem 1.5rem;
+        .titulo-secao {
+          color: var(--branco);
+          margin: 0;
+          font-size: 0.85rem;
+          font-weight: bold;
+          text-transform: uppercase;
+        }
+      }
+
+      .info-grid {
+        display: flex;
+        padding: 2rem 1.5rem;
+        gap: 5rem;
+        flex-wrap: wrap;
+
+        .info-item {
+          display: flex;
+          flex-direction: column;
+          label {
+            color: var(--font-cinza);
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+          }
+          .dado-valor {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #000;
+          }
+        }
+      }
+    }
+
+    .footer-acoes {
+      display: flex;
+      justify-content: center;
+      .btn-editar {
+        background: var(--azul-claro);
+        color: var(--branco);
+        border: none;
+        padding: 0.9rem 2.5rem;
+        border-radius: 50px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        transition: 0.3s;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        &:hover { opacity: 0.9; }
+      }
+    }
+  }
+}
+
+.modal-custom {
+  border-radius: 15px !important;
+  border: none !important;
+  overflow: hidden;
+  box-shadow: var(--box-shadow);
+
+  .modal-header-azul {
+    background: var(--cabecalho);
+    padding: 1.2rem 2rem;
+    .modal-titulo {
+      color: var(--branco);
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+  }
+
+  .modal-body {
+    padding: 2.5rem;
+
+    .form-fornecedor {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+
+      .form-row {
+        display: flex;
+        gap: 1.5rem;
+        .flex-1 { flex: 1; }
+        .flex-2 { flex: 2; }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          flex: 1;
+
+          label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: var(--font-cinza2);
+          }
+
+          input {
+            padding: 0.8rem 1rem;
+            border: var(--borda1);
+            border-radius: 8px;
+            color: #333;
+            &:focus { border-color: var(--azul-claro); outline: none; }
+          }
+        }
+      }
+    }
+
+    .form-footer {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+
+      .btn-confirmar {
+        background: var(--azul-claro);
+        color: var(--branco);
+        border: none;
+        padding: 1rem 3.5rem;
+        border-radius: 15px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        cursor: pointer;
+        transition: 0.2s;
+        &:hover { opacity: 0.9; }
+        i { font-size: 1.5rem; }
+      }
+    }
+  }
+}

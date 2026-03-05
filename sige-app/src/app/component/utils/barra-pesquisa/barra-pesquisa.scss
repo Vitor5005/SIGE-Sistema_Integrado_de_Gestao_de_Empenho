@@ -2,7 +2,6 @@
   background-color: var(--branco);
   width: 85vw;
   display: flex;
-  justify-content: space-between;
   justify-self: center;
   align-items: center;
   height: 100px;
@@ -33,20 +32,8 @@
       font-size: 20px;
     }
   }
-  .exportar{
-    width: 200px;
-    font-size: 16px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    height: 40px;
-    border-radius: 20px;
-    background-color: var(--branco);
-    border: var(--borda1);
-    i{
-      font-size: 20px;
-    }
+  .limpar:hover{
+    background-color: #c71c1c;
+    color: var(--branco);
   }
 }

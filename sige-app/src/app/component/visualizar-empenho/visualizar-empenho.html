@@ -1,9 +1,5 @@
 <body>
-  <div class="container-btnVoltar">
-    <button routerLink="/visualizar-empenhos" class="btn-voltar">
-      <i class="bi bi-arrow-left"></i> VISUALIZAR LISTAGEM DE EMPENHOS
-    </button>
-  </div>
+  <app-botao-voltar></app-botao-voltar>
 
   <div class="container-empenho">
     <div class="cabecalho">
@@ -29,12 +25,12 @@
       <div class="d-flex gap-5 cards-valor">
         <div class="valor-utilizado">
           <h4>Valor Utilizado</h4>
-          <h5>R$ 5.100,00</h5>
+          <p>R$ 5.100,00</p>
         </div>
 
         <div class="valor-empenhado">
           <h4>Valor Empenhado</h4>
-          <h5>R$ 40.100,00</h5>
+          <p>R$ 40.100,00</p>
         </div>
       </div>
     </div>
@@ -96,9 +92,9 @@
 
             <td>
               <div class="botoes-acoes">
-                <button><i class="bi bi-plus-circle"></i></button>
+                <button><i class="bi bi-plus-circle reforcar"></i></button>
 
-                <button><i class="bi bi-x-circle"></i></button>
+                <button><i class="bi bi-x-circle anular"></i></button>
               </div>
             </td>
           </tr>
@@ -132,8 +128,8 @@
 
             <td>
               <div class="botoes-acoes">
-                <button><i class="bi bi-plus-circle"></i></button>
-                <button><i class="bi bi-x-circle"></i></button>
+                <button><i class="bi bi-plus-circle reforcar"></i></button>
+                <button><i class="bi bi-x-circle anular" ></i></button>
               </div>
             </td>
           </tr>
@@ -159,7 +155,7 @@
           </h1>
           <button
             type="button"
-            class="btn-close"
+            class="btn-close btn-close-white"
             data-bs-dismiss="modal"
             aria-label="Close"
           ></button>
@@ -169,7 +165,7 @@
           <form action="">
             <!-- Formulario para solicitar entregas -->
 
-            <div>
+            <div class="d-flex flex-column">
               <label for="alimento1">
                 <span>Frango </span>
                 <span style="font-size: 0.7em">(KG)</span>
@@ -184,7 +180,7 @@
               />
             </div>
 
-            <div>
+            <div class="d-flex flex-column">
               <!-- display, flex-direction e gap temporarios -->
               <label for="alimento2" style="margin: 0">
                 <span>Carne Bovina </span>
@@ -200,6 +196,7 @@
               />
             </div>
           </form>
+          <small>Valor Total: 0,00</small>
         </div>
 
         <div class="modal-footer">
