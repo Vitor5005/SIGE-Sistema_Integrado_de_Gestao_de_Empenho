@@ -1,7 +1,7 @@
 export type Endereco = {
     id: number;
     lagradouro: string;
-    number: string;
+    numero: string;
     bairro: string;
     municipio: string;
     estado: string;
