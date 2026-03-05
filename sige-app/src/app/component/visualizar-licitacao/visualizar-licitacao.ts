@@ -5,10 +5,11 @@ import { Licitacao } from '../../model/licitacao';
 import { CommonModule } from '@angular/common';
 import { AtaService } from '../../service/ata.service';
 import { Ata } from '../../model/ata';
+import { BotaoVoltar } from "../utils/botao-voltar/botao-voltar";
 
 @Component({
   selector: 'app-visualizar-licitacao',
-  imports: [RouterLink, CommonModule],
+  imports: [RouterLink, CommonModule, BotaoVoltar],
   templateUrl: './visualizar-licitacao.html',
   styleUrl: './visualizar-licitacao.scss',
 })
@@ -21,7 +22,7 @@ export class VisualizarLicitacao {
     private route: ActivatedRoute
   ) {}
 
-  licitacao: Licitacao = <Licitacao>{}; 
+  licitacao: Licitacao = <Licitacao>{};
   atas: Array<Ata> = Array<Ata>();
 
   ngOnInit() {

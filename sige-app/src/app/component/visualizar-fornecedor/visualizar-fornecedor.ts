@@ -7,10 +7,11 @@ import { Endereco } from '../../model/endereco';
 import { Modal } from 'bootstrap'
 import { EnderecoService } from '../../service/endereco.service';
 
+import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink,BotaoVoltar],
   templateUrl: './visualizar-fornecedor.html',
   styleUrl: './visualizar-fornecedor.scss',
 })

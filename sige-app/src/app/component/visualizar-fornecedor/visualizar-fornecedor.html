@@ -1,9 +1,5 @@
 <body class="fornecedor-container">
-  <div class="container-btnVoltar">
-    <button routerLink="/visualizar-licitacoes" class="btn-voltar">
-      <i class="bi bi-arrow-left"></i> VOLTAR PARA LISTAGEM DE LICITAÇÕES
-    </button>
-  </div>
+  <app-botao-voltar></app-botao-voltar>
 
   <section class="card-fornecedor">
     <div class="card-header-main">
@@ -55,7 +51,8 @@
     </div>
 
     <div class="footer-acoes">
-      <button class="btn-editar" data-bs-toggle="modal" data-bs-target="#fornecedorModal" (click)="carregar_Fornecedor()">
+      <button class="btn-editar" data-bs-toggle="modal" data-bs-target="#fornecedorModal"
+        (click)="carregar_Fornecedor()">
         <i class="bi bi-pencil-square"></i> EDITAR INFORMAÇÕES
       </button>
     </div>
