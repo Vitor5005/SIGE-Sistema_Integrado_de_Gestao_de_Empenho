@@ -1,0 +1,128 @@
+.entrega {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+/* usa mesmo padrão da listagem */
+.container-titulo {
+  margin-top: 30px;
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+
+  hr {
+    color: var(--hr-color);
+  }
+}
+
+.container-entregas {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* CARD */
+.card-entrega {
+  background: var(--branco);
+  box-shadow: var(--box-shadow);
+  border-radius: 10px;
+  padding: 25px;
+}
+
+/* TOPO */
+.topo-entrega {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.info-entrega {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 25px;
+  border-radius: 8px;
+  background: var(--amarelo);
+}
+
+.pedido-entrega {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--branco);
+}
+
+.link-doc {
+  background: var(--azul-claro);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  color: var(--branco);
+  transition: 0.2s;
+  
+}
+
+.link-doc:hover {
+  background: var(--azul-claro);
+  color: white;
+}
+
+/* BOTÃO */
+.btn-confirmar {
+  background: var(--verde);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.btn-confirmar:hover {
+  opacity: 0.9;
+}
+
+/* PRODUTOS */
+.lista-produtos {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.produto {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.nome {
+  font-size: 23px;
+  font-weight: bold;
+}
+
+.unidade {
+  font-size: 14px;
+  color: var(--font-cinza2);
+  margin-left: 5px;
+  font-weight: bold;
+}
+
+.info {
+  text-align: right;
+
+  p {
+    font-weight: bold;
+  }
+}
