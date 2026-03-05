@@ -10,12 +10,22 @@ import { VisualizarEntregas } from './component/visualizar-entregas/visualizar-e
 import { VisualizarFornecedores } from './component/visualizar-fornecedores/visualizar-fornecedores';
 import { VisualizarFornecedor } from './component/visualizar-fornecedor/visualizar-fornecedor';
 import { VisualizarGensAlimenticios } from './component/visualizar-gens-alimenticios/visualizar-gens-alimenticios';
+import { Login } from './component/login/login';
+import { Cadastro } from './component/cadastro/cadastro';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'visualizar-licitacoes',
+    redirectTo: 'login',
     pathMatch: 'full'
+  },
+  {
+    path: 'login',
+    component: Login
+  },
+  {
+    path: 'cadastrar-se',
+    component: Cadastro
   },
    {
     path: 'visualizar-licitacoes',
