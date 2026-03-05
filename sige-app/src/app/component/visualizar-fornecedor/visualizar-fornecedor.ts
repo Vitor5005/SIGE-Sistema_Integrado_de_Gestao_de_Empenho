@@ -11,7 +11,7 @@ import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
-  imports: [RouterLink,BotaoVoltar],
+  imports: [RouterLink,BotaoVoltar, FormsModule],
   templateUrl: './visualizar-fornecedor.html',
   styleUrl: './visualizar-fornecedor.scss',
 })
