@@ -1,109 +1,121 @@
 <body>
 
-    <div>
-        <h5>ENTREGA <i class="bi bi-truck"></i></h5>
-        <hr>
-        <app-barra-pesquisa></app-barra-pesquisa>
+    <div class="entrega">
+        <div class="container-titulo">
+            <h5>ENTREGAS <i class="bi bi-truck"></i></h5>
+            <hr>
+            <app-barra-pesquisa></app-barra-pesquisa>
+        </div>
+        <div class="conteiner-entregas">
+            <div class="card-entrega">
 
-        <div>
-            <div>
+                <div class="topo-entrega">
+                    <div class="info-entrega">
+                        <span class="pedido-entrega">
+                            PEDIDO DE ENTREGA #ENT-XXX
+                        </span>
 
-                <div style="display: flex; gap: 15em;">
-                    <!-- style temporário, remover quando tiver classe apropriada -->
-                    <div style="display: flex; gap: 1.5em; align-items: center; background-color: rgb(229, 178, 35);">
-                        <!-- style temporário, remover quando tiver classe apropriada -->
-                        <span style="font-size: 1.5em; color: white;">PEDIDO DE ENTREGA #ENT-XXX</span>
-                        <!-- alterando tamanho da fonte e cor temporariamente -->
-                        <span style="background-color: rgb(168, 197, 250); font-weight: bold; cursor: pointer;"
-                            (click)="enviarPara('/visualizar-empenho')">EMP-XXX-XX</span>
-                        <!-- alterando cor, negrito temporariamente -->
-                        <span style="background-color: rgb(168, 197, 250); font-weight: bold; cursor: pointer;"
-                            (click)="enviarPara('/visualizar-ata')">ARP-XX-XXXX</span>
-                        <!-- alterando cor, negrito e cursor temporariamente -->
+                        <span class="link-doc"
+                            (click)="enviarPara('/visualizar-empenho')">
+                            EMP-XXX-XX
+                        </span>
+                        
+                        <span class="link-doc"
+                            (click)="enviarPara('/visualizar-ata')">
+                            ARP-XX-XXXX
+                        </span>
+                        
                     </div>
 
-                    <button #myInput style="color: white; background-color: rgb(0, 175, 38); border: none;"
+                    <button class="btn-confirmar"
                         data-bs-toggle="modal" data-bs-target="#confirmarModal" *ngIf="!confirmado">
-                        <!-- alterando cor, background e borda temporariamente -->
+                        <i class="bi bi-check-circle"></i>
+                        CONFIRMAR ENTREGA
+                    </button>
+                </div>
+
+                <div class="lista-produtos">
+                    <div class="produto">
+                        <div>
+                            <span class="nome">
+                                Frango 
+                            </span>
+                            <span class="unidade">
+                                KG
+                            </span>
+                        </div>
+
+                        <div class="info">
+                            <p>30 kg</p>
+                            <span>R$ 600,00</span>
+                        </div>
+                    </div>
+
+                    <div class="produto">
+                        <div>
+                            <span class="nome">
+                                Carne Borvina 
+                            </span>
+                            <span class="unidade">
+                                KG
+                            </span>
+                        </div>
+
+                        <div class="info">
+                            <p>30 kg</p>
+                            <span>R$ 600,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-entrega">
+                <div class="topo-entrega">
+                    <div class="info-entrega"> <!-- fazer código em ts para verificar se o pedido foi entregue para mudar a cor da div para verde -->
+                        <span class="pedido-entrega">
+                            PEDIDO DE ENTREGA #ENT-XXX
+                        </span>
+                        
+                        <span class="link-doc"
+                            (click)="enviarPara('/visualizar-empenho')">
+                            EMP-XXX-XX
+                        </span>
+                        
+                        <span class="link-doc"
+                            (click)="enviarPara('/visualizar-ata')">
+                            ARP-XX-XXXX
+                        </span>
+                    </div>
+
+                    <button class="btn-confirmar"
+                        *ngIf="confirmado">
                         <i class="bi bi-check-circle"></i> CONFIRMAR ENTREGA
                     </button>
                 </div>
 
-                <div>
-                    <div style="display: flex; gap: 52em;"> <!-- display temporarios -->
+                <div class="lista-produtos">
+                    <div class="produto">
                         <div>
-                            <span style="font-size: 1.5em;">Frango </span>
-                            <span style="font-size: 0.9em;">KG</span>
-                            <!-- alterando tamanho da fonte temporariamente -->
+                            <span class="nome">Arroz </span>
+                            <span class="unidade">UN</span>
                         </div>
 
-                        <div style="justify-items: center;"> <!-- justify temporario -->
-                            <p style="margin: 0;">30 kg</p> <!-- margin temporário -->
-                            <span style=>R$ 600,00</span>
+                        <div class="info">
+                            <p>10 un</p>
+                            <span>R$ X00,00</span>
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 47.2em;"> <!-- display temporarios -->
+                    <div class="produto">
                         <div>
-                            <span style="font-size: 1.5em;">Carne Borvina </span>
-                            <span style="font-size: 0.9em;">KG</span>
-                            <!-- alterando tamanho da fonte temporariamente -->
+                            <span class="nome">Feijão </span>
+                            <span class="unidade">UN</span>
                         </div>
 
-                        <div style="justify-items: center;"> <!-- justify temporario -->
-                            <p style="margin: 0;">30 kg</p> <!-- margin temporário -->
-                            <span style=>R$ 600,00</span>
+                        <div class="info">
+                            <p>20 un </p>
+                            <span>R$ X00,00</span>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-
-            <div style="display: flex; gap: 15em;">
-                <!-- style temporário, remover quando tiver classe apropriada -->
-                <div style="display: flex; gap: 1.5em; align-items: center; background-color: rgb(0, 175, 38);">
-                    <!-- style temporário, remover quando tiver classe apropriada -->
-                    <span style="font-size: 1.5em; color: white;">PEDIDO DE ENTREGA #ENT-XXX</span>
-                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                    <span style="background-color: rgb(168, 197, 250); font-weight: bold; cursor: pointer;"
-                        (click)="enviarPara('/visualizar-empenho')">EMP-XXX-XX</span>
-                    <!-- alterando cor, negrito temporariamente -->
-                    <span style="background-color: rgb(168, 197, 250); font-weight: bold; cursor: pointer;"
-                        (click)="enviarPara('/visualizar-ata')">ARP-XX-XXXX</span>
-                    <!-- alterando cor, negrito e cursor temporariamente -->
-                </div>
-
-                <button #myInput style="color: white; background-color: rgb(0, 175, 38); border: none;"
-                    *ngIf="confirmado">
-                    <!-- alterando cor, background e borda temporariamente -->
-                    <i class="bi bi-check-circle"></i> CONFIRMAR ENTREGA
-                </button>
-            </div>
-
-            <div>
-                <div style="display: flex; gap: 53em;"> <!-- display e gap temporarios -->
-                    <div>
-                        <span style="font-size: 1.5em;">Arroz </span>
-                        <span style="font-size: 0.9em;">UN</span>
-                        <!-- alterando tamanho da fonte temporariamente -->
-                    </div>
-
-                    <div style="justify-items: center;"> <!-- justify temporario -->
-                        <p style="margin: 0;">10 un</p> <!-- margin temporário -->
-                        <span style=>R$ X00,00</span>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 52.57em;"> <!-- display e gap temporarios -->
-                    <div>
-                        <span style="font-size: 1.5em;">Feijão </span>
-                        <span style="font-size: 0.9em;">UN</span>
-                        <!-- alterando tamanho da fonte temporariamente -->
-                    </div>
-
-                    <div style="justify-items: center;"> <!-- justify temporario -->
-                        <p style="margin: 0;">20 un </p> <!-- margin temporário -->
-                        <span style=>R$ X00,00</span>
                     </div>
                 </div>
             </div>
@@ -168,7 +180,7 @@
                                 </div>
 
                                 <div style="justify-content: center;">
-                                    <label style="font-size: 1.2em; color: rgb(63, 127, 244);">Quantidade Efertivamente
+                                    <label style="font-size: 1.2em; color: rgb(63, 127, 244);">Quantidade Efetivamente
                                         Recebida (kg)</label> <!-- alterando tamanho da fonte e cor temporariamente -->
                                     <div> <!-- margin temporário -->
                                         <input type="number" class="form-control"
@@ -212,7 +224,7 @@
                                 </div>
 
                                 <div style="justify-content: center;">
-                                    <label style="font-size: 1.2em; color: rgb(63, 127, 244);">Quantidade Efertivamente
+                                    <label style="font-size: 1.2em; color: rgb(63, 127, 244);">Quantidade Efetivamente
                                         Recebida (kg)</label> <!-- alterando tamanho da fonte e cor temporariamente -->
                                     <div> <!-- margin temporário -->
                                         <input type="number" class="form-control"
