@@ -33,7 +33,7 @@
                     <small>{{ item.fornecedor.cnpj }}</small>
                 </td>
 
-                <td><span [ngClass]="classValidade(item)">{{ 
+                <td [ngClass]="classValidade(item)"><span>{{ 
                         verificarValidade(item) }}</span></td> 
                         <!-- Para modoficar as classes da validade
                              é necessario alterar a função classValidade 

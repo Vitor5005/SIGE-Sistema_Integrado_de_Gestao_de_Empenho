@@ -167,6 +167,26 @@ def seed_licitacoes(n=3):
         licitacoes.append(licitacao)
     return licitacoes
 
+def seed_licitacoes_expiradas(n=3):
+    """Cria licitações antigas com validade já expirada"""
+    licitacoes = []
+    for i in range(n):
+        # Data de abertura entre 18-30 meses atrás (bem antiga)
+        dias_atras = random.randint(540, 900)  # ~18-30 meses
+        data_abertura = datetime.now().date() - timedelta(days=dias_atras)
+        
+        # Validade entre 3-8 meses (já expirou)
+        validade = random.randint(3, 8)
+        
+        licitacao = Licitacao.objects.create(
+            numero_licitacao=f"LIC-2025-{2000+i}",  # Numeração diferente para licitações antigas
+            validade=validade,
+            data_abertura=data_abertura,
+            descricao=f"Licitação expirada - aquisição de produtos alimentícios lote {i+1}"
+        )
+        licitacoes.append(licitacao)
+    return licitacoes
+
 def seed_atas(licitacoes=None, fornecedores=None):
     atas = []
     for licitacao in licitacoes:
@@ -509,6 +529,10 @@ def seed_all():
     print("  → Criando licitações...")
     licitacoes = seed_licitacoes()
     
+    print("  → Criando licitações expiradas...")
+    licitacoes_expiradas = seed_licitacoes_expiradas(n=3)
+    licitacoes.extend(licitacoes_expiradas)  # Combina as duas listas
+    
     print("  → Criando atas...")
     atas = seed_atas(licitacoes=licitacoes, fornecedores=fornecedores)
     
@@ -537,7 +561,7 @@ def seed_all():
     print(f"  - {len(enderecos)} endereços criados")
     print(f"  - {len(fornecedores)} fornecedores criados")
     print(f"  - {len(itens_genericos)} itens genéricos criados")
-    print(f"  - {len(licitacoes)} licitações criadas")
+    print(f"  - {len(licitacoes)} licitações criadas (incluindo {len(licitacoes_expiradas)} expiradas)")
     print(f"  - {len(atas)} atas criadas")
     print(f"  - {len(itens_ata)} itens de ata criados")
     print(f"  - {len(empenhos)} empenhos criados")
