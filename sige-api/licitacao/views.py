@@ -41,7 +41,7 @@ class AtaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Ata.objects.all()
     serializer_class = AtaSerializer
 
-    search_fields = ['numero_ata', 'licitacao__numero_licitacao', 'fornecedor__razao_social']
+    search_fields = ['numero_ata', 'licitacao__numero_licitacao','licitacao__id']
     filterset_fields = {
         'licitacao__id': ['exact'],
         'fornecedor__id': ['exact'],
