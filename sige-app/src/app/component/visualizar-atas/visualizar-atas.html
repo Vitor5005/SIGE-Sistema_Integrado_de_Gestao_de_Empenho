@@ -33,10 +33,10 @@
                     <small>{{ item.fornecedor.cnpj }}</small>
                 </td>
 
-                <td [ngClass]="classValidade(item)"><span>{{ 
-                        verificarValidade(item) }}</span></td> 
+                <td ><span [ngClass]="classValidade(item)">{{
+                        verificarValidade(item) }}</span></td>
                         <!-- Para modoficar as classes da validade
-                             é necessario alterar a função classValidade 
+                             é necessario alterar a função classValidade
                              no arquivo visualizar-atas.ts -->
 
                 <td><i class="bi bi-clock"></i> {{ item.licitacao.validade }} meses</td>
