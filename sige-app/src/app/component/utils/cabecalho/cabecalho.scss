@@ -17,6 +17,7 @@
     padding: 10px 20px;
     border-radius: 30px;
     display: flex;
+    max-height: 42px;
   }
 
   .lista-botoes {
@@ -61,12 +62,12 @@
     color: #ffffff;
     i{
       font-size: 28px;
-      &:hover{
-        color: #ff2e2e;
-        transition: 0.3s;
-        font-size: 29px;
-      }
     }
+  }
+  i:hover{
+      color: #ff2e2e;
+      transition: ease-in-out .4s;
+      font-size: 30px;
   }
 }
 
