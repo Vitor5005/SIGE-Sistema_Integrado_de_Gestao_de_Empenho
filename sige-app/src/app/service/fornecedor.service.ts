@@ -34,10 +34,11 @@ export class FornecedorService implements ICrudService<Fornecedor> {
   }
 
   save(item: Fornecedor): Observable<Fornecedor> {
-    let url = environment.API_URL
+    let url = this.apiUrl;
     if (item.id) {
+      console.log(url);
       url += item.id + "/"
-      return this.http.put<Fornecedor>(url, item);
+      return this.http.patch<Fornecedor>(url, item);
     }
     else {
       return this.http.post<Fornecedor>(url, item);

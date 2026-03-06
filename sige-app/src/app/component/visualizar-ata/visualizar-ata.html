@@ -1,9 +1,6 @@
 <body>
 
-    <div class="container-btnVoltar">
-        <button routerLink="/visualizar-atas" class="btn-voltar"><i class="bi bi-arrow-left"></i> VISUALIZAR LISTAGEM DE
-            ARP’s</button>
-    </div>
+  <app-botao-voltar></app-botao-voltar>
 
     <div class="container-visualizar-ata">
 
@@ -31,7 +28,7 @@
             <div class="card-validade cards">
                 <h5>Validade</h5>
                 <span class="meses">{{ ata.licitacao.validade }} Meses</span>
-               
+
                 <div class="span-validade">
                     <span >expirado</span>
                 </div>

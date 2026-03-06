@@ -1,3 +1,4 @@
+import { BotaoVoltar } from './../utils/botao-voltar/botao-voltar';
 import { Component } from '@angular/core';
 import { Router, RouterLink, Route, ActivatedRoute } from '@angular/router';
 import { AtaService } from '../../service/ata.service';
@@ -10,7 +11,7 @@ import { ItemEmpenho } from '../../model/itemEmpenho';
 
 @Component({
   selector: 'app-visualizar-ata',
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, BotaoVoltar],
   templateUrl: './visualizar-ata.html',
   styleUrl: './visualizar-ata.scss',
 })

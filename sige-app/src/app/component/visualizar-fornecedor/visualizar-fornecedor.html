@@ -1,13 +1,9 @@
 <body class="fornecedor-container">
- <div class="container-btnVoltar">
-    <button routerLink="/visualizar-licitacoes" class="btn-voltar">
-      <i class="bi bi-arrow-left"></i> VOLTAR PARA LISTAGEM DE LICITAÇÕES
-    </button>
-  </div>
+  <app-botao-voltar></app-botao-voltar>
 
   <section class="card-fornecedor">
     <div class="card-header-main">
-      <h1 class="fornecedor-nome">ACRE FRIOS</h1>
+      <h1 class="fornecedor-nome">{{ fornecedor.nome_fantasia }}</h1>
     </div>
 
     <div class="info-bloco">
@@ -17,15 +13,15 @@
       <div class="info-grid">
         <div class="info-item">
           <label>CNPJ</label>
-          <span class="dado-valor">05.105.018/0001-71</span>
+          <span class="dado-valor">{{ fornecedor.cnpj }}</span>
         </div>
         <div class="info-item">
           <label>TELEFONE</label>
-          <span class="dado-valor">(68) 3229-2233</span>
+          <span class="dado-valor">{{ fornecedor.telefone }}</span>
         </div>
         <div class="info-item">
           <label>E-MAIL</label>
-          <span class="dado-valor">acrefrios@hotmail.com</span>
+          <span class="dado-valor">{{ fornecedor.email }}</span>
         </div>
       </div>
     </div>
@@ -37,69 +33,85 @@
       <div class="info-grid">
         <div class="info-item">
           <label>RUA</label>
-          <span class="dado-valor">Rua Marginal, 123</span>
+          <span class="dado-valor">{{ fornecedor.endereco.lagradouro }}, {{ fornecedor.endereco.numero }}</span>
         </div>
         <div class="info-item">
           <label>BAIRRO</label>
-          <span class="dado-valor">Parque dos Sabias</span>
+          <span class="dado-valor">{{ fornecedor.endereco.bairro }}</span>
         </div>
         <div class="info-item">
           <label>MUNICÍPIO</label>
-          <span class="dado-valor">Rio Branco</span>
+          <span class="dado-valor">{{ fornecedor.endereco.municipio }}</span>
         </div>
         <div class="info-item">
           <label>ESTADO</label>
-          <span class="dado-valor">Acre</span>
+          <span class="dado-valor">{{ fornecedor.endereco.estado }}</span>
         </div>
       </div>
     </div>
 
     <div class="footer-acoes">
-      <button class="btn-editar" data-bs-toggle="modal" data-bs-target="#fornecedorModal">
+      <button class="btn-editar" data-bs-toggle="modal" data-bs-target="#fornecedorModal"
+        (click)="carregar_Fornecedor()">
         <i class="bi bi-pencil-square"></i> EDITAR INFORMAÇÕES
       </button>
     </div>
   </section>
 
-  <div class="modal fade" id="fornecedorModal" tabindex="-1" aria-hidden="true">
+  <div #myModal class="modal fade" id="fornecedorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content modal-custom">
         <div class="modal-header-azul">
           <h2 class="modal-titulo">EDIÇÃO DE FORNECEDOR</h2>
         </div>
         <div class="modal-body">
-          <form class="form-fornecedor">
+          <form class="form-fornecedor" #form="ngForm">
             <div class="form-row">
               <div class="form-group flex-2">
                 <label>NOME FANTASIA</label>
-                <input type="text" value="ACRE FRIOS">
+                <input type="text" [(ngModel)]="fornecedor_editar.nome_fantasia" name="nome_fantasia">
               </div>
               <div class="form-group flex-1">
                 <label>CNPJ</label>
-                <input type="text" value="05.105.018/0001-71">
+                <input type="text" [(ngModel)]="fornecedor_editar.cnpj" name="cnpj">
               </div>
             </div>
             <div class="form-row">
               <div class="form-group flex-2">
                 <label>RUA</label>
-                <input type="text" value="Rua Marginal">
+                <input type="text" [(ngModel)]="endereco_editar.lagradouro" name="logradouro">
               </div>
               <div class="form-group flex-1">
                 <label>NÚMERO</label>
-                <input type="text" value="123">
+                <input type="text" [(ngModel)]="endereco_editar.numero" name="numero">
               </div>
             </div>
             <div class="form-row">
-              <div class="form-group"><label>BAIRRO</label><input type="text" value="Parque dos Sabias"></div>
-              <div class="form-group"><label>MUNICÍPIO</label><input type="text" value="Rio Branco"></div>
-              <div class="form-group"><label>ESTADO</label><input type="text" value="Acre"></div>
+              <div class="form-group">
+                <label>BAIRRO</label>
+                <input type="text" [(ngModel)]="endereco_editar.bairro" name="bairro">
+              </div>
+              <div class="form-group">
+                <label>MUNICÍPIO</label>
+                <input type="text" [(ngModel)]="endereco_editar.municipio" name="municipio">
+              </div>
+              <div class="form-group">
+                <label>ESTADO</label>
+                <input type="text" [(ngModel)]="endereco_editar.estado" name="estado">
+              </div>
             </div>
             <div class="form-row">
-              <div class="form-group flex-1"><label>TELEFONE</label><input type="text" value="(68) 3229-2233"></div>
-              <div class="form-group flex-2"><label>E-MAIL</label><input type="email" value="acrefrios@hotmail.com"></div>
+              <div class="form-group flex-1">
+                <label>TELEFONE</label>
+                <input type="text" [(ngModel)]="fornecedor_editar.telefone" name="telefone">
+              </div>
+              <div class="form-group flex-2">
+                <label>E-MAIL</label>
+                <input type="email" [(ngModel)]="fornecedor_editar.email" name="email">
+              </div>
             </div>
             <div class="form-footer">
-              <button type="submit" class="btn-confirmar">
+              <button type="submit" class="btn-confirmar" (click)="save()">
                 <i class="bi bi-check-lg"></i> CONFIRMAR ALTERAÇÕES
               </button>
             </div>
