@@ -33,12 +33,35 @@ export class VisualizarLicitacoes {
     });
   };
 
-  ver(){
+  ver() {
     console.log(this.registro);
   }
 
   enviarPara(rota: string, id: number): void {
     this.router.navigate([rota], { queryParams: { id } });
   }
+
+  verificarValidade(licitacao: Licitacao): string {
+    const dataAtual = new Date();
+    const dataAbertura = new Date(licitacao.data_abertura);
+    const validade = licitacao.validade;
+    const dataExpiracao = new Date(dataAbertura);
+    dataExpiracao.setMonth(dataExpiracao.getMonth() + Number(validade));
+    if (dataAtual > dataExpiracao) {
+      return "Expirado";
+    } else {
+      return "Válido";
+    }
+  }
+
+  classValidade(licitacao: Licitacao): string {
+    if (this.verificarValidade(licitacao) === "Expirado") {
+      return "bg-danger text-white";
+    }
+    else {
+      return "bg-success text-white";
+    }
+  }
+
 
 }

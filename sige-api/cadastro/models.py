@@ -13,7 +13,6 @@ class Endereco(models.Model):
         return f"{self.lagradouro}, {self.numero} - {self.municipio}/{self.estado}"
     
 class Fornecedor(models.Model):
-    razao_social = models.CharField(max_length=255)
     nome_fantasia = models.CharField(max_length=255)
     cnpj = models.CharField(max_length=18,unique=True, blank=False, null=False, verbose_name="CNPJ")
     telefone = models.CharField(max_length=20,blank=True,null=True)
@@ -21,7 +20,7 @@ class Fornecedor(models.Model):
     endereco = models.ForeignKey(Endereco, on_delete=models.PROTECT,related_name='fornecedores')
     
     def __str__(self):
-        return f"{self.razao_social} - {self.cnpj}"
+        return f"{self.nome_fantasia} - {self.cnpj}"
 
 class ItemGenerico(models.Model):
     catmat = models.CharField(max_length = 6, unique=True, blank=False, null=False)

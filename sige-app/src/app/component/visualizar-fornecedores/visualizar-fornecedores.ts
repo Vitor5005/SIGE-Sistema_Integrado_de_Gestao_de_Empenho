@@ -7,7 +7,7 @@ import { CommonModule, JsonPipe } from '@angular/common';
 
 @Component({
   selector: 'app-visualizar-fornecedores',
-  imports: [BarraPesquisa, CommonModule],
+  imports: [CommonModule],
   templateUrl: './visualizar-fornecedores.html',
   styleUrl: './visualizar-fornecedores.scss',
 })

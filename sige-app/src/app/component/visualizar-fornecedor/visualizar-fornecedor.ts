@@ -1,12 +1,17 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FornecedorService } from '../../service/fornecedor.service';
 import { Fornecedor } from '../../model/fornecedor';
+import { FormsModule } from '@angular/forms';
+import { Endereco } from '../../model/endereco';
+import { Modal } from 'bootstrap'
+import { EnderecoService } from '../../service/endereco.service';
+
 import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
-  imports: [RouterLink,BotaoVoltar],
+  imports: [RouterLink,BotaoVoltar, FormsModule],
   templateUrl: './visualizar-fornecedor.html',
   styleUrl: './visualizar-fornecedor.scss',
 })
@@ -16,13 +21,24 @@ export class VisualizarFornecedor {
   @ViewChild("myInput") input!: ElementRef;
 
   constructor(
-    private fornecedorService: FornecedorService
-  ) {}
+    private fornecedorService: FornecedorService,
+    private enderecoService: EnderecoService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) { }
+
 
   fornecedor = <Fornecedor>{};
+  fornecedor_editar = <Fornecedor>{};
+  endereco_editar = <Endereco>{};
 
-  ngOnInit(){
 
+  ngOnInit() {
+    const id = this.route.snapshot.queryParamMap.get('id');
+
+    if (id) {
+      this.get(Number(id))
+    }
   }
 
   ngAfterViewInit() {
@@ -31,11 +47,53 @@ export class VisualizarFornecedor {
 
     modalElement.addEventListener('shown.bs.modal', () => {
 
-      console.log(this.input.nativeElement);
       this.input.nativeElement.focus();
 
     });
 
   }
 
+  carregar_Fornecedor() {
+    this.fornecedor_editar.id = this.fornecedor.id;
+    this.fornecedor_editar.cnpj = this.fornecedor.cnpj;
+    this.fornecedor_editar.nome_fantasia = this.fornecedor.nome_fantasia;
+    this.fornecedor_editar.telefone = this.fornecedor.telefone;
+    this.fornecedor_editar.email = this.fornecedor.email;
+    this.endereco_editar.id = this.fornecedor.endereco.id;
+    this.endereco_editar.lagradouro = this.fornecedor.endereco.lagradouro;
+    this.endereco_editar.numero = this.fornecedor.endereco.numero;
+    this.endereco_editar.bairro = this.fornecedor.endereco.bairro;
+    this.endereco_editar.municipio = this.fornecedor.endereco.municipio;
+    this.endereco_editar.estado = this.fornecedor.endereco.estado;
+  }
+
+  get(id: number): void {
+    this.fornecedorService.getById(id).subscribe(
+      {
+        next: (reposta: Fornecedor) => {
+          this.fornecedor = reposta
+        }
+      }
+    )
+  }
+
+  saveFornecedo(): void {
+      this.fornecedorService.save(this.fornecedor_editar).subscribe(
+        {
+          complete: () => {
+            window.location.reload();
+          }
+        }
+      )
+  }
+
+  save(): void {
+    this.enderecoService.save(this.endereco_editar).subscribe(
+      {
+        complete: () => {
+          this.saveFornecedo();
+        }
+      }
+    )
+  }
 }
