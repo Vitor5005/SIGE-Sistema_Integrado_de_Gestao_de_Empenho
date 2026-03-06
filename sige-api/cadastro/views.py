@@ -20,7 +20,7 @@ class FornecedorViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
    
     search_fields = [
         'cnpj', 
-        'razao_social', 
+        #'razao_social', 
         'nome_fantasia',
         'endereco__estado'
     ]
@@ -32,8 +32,8 @@ class FornecedorViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
         'endereco__municipio': ['exact', 'icontains']
     }
 
-    ordering_fields = ['razao_social', 'nome_fantasia', 'cnpj']
-    ordering = ['razao_social']
+    ordering_fields = ['nome_fantasia', 'cnpj']
+    ordering = ['nome_fantasia']
 class ItemGenericoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = ItemGenerico.objects.all()
     serializer_class = ItemGenericoSerializer
