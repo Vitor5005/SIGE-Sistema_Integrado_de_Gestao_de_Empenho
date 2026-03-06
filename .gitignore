@@ -141,3 +141,7 @@ sige-api/licitacao/migrations/0001_initial.py
 sige-api/sige.db
 sige-api/entrega/migrations/0001_initial.py
 sige-api/entrega/migrations/0002_rename_valor_total_itemordem_quantidade_entregue.py
+sige-api/cadastro/migrations/__init__.py
+sige-api/empenho/migrations/__init__.py
+sige-api/entrega/migrations/__init__.py
+sige-api/licitacao/migrations/__init__.py
