@@ -92,9 +92,12 @@
 
             <td>
               <div class="botoes-acoes">
-                <button><i class="bi bi-plus-circle reforcar"  data-bs-toggle="modal" data-bs-target="#modalSaldo"></i></button>
-
-                <button><i class="bi bi-x-circle anular"  data-bs-toggle="modal" data-bs-target="#modalSaldo"></i></button>
+                <button (click)="prepararOperacao('reforco')" data-bs-toggle="modal" data-bs-target="#modalSaldo">
+                  <i class="bi bi-plus-circle reforcar"></i>
+                </button>
+                <button (click)="prepararOperacao('anulacao')" data-bs-toggle="modal" data-bs-target="#modalSaldo">
+                  <i class="bi bi-x-circle anular"></i>
+                </button>
               </div>
             </td>
           </tr>
