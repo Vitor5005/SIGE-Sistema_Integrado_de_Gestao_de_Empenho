@@ -131,6 +131,7 @@ def seed_fornecedores(enderecos=None):
     fornecedores = []
     for i, fornecedor_data in enumerate(NOMES_FORNECEDORES):
         fornecedor = Fornecedor.objects.create(
+            razao_social=fornecedor_data["razao"],
             nome_fantasia=fornecedor_data["fantasia"],
             cnpj=f"{random.randint(10,99)}.{random.randint(100,999)}.{random.randint(100,999)}/0001-{random.randint(10,99)}",
             telefone=f"({random.randint(61,99)}) {random.randint(98000,99999)}-{random.randint(1000,9999)}",
