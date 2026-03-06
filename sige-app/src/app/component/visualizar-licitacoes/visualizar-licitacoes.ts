@@ -20,7 +20,7 @@ export class VisualizarLicitacoes {
   ) { }
 
   ngOnInit() {
-    this.get();
+    this.getOrdenadoValidade();
   }
 
   registro: Licitacao[] = [];
@@ -33,9 +33,13 @@ export class VisualizarLicitacoes {
     });
   };
 
-  ver() {
-    console.log(this.registro);
-  }
+  getOrdenadoValidade(): void {
+    this.licitacaoService.get().subscribe({
+      next: (resposta: Array<Licitacao>) => {
+        this.registro = this.ordenarLicitacoes(resposta);
+      }
+    });
+  };
 
   enviarPara(rota: string, id: number): void {
     this.router.navigate([rota], { queryParams: { id } });
@@ -63,5 +67,28 @@ export class VisualizarLicitacoes {
     }
   }
 
+  ordenarLicitacoes(licitacoes: Licitacao[]): Licitacao[] {
+    const dataAtual = new Date();
+
+    return licitacoes.sort((a, b) => {
+
+      const dataAberturaA = new Date(a.data_abertura);
+      const dataExpiracaoA = new Date(dataAberturaA);
+      dataExpiracaoA.setMonth(dataExpiracaoA.getMonth() + Number(a.validade));
+      const validaA = dataAtual <= dataExpiracaoA;
+
+      const dataAberturaB = new Date(b.data_abertura);
+      const dataExpiracaoB = new Date(dataAberturaB);
+      dataExpiracaoB.setMonth(dataExpiracaoB.getMonth() + Number(b.validade));
+      const validaB = dataAtual <= dataExpiracaoB;
+
+      // válidas primeiro
+      if (validaA && !validaB) return -1;
+      if (!validaA && validaB) return 1;
+
+      // ordenar por data (mais recente primeiro)
+      return dataAberturaB.getTime() - dataAberturaA.getTime();
+    });
+  }
 
 }
