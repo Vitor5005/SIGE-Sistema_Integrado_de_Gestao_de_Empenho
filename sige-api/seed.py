@@ -21,10 +21,23 @@ PCT_ENTREGA_CONCLUIDA_MIN = 85
 PCT_ENTREGA_CONCLUIDA_MAX = 100
 PCT_ENTREGA_ESPERA_MIN = 0
 PCT_ENTREGA_ESPERA_MAX = 60
+TIPOS_LICITACAO = ["PE", "TP", "CC", "DL", "IN"]
 
 # Unidades que permitem valores decimais (KG, L)
 # Outras unidades: duzia, cento, un, etc devem ser inteiras
 UNIDADES_DECIMAIS = {"KG", "L", "G", "mL"}
+
+
+def formatar_codigo_licitacao(tipo: str, numero: int, ano: int) -> str:
+    return f"{tipo} {numero:03d}/{ano}"
+
+
+def formatar_codigo_ata(numero: int, ano: int) -> str:
+    return f"ARP {numero:03d}/{ano}"
+
+
+def formatar_codigo_empenho(numero: int, ano: int) -> str:
+    return f"{ano}NE{numero:06d}"
 
 
 def limitar_valor_monetario(valor: Decimal) -> Decimal:
@@ -159,10 +172,12 @@ def seed_licitacoes(n=3):
     """Cria licitações com datas realistas"""
     licitacoes = []
     for i in range(n):
+        data_abertura = datetime.now().date() - timedelta(days=random.randint(30, 180))
+        tipo = random.choice(TIPOS_LICITACAO)
         licitacao = Licitacao.objects.create(
-            numero_licitacao=f"LIC-2026-{1000+i}",
+            numero_licitacao=formatar_codigo_licitacao(tipo=tipo, numero=i + 1, ano=data_abertura.year),
             validade=random.randint(12, 24),  # Entre 12 e 24 meses
-            data_abertura=datetime.now().date() - timedelta(days=random.randint(30, 180)),
+            data_abertura=data_abertura,
             descricao=f"Licicitação para aquisição de produtos alimentícios lote {i+1}"
         )
         licitacoes.append(licitacao)
@@ -175,12 +190,13 @@ def seed_licitacoes_expiradas(n=3):
         # Data de abertura entre 18-30 meses atrás (bem antiga)
         dias_atras = random.randint(540, 900)  # ~18-30 meses
         data_abertura = datetime.now().date() - timedelta(days=dias_atras)
+        tipo = random.choice(TIPOS_LICITACAO)
         
         # Validade entre 3-8 meses (já expirou)
         validade = random.randint(3, 8)
         
         licitacao = Licitacao.objects.create(
-            numero_licitacao=f"LIC-2025-{2000+i}",  # Numeração diferente para licitações antigas
+            numero_licitacao=formatar_codigo_licitacao(tipo=tipo, numero=(n + i + 1), ano=data_abertura.year),
             validade=validade,
             data_abertura=data_abertura,
             descricao=f"Licitação expirada - aquisição de produtos alimentícios lote {i+1}"
@@ -190,16 +206,18 @@ def seed_licitacoes_expiradas(n=3):
 
 def seed_atas(licitacoes=None, fornecedores=None):
     atas = []
+    contador_ata = 1
     for licitacao in licitacoes:
         fornecedores_sorteados = random.sample(fornecedores, k=min(2, len(fornecedores)))
         for fornecedor in fornecedores_sorteados:
             ata = Ata.objects.create(
-                numero_ata=f"ATA-{licitacao.numero_licitacao}-{fornecedor.id}",
+                numero_ata=formatar_codigo_ata(numero=contador_ata, ano=licitacao.data_abertura.year),
                 ata_saldo_total=Decimal("0.00"), # Começa zerado
                 licitacao=licitacao,
                 fornecedor=fornecedor
             )
             atas.append(ata)
+            contador_ata += 1
     return atas
 
 def seed_itens_ata(atas=None, itens_genericos=None):
@@ -241,7 +259,7 @@ def seed_empenhos(atas=None):
     empenhos = []
     for i, ata in enumerate(atas):
         empenho = Empenho.objects.create(
-            codigo=f"EMP-2026-{10000+i}",
+            codigo=formatar_codigo_empenho(numero=i + 1, ano=datetime.now().year),
             ata=ata,
             valor_total=Decimal("0.00"), # Será calculado pelos itens
             saldo_utilizado=Decimal("0.00")
