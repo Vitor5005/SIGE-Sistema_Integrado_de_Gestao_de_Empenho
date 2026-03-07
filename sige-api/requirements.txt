@@ -9,3 +9,4 @@ sqlparse==0.5.5
 tzdata==2025.3
 bcrypt==4.1.2
 djangorestframework-simplejwt==5.3.1
+yagmail==0.15.293
