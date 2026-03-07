@@ -29,8 +29,8 @@
                 <h5>Validade</h5>
                 <span class="meses">{{ ata.licitacao.validade }} Meses</span>
 
-                <div class="span-validade">
-                    <span >expirado</span>
+                <div [class]="classValidade(ata)">
+                    <span >{{ validade }}</span>
                 </div>
             </div>
 

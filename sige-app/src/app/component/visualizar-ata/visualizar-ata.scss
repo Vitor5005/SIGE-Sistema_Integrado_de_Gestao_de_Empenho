@@ -77,9 +77,16 @@ body{
         .meses{
           margin-bottom: 10px;
         }
-        .span-validade{
+        .span-validade-expirado{
           width: 100%;
           background-color: #FFA8A8;
+          position: absolute;
+          bottom: 0;
+          left: 0;
+        }
+        .span-validade-valido{
+          width: 100%;
+          background-color: #A8FFA8;
           position: absolute;
           bottom: 0;
           left: 0;

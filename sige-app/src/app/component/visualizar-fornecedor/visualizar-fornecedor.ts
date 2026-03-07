@@ -82,6 +82,7 @@ export class VisualizarFornecedor {
       this.fornecedorService.save(this.fornecedor_editar).subscribe(
         {
           complete: () => {
+            alert('Fornecedor editado com sucesso!');
             window.location.reload();
           }
         }

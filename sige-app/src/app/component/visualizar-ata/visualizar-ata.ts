@@ -38,6 +38,7 @@ export class VisualizarAta {
   ata: Ata = <Ata>{};
   empenho: Empenho = <Empenho>{};
   itens: Array<ItemEmpenho> = [];
+  validade: string = "";
 
   enviarPara(rota: string, id?: number) {
     if(id){
@@ -52,6 +53,7 @@ export class VisualizarAta {
     this.ataService.getById(id).subscribe({
       next: (resposta: Ata) => {
         this.ata = resposta;
+        this.verificarValidade(this.ata);
       }
     })
   }
@@ -71,4 +73,28 @@ export class VisualizarAta {
       },
     });
   }
+
+  verificarValidade(ata: Ata): string {
+    const dataAtual = new Date();
+    const dataAbertura = new Date(ata.licitacao.data_abertura);
+    const validade = ata.licitacao.validade;
+    const dataExpiracao = new Date(dataAbertura);
+    dataExpiracao.setMonth(dataExpiracao.getMonth() + Number(validade));
+    if (dataAtual > dataExpiracao) {
+      this.validade = "Expirado";
+    } else {
+      this.validade = "Válido";
+    }
+    return this.validade;
+  }
+
+  classValidade(ata: Ata): string {
+    if (this.verificarValidade(ata) === "Válido"){
+      return "span-validade-valido";
+    }
+    return "span-validade-expirado";
+  }
+
+
+
 }
