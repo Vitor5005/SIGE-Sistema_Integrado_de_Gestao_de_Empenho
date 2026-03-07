@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, filters
 from rest_framework.response import Response
 from licitacao.models import Licitacao, Ata, ItemAta
-from licitacao.serializers import LicitacaoSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
+from licitacao.serializers import AtaInsertSerializer, LicitacaoSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
 from empenho.serializers import ValorEmpenhoSerializer
 from empenho.models import Empenho, ItemEmpenho
 
@@ -20,6 +20,7 @@ class BaseFiltroMixin:
         filters.SearchFilter,
         filters.OrderingFilter
     ]
+    
 class LicitacaoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Licitacao.objects.all()
     serializer_class = LicitacaoSerializer
@@ -40,6 +41,13 @@ class LicitacaoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 class AtaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Ata.objects.all()
     serializer_class = AtaSerializer
+
+    def get_serializer_class(self):
+        
+        if self.action in ['create', 'update']:
+            return AtaInsertSerializer
+        
+        return AtaSerializer
 
     search_fields = ['numero_ata', 'licitacao__numero_licitacao','licitacao__id']
     filterset_fields = {

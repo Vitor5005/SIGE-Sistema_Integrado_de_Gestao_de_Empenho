@@ -7,6 +7,7 @@ import { HttpClient } from '@angular/common/http';
 import { Empenho } from '../model/empenho';
 import { ItemAta } from '../model/itemAta';
 import { ItemEmpenho } from '../model/itemEmpenho';
+import { AtaInsert } from '../model/ata_insert';
 
 @Injectable({
   providedIn: 'root',
@@ -32,14 +33,14 @@ export class AtaService implements ICrudService<Ata> {
     return this.http.get<Ata>(url);
   }
 
-  save(item: Ata): Observable<Ata> {
+  save(item: AtaInsert): Observable<AtaInsert> {
     let url = this.apiUrl;
     if (item.id) {
       url += item.id + '/';
-      return this.http.put<Ata>(url, item);
+      return this.http.put<AtaInsert>(url, item);
     }
     else {
-      return this.http.post<Ata>(url, item);
+      return this.http.post<AtaInsert>(url, item);
     }
   }
 

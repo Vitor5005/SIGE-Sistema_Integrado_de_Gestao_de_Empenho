@@ -4,6 +4,7 @@ import { Fornecedor } from '../model/fornecedor';
 import { Observable } from 'rxjs';
 import { environment } from '../environments/environment';
 import { HttpClient } from '@angular/common/http';
+import { FornecedorInsert } from '../model/fornecedor_insert';
 
 @Injectable({
   providedIn: 'root',
@@ -33,15 +34,15 @@ export class FornecedorService implements ICrudService<Fornecedor> {
 
   }
 
-  save(item: Fornecedor): Observable<Fornecedor> {
+  save(item: FornecedorInsert): Observable<FornecedorInsert> {
     let url = this.apiUrl;
     if (item.id) {
       console.log(url);
       url += item.id + "/"
-      return this.http.patch<Fornecedor>(url, item);
+      return this.http.put<FornecedorInsert>(url, item);
     }
     else {
-      return this.http.post<Fornecedor>(url, item);
+      return this.http.post<FornecedorInsert>(url, item);
     }
 
   }

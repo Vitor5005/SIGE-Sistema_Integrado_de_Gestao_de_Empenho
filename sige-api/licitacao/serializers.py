@@ -15,6 +15,11 @@ class AtaSerializer(serializers.ModelSerializer):
         model = Ata
         fields = '__all__'
 
+class AtaInsertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ata
+        fields = '__all__'
+
 class ItemAtaSerializer(serializers.ModelSerializer):
     ata = AtaSerializer()
     item_generico = ItemGenericoSerializer()

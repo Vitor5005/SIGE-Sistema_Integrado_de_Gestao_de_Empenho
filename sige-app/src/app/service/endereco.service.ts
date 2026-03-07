@@ -33,7 +33,7 @@ export class EnderecoService implements ICrudService<Endereco> {
     let url = this.apiUrl; 
     if (item.id) {
       url += item.id + '/'; 
-      return this.http.patch<Endereco>(url, item);
+      return this.http.put<Endereco>(url, item);
     }
     else {
       return this.http.post<Endereco>(url, item);
