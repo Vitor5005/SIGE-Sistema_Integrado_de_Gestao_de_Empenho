@@ -1,0 +1,66 @@
+body{
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(90deg, rgba(0, 103, 190, 1) 0%, rgba(0, 48, 88, 0.95) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  .container-login{
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 3rem 3.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    form{
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      font-size: 18px;
+      label{
+        color: var(--font-cinza2);
+      }
+      input{
+        width: 350px;
+        height: 40px;
+        border: none;
+        border-radius: 10px;
+        box-shadow: var(--box-shadow);
+      }
+      small{
+        font-size: 12px;
+        color: var(--azul-claro);
+      }
+
+      .campo-senha {
+        position: relative;
+      }
+      .campo-senha input {
+        width: 100%;
+        padding-right: 40px;
+      }
+      .campo-senha i {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        font-size: 18px;
+      }
+    }
+
+    button.submit{
+      height: 40px;
+      background-color: var(--azul-escuro);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+    }
+    .cadastre-se{
+      color: var(--azul-claro);
+    }
+  }
+}

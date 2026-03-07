@@ -56,6 +56,7 @@ export class VisualizarFornecedor {
   carregar_Fornecedor() {
     this.fornecedor_editar.id = this.fornecedor.id;
     this.fornecedor_editar.cnpj = this.fornecedor.cnpj;
+    this.fornecedor_editar.razao_social = this.fornecedor.razao_social;
     this.fornecedor_editar.nome_fantasia = this.fornecedor.nome_fantasia;
     this.fornecedor_editar.telefone = this.fornecedor.telefone;
     this.fornecedor_editar.email = this.fornecedor.email;

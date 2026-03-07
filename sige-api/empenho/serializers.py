@@ -15,7 +15,6 @@ class EmpenhoSerializer(serializers.ModelSerializer):
 
 class ItemEmpenhoSerializer(serializers.ModelSerializer):
     empenho = EmpenhoSerializer()
-    
     class Meta:
         model = ItemEmpenho
         fields = '__all__'

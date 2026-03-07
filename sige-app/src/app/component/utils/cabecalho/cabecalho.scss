@@ -1,4 +1,4 @@
-.cabecalho{
+.cabecalho {
   padding: 0 30px;
   display: flex;
   align-items: center;
@@ -6,46 +6,68 @@
   height: 100px;
   background: #0067BE;
   background: linear-gradient(90deg, rgba(0, 103, 190, 1) 0%, rgba(0, 48, 88, 0.95) 100%);
-}
-.logo{
-  color: #ffffff;
-}
-.nav-botoes{
-  background: var(--azul-escuro);
-  box-shadow: var(--box-shadow);
-  padding: 10px 20px;
-  border-radius: 30px;
-  display: flex;
-}
-.lista-botoes{
-  list-style: none;
-  align-items: center;
-  display: flex;
-  gap: 30px;
-  margin: 0;
-  padding: 0;
-}
-.botao{
-  font-size: 14px;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  color: #ffffff;
-  cursor: pointer;
-  &:hover{
-    color: var(--azul-claro);
+
+  .logo {
+    color: #ffffff;
+  }
+
+  .nav-botoes {
+    background: var(--azul-escuro);
+    box-shadow: var(--box-shadow);
+    padding: 10px 20px;
+    border-radius: 30px;
+    display: flex;
+    max-height: 42px;
+  }
+
+  .lista-botoes {
+    list-style: none;
+    align-items: center;
+    display: flex;
+    gap: 30px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .botao {
+    font-size: 14px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    color: #ffffff;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--azul-claro);
+      font-size: 15px;
+      transition: ease-in-out 0.4s;
+    }
+  }
+
+  .selecionado {
+    background-color: var(--branco);
+    color: var(--azul-escuro);
     font-size: 15px;
     transition: ease-in-out 0.4s;
+    padding: 5px 10px;
+    border-radius: 20px;
+
+    &:hover {
+      color: #000000;
+    }
+  }
+  .logout{
+    background-color: transparent;
+    border: none;
+    color: #ffffff;
+    i{
+      font-size: 28px;
+    }
+  }
+  i:hover{
+      color: #ff2e2e;
+      transition: ease-in-out .4s;
+      font-size: 30px;
   }
 }
-.selecionado{
-  background-color: var(--branco);
-  color: var(--azul-escuro);
-  font-size: 15px;
-  transition: ease-in-out 0.4s;
-  padding: 5px 10px;
-  border-radius: 20px;
-  &:hover{
-    color: #000000;
-  }
-}
+

@@ -55,7 +55,7 @@ p {
     width: 83vw;
     display: table;
     text-align: center;
-
+    margin-bottom: 50px;
     thead {
       background: var(--cabecalho);
       height: 50px;
@@ -85,8 +85,9 @@ p {
         color: var(--font-cinza);
       }
 
-      span.badge {
-        padding: 8px 10px;
+      span {
+        padding: 5px 8px;
+        border-radius: 10px;
         font-size: 16px;
       }
     }
@@ -120,7 +121,7 @@ p {
 
 ///Personalização do ícone de edição
 .bi-pencil-square {
-  display: inline-block; 
+  display: inline-block;
   transition: transform 0.2s ease, color 0.2s ease;
 }
 .bi-pencil-square:hover{

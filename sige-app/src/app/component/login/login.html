@@ -1,0 +1,46 @@
+<body>
+  <div class="container-login">
+    <div class="login-cabecalho">
+      <h1>Acessar conta</h1>
+    </div>
+
+    <form action="">
+
+      <div class="d-flex flex-column gap-2">
+        <label for="email">Email</label>
+        <input type="email" name="email" id="">
+      </div>
+
+      <div>
+
+        <div class="d-flex flex-column gap-2 senha-container">
+          <label for="senha">Senha</label>
+          <div class="campo-senha">
+            <input
+              [type]="mostrarSenha ? 'text' : 'password'"
+              name="senha"
+              id=""
+            >
+            <i
+              class="bi"
+              [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'"
+              (click)="toggleSenha()"
+            ></i>
+          </div>
+        </div>
+
+        <a href="#">
+          <small>Esqueceu a senha?</small>
+        </a>
+
+      </div>
+
+      <button type="submit" class="submit">Entrar</button>
+
+    </form>
+
+    <div>
+      <p>Não tem uma conta? <a class="cadastre-se" routerLink="/cadastrar-se">Cadastre-se</a></p>
+    </div>
+  </div>
+</body>

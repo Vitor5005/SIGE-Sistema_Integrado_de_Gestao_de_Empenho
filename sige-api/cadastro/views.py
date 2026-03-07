@@ -1,12 +1,12 @@
 from rest_framework import viewsets
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from cadastro.serializers import EnderecoSerializer, FornecedorSerializer, FornecedorCreateSerializer, ItemGenericoSerializer
-
+from licitacao.views import BaseFiltroMixin
 class EnderecoViewSet(viewsets.ModelViewSet):
     queryset = Endereco.objects.all()
     serializer_class = EnderecoSerializer
 
-class FornecedorViewSet(viewsets.ModelViewSet):
+class FornecedorViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Fornecedor.objects.all()
     serializer_class = FornecedorSerializer
     
@@ -17,8 +17,38 @@ class FornecedorViewSet(viewsets.ModelViewSet):
         
         return FornecedorSerializer
     
+   
+    search_fields = [
+        'cnpj', 
+        #'razao_social', 
+        'nome_fantasia',
+        'endereco__estado'
+    ]
 
-class ItemGenericoViewSet(viewsets.ModelViewSet):
+   
+    filterset_fields = {
+        'cnpj': ['exact'],
+        'endereco__estado': ['exact'],
+        'endereco__municipio': ['exact', 'icontains']
+    }
+
+    ordering_fields = ['nome_fantasia', 'cnpj']
+    ordering = ['nome_fantasia']
+class ItemGenericoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = ItemGenerico.objects.all()
     serializer_class = ItemGenericoSerializer
+
+    
+    search_fields = [
+        'catmat',       
+        'descricao',    
+    ]
+    filterset_fields = {
+        'catmat': ['exact'],               
+        'unidade_medida': ['exact'],      
+        'categoria': ['exact'],            
+    }
+
+    ordering_fields = ['catmat', 'descricao', 'categoria']
+    ordering = ['descricao']
 

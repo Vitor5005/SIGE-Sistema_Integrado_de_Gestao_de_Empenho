@@ -26,8 +26,7 @@
               <small>cadastrada: {{item.data_abertura}}</small>
             </div>
           </td>
-          <td><span>valido/invalido</span></td>
-          <td></td>
+          <td ><span [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span></td>
           <td><i class="bi bi-clock"></i> {{item.validade}} Meses </td>
           <td>{{item.descricao}}</td>
         </tr>

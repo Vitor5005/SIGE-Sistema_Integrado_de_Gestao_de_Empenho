@@ -8,6 +8,7 @@
     <table class="tabela">
         <thead>
             <tr>
+                <th scope="col">Razão Social</th>
                 <th scope="col">Nome Fantasia</th>
                 <th scope="col">CNPJ</th>
                 <th scope="col">Telefone</th>
@@ -18,8 +19,9 @@
             @for (item of fornecedores; track item.id) {
             <tr (click)="enviarPara('/visualizar-fornecedor', item.id)" style="cursor: pointer;">
                 <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
+                <td>{{ item.razao_social }}</td>
                 <td>
-                    <h5>{{ item.nome_fantasia }}</h5>
+                    {{ item.nome_fantasia }}
                 </td>
                 <td>{{ item.cnpj }}</td>
                 <td>{{ item.telefone }}</td>

@@ -37,10 +37,18 @@
       <hr>
     </div>
     <div class="conteudo">
+
+      <div class="d-flex grupo-inputs">
+        <div class="d-flex flex-column w-100 ">
+          <label>Razão Social</label>
+          <input type="text">
+        </div>
+      </div>
+
       <div class="d-flex grupo-inputs">
         <div class="d-flex flex-column w-75 ">
           <label>Nome Fantasia</label>
-          <input type="text" >
+          <input type="text">
         </div>
 
         <div class="d-flex flex-column w-25">
@@ -111,7 +119,7 @@
 
           <div class="d-flex">
             <div class="d-flex flex-column ">
-              <label >CATMAT</label>
+              <label>CATMAT</label>
               <input type="text" [(ngModel)]="form.catmat" name="catmat">
             </div>
 
@@ -208,12 +216,12 @@
     <div>
       <table class="tabela">
         <thead>
-            <tr>
-                <th scope="col" style="vertical-align: top;">FORNECEDORES ADICIONADOS</th>
-            </tr>
+          <tr>
+            <th scope="col" style="vertical-align: top;">FORNECEDORES ADICIONADOS</th>
+          </tr>
         </thead>
         <tbody>
-            Nenhum fornecedor adicionado...
+          Nenhum fornecedor adicionado...
         </tbody>
         <tbody>
       </table>

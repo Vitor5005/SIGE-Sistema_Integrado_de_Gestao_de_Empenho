@@ -3,7 +3,7 @@
 
   <section class="card-fornecedor">
     <div class="card-header-main">
-      <h1 class="fornecedor-nome">{{ fornecedor.nome_fantasia }}</h1>
+      <h1 class="fornecedor-nome">{{ fornecedor.razao_social }}</h1>
     </div>
 
     <div class="info-bloco">
@@ -11,6 +11,10 @@
         <h2 class="titulo-secao">INFORMAÇÕES GERAIS</h2>
       </div>
       <div class="info-grid">
+        <div class="info-item">
+          <label>NOME FANTASIA</label>
+          <span class="dado-valor">{{ fornecedor.nome_fantasia }}</span>
+        </div>
         <div class="info-item">
           <label>CNPJ</label>
           <span class="dado-valor">{{ fornecedor.cnpj }}</span>
@@ -63,9 +67,17 @@
       <div class="modal-content modal-custom">
         <div class="modal-header-azul">
           <h2 class="modal-titulo">EDIÇÃO DE FORNECEDOR</h2>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form class="form-fornecedor" #form="ngForm">
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>RAZÂO SOCIAL</label>
+                <input type="text" [(ngModel)]="fornecedor_editar.razao_social" name="razao_social">
+              </div>
+            </div>
+
             <div class="form-row">
               <div class="form-group flex-2">
                 <label>NOME FANTASIA</label>

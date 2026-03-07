@@ -1,5 +1,7 @@
 from urllib import request
-from warnings import filters
+#from warnings import filters
+
+from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import viewsets, filters
 from rest_framework.response import Response
@@ -8,16 +10,45 @@ from licitacao.serializers import LicitacaoSerializer, AtaSerializer, ItemAtaSer
 from empenho.serializers import ValorEmpenhoSerializer
 from empenho.models import Empenho, ItemEmpenho
 
-class LicitacaoViewSet(viewsets.ModelViewSet):
+class BaseFiltroMixin:
+    """
+    Mixin de configuração padrão de busca, filtro e ordenação
+    a qualquer ModelViewSet que precisar.
+    """
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
+class LicitacaoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Licitacao.objects.all()
     serializer_class = LicitacaoSerializer
+    # filter_backends = [
+    #     DjangoFilterBackend,
+    #     filters.SearchFilter,
+    #     filters.OrderingFilter
+    # ]
 
-class AtaViewSet(viewsets.ModelViewSet):
+    search_fields = ['numero_licitacao','descricao']
+    filterset_fields = {
+        'data_abertura':['exact', 'gte', 'lte'],
+        'validade':['exact', 'gte', 'lte']
+    }
+    ordering_fields = ['data_abertura','validade']
+    ordering = ['-data_abertura']
+
+class AtaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Ata.objects.all()
     serializer_class = AtaSerializer
 
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['licitacao__id']
+    search_fields = ['numero_ata', 'licitacao__numero_licitacao','licitacao__id']
+    filterset_fields = {
+        'licitacao__id': ['exact'],
+        'fornecedor__id': ['exact'],
+        'ata_saldo_total': ['exact', 'gte', 'lte'],
+    }
+    ordering_fields = ['ata_saldo_total', 'numero_ata']
+    ordering = ['-ata_saldo_total']
 
 class ItemAtaViewSet(viewsets.ModelViewSet):
     queryset = ItemAta.objects.all()

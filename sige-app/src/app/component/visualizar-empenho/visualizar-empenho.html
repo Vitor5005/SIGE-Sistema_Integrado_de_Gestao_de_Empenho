@@ -92,9 +92,12 @@
 
             <td>
               <div class="botoes-acoes">
-                <button><i class="bi bi-plus-circle reforcar"></i></button>
-
-                <button><i class="bi bi-x-circle anular"></i></button>
+                <button (click)="prepararOperacao('reforco')" data-bs-toggle="modal" data-bs-target="#modalSaldo">
+                  <i class="bi bi-plus-circle reforcar"></i>
+                </button>
+                <button (click)="prepararOperacao('anulacao')" data-bs-toggle="modal" data-bs-target="#modalSaldo">
+                  <i class="bi bi-x-circle anular"></i>
+                </button>
               </div>
             </td>
           </tr>
@@ -128,14 +131,52 @@
 
             <td>
               <div class="botoes-acoes">
-                <button><i class="bi bi-plus-circle reforcar"></i></button>
-                <button><i class="bi bi-x-circle anular" ></i></button>
+                <button (click)="prepararOperacao('reforco')" data-bs-toggle="modal" data-bs-target="#modalSaldo">
+                  <i class="bi bi-plus-circle reforcar"></i>
+                </button>
+                <button (click)="prepararOperacao('anulacao')" data-bs-toggle="modal" data-bs-target="#modalSaldo">
+                  <i class="bi bi-x-circle anular"></i>
+                </button>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+  </div>
+  <h3 class="mt-5">Histórico de Operações</h3>
+  <div class="mt-3 paitabela">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th scope="col">Data/Hora</th>
+          <th scope="col">Item</th>
+          <th scope="col">Tipo</th>
+          <th scope="col">Quantidade</th>
+          <th scope="col">Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>06/03/2024 14:30</td>
+          <td>Frango (KG)</td>
+          <td>
+            <span class="badge bg-primary">Reforço</span>
+          </td>
+          <td>+50 KG</td>
+          <td>R$ 1.000,00</td>
+        </tr>
+        <tr>
+          <td>06/03/2024 15:00</td>
+          <td>Carne Bovina (KG)</td>
+          <td>
+            <span class="badge bg-danger">Anulação</span>
+          </td>
+          <td>-20 KG</td>
+          <td>R$ 600,00</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- Modal -->
@@ -181,7 +222,6 @@
             </div>
 
             <div class="d-flex flex-column">
-              <!-- display, flex-direction e gap temporarios -->
               <label for="alimento2" style="margin: 0">
                 <span>Carne Bovina </span>
                 <span>(KG)</span>
@@ -205,4 +245,45 @@
       </div>
     </div>
   </div>
+
+ <div class="modal fade" id="modalSaldo" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header text-white" [ngClass]="tipo === 'anulacao' ? 'bg-danger' : 'bg-primary'">
+        <h5 class="modal-title">
+          {{ tipo === 'anulacao' ? 'ANULAÇÃO DE SALDO' : 'REFORÇO DE SALDO' }}
+        </h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <label class="text-muted small">ITEM SELECIONADO</label>
+        <div class="bg-light p-2 rounded mb-3">Frango (KG)</div>
+
+        <label class="text-muted small">TIPO DA OPERAÇÃO</label>
+        <div class="btn-group w-100 mb-3">
+          <button class="btn" [ngClass]="tipo === 'reforco' ? 'btn-primary' : 'btn-outline-secondary'" (click)="tipo='reforco'">
+            Reforço
+          </button>
+          <button class="btn" [ngClass]="tipo === 'anulacao' ? 'btn-danger' : 'btn-outline-secondary'" (click)="tipo='anulacao'">
+            Anulação
+          </button>
+        </div>
+
+        <label>Quantidade</label>
+        <input type="number" class="form-control" [placeholder]="tipo === 'anulacao' ? 'Qtd. para Anular' : 'Qtd. para Reforço'">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn w-100 mt-3 text-white" [ngClass]="tipo === 'anulacao' ? 'bg-danger' : 'bg-primary'">
+          <i class="bi bi-check-lg"></i>
+          {{
+            tipo === 'reforco' ? 'Confirmar Reforço' : 'Confirmar Anulação'
+          }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>

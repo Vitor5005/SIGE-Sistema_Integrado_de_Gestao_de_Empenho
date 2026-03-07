@@ -115,6 +115,8 @@
 
   .modal-header-azul {
     background: var(--cabecalho);
+    display: flex;
+    justify-content: space-between;
     padding: 1.2rem 2rem;
     .modal-titulo {
       color: var(--branco);

@@ -1,15 +1,18 @@
 <header class="cabecalho">
   <h1 class="logo">SIGE</h1>
-  <div class="nav-botoes">
-    <ul class="lista-botoes">
-      <li><a routerLink="/adicionar-licitacao" routerLinkActive="selecionado" class="botao">Adicionar licitação</a></li>
-      <li><a routerLink="/visualizar-licitacoes" routerLinkActive="selecionado" [routerLinkActiveOptions]="{ exact: true }" class="botao">Licitacoes</a></li>
-      <li><a routerLink="/visualizar-atas" class="botao" routerLinkActive="selecionado">ARP´s</a></li>
-      <li><a routerLink="/visualizar-empenhos" routerLinkActive="selecionado" class="botao">Empenhos</a></li>
-      <li><a routerLink="/visualizar-entregas" class="botao" routerLinkActive="selecionado">Entregas</a></li>
-      <li><a routerLink="/visualizar-fornecedores" class="botao" routerLinkActive="selecionado">Fornecedores</a></li>
-      <li><a routerLink="/visualizar-gens-alimenticios" class="botao" routerLinkActive="selecionado">Gên. Alimentícios</a></li>
-    </ul>
+  <div class="d-flex gap-4">
+    <div class="nav-botoes">
+      <ul class="lista-botoes">
+        <li><a routerLink="/adicionar-licitacao" routerLinkActive="selecionado" class="botao">Adicionar licitação</a></li>
+        <li><a routerLink="/visualizar-licitacoes" routerLinkActive="selecionado" [routerLinkActiveOptions]="{ exact: true }" class="botao">Licitacoes</a></li>
+        <li><a routerLink="/visualizar-atas" class="botao" routerLinkActive="selecionado">ARP´s</a></li>
+        <li><a routerLink="/visualizar-empenhos" routerLinkActive="selecionado" class="botao">Empenhos</a></li>
+        <li><a routerLink="/visualizar-entregas" class="botao" routerLinkActive="selecionado">Entregas</a></li>
+        <li><a routerLink="/visualizar-fornecedores" class="botao" routerLinkActive="selecionado">Fornecedores</a></li>
+        <li><a routerLink="/visualizar-gens-alimenticios" class="botao" routerLinkActive="selecionado">Gên. Alimentícios</a></li>
+      </ul>
+    </div>
+    <button class="logout"><i class="bi bi-box-arrow-right"></i></button>
   </div>
 </header>
 
