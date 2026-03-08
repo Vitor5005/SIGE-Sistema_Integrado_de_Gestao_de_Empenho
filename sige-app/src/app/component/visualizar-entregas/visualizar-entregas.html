@@ -7,118 +7,41 @@
             <app-barra-pesquisa></app-barra-pesquisa>
         </div>
         <div class="conteiner-entregas">
+            @for (item of entregas; track item.id) {
             <div class="card-entrega">
 
                 <div class="topo-entrega">
                     <div class="info-entrega">
                         <span class="pedido-entrega">
-                            PEDIDO DE ENTREGA #ENT-XXX
+                            {{ item.codigo }}
                         </span>
 
-                        <span class="link-doc"
-                            (click)="enviarPara('/visualizar-empenho')">
-                            EMP-XXX-XX
+                        <span class="link-doc" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
+                            {{ item.empenho.codigo }}
                         </span>
-                        
-                        <span class="link-doc"
-                            (click)="enviarPara('/visualizar-ata')">
-                            ARP-XX-XXXX
+
+                        <span class="link-doc" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
+                            {{ item.empenho.ata.numero_ata }}
                         </span>
-                        
+
                     </div>
 
-                    <button class="btn-confirmar"
-                        data-bs-toggle="modal" data-bs-target="#confirmarModal" *ngIf="!confirmado">
+                    <button class="btn-confirmar" data-bs-toggle="modal" data-bs-target="#confirmarModal"
+                        *ngIf="!confirmado">
                         <i class="bi bi-check-circle"></i>
                         CONFIRMAR ENTREGA
                     </button>
-                </div>
 
-                <div class="lista-produtos">
-                    <div class="produto">
-                        <div>
-                            <span class="nome">
-                                Frango 
-                            </span>
-                            <span class="unidade">
-                                KG
-                            </span>
-                        </div>
 
-                        <div class="info">
-                            <p>30 kg</p>
-                            <span>R$ 600,00</span>
-                        </div>
-                    </div>
-
-                    <div class="produto">
-                        <div>
-                            <span class="nome">
-                                Carne Borvina 
-                            </span>
-                            <span class="unidade">
-                                KG
-                            </span>
-                        </div>
-
-                        <div class="info">
-                            <p>30 kg</p>
-                            <span>R$ 600,00</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card-entrega">
-                <div class="topo-entrega">
-                    <div class="info-entrega"> <!-- fazer código em ts para verificar se o pedido foi entregue para mudar a cor da div para verde -->
-                        <span class="pedido-entrega">
-                            PEDIDO DE ENTREGA #ENT-XXX
-                        </span>
-                        
-                        <span class="link-doc"
-                            (click)="enviarPara('/visualizar-empenho')">
-                            EMP-XXX-XX
-                        </span>
-                        
-                        <span class="link-doc"
-                            (click)="enviarPara('/visualizar-ata')">
-                            ARP-XX-XXXX
-                        </span>
-                    </div>
-
-                    <button class="btn-confirmar"
-                        *ngIf="confirmado">
-                        <i class="bi bi-check-circle"></i> CONFIRMAR ENTREGA
+                    <button class="btn link-doc" data-bs-toggle="modal" data-bs-target="#verPedidoMordal"
+                        (click)="getItensOrdem(item.id)" *ngIf="!confirmado">
+                        <i class="bi bi-eye"></i>
+                        VER PEDIDO
                     </button>
                 </div>
 
-                <div class="lista-produtos">
-                    <div class="produto">
-                        <div>
-                            <span class="nome">Arroz </span>
-                            <span class="unidade">UN</span>
-                        </div>
-
-                        <div class="info">
-                            <p>10 un</p>
-                            <span>R$ X00,00</span>
-                        </div>
-                    </div>
-
-                    <div class="produto">
-                        <div>
-                            <span class="nome">Feijão </span>
-                            <span class="unidade">UN</span>
-                        </div>
-
-                        <div class="info">
-                            <p>20 un </p>
-                            <span>R$ X00,00</span>
-                        </div>
-                    </div>
-                </div>
             </div>
+            }
         </div>
     </div>
 
@@ -242,6 +165,52 @@
                     <button type="button">
                         <i class="bi bi-check-lg"></i> Confirmar Entrega
                     </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+
+    <div #myModal class="modal fade" id="verPedidoMordal" tabindex="-1" aria-labelledby="verPedidoMordalLabel"
+        aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h1 class="modal-title fs-5" id="entregaModalLabel">
+                        VER PEDIDO <i class="bi bi-truck"></i>
+                    </h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                </div>
+
+                <div class="modal-body">
+                    <div class="lista-produtos">
+
+                        @for(item of pedidosDaOrdem; track item.id) {
+                        <div class="produto">
+                            <div>
+                                <span class="nome">
+                                    {{ item.item_empenho.item_ata.item_generico.descricao }}
+                                </span>
+                                <span class="unidade">
+                                    {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                                </span>
+                            </div>
+
+                            <div class="info">
+                                <p>{{ item.quantidade_solicitada }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</p>
+                                <span>R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada| number:'1.2-2' }}</span>
+                            </div>
+                        </div>
+                        }
+
+
+                    </div>
                 </div>
 
             </div>
