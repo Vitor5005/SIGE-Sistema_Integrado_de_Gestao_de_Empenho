@@ -18,8 +18,8 @@
 
             @for (item of empenhos; track item.id) {
                 <!-- Exemplo 1 -->
-                <tr style="cursor: pointer;" (click)="enviarPara('visualizar-empenho')">
-                    <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
+                <tr style="cursor: pointer;" (click)="enviarPara('visualizar-empenho', item.id)">
+                    
                     <td>
                         <span>{{ item.codigo }}</span>
                     </td>
