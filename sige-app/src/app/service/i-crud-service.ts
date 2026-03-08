@@ -6,4 +6,5 @@ export interface ICrudService<T> {
     getById(id: number): Observable<T>;
     save(item: any): Observable<any>;
     delete(id: number): Observable<void>;
+    patch(id: number, object: any): Observable<any> 
 }
