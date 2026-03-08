@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, filters
 from rest_framework.response import Response
 from licitacao.models import Licitacao, Ata, ItemAta
-from licitacao.serializers import AtaInsertSerializer, LicitacaoSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
+from licitacao.serializers import AtaInsertSerializer, ItemAtaInsertSerializer, LicitacaoSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
 from empenho.serializers import ValorEmpenhoSerializer
 from empenho.models import Empenho, ItemEmpenho
 
@@ -61,6 +61,12 @@ class AtaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 class ItemAtaViewSet(viewsets.ModelViewSet):
     queryset = ItemAta.objects.all()
     serializer_class = ItemAtaSerializer
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update']:
+            return ItemAtaInsertSerializer
+        
+        return ItemAtaSerializer
 
 class ValorDoEmpenhoViewSet(viewsets.ModelViewSet):
     serializer_class = ValorEmpenhoSerializer

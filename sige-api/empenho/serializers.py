@@ -12,6 +12,16 @@ class EmpenhoSerializer(serializers.ModelSerializer):
         
     def get_quantidade_itens(self, instance):
         return ItemEmpenho.objects.filter(empenho=instance).count()
+    
+class EmpenhoInsertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Empenho
+        fields = '__all__'
+
+class ItemEmpenhoInsertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ItemEmpenho
+        fields = '__all__'
 
 class ItemEmpenhoSerializer(serializers.ModelSerializer):
     empenho = EmpenhoSerializer()

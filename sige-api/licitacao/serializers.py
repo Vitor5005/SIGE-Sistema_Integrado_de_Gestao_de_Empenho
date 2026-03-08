@@ -19,6 +19,11 @@ class AtaInsertSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ata
         fields = '__all__'
+        
+class ItemAtaInsertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ItemAta
+        fields = '__all__'
 
 class ItemAtaSerializer(serializers.ModelSerializer):
     ata = AtaSerializer()
