@@ -4,7 +4,10 @@
   <div class="container1">
     <div class="container-numero">
       <b>{{ licitacao.numero_licitacao }}</b>
-      <button><i class="bi bi-download"></i> Exportar</button>
+      <button data-bs-toggle="modal" data-bs-target="#adicionarAtaModal" (click)="reiniciar_Modal()">
+        <i class="bi bi-file-earmark-plus"></i>
+        Adicionar Ata
+      </button>
     </div>
     <div class="container-infos">
       <div class="validade-card">
@@ -26,8 +29,10 @@
   <hr />
 
   <div class="ARP-s">
+
     <p>Atas de Registro de Preço (ARP's)</p>
-    <div class="container-atas">
+
+    <div class="container-atas" *ngIf="atas.length > 0">
       <div *ngFor="let item of atas" class="ata" (click)="enviarPara('visualizar-ata', item.id)">
         <div class="container-ata">
           <div class="icone-ata">
@@ -51,4 +56,209 @@
       </div>
     </div>
   </div>
+
+  <div class="container-atas vazia" *ngIf="atas.length === 0">
+    <h5>Nenhuma ata de registro de preço foi adicionada para esta licitação.</h5>
+    <h5>Clique no botão "Adicionar Ata" para adicionar uma nova ata.</h5>
+  </div>
+
+  <div #myModal class="modal fade" id="adicionarAtaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content modal-custom">
+        <div class="modal-header-azul">
+          <h2 class="modal-titulo">Adicionar Ata </h2>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+
+          @if (modal_page === 0){
+
+          <div class="subtitulo">
+            <h5>SELECIONE UM FORNECEDOR</h5>
+            <hr>
+          </div>
+
+
+          <div class="listagem">
+
+            <app-barra-pesquisa></app-barra-pesquisa>
+
+            <table class="tabela">
+              <thead>
+                <tr>
+                  <th scope="col">Razão Social</th>
+                  <th scope="col">Nome Fantasia</th>
+                  <th scope="col">CNPJ</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of fornecedores; track item.id) {
+                @if (!fornecedores_licitados.includes(item.id)) {
+                <tr style="cursor: pointer;" (click)="escolherFornecedor(item)">
+                  <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
+                  <td>{{ item.razao_social }}</td>
+                  <td>
+                    {{ item.nome_fantasia }}
+                  </td>
+                  <td>{{ item.cnpj }}</td>
+                </tr>
+                }
+                }
+              </tbody>
+            </table>
+
+            <h6>* Caso o fornecedor não esteja registrado no sistema, clique no botão "ADICIONAR NOVO FORNECEDOR"</h6>
+            <div class="form-footer">
+              <button class="btn-confirmar" (click)="avanca_modal_page()">
+                <i class="bi bi-person-add"></i> ADICIONAR NOVO FORNECEDOR
+              </button>
+            </div>
+
+          </div>
+
+          }
+
+          @if (modal_page === 1){
+          <div class="subtitulo">
+            <h5>ADICIONAR NOVO FORNECEDOR</h5>
+            <hr>
+          </div>
+          <form class="form-fornecedor" #form="ngForm">
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>RAZÂO SOCIAL</label>
+                <input type="text" [(ngModel)]="fornecedor_insercao.razao_social" name="razao_social">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>NOME FANTASIA</label>
+                <input type="text" [(ngModel)]="fornecedor_insercao.nome_fantasia" name="nome_fantasia">
+              </div>
+              <div class="form-group flex-1">
+                <label>CNPJ</label>
+                <input type="text" [(ngModel)]="fornecedor_insercao.cnpj" name="cnpj">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>RUA</label>
+                <input type="text" [(ngModel)]="endereco_insercao.lagradouro" name="logradouro">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>CEP</label>
+                <input type="text" [(ngModel)]="endereco_insercao.cep" name="cep">
+              </div>
+              <div class="form-group flex-1">
+                <label>NÚMERO</label>
+                <input type="text" [(ngModel)]="endereco_insercao.numero" name="numero">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>BAIRRO</label>
+                <input type="text" [(ngModel)]="endereco_insercao.bairro" name="bairro">
+              </div>
+              <div class="form-group">
+                <label>MUNICÍPIO</label>
+                <input type="text" [(ngModel)]="endereco_insercao.municipio" name="municipio">
+              </div>
+              <div class="form-group">
+                <label>ESTADO</label>
+                <input type="text" [(ngModel)]="endereco_insercao.estado" name="estado">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>TELEFONE</label>
+                <input type="text" [(ngModel)]="fornecedor_insercao.telefone" name="telefone">
+              </div>
+              <div class="form-group flex-2">
+                <label>E-MAIL</label>
+                <input type="email" [(ngModel)]="fornecedor_insercao.email" name="email">
+              </div>
+            </div>
+
+            <div class="form-footer">
+              <button class="btn-confirmar" (click)="volta_modal_page()">
+                <i class="bi bi-arrow-left"></i> VOLTAR
+              </button>
+
+              <button class="btn-confirmar" (click)="avanca_modal_page()">
+                <i class="bi bi-arrow-right"></i> PROSSEGUIR
+              </button>
+            </div>
+
+          </form>
+          }
+
+          @if (modal_page === 2){
+
+          <div class="subtitulo">
+            <h5>INFORMAÇÔES DO FORNECEDOR</h5>
+            <hr>
+          </div>
+
+          <div>
+            <p><b>RAZÃO SOCIAL:</b> {{ fornecedor_insercao.razao_social }}</p>
+            <p><b>NOME FANTASIA:</b> {{ fornecedor_insercao.nome_fantasia }}</p>
+            <p><b>CNPJ:</b> {{ fornecedor_insercao.cnpj }}</p>
+            <p><b>RUA:</b> {{ endereco_insercao.lagradouro }}</p>
+            <p><b>CEP:</b> {{ endereco_insercao.cep }}</p>
+            <p><b>NÚMERO:</b> {{ endereco_insercao.numero }}</p>
+            <p><b>BAIRRO:</b> {{ endereco_insercao.bairro }}</p>
+            <p><b>MUNICÍPIO:</b> {{ endereco_insercao.municipio }}</p>
+            <p><b>ESTADO:</b> {{ endereco_insercao.estado }}</p>
+            <p><b>TELEFONE:</b> {{ fornecedor_insercao.telefone }}</p>
+            <p><b>E-MAIL:</b> {{ fornecedor_insercao.email }}</p>
+
+          </div>
+
+          <form class="form-fornecedor" #form="ngForm">
+            <hr>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>CONTRATO DA ATA</label>
+                <input type="text" [(ngModel)]="ata_insercao.numero_ata" name="contrato">
+              </div>
+
+              <div class="form-group flex-2">
+                <label>NUMERO DO EMPENHO</label>
+                <input type="text" [(ngModel)]="empenho_insercao.codigo" name="numero_empenho">
+              </div>
+            </div>
+
+            <div class="form-footer">
+              @if (jump_page == false) {
+              <button class="btn-confirmar" (click)="volta_modal_page()">
+                <i class="bi bi-arrow-left"></i> VOLTAR
+              </button>
+
+              <button class="btn-confirmar" (click)="saveFornecedor()">
+                <i class="bi bi-check-lg"></i> CONCLUIR
+              </button>
+              }
+
+              @if (jump_page == true) {
+              <button class="btn-confirmar" (click)="volta_modal_page(0)">
+                <i class="bi bi-arrow-left"></i> VOLTAR
+              </button>
+
+              <button class="btn-confirmar" (click)="saveAta()">
+                <i class="bi bi-check-lg"></i> CONCLUIR
+              </button>
+              }
+
+            </div>
+          </form>
+          }
+
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>

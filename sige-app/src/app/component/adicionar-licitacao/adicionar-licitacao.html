@@ -1,235 +1,49 @@
 <body>
-  <div class="container-titulo">
-    <h3>ADICIONAR LICITAÇÃO</h3>
-    <hr>
-  </div>
+  <form (submit)="save()">
 
-  <!-- informações gerais -->
-  <section>
-    <div class="subtitulo">
-      <h5>1. INFORMAÇÕES GERAIS</h5>
-      <hr>
-    </div>
-    <div class="conteudo">
-      <div class="grupo-inputs">
-        <div class="d-flex flex-column">
-          <label>Número da Licitação</label>
-          <input type="text" placeholder="Ex.: 001/2026">
-        </div>
-
-        <div class="d-flex flex-column">
-          <label>Validade (em meses)</label>
-          <input type="number" placeholder="12">
-        </div>
-      </div>
-
-      <div>
-        <label>Descrição (opcional)</label>
-        <textarea rows="5"></textarea>
-      </div>
-    </div>
-  </section>
-
-  <!-- inserção de fornecedor -->
-  <section>
-    <div class="subtitulo">
-      <h5>2. INSERÇÃO DE FORNECEDOR</h5>
-      <hr>
-    </div>
-    <div class="conteudo">
-
-      <div class="d-flex grupo-inputs">
-        <div class="d-flex flex-column w-100 ">
-          <label>Razão Social</label>
-          <input type="text">
-        </div>
-      </div>
-
-      <div class="d-flex grupo-inputs">
-        <div class="d-flex flex-column w-75 ">
-          <label>Nome Fantasia</label>
-          <input type="text">
-        </div>
-
-        <div class="d-flex flex-column w-25">
-          <label>CNPJ</label>
-          <input type="text" placeholder="00.000.000/0000-00">
-        </div>
-      </div>
-
-      <div class="d-flex grupo-inputs">
-        <div class="d-flex flex-column w-75">
-          <label>Rua</label>
-          <input type="text">
-        </div>
-
-        <div class="d-flex flex-column  w-25">
-          <label>Número</label>
-          <input type="text">
-        </div>
-
-      </div>
-
-      <div class="d-flex grupo-inputs ">
-        <div class="d-flex flex-column w-50">
-          <label>Bairro</label>
-          <input type="text">
-        </div>
-        <div class="d-flex flex-column w-50">
-          <label>Município</label>
-          <input type="text">
-        </div>
-
-        <div class="d-flex flex-column w-50">
-          <label>Estado</label>
-          <input type="text">
-        </div>
-      </div>
-
-      <div class="d-flex grupo-inputs">
-        <div class="d-flex flex-column w-25">
-          <label>Telefone</label>
-          <input type="text" placeholder="(DD) 9XXXX-XXXX">
-        </div>
-        <div class="d-flex flex-column w-75">
-          <label>E-mail</label>
-          <input type="email">
-        </div>
-      </div>
-    </div>
-  </section>
-  <!-- ARP's -->
-  <section>
-    <div class="subtitulo">
-      <h5>3. ATA DE REGISTRO DE PREÇO</h5>
+    <div class="container-titulo">
+      <h3>ADICIONAR LICITAÇÃO</h3>
       <hr>
     </div>
 
-    <div class="numero-arp">
-      <label>Número da ARP</label>
-      <input type="text">
-    </div>
 
-    <!-- aidicionar itens à ARP -->
-    <fieldset>
-      <form (ngSubmit)="adicionar()">
-
-        <legend>Adicionar gênero alimentício</legend>
-        <div class="inserir-itens">
-
-          <div class="d-flex">
-            <div class="d-flex flex-column ">
-              <label>CATMAT</label>
-              <input type="text" [(ngModel)]="form.catmat" name="catmat">
-            </div>
-
-            <div class="d-flex flex-column ">
-              <label>Qtd. Licitada</label>
-              <input type="number" [(ngModel)]="form.qtdLicitada" name="qtdLicitada">
-            </div>
-
-            <div class="d-flex flex-column ">
-              <label>Valor Unitário (R$)</label>
-              <input type="text" [(ngModel)]="form.valorUnitario" name="valorUnitario">
-            </div>
+    <!-- informações gerais -->
+    <section>
+      <div class="subtitulo">
+        <h5>1. INFORMAÇÕES GERAIS</h5>
+        <hr>
+      </div>
+      <div class="conteudo">
+        <div class="grupo-inputs">
+          <div class="d-flex flex-column">
+            <label>Número da Licitação</label>
+            <input type="text" placeholder="Ex.: 001/2026" [(ngModel)]="licitacao.numero_licitacao"
+              name="numero_licitacao">
           </div>
 
-          <div class="d-flex">
-            <div class="d-flex flex-column ">
-              <label>Marca</label>
-              <input type="text" [(ngModel)]="form.marca" name="marca">
-            </div>
-
-            <div class="d-flex flex-column ">
-              <label>Categoria</label>
-              <input type="text" [(ngModel)]="form.categoria" name="categoria">
-            </div>
-
-            <div class="d-flex flex-column ">
-              <label>Unidade de Medida</label>
-              <select [(ngModel)]="form.unidadeMedida" name="unidadedeMedida">
-                <option></option>
-              </select>
-            </div>
-
-          </div>
-          <div class="d-flex">
-            <div class="d-flex flex-column">
-              <label>Descrição detalhada</label>
-              <textarea rows="2" [(ngModel)]="form.descricao" name="descricao"></textarea>
-            </div>
-
-            <div class="d-flex flex-column">
-              <label>Valor Total</label>
-              <input type="text" [(ngModel)]="form.valorTotal" name="valorTotal">
-            </div>
+          <div class="d-flex flex-column">
+            <label>Validade (em meses)</label>
+            <input type="number" placeholder="12" [(ngModel)]="licitacao.validade" name="validade">
           </div>
 
-          <button type="submit" class="btn-submit">
-            + ADICIONAR GÊNERO À ARP
-          </button>
+          <div class="d-flex flex-column">
+            <label>Data de abertura</label>
+            <input type="date" [(ngModel)]="licitacao.data_abertura" name="data_abertura">
+          </div>
         </div>
-      </form>
-    </fieldset>
 
-    <div class="itens-adicionados vazia">
-      <table class="">
-        <thead>
-          <tr>
-            <th>CATMAT</th>
-            <th>Gênero</th>
-            <th>Marca</th>
-            <th>Quantidade</th>
-            <th>Valor Unitário</th>
-            <th>Valor Total</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of lista">
-            <td>{{item.catmat}}</td>
-            <td class="d-flex flex-column">{{item.descricao}} <small>{{item.categoria}}</small></td>
-            <td>{{item.marca}}</td>
-            <td>{{item.qtdLicitada}}</td>
-            <td>{{item.valorUnitario}}</td>
-            <td>{{item.valorTotal}}</td>
-            <td>
-              <i class="bi bi-trash" (click)="excluirItem(item)"></i>
-            </td>
-          </tr>
+        <div>
+          <label>Descrição (opcional)</label>
+          <textarea rows="5" [(ngModel)]="licitacao.descricao" name="descricao"></textarea>
+        </div>
+      </div>
+    </section>
 
-          <!-- <tr>
-            <td>AS9WED</td>
-            <td class="d-flex flex-column">mistura lactea<small>SECOS/MERCEARIA</small></td>
-            <td>italac</td>
-            <td>110</td>
-            <td>R$ 4,00</td>
-            <td>
-              <i class="bi bi-trash"></i>
-            </td>
-          </tr> -->
-        </tbody>
-      </table>
+
+    <div class="container-botoes">
+      <button class="botao bnt-criar">Criar Licitação</button>
     </div>
-  </section>
-  <div class="listagem">
-    <div>
-      <table class="tabela">
-        <thead>
-          <tr>
-            <th scope="col" style="vertical-align: top;">FORNECEDORES ADICIONADOS</th>
-          </tr>
-        </thead>
-        <tbody>
-          Nenhum fornecedor adicionado...
-        </tbody>
-        <tbody>
-      </table>
 
-    </div>
-  </div>
-  <div class="container-botoes">
-    <button class="botao bnt-adicionar">Adicionar Fornecedor</button>
-    <button class="botao bnt-criar">Criar Licitação</button>
-  </div>
+  </form>
+
 </body>

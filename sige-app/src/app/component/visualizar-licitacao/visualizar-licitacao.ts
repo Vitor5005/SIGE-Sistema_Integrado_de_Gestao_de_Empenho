@@ -15,6 +15,8 @@ import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { AtaInsert } from '../../model/ata_insert';
 import { FornecedorInsert } from '../../model/fornecedor_insert';
 import { EnderecoService } from '../../service/endereco.service';
+import { EmpenhoInsert } from '../../model/empenho_insert';
+import { EmpenhoService } from '../../service/empenho.service';
 
 @Component({
   selector: 'app-visualizar-licitacao',
@@ -29,6 +31,7 @@ export class VisualizarLicitacao {
     private licitacaoService: LicitacaoService,
     private fornecedorService: FornecedorService,
     private enderecoService: EnderecoService,
+    private empenhoService: EmpenhoService,
     private ataService: AtaService,
     private route: ActivatedRoute
   ) { }
@@ -44,6 +47,7 @@ export class VisualizarLicitacao {
   fornecedor_insercao: FornecedorInsert = <FornecedorInsert>{};
   endereco_insercao: Endereco = <Endereco>{};
   ata_insercao: AtaInsert = <AtaInsert>{ ata_saldo_total: 0 };
+  empenho_insercao: EmpenhoInsert = <EmpenhoInsert>{ saldo_utilizado: 0, quantidade_itens: 0, valor_total: 0 };
 
   modal_page: number = 0;
   jump_page: boolean = false;
@@ -93,7 +97,7 @@ export class VisualizarLicitacao {
   }
 
   getAtas(licitacaoId: number): void {
-    this.ataService.get(String(licitacaoId)).subscribe({
+    this.ataService.getByLicicao(String(licitacaoId)).subscribe({
       next: (resposta: Array<Ata>) => {
         this.atas = resposta;
       },
@@ -128,30 +132,36 @@ export class VisualizarLicitacao {
 
   avanca_modal_page(valor?: number): void {
     this.modal_page = valor !== undefined ? valor : this.modal_page + 1;
-    if (!valor && this.modal_page === 0) {
+  }
+
+  volta_modal_page(valor?: number): void {
+    this.modal_page = valor !== undefined ? valor : this.modal_page - 1;
+    if (this.jump_page == true) {
       this.jump_page = false;
       this.fornecedor_insercao = <FornecedorInsert>{};
       this.endereco_insercao = <Endereco>{};
     }
   }
 
-  volta_modal_page(valor?: number): void {
-    this.modal_page = valor !== undefined ? valor : this.modal_page - 1;
-  }
-
   reiniciar_Modal(): void {
     this.modal_page = 0;
+    this.jump_page = false;
     this.fornecedor_insercao = <FornecedorInsert>{};
     this.endereco_insercao = <Endereco>{};
   }
 
   saveAta(): void {
     this.ataService.save(this.ata_insercao).subscribe({
-      complete: () => {
-        alert("Ata salva com sucesso!");
-        window.location.reload();
+      next: (resposta: AtaInsert) => {
+        this.empenho_insercao.ata = resposta.id;
+        this.empenhoService.save(this.empenho_insercao).subscribe({
+          complete: () => {
+            alert('Ata cadastrada com sucesso!');
+            window.location.reload();
+          }
+        });
       }
-    })
+    });
   }
 
   saveFornecedor(): void {

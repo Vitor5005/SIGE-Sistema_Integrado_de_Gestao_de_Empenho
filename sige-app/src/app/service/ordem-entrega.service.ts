@@ -5,6 +5,7 @@ import { ICrudService } from './i-crud-service';
 import { Observable } from 'rxjs';
 import { environment } from '../environments/environment.development';
 import { HttpClient } from '@angular/common/http';
+import { ItemOrdem } from '../model/itemOrdem';
 
 @Injectable({
   providedIn: 'root',
@@ -51,5 +52,9 @@ export class OrdemEntregaService implements ICrudService<OrdemEntrega> {
     let url = this.apiUrl + id + '/';
     return this.http.patch(url, object);
   }
-  
+
+  getPedidos(id: number): Observable<ItemOrdem[]> {
+    let url = this.apiUrl + `pedidos/?ordem_id=` + id;
+    return this.http.get<ItemOrdem[]>(url);
+  }
 }

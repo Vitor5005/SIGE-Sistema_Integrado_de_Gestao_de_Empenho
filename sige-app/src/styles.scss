@@ -8,6 +8,7 @@
   box-sizing: border-box;
   font-family: "Inter", sans-serif;
 }
+
 p {
   margin: 0;
   margin-bottom: 0;
@@ -56,6 +57,7 @@ p {
     display: table;
     text-align: center;
     margin-bottom: 50px;
+
     thead {
       background: var(--cabecalho);
       height: 50px;
@@ -91,8 +93,9 @@ p {
         font-size: 16px;
       }
     }
+
     //esconder parte da descrição
-    p.descricao{
+    p.descricao {
       max-width: 220px;
       white-space: nowrap;
       overflow: hidden;
@@ -100,16 +103,18 @@ p {
     }
   }
 }
+
 //Mudança de cor ao passar o cursor na linha + transição fluida
-.tabela tbody tr{
+.tabela tbody tr {
   transition: background 0.1s ease;
 }
-.tabela tbody tr:hover{
+
+.tabela tbody tr:hover {
   background: #c5e4fe;
 }
 
 ///impede a quebra da data para outra linha em "CADASTRADO"
-.teste{
+.teste {
   display: flex;
   flex-direction: column;
 
@@ -124,7 +129,8 @@ p {
   display: inline-block;
   transition: transform 0.2s ease, color 0.2s ease;
 }
-.bi-pencil-square:hover{
+
+.bi-pencil-square:hover {
   color: #004779;
   transform: scale(1.2);
 }
@@ -139,4 +145,147 @@ p {
 
 .modal-backdrop.show {
   opacity: 1 !important;
+}
+
+.modal-custom {
+
+  border-radius: 15px !important;
+  border: none !important;
+  overflow: hidden;
+  box-shadow: var(--box-shadow);
+
+  .modal-header-azul {
+    background: var(--cabecalho);
+    display: flex;
+    justify-content: space-between;
+    padding: 1.2rem 2rem;
+
+    .modal-titulo {
+      color: var(--branco);
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+  }
+
+  .modal-body {
+    padding: 2.5rem;
+
+    .form-fornecedor {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+
+      .form-row {
+        display: flex;
+        gap: 1.5rem;
+
+        .flex-1 {
+          flex: 1;
+        }
+
+        .flex-2 {
+          flex: 2;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          flex: 1;
+
+          label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: var(--font-cinza2);
+          }
+
+          input {
+            padding: 0.8rem 1rem;
+            border: var(--borda1);
+            border-radius: 8px;
+            color: #333;
+
+            &:focus {
+              border-color: var(--azul-claro);
+              outline: none;
+            }
+          }
+        }
+      }
+    }
+
+    .form-footer {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+
+      .btn-confirmar {
+        background: var(--azul-claro);
+        color: var(--branco);
+        border: none;
+        padding: 1rem 3.5rem;
+        border-radius: 15px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        cursor: pointer;
+        transition: 0.2s;
+
+        &:hover {
+          opacity: 0.9;
+        }
+
+        i {
+          font-size: 1.5rem;
+        }
+      }
+    }
+  }
+}
+
+.modal-body {
+  .listagem {
+    gap: 15px;
+
+    .container-titulo {
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .tabela {
+      width: 100%;
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+
+      thead {
+        height: 40px;
+
+        th {
+          padding: 8px;
+          font-size: 0.8rem;
+        }
+      }
+
+      td {
+        padding: 8px;
+        font-size: 0.8rem;
+      }
+
+      p {
+        font-size: 0.8rem;
+      }
+
+      p.descricao {
+        max-width: 150px;
+      }
+    }
+  }
+}
+
+
+#adicionarAtaModal .modal-body hr, #adicionarItemModal .modal-body hr {
+  width: 100%;
 }
