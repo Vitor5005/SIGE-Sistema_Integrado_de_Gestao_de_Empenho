@@ -40,6 +40,16 @@ class ItemEmpenhoViewSet(viewsets.ModelViewSet):
             return ItemEmpenhoInsertSerializer
         
         return ItemEmpenhoSerializer
+    
+class OperacaoDoEmpenhoViewSet(viewsets.ModelViewSet):
+    queryset = OperacaoItem.objects.all()
+    serializer_class = OperacaoItemSerializer
+    
+    def get_queryset(self):
+        empenho_id = self.request.query_params.get('empenho_id')
+        if empenho_id:
+            return OperacaoItem.objects.filter(item_empenho__empenho_id=empenho_id)
+        return OperacaoItem.objects.all() 
 
 class OperacaoItemViewSet(viewsets.ModelViewSet):
     queryset = OperacaoItem.objects.all()
@@ -61,4 +71,3 @@ class OperacaoItemViewSet(viewsets.ModelViewSet):
 
     ordering_fields = ['data', 'valor']
     ordering = ['-data']
-    

@@ -3,11 +3,13 @@ from .views import (
     EmpenhoViewSet,
     ItemEmpenhoViewSet,
     OperacaoItemViewSet,
-    ItemDoEmpehoViewSet
+    ItemDoEmpehoViewSet,
+    OperacaoDoEmpenhoViewSet
 )
 
 router = DefaultRouter()
 
+router.register(r'empenhos/operacaoDoEmpenho', OperacaoDoEmpenhoViewSet, basename='operacoes-do-empenho')
 router.register(r'empenhos/itensDoEmpenho', ItemDoEmpehoViewSet, basename='itens-do-empenho')
 router.register(r'empenhos',EmpenhoViewSet)
 router.register(r'itemempenho', ItemEmpenhoViewSet)

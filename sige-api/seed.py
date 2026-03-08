@@ -354,23 +354,32 @@ def seed_itens_empenho(empenhos=None, itens_ata=None):
 def seed_operacoes_item(itens_empenho=None):
     """
     Cria operações de empenho com:
-    - Tipos válidos: inc (inclusão), ref (reforço), anl (anulação)
-    - Uma a três operações por item de empenho
-    - Valores coerentes
+    - Regra obrigatória: todo ItemEmpenho recebe imediatamente uma operação
+      de inclusão (inc) com valor = 1 unidade.
+    - Operações extras opcionais: ref (reforço) e anl (anulação).
+    - Valores coerentes para operações extras.
     """
-    tipos_operacao = ['inc', 'ref', 'anl']
     operacoes = []
     
     for item_empenho in itens_empenho:
-        # 1 a 3 operações por item
-        num_operacoes = random.randint(1, 3)
-        
-        for j in range(num_operacoes):
-            tipo = random.choice(tipos_operacao)
-            # Valor relacionado à quantidade e valor unitário
+        # Operação obrigatória e imediata de inclusão
+        operacao_inclusao = OperacaoItem.objects.create(
+            item_empenho=item_empenho,
+            tipo='inc',
+            valor=limitar_valor_monetario(Decimal("1.00")),
+            data=datetime.now().date() - timedelta(days=random.randint(0, 60))
+        )
+        operacoes.append(operacao_inclusao)
+
+        # Operações extras (0 a 2) para manter realismo sem quebrar regra obrigatória
+        tipos_operacao_extras = ['ref', 'anl']
+        num_operacoes_extras = random.randint(0, 2)
+
+        for _ in range(num_operacoes_extras):
+            tipo = random.choice(tipos_operacao_extras)
             valor_max = float(item_empenho.item_ata.valor_unitario) * 20
             valor = Decimal(random.randint(10, int(valor_max) if valor_max > 10 else 50))
-            
+
             operacao = OperacaoItem.objects.create(
                 item_empenho=item_empenho,
                 tipo=tipo,
