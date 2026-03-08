@@ -17,6 +17,18 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 
     ordering_fields = ['data_emissao', 'data_entrega', 'valor_total_executado']
     ordering = ['-data_emissao']
+    
+class PedidosDaOrdemViewSet(viewsets.ModelViewSet):
+    queryset = ItemOrdem.objects.all()
+    serializer_class = ItemOrdemSerializer
+    
+    def get_queryset(self):
+            queryset = super().get_queryset()
+            ordem_id = self.request.query_params.get('ordem_id')
+            if ordem_id is not None:
+                queryset = queryset.filter(ordem_entrega__id=ordem_id)
+            return queryset
+    
 class ItemEntregaViewSet(viewsets.ModelViewSet):
     queryset = ItemOrdem.objects.all()
     serializer_class = ItemOrdemSerializer

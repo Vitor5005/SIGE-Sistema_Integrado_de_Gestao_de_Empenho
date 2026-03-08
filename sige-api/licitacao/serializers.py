@@ -44,3 +44,9 @@ class ItensEmpenhoDaAtaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ItemEmpenho
         fields = '__all__'
+        
+class itemAtaSemAtaSerializer(serializers.ModelSerializer):
+    item_generico = ItemGenericoSerializer()
+    class Meta:
+        model = ItemAta
+        fields = '__all__'
