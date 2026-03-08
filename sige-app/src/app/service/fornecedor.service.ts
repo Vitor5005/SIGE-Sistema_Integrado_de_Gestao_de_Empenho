@@ -47,6 +47,10 @@ export class FornecedorService implements ICrudService<Fornecedor> {
 
   }
 
+  patch(id: number, object: any): Observable<any> {
+    throw new Error('Method not implemented.');
+  }
+
   delete(id: number): Observable<void> {
 
     const url = this.apiUrl + id + '/';

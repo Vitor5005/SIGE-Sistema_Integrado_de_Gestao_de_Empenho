@@ -30,14 +30,18 @@ export class EnderecoService implements ICrudService<Endereco> {
   }
 
   save(item: Endereco): Observable<Endereco> {
-    let url = this.apiUrl; 
+    let url = this.apiUrl;
     if (item.id) {
-      url += item.id + '/'; 
+      url += item.id + '/';
       return this.http.put<Endereco>(url, item);
     }
     else {
       return this.http.post<Endereco>(url, item);
     }
+  }
+  
+  patch(id: number, object: any): Observable<any> {
+    throw new Error('Method not implemented.');
   }
 
   delete(id: number): Observable<void> {
