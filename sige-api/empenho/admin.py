@@ -9,7 +9,7 @@ class EmpenhoAdmin(admin.ModelAdmin):
 admin.site.register(Empenho, EmpenhoAdmin)
 
 class ItemEmpenhoAdmin(admin.ModelAdmin):
-    list_display = ("id", "empenho", "item_ata", "quantidade_atual")
+    list_display = ("id", "empenho", "item_ata", "quantidade_atual", "quantidade_entrege")
     list_display_links = ("id", )
     search_fields = ("id", )
     

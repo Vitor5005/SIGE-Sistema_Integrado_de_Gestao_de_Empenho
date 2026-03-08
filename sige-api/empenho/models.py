@@ -16,6 +16,7 @@ class ItemEmpenho(models.Model):
     empenho = models.ForeignKey(Empenho, on_delete=models.CASCADE)
     item_ata = models.ForeignKey(ItemAta, on_delete=models.CASCADE)
     quantidade_atual = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False, verbose_name="Quantidade Atual do Item no Empenho")
+    quantidade_entrege = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False, verbose_name="Quantidade Entregue do Item no Empenho")
     
     def __str__(self):
         return f"Empenho: {self.empenho.codigo} \n Item Ata: {self.item_ata.item_generico.descricao} \n Quantidade Atual: {self.quantidade_atual}" 

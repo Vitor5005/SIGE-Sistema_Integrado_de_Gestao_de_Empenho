@@ -2,6 +2,7 @@ import os
 import random
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
+from django.db import connection
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sige_api.settings')
 import django
@@ -38,6 +39,40 @@ def formatar_codigo_ata(numero: int, ano: int) -> str:
 
 def formatar_codigo_empenho(numero: int, ano: int) -> str:
     return f"{ano}NE{numero:06d}"
+
+
+def garantir_coluna_quantidade_entrege():
+    """
+    Garante a existência da coluna quantidade_entrege em empenho_itemempenho.
+    Útil em ambientes onde o banco já existe, mas a migração ainda não foi aplicada.
+    """
+    tabela = "empenho_itemempenho"
+    coluna = "quantidade_entrege"
+
+    existe = False
+    with connection.cursor() as cursor:
+        if connection.vendor == "mysql":
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = %s
+                  AND COLUMN_NAME = %s
+                """,
+                [tabela, coluna],
+            )
+            existe = cursor.fetchone()[0] > 0
+        elif connection.vendor == "sqlite":
+            cursor.execute(f"PRAGMA table_info({tabela})")
+            colunas = [linha[1] for linha in cursor.fetchall()]
+            existe = coluna in colunas
+
+        if not existe:
+            cursor.execute(
+                f"ALTER TABLE {tabela} ADD COLUMN {coluna} DECIMAL(10,2) NOT NULL DEFAULT 0.00"
+            )
+            print(f"✓ Coluna '{coluna}' adicionada automaticamente em '{tabela}'")
 
 
 def limitar_valor_monetario(valor: Decimal) -> Decimal:
@@ -299,7 +334,8 @@ def seed_itens_empenho(empenhos=None, itens_ata=None):
             item_empenho = ItemEmpenho.objects.create(
                 empenho=empenho,
                 item_ata=item_ata,
-                quantidade_atual=qtd_empenhada
+                quantidade_atual=qtd_empenhada,
+                quantidade_entrege=Decimal("0.00")
             )
             itens_empenho_criados.append(item_empenho)
             # Cascata para cima: ItemEmpenho → Empenho.valor_total
@@ -503,9 +539,16 @@ def recalcular_todos_valores():
         # Para cada ItemEmpenho deste Empenho, somar o que foi entregue (ItemOrdem)
         for item_empenho in empenho.itemempenho_set.all():
             itens_ordem = ItemOrdem.objects.filter(item_empenho=item_empenho)
+            quantidade_entregue_item = Decimal("0.00")
             for item_ordem in itens_ordem:
                 # saldo_utilizado = Σ(quantidade_entregue × valor_unitario do ItemAta)
                 total_entregue += (item_ordem.quantidade_entregue * item_empenho.item_ata.valor_unitario)
+                quantidade_entregue_item += item_ordem.quantidade_entregue
+
+            # NOVO CAMPO: quantidade_entrege deve refletir o total entregue real,
+            # sem ultrapassar a quantidade empenhada (quantidade_atual)
+            item_empenho.quantidade_entrege = min(quantidade_entregue_item, item_empenho.quantidade_atual)
+            item_empenho.save(update_fields=["quantidade_entrege"])
         
         # Saldo utilizado nunca pode ultrapassar o valor_total do empenho
         empenho.saldo_utilizado = min(
@@ -533,6 +576,7 @@ def clean_database():
 
 def seed_all():
     """Executa todas as funções de seed na ordem correta"""
+    garantir_coluna_quantidade_entrege()
     clean_database()
     
     print("Populando banco de dados...")

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
-from licitacao.serializers import AtaSerializer
+from licitacao.serializers import AtaSerializer, ItemAtaSerializer
 
 class EmpenhoSerializer(serializers.ModelSerializer):
     ata = AtaSerializer()
@@ -24,12 +24,17 @@ class ItemEmpenhoInsertSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ItemEmpenhoSerializer(serializers.ModelSerializer):
+    item_ata = ItemAtaSerializer()
     empenho = EmpenhoSerializer()
     class Meta:
         model = ItemEmpenho
         fields = '__all__'
+        
+class OperacaoItemInsertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OperacaoItem
+        fields = '__all__'
     
-
 class OperacaoItemSerializer(serializers.ModelSerializer):
     item_empenho = ItemEmpenhoSerializer()
     class Meta:
