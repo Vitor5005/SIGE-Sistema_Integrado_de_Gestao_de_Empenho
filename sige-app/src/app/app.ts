@@ -24,7 +24,7 @@ export class App {
       if (event instanceof NavigationEnd) {
       const rota = event.urlAfterRedirects;
 
-      const rotasSemLayout = ['/login', '/cadastrar-se'];
+      const rotasSemLayout = ['/login', '/cadastrar-se', '/recuperar-senha'];
 
       this.mostrarLayout = !rotasSemLayout.some(r =>
         rota.startsWith(r)

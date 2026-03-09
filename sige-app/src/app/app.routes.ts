@@ -12,6 +12,7 @@ import { VisualizarFornecedor } from './component/visualizar-fornecedor/visualiz
 import { VisualizarGensAlimenticios } from './component/visualizar-gens-alimenticios/visualizar-gens-alimenticios';
 import { Login } from './component/login/login';
 import { Cadastro } from './component/cadastro/cadastro';
+import { RecuperarSenha } from './component/recuperar-senha/recuperar-senha';
 
 export const routes: Routes = [
   {
@@ -22,6 +23,10 @@ export const routes: Routes = [
   {
     path: 'login',
     component: Login
+  },
+  {
+    path: 'recuperar-senha',
+    component: RecuperarSenha
   },
   {
     path: 'cadastrar-se',
