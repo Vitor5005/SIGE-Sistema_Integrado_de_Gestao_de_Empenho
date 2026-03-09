@@ -3,30 +3,22 @@
   flex-direction: column;
   align-items: center;
   gap: 30px;
+  width: 100%;
 }
 
-/* usa mesmo padrão da listagem */
 .container-titulo {
-  margin-top: 30px;
-  width: 100%;
-  max-width: 1200px;
-  display: flex;
-  flex-direction: column;
-
-  hr {
-    color: var(--hr-color);
+  h5 {
+    font-size: 28px;
   }
 }
 
 .container-entregas {
-  width: 100%;
-  max-width: 1200px;
+  width: 80vw;
   display: flex;
   flex-direction: column;
   gap: 30px;
 }
 
-/* CARD */
 .card-entrega {
   background: var(--branco);
   box-shadow: var(--box-shadow);
@@ -34,7 +26,6 @@
   padding: 25px;
 }
 
-/* TOPO */
 .topo-entrega {
   display: flex;
   justify-content: space-between;
@@ -75,7 +66,6 @@
   color: white;
 }
 
-/* BOTÃO */
 .btn-confirmar {
   background: var(--verde);
   color: white;
@@ -90,7 +80,6 @@
   opacity: 0.9;
 }
 
-/* PRODUTOS */
 .lista-produtos {
   display: flex;
   flex-direction: column;

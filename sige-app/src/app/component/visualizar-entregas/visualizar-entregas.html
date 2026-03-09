@@ -1,12 +1,14 @@
-<body>
+<body class="listagem">
 
     <div class="entrega">
         <div class="container-titulo">
             <h5>ENTREGAS <i class="bi bi-truck"></i></h5>
             <hr>
-            <app-barra-pesquisa></app-barra-pesquisa>
+            
         </div>
-        <div class="conteiner-entregas">
+
+        <app-barra-pesquisa></app-barra-pesquisa>
+        <div class="container-entregas">
             @for (item of entregas; track item.id) {
             <div class="card-entrega">
 
