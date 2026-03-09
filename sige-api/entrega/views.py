@@ -1,3 +1,11 @@
+import yagmail
+import tempfile
+import os
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.parsers import MultiPartParser,FormParser
+
 from rest_framework import viewsets
 from entrega.models import OrdemEntrega, ItemOrdem
 from entrega.serializers import OrdemEntregaSerializer, ItemOrdemSerializer
@@ -5,6 +13,7 @@ from licitacao.views import BaseFiltroMixin
 class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = OrdemEntrega.objects.all()
     serializer_class = OrdemEntregaSerializer
+    parser_classes = [MultiPartParser, FormParser]
 
     search_fields = ['codigo', 'empenho__codigo']
     filterset_fields = {
@@ -17,6 +26,53 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 
     ordering_fields = ['data_emissao', 'data_entrega', 'valor_total_executado']
     ordering = ['-data_emissao']
+    @action(detail=True,methods=['post'],url_path='enviar-pedido')
+    def EnviarPedidoPorEmail(self, request, pk=None):
+        """
+        Envia um e-mail com um Pedido de Entrega em anexo 
+        para o fornecedor associado a esta Ordem de Entrega.
+        """
+        try:
+            ordem_de_entrega = self.get_object()
+            fornecedor = ordem_de_entrega.empenho.ata.fornecedor
+        except OrdemEntrega.DoesNotExist:
+            return Response({'erro': 'Ordem de Entrega não encontrada'},status=status.HTTP_404_NOT_FOUND)
+        except AttributeError:
+            return Response({'erro': 'Não foi possível encontrar o fornecedor associado a esta ordem de entrega.'},status=status.HTTP_404_NOT_FOUND)
+        
+        if not fornecedor.email:
+            return Response({'erro': f'O fornecedor "{fornecedor.nome_fantasia}" não possui um e-mail cadastrado.'}, status=status.HTTP_400_BAD_REQUEST)
+        assunto = request.data.get('assunto', f'Pedido de Entrega: {ordem_de_entrega.codigo}')
+        corpo_mensagem = request.data.get('corpo_mensagem', f'Prezado Fornecedor {fornecedor.nome_fantasia},\n\nSegue em anexo o pedido de entrega referente à ordem {ordem_de_entrega.codigo}.\n\nAtenciosamente,\nEquipe SIGE.')
+        anexo = request.FILES.get('anexo')
+
+        if not anexo:
+            return Response({'erro': 'Nenhum arquivo foi enviado. O campo deve se chamar "anexo".'}, status=status.HTTP_400_BAD_REQUEST)
+        caminho_temporario_anexo = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{anexo.name}") as temp_file:
+                for chunk in anexo.chunks():
+                    temp_file.write(chunk)
+                caminho_temporario_anexo = temp_file.name
+            email_usuario = "rusige6@gmail.com"
+            senha_usuario = "ocpc ptcw bwuw jixg"
+            servidor_email = yagmail.SMTP(user=email_usuario, password=senha_usuario) 
+            #conteudo_anexo = {anexo.name: anexo.read()}
+            servidor_email.send(
+                to=fornecedor.email,
+                subject=assunto,
+                contents=corpo_mensagem,
+                attachments=caminho_temporario_anexo
+            )
+        except Exception as erro:
+            print(f"ERRO AO ENVIAR E-MAIL DO PEDIDO: {erro}")
+            return Response({'erro': 'Ocorreu um problema interno ao tentar enviar o e-mail.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finally:
+            if caminho_temporario_anexo and os.path.exists(caminho_temporario_anexo):
+                os.remove(caminho_temporario_anexo)
+                
+        return Response({'sucesso': f'Pedido de entrega enviado com sucesso para {fornecedor.email}.'}, status=status.HTTP_200_OK)
+
     
 class PedidosDaOrdemViewSet(viewsets.ModelViewSet):
     queryset = ItemOrdem.objects.all()
