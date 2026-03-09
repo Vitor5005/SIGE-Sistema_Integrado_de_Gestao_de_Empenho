@@ -6,7 +6,7 @@ from licitacao.views import BaseFiltroMixin
 class EmpenhoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Empenho.objects.all()
     serializer_class = EmpenhoSerializer
-    search_fields = ['codigo', 'ata__numero_ata']
+    search_fields = ['codigo', 'ata__numero_ata', 'ata__fornecedor__nome_fantasia']
     filterset_fields = {
         'ata__id': ['exact'], 
         'valor_total': ['exact', 'gte', 'lte'],
