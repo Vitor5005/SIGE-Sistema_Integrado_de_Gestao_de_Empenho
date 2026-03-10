@@ -74,6 +74,7 @@ export class RecuperarSenha {
   enviarNovaSenha() {
     this.authService.passwordResetPassword(this.token.reset_token, this.password).subscribe({
       complete: () => {
+        alert("Senha alterada com sucesso!");
         this.router.navigate(['/login']);
       }
     });
