@@ -19,7 +19,7 @@ import { ItemEmpenhoInsert } from '../../model/itemEmpenho_insert';
 
 @Component({
   selector: 'app-visualizar-ata',
-  imports: [RouterLink, DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe],
+  imports: [DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe],
   templateUrl: './visualizar-ata.html',
   styleUrl: './visualizar-ata.scss',
 })

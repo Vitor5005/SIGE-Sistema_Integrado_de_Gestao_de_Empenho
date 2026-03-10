@@ -20,7 +20,7 @@ import { EmpenhoService } from '../../service/empenho.service';
 
 @Component({
   selector: 'app-visualizar-licitacao',
-  imports: [RouterLink, CommonModule, BotaoVoltar, FormsModule, BarraPesquisa],
+  imports: [CommonModule, BotaoVoltar, FormsModule, BarraPesquisa],
   templateUrl: './visualizar-licitacao.html',
   styleUrl: './visualizar-licitacao.scss',
 })

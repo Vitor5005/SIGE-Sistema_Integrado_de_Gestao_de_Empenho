@@ -44,10 +44,24 @@ export class Auth
     return localStorage.getItem('access_token');
   }
 
-
   logout() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+  }
+
+  passwordResetEmail(email: string): Observable<any> {
+    let url = environment.API_URL + "/usuarios/request-password-reset/";
+    return this.http.post(url, { email });
+  }
+
+  passwordResetCode(code: string): Observable<Token>{
+    let url = environment.API_URL + "/usuarios/verify-reset-code/";
+    return this.http.post<Token>(url, { code });
+  }
+
+  passwordResetPassword(reset_token: string, password: string){
+    let url = environment.API_URL + "/usuarios/set-new-password/";
+    return this.http.post(url, {reset_token, password});
   }
 
 }

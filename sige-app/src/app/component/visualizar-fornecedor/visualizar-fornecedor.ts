@@ -12,7 +12,7 @@ import { FornecedorInsert } from '../../model/fornecedor_insert';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
-  imports: [RouterLink,BotaoVoltar, FormsModule],
+  imports: [BotaoVoltar, FormsModule],
   templateUrl: './visualizar-fornecedor.html',
   styleUrl: './visualizar-fornecedor.scss',
 })
