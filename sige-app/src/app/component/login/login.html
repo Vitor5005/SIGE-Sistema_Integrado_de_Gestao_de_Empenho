@@ -4,11 +4,11 @@
       <h1>Acessar conta</h1>
     </div>
 
-    <form action="">
+    <form (ngSubmit)="realizarLogin()">
 
       <div class="d-flex flex-column gap-2">
-        <label for="email">Email</label>
-        <input type="email" name="email" id="">
+        <label for="Usuario">Usuario</label>
+        <input type="text" name="Usuario" id="Usuario" [(ngModel)]="username">
       </div>
 
       <div>
@@ -17,9 +17,11 @@
           <label for="senha">Senha</label>
           <div class="campo-senha">
             <input
+            
               [type]="mostrarSenha ? 'text' : 'password'"
               name="senha"
-              id=""
+              id="senha"
+              [(ngModel)]="password"
             >
             <i
               class="bi"

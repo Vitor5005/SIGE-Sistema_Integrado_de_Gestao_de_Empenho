@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive } from "@angular/router";
+import { Router, RouterLink, RouterLinkActive } from "@angular/router";
+import { Auth } from '../../../service/auth';
 
 @Component({
   selector: 'app-cabecalho',
@@ -8,10 +9,21 @@ import { RouterLink, RouterLinkActive } from "@angular/router";
   styleUrl: './cabecalho.scss',
 })
 export class Cabecalho {
+  
+  constructor(
+    private router: Router,
+    private auth: Auth
+  ) { }
 
-  ngOnInit(){
+  realizarLogout(): void {
+    this.auth.logout();
+    this.router.navigate(['/login']);
+  }
 
- }
+
+  ngOnInit() {
+
+  }
 
 
 
