@@ -1,49 +1,41 @@
 <main>
-	<div class="corpo-cadastro">
-		<div class="conteudos-cadastro">
-			<h1>Criar conta</h1>
-			<form class="form-cadastro">
-				<div class="campo">
-					<label for="nome">Nome</label>
-					<input type="text" id="nome" name="nome"  required>
-				</div>
-				<div class="campo">
-					<label for="email">Email</label>
-					<input type="email" id="email" name="email" required>
-				</div>
-				<div class="d-flex flex-column gap-2 senha-container">
+  <div class="corpo-cadastro">
+    <div class="conteudos-cadastro">
+      <h1>Criar conta</h1>
+      <form class="form-cadastro" (submit)="cadastrarUsuario()">
+        <div class="campo">
+          <label for="user">Usuario</label>
+          <input type="text" id="user" name="user" [(ngModel)]="registro.username" required>
+        </div>
+        <div class="campo">
+          <label for="nome">Nome</label>
+          <input type="text" id="nome" name="nome" [(ngModel)]="registro.first_name" required>
+        </div>
+        <div class="campo">
+          <label for="sobrenome">Sobrenome</label>
+          <input type="text" id="sobrenome" name="sobrenome" [(ngModel)]="registro.last_name" required>
+        </div>
+        <div class="campo">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" [(ngModel)]="registro.email" required>
+        </div>
+        <div class="d-flex flex-column gap-2 senha-container">
           <label for="senha">Senha</label>
           <div class="campo-senha">
-            <input
-              [type]="mostrarSenha ? 'text' : 'password'"
-              name="senha"
-              id=""
-            >
-            <i
-              class="bi"
-              [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'"
-              (click)="toggleSenha()"
-            ></i>
+            <input [type]="mostrarSenha ? 'text' : 'password'" name="senha" id="senha" [(ngModel)]="registro.password">
+            <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'" (click)="toggleSenha()"></i>
           </div>
         </div>
-				<div class="d-flex flex-column gap-2 senha-container">
+        <div class="d-flex flex-column gap-2 senha-container">
           <label for="confirmar-senha">Confirmar senha</label>
           <div class="campo-senha">
-            <input
-              [type]="mostrarConfirmar ? 'text' : 'password'"
-              name="confirmar-senha"
-              id=""
-            >
-            <i
-              class="bi"
-              [ngClass]="mostrarConfirmar ? 'bi-eye-slash' : 'bi-eye'"
-              (click)="toggleSenhaConfirmar()"
-            ></i>
+            <input [type]="mostrarConfirmar ? 'text' : 'password'" name="confirmar-senha" id="">
+            <i class="bi" [ngClass]="mostrarConfirmar ? 'bi-eye-slash' : 'bi-eye'" (click)="toggleSenhaConfirmar()"></i>
           </div>
         </div>
-				<button type="submit" class="submit" >Cadastrar</button>
-				<p>Já tem conta? <a routerLink="/login">Entrar</a></p>
-			</form>
-		</div>
-	</div>
+        <button type="submit" class="submit">Cadastrar</button>
+        <p>Já tem conta? <a routerLink="/login">Entrar</a></p>
+      </form>
+    </div>
+  </div>
 </main>
