@@ -28,7 +28,7 @@
 
                     </div>
 
-                    <div style="display: flex; gap: 1em;">
+                    <div class="confirmar">
                         <button class="btn-confirmar" data-bs-toggle="modal" data-bs-target="#confirmarModal"
                             *ngIf="!confirmado">
                             <i class="bi bi-check-circle"></i>
@@ -68,94 +68,107 @@
                 </div>
 
                 <div class="modal-body">
-                    <form>
+                    <form class="form-entrega">
 
-                        <div style="display: flex; flex-direction: column; gap: 2em;">
-                            <!-- display, flex-direction e gap temporários -->
-                            <div style="display: flex; gap: 5em; justify-content: center;">
-                                <!-- display, gap e justify temporários -->
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Gênero Alimenticio</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">Frango </span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
+                        <div class="lista-itens">
+                            
+                            <div class="item-entrega">
+                                
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Gênero Alimenticio
+                                    </span>
+                                    
+                                    <div class="valor-info"> 
+                                        <span class="nome-produto">
+                                            Frango 
+                                        </span>
+                                        
+                                        <span class="unidade-modal">
+                                            kg
+                                        </span>
+                                        
                                     </div>
                                 </div>
 
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Quantidade
-                                        Solicitada</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">30 </span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Quantidade Solicitada</span>
+                                    
+                                    <div class="valor-info"> 
+                                        <span class="valor">
+                                            30 
+                                        </span>
+                                        
+                                        <span class="unidade-modal">
+                                            kg
+                                        </span>
+                                        
                                     </div>
                                 </div>
 
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Valor Unidade</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">R$ 20,00</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Valor Unidade
+                                    </span>
+                                    
+                                    <div class="valor-info"> 
+                                        <span class="valor">
+                                            R$ 20,00
+                                        </span>
+                                        
                                     </div>
                                 </div>
 
-                                <div style="justify-content: center;">
-                                    <label style="font-size: 1.2em; color: rgb(63, 127, 244);">Quantidade Efetivamente
-                                        Recebida (kg)</label> <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <input type="number" class="form-control"
-                                            style="border-color: rgb(63, 127, 244);">
+                                <div class="input-coluna">
+                                    <label class="label-input">
+                                        Quantidade Efetivamente Recebida (kg)
+                                    </label>
+                                    <div>
+                                        <input type="number" class="form-control input-quantidade">
                                     </div>
                                 </div>
                             </div>
 
-                            <div style="display: flex; gap: 5em; justify-content: center;">
-                                <!-- display, gap e justify temporários -->
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Gênero Alimenticio</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">Carne Bovina </span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
+                            <div class="item-entrega">
+                                
+                                <div class="info-coluna">
+                                    <span class="label-info">Gênero Alimenticio</span>
+                                    
+                                    <div class="valor-info"> 
+                                        <span class="nome-produto">Carne Bovina </span>
+                                        
+                                        <span class="unidade-modal">kg</span>
+                                        
                                     </div>
                                 </div>
 
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Quantidade
-                                        Solicitada</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">30 </span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Quantidade Solicitada</span>
+                                    <div class="valor-info"> 
+                                        <span class="valor">30 </span>
+                                        
+                                        <span class="unidade-modal">kg</span>
+                                        
                                     </div>
                                 </div>
 
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Valor Unidade</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">R$ 30,00</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
+                                <div class="input-coluna">
+                                    <span class="label-info">Valor Unidade</span>
+                                    
+                                    <div class="valor-info"> 
+                                        <span class="valor">R$ 30,00</span>
+                                        
                                     </div>
                                 </div>
 
-                                <div style="justify-content: center;">
-                                    <label style="font-size: 1.2em; color: rgb(63, 127, 244);">Quantidade Efetivamente
-                                        Recebida (kg)</label> <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <input type="number" class="form-control"
-                                            style="border-color: rgb(63, 127, 244);">
+                                <div class="input-coluna">
+                                    <label class="label-input">
+                                        Quantidade Efetivamente Recebida (kg)
+                                    </label>
+                                    <div> 
+                                        <input type="number" class="form-control input-quantidade">
                                     </div>
                                 </div>
                             </div>
@@ -165,9 +178,9 @@
                     </form>
                 </div>
 
-                <div class="modal-footer" style="justify-content: center;">
-                    <button type="button">
-                        <i class="bi bi-check-lg"></i> Confirmar Entrega
+                <div class="modal-footer footer-entrega">
+                    <button type="button", class="btn-confirmar">
+                        <i class="bi bi-check-lg"></i> CONFIRMAR ENTREGA
                     </button>
                 </div>
 

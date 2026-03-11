@@ -80,6 +80,11 @@
   opacity: 0.9;
 }
 
+.confirmar {
+  display: flex;
+  gap: 1em;
+}
+
 .lista-produtos {
   display: flex;
   flex-direction: column;
@@ -114,4 +119,72 @@
   p {
     font-weight: bold;
   }
+}
+
+
+.form-entrega {
+  width: 100%;
+}
+
+.lista-itens {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.item-entrega {
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  align-items: center;
+  width: 100%;
+}
+
+.info-coluna {
+  display: flex;
+  flex-direction: column;
+}
+
+.label-info {
+  font-size: 20px;
+  color: #777777;
+}
+
+.valor-info {
+  margin-top: 3px;
+}
+
+.nome-produto {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.valor {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.unidade-modal {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.input-coluna {
+  display: flex;
+  flex-direction: column;
+}
+
+.label-input {
+  font-size: 20px;
+  color: var(--azul-claro);
+}
+
+.input-quantidade {
+  margin-top: 5px;
+  border-color: var(--azul-claro);
+}
+
+.footer-entrega {
+  display: flex;
+  justify-content: center;
 }
