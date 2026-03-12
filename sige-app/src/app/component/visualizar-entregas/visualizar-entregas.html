@@ -2,7 +2,7 @@
 
     <div class="entrega">
         <div class="container-titulo">
-            <h5>ENTREGAS <i class="bi bi-truck"></i></h5>
+            <h5><i class="bi bi-truck"></i> ENTREGAS </h5>
             <hr>
 
         </div>
@@ -13,17 +13,24 @@
             <div class="card-entrega">
 
                 <div class="topo-entrega">
-                    <div class="info-entrega">
-                        <span class="pedido-entrega">
-                            {{ item.codigo }}
-                        </span>
+                    <div class="info-entrega" [ngClass]="classeStatus(item.status)">
 
-                        <span class="link-doc" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
-                            {{ item.empenho.codigo }}
-                        </span>
+                        <div style="display: inline;">
+                            <span class="pedido-entrega">
+                                {{ item.codigo }}
+                            </span>
 
-                        <span class="link-doc" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
-                            {{ item.empenho.ata.numero_ata }}
+                            <span class="link-emp" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
+                                {{ item.empenho.codigo }}
+                            </span>
+
+                            <span class="link-arp" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
+                                {{ item.empenho.ata.numero_ata }}
+                            </span>
+                        </div>
+
+                        <span class="status-entrega">
+                            {{ verificarStatus(item.status) }}
                         </span>
 
                     </div>
@@ -71,39 +78,39 @@
                     <form class="form-entrega">
 
                         <div class="lista-itens">
-                            
+
                             <div class="item-entrega">
-                                
+
                                 <div class="info-coluna">
                                     <span class="label-info">
                                         Gênero Alimenticio
                                     </span>
-                                    
-                                    <div class="valor-info"> 
+
+                                    <div class="valor-info">
                                         <span class="nome-produto">
-                                            Frango 
+                                            Frango
                                         </span>
-                                        
+
                                         <span class="unidade-modal">
                                             kg
                                         </span>
-                                        
+
                                     </div>
                                 </div>
 
                                 <div class="info-coluna">
                                     <span class="label-info">
                                         Quantidade Solicitada</span>
-                                    
-                                    <div class="valor-info"> 
+
+                                    <div class="valor-info">
                                         <span class="valor">
-                                            30 
+                                            30
                                         </span>
-                                        
+
                                         <span class="unidade-modal">
                                             kg
                                         </span>
-                                        
+
                                     </div>
                                 </div>
 
@@ -111,12 +118,12 @@
                                     <span class="label-info">
                                         Valor Unidade
                                     </span>
-                                    
-                                    <div class="valor-info"> 
+
+                                    <div class="valor-info">
                                         <span class="valor">
                                             R$ 20,00
                                         </span>
-                                        
+
                                     </div>
                                 </div>
 
@@ -131,35 +138,35 @@
                             </div>
 
                             <div class="item-entrega">
-                                
+
                                 <div class="info-coluna">
                                     <span class="label-info">Gênero Alimenticio</span>
-                                    
-                                    <div class="valor-info"> 
+
+                                    <div class="valor-info">
                                         <span class="nome-produto">Carne Bovina </span>
-                                        
+
                                         <span class="unidade-modal">kg</span>
-                                        
+
                                     </div>
                                 </div>
 
                                 <div class="info-coluna">
                                     <span class="label-info">
                                         Quantidade Solicitada</span>
-                                    <div class="valor-info"> 
+                                    <div class="valor-info">
                                         <span class="valor">30 </span>
-                                        
+
                                         <span class="unidade-modal">kg</span>
-                                        
+
                                     </div>
                                 </div>
 
                                 <div class="input-coluna">
                                     <span class="label-info">Valor Unidade</span>
-                                    
-                                    <div class="valor-info"> 
+
+                                    <div class="valor-info">
                                         <span class="valor">R$ 30,00</span>
-                                        
+
                                     </div>
                                 </div>
 
@@ -167,7 +174,7 @@
                                     <label class="label-input">
                                         Quantidade Efetivamente Recebida (kg)
                                     </label>
-                                    <div> 
+                                    <div>
                                         <input type="number" class="form-control input-quantidade">
                                     </div>
                                 </div>
@@ -179,7 +186,7 @@
                 </div>
 
                 <div class="modal-footer footer-entrega">
-                    <button type="button", class="btn-confirmar">
+                    <button type="button" , class="btn-confirmar">
                         <i class="bi bi-check-lg"></i> CONFIRMAR ENTREGA
                     </button>
                 </div>
