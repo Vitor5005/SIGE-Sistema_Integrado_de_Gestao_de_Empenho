@@ -9,7 +9,7 @@ from licitacao.models import Licitacao, Ata, ItemAta
 from licitacao.serializers import AtaInsertSerializer, ItemAtaInsertSerializer, LicitacaoSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
 from empenho.serializers import ValorEmpenhoSerializer
 from empenho.models import Empenho, ItemEmpenho
-
+from utils.permissions import IsAdmin,IsTecnico
 class BaseFiltroMixin:
     """
     Mixin de configuração padrão de busca, filtro e ordenação
@@ -24,6 +24,7 @@ class BaseFiltroMixin:
 class LicitacaoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Licitacao.objects.all()
     serializer_class = LicitacaoSerializer
+    permission_classes = [IsAdmin|IsTecnico]
     # filter_backends = [
     #     DjangoFilterBackend,
     #     filters.SearchFilter,
@@ -41,6 +42,7 @@ class LicitacaoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 class AtaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Ata.objects.all()
     serializer_class = AtaSerializer
+    permission_classes = [IsAdmin|IsTecnico]
 
     def get_serializer_class(self):
         
@@ -61,6 +63,7 @@ class AtaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 class ItemAtaViewSet(viewsets.ModelViewSet):
     queryset = ItemAta.objects.all()
     serializer_class = ItemAtaSerializer
+    permission_classes = [IsAdmin|IsTecnico]
     
     def get_serializer_class(self):
         if self.action in ['create', 'update']:
@@ -70,6 +73,7 @@ class ItemAtaViewSet(viewsets.ModelViewSet):
 
 class ValorDoEmpenhoViewSet(viewsets.ModelViewSet):
     serializer_class = ValorEmpenhoSerializer
+    permission_classes = [IsAdmin|IsTecnico]
 
     def get_queryset(self):
         ata_id = self.request.query_params.get('ata_id')
@@ -89,6 +93,7 @@ class ValorDoEmpenhoViewSet(viewsets.ModelViewSet):
     
 class ItensDaAtaViewSet(viewsets.ModelViewSet):
     serializer_class = ItensEmpenhoDaAtaSerializer
+    permission_classes = [IsAdmin|IsTecnico]
 
     def get_queryset(self):
         ata_id = self.request.query_params.get('ata_id')

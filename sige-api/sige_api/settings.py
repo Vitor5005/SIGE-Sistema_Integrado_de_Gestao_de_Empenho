@@ -132,20 +132,24 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
 ]
 REST_FRAMEWORK = {
-    # Torna a autenticação via JWT a padrão do sistema
+
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 
-    # Habilita mundialmente a permissão de usar nossos mixins de filtro de busca
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+
+    
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
     ],
 }
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),   # Tempo até ele expirar e você ser deslogado na tela (1hr)
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),      # Tempo do token de emergência que renova o access_token sem pedir senha de novo
-    'AUTH_HEADER_TYPES': ('Bearer',),                 # Forma que o Token viajará no POSTMAN e no Front -> "Bearer eyj.token.gerado"
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),   
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),      
+    'AUTH_HEADER_TYPES': ('Bearer',),                 
 }
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/

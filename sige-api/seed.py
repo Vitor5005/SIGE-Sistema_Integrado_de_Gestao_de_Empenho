@@ -3,6 +3,7 @@ import random
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from django.db import connection
+import random
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sige_api.settings')
 import django
@@ -12,7 +13,60 @@ from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from licitacao.models import Licitacao, Ata, ItemAta
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
 from entrega.models import OrdemEntrega, ItemOrdem
+from usuario.models import Usuario
+def create_usuarios(num=10):
+    print(f"Creating {num} usuarios...")
+    usuarios = []
+    papeis = ['ADMIN', 'TECNI']
 
+    # --- INÍCIO DA MODIFICAÇÃO ---
+
+    # 1. Criar o usuário admin padrão
+    print("Creating admin user...")
+    admin_user, created = Usuario.objects.get_or_create(
+        username='admin',
+        defaults={
+            'first_name': 'Administrador',
+            'last_name': 'do Sistema',
+            'email': 'admin@example.com',
+            'papel': 'ADMIN',
+            'is_staff': True,
+            'is_superuser': True
+        }
+    )
+
+    if created:
+        admin_user.set_password('admin')
+        admin_user.save()
+    else:
+        # Corrige papel e permissoes se ja existir
+        admin_user.papel = 'ADMIN'
+        admin_user.is_staff = True
+        admin_user.is_superuser = True
+        admin_user.save(update_fields=['papel', 'is_staff', 'is_superuser'])
+    
+    usuarios.append(admin_user)
+
+    # 2. Criar outros usuários aleatórios (se necessário)
+    for i in range(num - 1): # num - 1 para compensar o admin já criado
+        username = f"user{i}"
+        if Usuario.objects.filter(username=username).exists():
+            continue # Pula se o usuário já existir
+
+        # Usar create_user para criptografar a senha
+        usuario = Usuario.objects.create_user(
+            username=username,
+            password="password123",
+            first_name=f"Nome {i}",
+            last_name=f"Sobrenome {i}",
+            email=f"user{i}@example.com",
+            papel=random.choice(papeis)
+        )
+        usuarios.append(usuario)
+    
+    # --- FIM DA MODIFICAÇÃO ---
+    
+    return usuarios
 MAX_VALOR_MONETARIO = Decimal("1000000.00")
 QTD_LICITADA_MIN = 20
 QTD_LICITADA_MAX = 120
@@ -589,6 +643,8 @@ def seed_all():
     clean_database()
     
     print("Populando banco de dados...")
+    print("  → Criando usuarios...")
+    create_usuarios()
     print("  → Criando endereços...")
     enderecos = seed_enderecos()
     

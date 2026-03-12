@@ -2,10 +2,11 @@ from rest_framework import viewsets
 from empenho.models import Empenho, ItemEmpenho,  OperacaoItem
 from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer
 from licitacao.views import BaseFiltroMixin
-
+from utils.permissions import IsAdmin,IsTecnico
 class EmpenhoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Empenho.objects.all()
     serializer_class = EmpenhoSerializer
+    permission_classes = [IsAdmin|IsTecnico]
     search_fields = ['codigo', 'ata__numero_ata', 'ata__fornecedor__nome_fantasia']
     filterset_fields = {
         'ata__id': ['exact'], 
@@ -26,6 +27,7 @@ class EmpenhoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 class ItemDoEmpehoViewSet(viewsets.ModelViewSet):
     queryset = ItemEmpenho.objects.all()
     serializer_class = ItemEmpenhoSerializer
+    permission_classes = [IsAdmin|IsTecnico]
     
     def get_queryset(self):
         empenho_id = self.request.query_params.get('empenho_id')
@@ -34,6 +36,7 @@ class ItemDoEmpehoViewSet(viewsets.ModelViewSet):
 class ItemEmpenhoViewSet(viewsets.ModelViewSet):
     queryset = ItemEmpenho.objects.all()
     serializer_class = ItemEmpenhoSerializer
+    permission_classes = [IsAdmin|IsTecnico]
     
     def get_serializer_class(self):
         if self.action in ['create', 'update']:
@@ -44,6 +47,7 @@ class ItemEmpenhoViewSet(viewsets.ModelViewSet):
 class OperacaoDoEmpenhoViewSet(viewsets.ModelViewSet):
     queryset = OperacaoItem.objects.all()
     serializer_class = OperacaoItemSerializer
+    permission_classes = [IsAdmin|IsTecnico]
     
     def get_queryset(self):
         empenho_id = self.request.query_params.get('empenho_id')
@@ -54,6 +58,7 @@ class OperacaoDoEmpenhoViewSet(viewsets.ModelViewSet):
 class OperacaoItemViewSet(viewsets.ModelViewSet):
     queryset = OperacaoItem.objects.all()
     serializer_class = OperacaoItemSerializer
+    permission_classes = [IsAdmin|IsTecnico]
     
     def get_serializer_class(self):
         if self.action in ['create', 'update']:

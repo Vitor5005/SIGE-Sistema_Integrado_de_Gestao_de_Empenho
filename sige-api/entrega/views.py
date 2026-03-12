@@ -5,15 +5,18 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser,FormParser
-
 from rest_framework import viewsets
+
 from entrega.models import OrdemEntrega, ItemOrdem
 from entrega.serializers import OrdemEntregaSerializer, ItemOrdemSerializer
 from licitacao.views import BaseFiltroMixin
+from utils.permissions import IsAdmin, IsTecnico
+
 class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = OrdemEntrega.objects.all()
     serializer_class = OrdemEntregaSerializer
     parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAdmin|IsTecnico]
 
     search_fields = ['codigo', 'empenho__codigo']
     filterset_fields = {
@@ -77,6 +80,7 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 class PedidosDaOrdemViewSet(viewsets.ModelViewSet):
     queryset = ItemOrdem.objects.all()
     serializer_class = ItemOrdemSerializer
+    permission_classes = [IsAdmin|IsTecnico]
     
     def get_queryset(self):
             queryset = super().get_queryset()
@@ -88,6 +92,7 @@ class PedidosDaOrdemViewSet(viewsets.ModelViewSet):
 class ItemEntregaViewSet(viewsets.ModelViewSet):
     queryset = ItemOrdem.objects.all()
     serializer_class = ItemOrdemSerializer
+    permission_classes = [IsAdmin|IsTecnico]
 
     
     search_fields = ['observacao', 'ordem_entrega__codigo', 'item_empenho__item_ata__item_generico__descricao']
