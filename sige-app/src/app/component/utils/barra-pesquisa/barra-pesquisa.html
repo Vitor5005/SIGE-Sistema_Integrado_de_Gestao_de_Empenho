@@ -6,10 +6,10 @@
   <div class="dropdown">
     <button class="filtro dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"> <i class="bi bi-funnel"></i>
       filtros</button>
-    <ul class="dropdown-menu">
-      <li><a class="dropdown-item" href="#">Action</a></li>
-      <li><a class="dropdown-item" href="#">Another action</a></li>
-      <li><a class="dropdown-item" href="#">Something else here</a></li>
+    <ul class="dropdown-menu" >
+      @for (filtro of filtros; track filtro) {
+        <li><a class="dropdown-item" (click)="onFiltroClick(filtro)">Action</a></li>
+      }
       <li>
         <hr class="dropdown-divider">
       </li>

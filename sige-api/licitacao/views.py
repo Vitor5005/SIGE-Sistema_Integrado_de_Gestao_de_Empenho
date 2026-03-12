@@ -49,7 +49,7 @@ class AtaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
         
         return AtaSerializer
 
-    search_fields = ['numero_ata', 'licitacao__numero_licitacao','licitacao__id']
+    search_fields = ['numero_ata']
     filterset_fields = {
         'licitacao__id': ['exact'],
         'fornecedor__id': ['exact'],
