@@ -2,7 +2,7 @@
 
     <div class="entrega">
         <div class="container-titulo">
-            <h5>ENTREGAS <i class="bi bi-truck"></i></h5>
+            <h5><i class="bi bi-truck"></i> ENTREGAS </h5>
             <hr>
 
         </div>
@@ -18,11 +18,11 @@
                             {{ item.codigo }}
                         </span>
 
-                        <span class="link-doc" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
+                        <span class="link-emp" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
                             {{ item.empenho.codigo }}
                         </span>
 
-                        <span class="link-doc" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
+                        <span class="link-arp" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
                             {{ item.empenho.ata.numero_ata }}
                         </span>
 
