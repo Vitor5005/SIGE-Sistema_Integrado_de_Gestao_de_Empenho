@@ -4,7 +4,6 @@
         <div class="container-titulo">
             <h5><i class="bi bi-truck"></i> ENTREGAS </h5>
             <hr>
-
         </div>
 
         <app-barra-pesquisa (pesquisar)="getEntregas($event)"></app-barra-pesquisa>
@@ -61,7 +60,7 @@
                     </div>
                     <div>
                         <span>Data de Entrega Prevista:</span>
-                        <span style="padding: 1%">{{ item.data_entrega_prevista| date: 'dd/MM/yyyy - HH:mm' }}</span>
+                        <span style="padding: 1%">{{ item.data_entrega_prevista| date: 'dd/MM/yyyy' }}</span>
                     </div>
                     @if( item.status === "con" ){
                     <div>

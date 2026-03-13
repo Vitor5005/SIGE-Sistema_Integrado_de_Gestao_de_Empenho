@@ -15,6 +15,7 @@ import { Cadastro } from './component/cadastro/cadastro';
 import { RecuperarSenha } from './component/recuperar-senha/recuperar-senha';
 import { authGuard } from './guard/auth.guard';
 import { Home } from './component/home/home';
+import { VisualizarUsuarios } from './component/visualizar-usuarios/visualizar-usuarios';
 
 export const routes: Routes = [
   {
@@ -86,6 +87,17 @@ export const routes: Routes = [
       {
         path: "visualizar-gens-alimenticios",
         component: VisualizarGensAlimenticios
+      }
+    ]
+  },
+  {
+    path: "",
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN'] },
+    children: [
+      {
+        path: "visualizar-usuarios",
+        component: VisualizarUsuarios,
       }
     ]
   },
