@@ -74,7 +74,7 @@ export class VisualizarEntregas {
     if(status === "esp"){
       return "Entrega em espera";
     }
-    return "Entregua realizada";
+    return "Entrega realizada";
   }
 
   classeStatus(status: string): string {
