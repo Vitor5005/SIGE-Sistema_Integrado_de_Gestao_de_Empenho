@@ -32,10 +32,6 @@ export const routes: Routes = [
     component: RecuperarSenha
   },
   {
-    path: 'cadastrar-se',
-    component: Cadastro
-  },
-  {
     path: "",
     canActivate: [authGuard],
     children: [
