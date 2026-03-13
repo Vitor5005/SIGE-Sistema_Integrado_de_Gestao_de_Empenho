@@ -39,6 +39,11 @@ export class LicitacaoService implements ICrudService<Licitacao> {
       return this.http.post<Licitacao>(url, item);
     }
   }
+
+  patch(id: number, object: any): Observable<any> {
+    throw new Error('Method not implemented.');
+  }
+
   delete(id: number): Observable<void> {
     const url = this.apiUrl + id + '/';
     return this.http.delete<void>(url);

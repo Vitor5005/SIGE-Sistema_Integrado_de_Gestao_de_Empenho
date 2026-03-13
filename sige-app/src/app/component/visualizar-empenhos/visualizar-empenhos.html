@@ -1,9 +1,9 @@
 <body class="listagem">
   <div class="container-titulo">
-    <h3>EMPENHOS</h3>
+    <h3><i class="bi bi-wallet"></i> EMPENHOS</h3>
     <hr>
   </div>
-    <app-barra-pesquisa></app-barra-pesquisa>
+    <app-barra-pesquisa (pesquisar)="get($event)"></app-barra-pesquisa>
 
     <table class="tabela">
         <thead>
@@ -18,8 +18,8 @@
 
             @for (item of empenhos; track item.id) {
                 <!-- Exemplo 1 -->
-                <tr style="cursor: pointer;" (click)="enviarPara('visualizar-empenho')">
-                    <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
+                <tr style="cursor: pointer;" (click)="enviarPara('visualizar-empenho', item.id)">
+
                     <td>
                         <span>{{ item.codigo }}</span>
                     </td>

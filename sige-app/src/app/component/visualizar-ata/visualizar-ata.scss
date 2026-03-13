@@ -2,7 +2,7 @@ body{
   display: flex;
   flex-direction: column;
   align-items: center;
-  
+
   .container-visualizar-ata{
     width: 80vw;
     box-shadow: var(--box-shadow);
@@ -12,6 +12,7 @@ body{
     flex-direction: column;
     align-items: center;
     margin-top: 20px;
+    margin-bottom: 40px;
     .cabecalho-arp{
       display: flex;
       align-items: center;
@@ -77,9 +78,16 @@ body{
         .meses{
           margin-bottom: 10px;
         }
-        .span-validade{
+        .span-validade-expirado{
           width: 100%;
           background-color: #FFA8A8;
+          position: absolute;
+          bottom: 0;
+          left: 0;
+        }
+        .span-validade-valido{
+          width: 100%;
+          background-color: #A8FFA8;
           position: absolute;
           bottom: 0;
           left: 0;

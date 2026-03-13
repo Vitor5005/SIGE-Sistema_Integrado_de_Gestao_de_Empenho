@@ -15,7 +15,7 @@ export class VisualizarEmpenhos {
   constructor(
     private router: Router,
     private empenhoService: EmpenhoService
-  ){}
+  ) { }
 
   empenhos = Array<Empenho>();
 
@@ -23,8 +23,13 @@ export class VisualizarEmpenhos {
     this.get();
   }
 
-  enviarPara(rota: string){
-    this.router.navigate([rota]);
+  enviarPara(rota: string, id?: number) {
+    if (id) {
+      this.router.navigate([rota], { queryParams: { id } });
+    }
+    else {
+      this.router.navigate([rota]);
+    }
   }
 
   get(termobusca?: string): void {

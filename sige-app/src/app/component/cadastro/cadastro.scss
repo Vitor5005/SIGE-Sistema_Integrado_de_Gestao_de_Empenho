@@ -9,7 +9,7 @@ main {
 .corpo-cadastro {
 	background: #fff;
 	border-radius: 20px;
-	box-shadow: 0 0 15px rgba(0,0,0,0.4);
+	box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
 	padding: 3rem 3.5rem;
 	max-width: 520px;
 	width: 100%;
@@ -22,7 +22,9 @@ main {
 	gap: 20px;
 }
 
-h1 { color: var(--azul-claro); }
+h1 {
+	color: var(--azul-claro);
+}
 
 .form-cadastro {
 	width: 100%;
@@ -31,9 +33,12 @@ h1 { color: var(--azul-claro); }
 	gap: 18px;
 }
 
-.campo { width: 100%; }
-label{
-  color: var(--font-cinza2);
+.campo {
+	width: 100%;
+}
+
+label {
+	color: var(--font-cinza2);
 }
 
 input {
@@ -45,7 +50,11 @@ input {
 	font-size: 15px;
 }
 
-.input-senha { position: relative; display: flex; align-items: center; }
+.input-senha {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
 
 .toggle-senha {
 	position: absolute;
@@ -57,7 +66,10 @@ input {
 	font-size: 1.1em;
 	transition: color .3s;
 }
-.toggle-senha:hover { color: #000; }
+
+.toggle-senha:hover {
+	color: #000;
+}
 
 .submit {
 	width: 100%;
@@ -69,7 +81,11 @@ input {
 	font-size: 16px;
 	cursor: pointer;
 }
-.submit:disabled { opacity: .6; cursor: not-allowed; }
+
+.submit:disabled {
+	opacity: .6;
+	cursor: not-allowed;
+}
 
 .erro {
 	background: #ffefef;
@@ -78,18 +94,21 @@ input {
 	border-radius: 8px;
 	font-size: .9rem;
 }
+
 .campo-senha {
-        position: relative;
-      }
-      .campo-senha input {
-        width: 100%;
-        padding-right: 40px;
-      }
-      .campo-senha i {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        cursor: pointer;
-        font-size: 18px;
-      }
+	position: relative;
+}
+
+.campo-senha input {
+	width: 100%;
+	padding-right: 40px;
+}
+
+.campo-senha i {
+	position: absolute;
+	right: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	cursor: pointer;
+	font-size: 18px;
+}

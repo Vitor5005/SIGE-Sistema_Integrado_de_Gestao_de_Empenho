@@ -19,19 +19,19 @@ export class VisualizarLicitacoes {
     private licitacaoService: LicitacaoService,
   ) { }
 
-  ngOnInit() {
-    this.getOrdenadoValidade();
-  }
-
   registro: Licitacao[] = [];
 
-  get(): void {
-    this.licitacaoService.get().subscribe({
-      next: (resposta: Array<Licitacao>) => {
-        this.registro = resposta;
-      }
-    });
-  };
+  ngOnInit() {
+  this.get();
+  }
+
+  get(termobusca?: string): void {
+  this.licitacaoService.get(termobusca).subscribe({
+    next: (resposta: Licitacao[]) => {
+      this.registro = this.ordenarLicitacoes(resposta);
+    }
+  });
+}
 
   getOrdenadoValidade(): void {
     this.licitacaoService.get().subscribe({

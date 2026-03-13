@@ -1,18 +1,41 @@
 <header class="cabecalho">
-  <h1 class="logo">SIGE</h1>
-  <div class="d-flex gap-4">
+  <h1 class="logo">SIGE </h1>
+
+  <div class="d-flex gap-4 align-items-center">
     <div class="nav-botoes">
       <ul class="lista-botoes">
-        <li><a routerLink="/adicionar-licitacao" routerLinkActive="selecionado" class="botao">Adicionar licitação</a></li>
-        <li><a routerLink="/visualizar-licitacoes" routerLinkActive="selecionado" [routerLinkActiveOptions]="{ exact: true }" class="botao">Licitacoes</a></li>
+        <li><a routerLink="/adicionar-licitacao" routerLinkActive="selecionado" class="botao">Adicionar licitação</a>
+        </li>
+        <li><a routerLink="/visualizar-licitacoes" routerLinkActive="selecionado"
+            [routerLinkActiveOptions]="{ exact: true }" class="botao">Licitacoes</a></li>
         <li><a routerLink="/visualizar-atas" class="botao" routerLinkActive="selecionado">ARP´s</a></li>
         <li><a routerLink="/visualizar-empenhos" routerLinkActive="selecionado" class="botao">Empenhos</a></li>
         <li><a routerLink="/visualizar-entregas" class="botao" routerLinkActive="selecionado">Entregas</a></li>
         <li><a routerLink="/visualizar-fornecedores" class="botao" routerLinkActive="selecionado">Fornecedores</a></li>
-        <li><a routerLink="/visualizar-gens-alimenticios" class="botao" routerLinkActive="selecionado">Gên. Alimentícios</a></li>
+        <li><a routerLink="/visualizar-gens-alimenticios" class="botao" routerLinkActive="selecionado">Gên.
+            Alimentícios</a></li>
+        @if(papel == "ADMIN"){
+        <div class="dropdown">
+          <button class="botao dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            Configurações
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+
+            <li><a class="dropdown-item" routerLink="/visualizar-usuarios" routerLinkActive="selecionado">Usuarios</a>
+            </li>
+          </ul>
+        </div>
+        }
       </ul>
     </div>
-    <button class="logout"><i class="bi bi-box-arrow-right"></i></button>
+    <div class="usuario">
+      <i class="bi bi-person-circle"></i>
+      <div class="usuario-dados">
+        <span class="usuario-nome"> Usuario: {{ usuario }}</span>
+        <span class="usuario-papel"> Papel: {{ verificarPapel(papel) }}</span>
+      </div>
+    </div>
+    <button class="logout" (click)="realizarLogout()"><i class="bi bi-box-arrow-right logout"></i></button>
   </div>
 </header>
-

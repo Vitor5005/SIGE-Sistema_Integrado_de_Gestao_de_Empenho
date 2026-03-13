@@ -1,0 +1,70 @@
+body{
+  background: var(--cabecalho);
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.cartao-recuperacao {
+      width: 100%;
+      max-width: 420px;
+      border-radius: 20px;
+    }
+
+    .icone-circulo {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--font-cinza2);
+    }
+
+    .campo-digito {
+      border: 2px solid #e9ecef;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .campo-digito:focus {
+      border-color: #198754;
+      background-color: #f8fffb;
+    }
+    label{
+      color: var(--font-cinza2);
+    }
+
+    .botao-acao {
+      border-radius: 10px;
+      transition: transform 0.2s;
+      background-color: var(--azul-claro);
+      color: #ffffff;
+    }
+
+    .botao-acao:active {
+      transform: scale(0.98);
+    }
+
+    .form-control {
+      border-radius: 8px;
+    }
+
+    .input-group-text {
+      border-radius: 8px 0 0 8px;
+    }
+
+    .form-control:focus {
+      border-color: var(--azul-claro);
+    }
+
+    .titulo-sessao {
+      color: #343a40;
+    }
+
+    .descricao-sessao {
+      font-size: 0.95rem;
+    }
+
+

@@ -13,6 +13,10 @@ import { VisualizarGensAlimenticios } from './component/visualizar-gens-alimenti
 import { Login } from './component/login/login';
 import { Cadastro } from './component/cadastro/cadastro';
 import { VisualizarGenAlimenticio } from './component/visualizar-gen-alimenticio/visualizar-gen-alimenticio';
+import { RecuperarSenha } from './component/recuperar-senha/recuperar-senha';
+import { authGuard } from './guard/auth.guard';
+import { Home } from './component/home/home';
+import { VisualizarUsuarios } from './component/visualizar-usuarios/visualizar-usuarios';
 
 export const routes: Routes = [
   {
@@ -25,57 +29,82 @@ export const routes: Routes = [
     component: Login
   },
   {
-    path: 'cadastrar-se',
-    component: Cadastro
-  },
-   {
-    path: 'visualizar-licitacoes',
-    component: VisualizarLicitacoes
+    path: 'recuperar-senha',
+    component: RecuperarSenha
   },
   {
-    path: 'adicionar-licitacao',
-    component: AdicionarLicitacao
-  },
-  {
-    path: 'visualizar-licitacao',
-    component: VisualizarLicitacao
-  },
-  {
-    path: "visualizar-atas",
-    component: VisualizarAtas
-  },
-  {
-    path: 'visualizar-ata',
-    component: VisualizarAta
-  },
-  {
-    path: 'visualizar-empenhos',
-    component: VisualizarEmpenhos
-  },
-  {
-    path: "visualizar-empenho",
-    component: VisualizarEmpenho
-  },
-  {
-    path: "visualizar-entregas",
-    component: VisualizarEntregas
-  },
-  {
-    path: "visualizar-fornecedores",
-    component: VisualizarFornecedores
-  },
-  {
-    path: "visualizar-fornecedor",
-    component: VisualizarFornecedor
-  },
+    path: "",
+    canActivate: [authGuard],
+    children: [
+      {
+        path: 'home',
+        component: Home,
+      },
+      {
+        path: 'visualizar-licitacoes',
+        component: VisualizarLicitacoes,
+      },
+      {
+        path: 'adicionar-licitacao',
+        component: AdicionarLicitacao,
+      },
+      {
+        path: 'visualizar-licitacao',
+        component: VisualizarLicitacao
+      },
+      {
+        path: "visualizar-atas",
+        component: VisualizarAtas
+      },
+      {
+        path: 'visualizar-ata',
+        component: VisualizarAta
+      },
+      {
+        path: 'visualizar-empenhos',
+        component: VisualizarEmpenhos
+      },
+      {
+        path: "visualizar-empenho",
+        component: VisualizarEmpenho
+      },
+      {
+        path: "visualizar-entregas",
+        component: VisualizarEntregas
+      },
+      {
+        path: "visualizar-fornecedores",
+        component: VisualizarFornecedores
+      },
+      {
+        path: "visualizar-fornecedor",
+        component: VisualizarFornecedor
+      },
 
-  {
-    path: "visualizar-gens-alimenticios",
-    component: VisualizarGensAlimenticios
+      {
+        path: "visualizar-gens-alimenticios",
+        component: VisualizarGensAlimenticios
+      },
+      {
+        path: 'visualizar-gen-alimenticio',
+        component: VisualizarGenAlimenticio
+      }
+    ]
   },
-
   {
-    path: 'visualizar-gen-alimenticio',
-    component: VisualizarGenAlimenticio
+    path: "",
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN'] },
+    children: [
+      {
+        path: "visualizar-usuarios",
+        component: VisualizarUsuarios,
+      }
+    ]
+  },
+  {
+    path: '**',
+    redirectTo: 'home'
   }
+
 ];

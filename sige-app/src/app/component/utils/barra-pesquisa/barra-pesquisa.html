@@ -1,15 +1,18 @@
 <div class="container-pesquisar">
   <div class="pesquisarEfiltrar">
     <label for="pesquisarLicitacao">Pesquisar:</label>
-    <input type="text" , id="pesquisarLicitacao">
+    <input type="text" , id="pesquisarLicitacao" (input)="onPesquisar($event)">
   </div>
   <div class="dropdown">
-    <button class="filtro dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"> <i class="bi bi-funnel"></i> filtros</button>
-    <ul class="dropdown-menu">
-      <li><a class="dropdown-item" href="#">Action</a></li>
-      <li><a class="dropdown-item" href="#">Another action</a></li>
-      <li><a class="dropdown-item" href="#">Something else here</a></li>
-      <li><hr class="dropdown-divider"></li>
+    <button class="filtro dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"> <i class="bi bi-funnel"></i>
+      filtros</button>
+    <ul class="dropdown-menu" >
+      @for (filtro of filtros; track filtro) {
+        <li><a class="dropdown-item" (click)="onFiltroClick(filtro)">Action</a></li>
+      }
+      <li>
+        <hr class="dropdown-divider">
+      </li>
       <li><a class="dropdown-item limpar" href="#">limpar filtros</a></li>
     </ul>
   </div>

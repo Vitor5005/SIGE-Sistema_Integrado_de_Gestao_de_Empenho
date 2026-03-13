@@ -36,6 +36,10 @@
       </div>
       <div class="info-grid">
         <div class="info-item">
+          <label>CEP</label>
+          <span class="dado-valor">{{ fornecedor.endereco.cep }}</span>
+        </div>
+        <div class="info-item">
           <label>RUA</label>
           <span class="dado-valor">{{ fornecedor.endereco.lagradouro }}, {{ fornecedor.endereco.numero }}</span>
         </div>
@@ -71,6 +75,7 @@
         </div>
         <div class="modal-body">
           <form class="form-fornecedor" #form="ngForm">
+
             <div class="form-row">
               <div class="form-group flex-2">
                 <label>RAZÂO SOCIAL</label>
@@ -92,6 +97,12 @@
               <div class="form-group flex-2">
                 <label>RUA</label>
                 <input type="text" [(ngModel)]="endereco_editar.lagradouro" name="logradouro">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label>CEP</label>
+                <input type="text" [(ngModel)]="endereco_editar.cep" name="cep">
               </div>
               <div class="form-group flex-1">
                 <label>NÚMERO</label>
@@ -127,6 +138,7 @@
                 <i class="bi bi-check-lg"></i> CONFIRMAR ALTERAÇÕES
               </button>
             </div>
+
           </form>
         </div>
       </div>

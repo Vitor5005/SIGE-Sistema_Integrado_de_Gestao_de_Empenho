@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
-from licitacao.serializers import AtaSerializer
+from licitacao.serializers import AtaSerializer, ItemAtaSerializer, itemAtaSemAtaSerializer
 
 class EmpenhoSerializer(serializers.ModelSerializer):
     ata = AtaSerializer()
@@ -12,14 +12,29 @@ class EmpenhoSerializer(serializers.ModelSerializer):
         
     def get_quantidade_itens(self, instance):
         return ItemEmpenho.objects.filter(empenho=instance).count()
+    
+class EmpenhoInsertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Empenho
+        fields = '__all__'
+
+class ItemEmpenhoInsertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ItemEmpenho
+        fields = '__all__'
 
 class ItemEmpenhoSerializer(serializers.ModelSerializer):
+    item_ata = ItemAtaSerializer()
     empenho = EmpenhoSerializer()
     class Meta:
         model = ItemEmpenho
         fields = '__all__'
+        
+class OperacaoItemInsertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OperacaoItem
+        fields = '__all__'
     
-
 class OperacaoItemSerializer(serializers.ModelSerializer):
     item_empenho = ItemEmpenhoSerializer()
     class Meta:
@@ -30,4 +45,10 @@ class ValorEmpenhoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empenho
         fields = ['id', 'codigo','valor_total', 'saldo_utilizado']
+        
+class itemEmpenhoSemEmpenhoSerializer(serializers.ModelSerializer):
+    item_ata = itemAtaSemAtaSerializer()
+    class Meta:
+        model = ItemEmpenho
+        fields = '__all__'
     

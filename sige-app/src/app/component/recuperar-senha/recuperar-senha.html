@@ -1,0 +1,122 @@
+<body>
+
+  <div class="cartao-recuperacao card shadow-sm p-4 border-0">
+
+    <!-- ETAPA 1: Inserir E-mail -->
+    @if (etapa() === 'email') {
+    <div class="corpo-etapa text-center">
+      <div class="icone-circulo mb-4 mx-auto">
+        <i class="bi bi-envelope-at fs-1"></i>
+      </div>
+
+      <h2 class="titulo-sessao h4 fw-bold mb-2">Esqueceu a senha?</h2>
+      <p class="descricao-sessao text-muted mb-4">
+        Não se preocupe! Insira seu e-mail abaixo para receber um código de recuperação.
+      </p>
+
+      <form (submit)="$event.preventDefault(); pedirEmail()">
+        <div class="campo-grupo mb-4 text-start">
+          <label for="email" class="form-label fw-semibold">E-mail cadastrado</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="bi bi-person text-muted"></i>
+            </span>
+            <input type="email" id="email" name="email" class="form-control border-start-0 ps-0 shadow-none"
+              placeholder="exemplo@email.com" required [(ngModel)]="email">
+          </div>
+        </div>
+
+        <button type="submit" class="botao-acao btn w-100 py-2 fw-bold mb-3">
+          Enviar Código
+        </button>
+
+        <a [routerLink]="['/login']" class="link-voltar d-block text-decoration-none text-muted small">
+          <i class="bi bi-arrow-left me-1"></i> Voltar para o login
+        </a>
+      </form>
+    </div>
+    }
+
+
+    @if (etapa() === 'codigo') {
+    <div class="corpo-etapa text-center">
+      <div class="icone-circulo mb-4 mx-auto bg-success bg-opacity-10 text-success">
+        <i class="bi bi-shield-lock fs-1"></i>
+      </div>
+
+      <h2 class="titulo-sessao h4 fw-bold mb-2">Verifique seu e-mail</h2>
+      <p class="descricao-sessao text-muted mb-4">
+        Enviamos um código de 6 dígitos para o seu e-mail. Digite-o abaixo.
+      </p>
+
+      <form (submit)="$event.preventDefault(); enviarCodigo()">
+        <div class="campo-grupo mb-4">
+          <div class="d-flex justify-content-between gap-2 container-digitos">
+
+            @for (item of ns; track $index) {
+            <input type="text" maxlength="1" class="form-control text-center fw-bold fs-4 campo-digito shadow-none" 
+            [(ngModel)]="ns[$index]" name="digito{{$index}}"
+              style="height: 55px;">
+            }
+          </div>
+        </div>
+
+        <button type="submit" class="botao-acao btn btn-success w-100 py-2 fw-bold mb-3">
+          Confirmar Código
+        </button>
+
+        <div class="links-auxiliares">
+          <p class="text-muted small mb-2">
+            Não recebeu o código?
+            <button type="button" class="btn btn-link p-0 text-decoration-none small fw-bold">Reenviar</button>
+          </p>
+          <button type="button" (click)="etapa.set('email')"
+            class="btn btn-link text-muted p-0 text-decoration-none small">
+            <i class="bi bi-pencil-square me-1"></i> Alterar e-mail
+          </button>
+        </div>
+      </form>
+    </div>
+    }
+
+    @if (etapa() === 'nova_senha') {
+    <div class="corpo-etapa text-center">
+      <div class="icone-circulo mb-4 mx-auto bg-success bg-opacity-10 text-success">
+        <i class="bi bi-shield-lock fs-1"></i>
+      </div>
+
+      <h2 class="titulo-sessao h4 fw-bold mb-2">Definir nova senha</h2>
+      <p class="descricao-sessao text-muted mb-4">
+        Digite sua nova senha abaixo.
+      </p>
+
+      <form (submit)="$event.preventDefault(); enviarNovaSenha()">
+        <div class="campo-grupo mb-4">
+          <div class="d-flex flex-column gap-2 senha-container">
+
+            <label for="senha">Senha</label>
+            <div class="campo-senha">
+              <input [type]="mostrarSenha ? 'text' : 'password'" name="senha" id="senha"
+                [(ngModel)]="password" required>
+              <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'" (click)="toggleSenha()"></i>
+            </div>
+          </div>
+
+          <div class="d-flex flex-column gap-2 senha-container">
+            <label for="confirmar-senha">Confirmar senha</label>
+            <div class="campo-senha">
+              <input [type]="mostrarConfirmar ? 'text' : 'password'" name="confirmar-senha" id="" required>
+              <i class="bi" [ngClass]="mostrarConfirmar ? 'bi-eye-slash' : 'bi-eye'"
+                (click)="toggleSenhaConfirmar()"></i>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="botao-acao btn btn-success w-100 py-2 fw-bold mb-3">
+          Confirmar Código
+        </button>
+      </form>
+    </div>
+    }
+  </div>
+</body>

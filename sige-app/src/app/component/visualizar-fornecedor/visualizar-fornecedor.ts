@@ -8,10 +8,11 @@ import { Modal } from 'bootstrap'
 import { EnderecoService } from '../../service/endereco.service';
 
 import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
+import { FornecedorInsert } from '../../model/fornecedor_insert';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
-  imports: [RouterLink,BotaoVoltar, FormsModule],
+  imports: [BotaoVoltar, FormsModule],
   templateUrl: './visualizar-fornecedor.html',
   styleUrl: './visualizar-fornecedor.scss',
 })
@@ -29,7 +30,7 @@ export class VisualizarFornecedor {
 
 
   fornecedor = <Fornecedor>{};
-  fornecedor_editar = <Fornecedor>{};
+  fornecedor_editar = <FornecedorInsert>{};
   endereco_editar = <Endereco>{};
 
 
@@ -60,12 +61,14 @@ export class VisualizarFornecedor {
     this.fornecedor_editar.nome_fantasia = this.fornecedor.nome_fantasia;
     this.fornecedor_editar.telefone = this.fornecedor.telefone;
     this.fornecedor_editar.email = this.fornecedor.email;
+    this.fornecedor_editar.endereco = this.fornecedor.endereco.id;
     this.endereco_editar.id = this.fornecedor.endereco.id;
     this.endereco_editar.lagradouro = this.fornecedor.endereco.lagradouro;
     this.endereco_editar.numero = this.fornecedor.endereco.numero;
     this.endereco_editar.bairro = this.fornecedor.endereco.bairro;
     this.endereco_editar.municipio = this.fornecedor.endereco.municipio;
     this.endereco_editar.estado = this.fornecedor.endereco.estado;
+    this.endereco_editar.cep = this.fornecedor.endereco.cep;
   }
 
   get(id: number): void {
@@ -82,6 +85,7 @@ export class VisualizarFornecedor {
       this.fornecedorService.save(this.fornecedor_editar).subscribe(
         {
           complete: () => {
+            alert('Fornecedor editado com sucesso!');
             window.location.reload();
           }
         }

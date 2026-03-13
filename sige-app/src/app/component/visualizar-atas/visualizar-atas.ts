@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AtaService } from '../../service/ata.service';
 import { Ata } from '../../model/ata';
 import { CommonModule } from '@angular/common';
+import { map } from 'rxjs';
 
 @Component({
   selector: 'app-visualizar-atas',
@@ -12,16 +13,16 @@ import { CommonModule } from '@angular/common';
   styleUrl: './visualizar-atas.scss',
 })
 export class VisualizarAtas {
-
   constructor(
     private router: Router,
     private ataService: AtaService
   ) { }
 
   atas = Array<Ata>();
-
+  licitacoesComAta: any[] = [];
   ngOnInit() {
-    this.getOrdenadoValidade();
+    this.get();
+    this.getLicitacoesComAta();
   }
 
   enviarPara(rota: string, id: number): void {
@@ -31,18 +32,11 @@ export class VisualizarAtas {
   get(termobusca?: string): void {
     this.ataService.get(termobusca).subscribe({
       next: (resposta: Array<Ata>) => {
-        this.atas = resposta;
-      }
-    });
-  }
-
-  getOrdenadoValidade(termobusca?: string): void {
-    this.ataService.get(termobusca).subscribe({
-      next: (resposta: Array<Ata>) => {
         this.atas = this.ordenarAtas(resposta);
       }
     });
   }
+
 
   verificarValidade(ata: Ata): string {
     const dataAtual = new Date();
@@ -89,6 +83,17 @@ export class VisualizarAtas {
       return dataAberturaB.getTime() - dataAberturaA.getTime();
     });
   }
+  getLicitacoesComAta(){
+    this.ataService.get().subscribe({
+      next: (atas) => {
+        const mapa = new Map();
 
+        atas.forEach(ata => {
+          mapa.set(ata.licitacao.id, ata.licitacao);
+        });
+        this.licitacoesComAta = Array.from(mapa.values());
+      }
+    })
+  }
 
 }

@@ -1,4 +1,4 @@
-.container-pesquisar{
+.container-pesquisar {
   background-color: var(--branco);
   width: 85vw;
   display: flex;
@@ -11,7 +11,7 @@
   font-size: 16px;
   font-weight: bold;
 
-  input{
+  input {
     width: 350px;
     height: 40px;
     border-radius: 20px;
@@ -19,6 +19,7 @@
     border: var(--borda1);
     padding: 0 15px;
   }
+
   .filtro {
     margin-left: 30px;
     width: 120px;
@@ -28,12 +29,40 @@
     border: var(--borda1);
     font-size: 16px;
     font-weight: bold;
-    i{
+
+    i {
       font-size: 20px;
     }
   }
-  .limpar:hover{
+
+  .limpar:hover {
     background-color: #c71c1c;
     color: var(--branco);
+  }
+}
+
+
+// Estilos específicos para quando estiver dentro do modal
+:host-context(.modal-body) .container-pesquisar {
+  width:  55vw;
+  height: 60px;
+  padding: 10px 15px;
+  font-size: 13px;
+
+  input {
+    width: 200px;
+    height: 35px;
+    font-size: 13px;
+  }
+
+  .filtro {
+    margin-left: 15px;
+    width: 90px;
+    height: 35px;
+    font-size: 13px;
+
+    i {
+      font-size: 16px;
+    }
   }
 }

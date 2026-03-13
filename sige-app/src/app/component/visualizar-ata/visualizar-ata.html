@@ -1,26 +1,27 @@
 <body>
 
-  <app-botao-voltar></app-botao-voltar>
+    <app-botao-voltar></app-botao-voltar>
 
     <div class="container-visualizar-ata">
 
         <div class="cabecalho-arp">
             <div>
-                <span >
+                <span>
                     <i class="bi bi-file-earmark-text"></i> {{ ata.numero_ata }}
                 </span>
             </div>
-            <button> <i class="bi bi-download"></i> Exportar</button>
+            <button data-bs-toggle="modal" data-bs-target="#adicionarItemModal" (click)="reiniciar_Modal()"><i
+                    class="bi bi-file-earmark-plus"></i>
+                Adiconar Item </button>
         </div>
 
         <hr>
 
         <div class="container-cards">
 
-            <div class="card-licitacao cards"
-                (click)="enviarPara('/visualizar-licitacao', ata.licitacao.id)">
-                <h5 >Licitação</h5>
-                <span >
+            <div class="card-licitacao cards" (click)="enviarPara('/visualizar-licitacao', ata.licitacao.id)">
+                <h5>Licitação</h5>
+                <span>
                     <i class="bi bi-link-45deg"></i> {{ ata.licitacao.numero_licitacao }}
                 </span>
             </div>
@@ -29,22 +30,22 @@
                 <h5>Validade</h5>
                 <span class="meses">{{ ata.licitacao.validade }} Meses</span>
 
-                <div class="span-validade">
-                    <span >expirado</span>
+                <div [class]="classValidade(ata)">
+                    <span>{{ validade }}</span>
                 </div>
             </div>
 
             <div class="card-valor-total cards">
-                <h5 >Valor Total</h5>
-                <span >R$ {{ ata.ata_saldo_total }}</span>
+                <h5>Valor Total</h5>
+                <span>R$ {{ ata.ata_saldo_total }}</span>
 
             </div>
 
             <div class="card-utilizado cards">
-                <h5 >Utilizado</h5>
-                <span >
+                <h5>Utilizado</h5>
+                <span>
 
-                    R$ {{ empenho.saldo_utilizado }}
+                    R$ {{ empenho.valor_total }}
                 </span>
             </div>
         </div>
@@ -60,13 +61,12 @@
                 <p><b>Telefone: {{ ata.fornecedor.telefone }}</b></p>
             </div>
 
-            <div class="card-empenho"
-                (click)="enviarPara('/visualizar-empenho')">
-                <h4 >
+            <div class="card-empenho" (click)="enviarPara('/visualizar-empenho', empenho.id)">
+                <h4>
                     Empenho
                 </h4>
-                <span >
-                    <i class="bi bi-link-45deg" ></i> {{ empenho.codigo }}
+                <span>
+                    <i class="bi bi-link-45deg"></i> {{ empenho.codigo }}
                 </span>
             </div>
         </div>
@@ -76,45 +76,239 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th scope="col" >Item</th>
-                        <th scope="col" >Quantidade Licitada</th>
+                        <th scope="col">Item</th>
+                        <th scope="col">Quantidade Licitada</th>
 
-                        <th scope="col" >
+                        <th scope="col">
                             <div>
                                 <p style="margin: 0;">Quantidade em Ata</p>
-                                <span >(Disponivel)</span>
+                                <span>(Disponivel)</span>
 
                             </div>
                         </th>
-                        <th scope="col" >Valor Unitario</th>
-                        <th scope="col" >Valor Total</th>
+
+                        <th>Quantidade Empenhada</th>
+
+                        <th scope="col">Valor Unitario</th>
+                        <th scope="col">Valor Empenhado</th>
+
                     </tr>
                 </thead>
                 <tbody>
                     <!-- Exemplo 1 -->
+                    @if (itens.length !== 0) {
                     @for (item of itens; track $index) {
                     <tr>
-                        <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
                         <td>
                             <span>{{ item.item_ata.item_generico.descricao }}</span>
                         </td>
                         <td>
-                            <span>{{ item.item_ata.quantidade_licitada }} {{ item.item_ata.item_generico.unidade_medida }}</span>
+                            <span>{{ item.item_ata.quantidade_licitada }} 
+                                {{ item.item_ata.item_generico.unidade_medida}}</span>
                         </td>
                         <td>
-                            <span>{{ item.item_ata.quantidade_licitada - item.quantidade_atual | number:'1.2-2' }} {{ item.item_ata.item_generico.unidade_medida }}</span>
+                            <span>{{ item.item_ata.quantidade_licitada - item.quantidade_atual | number:'1.2-2' }} {{
+                                item.item_ata.item_generico.unidade_medida }}</span>
                         </td>
+                        <td><span>{{ item.quantidade_atual }}</span> </td>
                         <td>
                             <span>R$ {{ item.item_ata.valor_unitario }}</span>
                         </td>
                         <td>
-                            <span>R$ {{ item.item_ata.quantidade_licitada * item.item_ata.valor_unitario | number:'1.2-2' }}</span>
+                            <span>R$ {{ item.quantidade_atual * item.item_ata.valor_unitario |
+                                number:'1.2-2' }}</span>
+                        </td>
+
+                    </tr>
+                    }
+
+                    }
+                    @if (itens.length === 0) {
+                    <tr>
+                        <td colspan="5">
+                            <h5>Nenhum item registrado para esta ata.</h5>
+                            <h5>Clique no botão "Adicionar Item" para adicionar um novo item.</h5>
                         </td>
                     </tr>
                     }
             </table>
         </div>
 
+    </div>
+
+    <div #myModal class="modal fade" id="adicionarItemModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content modal-custom">
+                <div class="modal-header-azul">
+                    <h2 class="modal-titulo">ADICIONAR ITEM À ATA</h2>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @if (modal_page === 0) {
+                    <div class="subtitulo">
+                        <h5>SELECIONE UM ITEM</h5>
+                        <hr>
+                    </div>
+
+
+                    <div class="listagem">
+
+                        <app-barra-pesquisa></app-barra-pesquisa>
+
+                        <table class="tabela">
+                            <thead>
+                                <tr>
+                                    <th scope="col">CATMAT</th>
+                                    <th scope="col">Categoria</th>
+                                    <th scope="col">Unidade de Medida</th>
+                                    <th scope="col">Descrição</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for(item of itemGenerico; track item.id){
+                                @if(verificarItemCadastrado(item.id) === false){
+                                    <tr style="cursor: pointer;" (click)="escolherItem(item)">
+                                        <td>{{ item.catmat }}</td>
+                                        <td>{{ getCategoria(item) }}</td>
+                                        <td>{{ getUnidadeMedida(item) }}</td>
+                                        <td>{{ item.descricao }}</td>
+
+                                    </tr>
+                                }
+                                }
+                            </tbody>
+                        </table>
+
+                        <h6>* Caso o Item não esteja registrado no sistema, clique no botão "ADICIONAR NOVO
+                            ITEM"</h6>
+                        <div class="form-footer">
+                            <button class="btn-confirmar" (click)="avanca_modal_page()">
+                                <i class="bi bi-box"></i> ADICIONAR NOVO ITEM
+                            </button>
+                        </div>
+
+                    </div>
+                    }
+
+                    @if (modal_page === 1){
+                    <div class="subtitulo">
+                        <h5>ADICIONAR NOVO ITEM</h5>
+                        <hr>
+                    </div>
+                    <form class="form-fornecedor" #form="ngForm">
+
+                        <div class="form-row">
+                            <div class="form-group flex-2">
+                                <label>CATMAT</label>
+                                <input type="text" name="catmat" [(ngModel)]="itemGenerico_insercao.catmat">
+                            </div>
+                            <div class="form-group">
+                                <label>DESCRIÇÃO</label>
+                                <textarea type="text" style="resize: none;" name="descricao"
+                                    [(ngModel)]="itemGenerico_insercao.descricao"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group flex-2">
+                                <label>Unidade de Medida</label>
+                                <select name="unidade_medida" id="unidade_medida"
+                                    [(ngModel)]="itemGenerico_insercao.unidade_medida" >
+                                    <option value="" disabled selected>Selecione uma unidade</option>
+                                    @for(item of unidade_medida | keyvalue; track item.key){
+                                        <option [value]="item.key">{{ item.value }}</option>
+                                    }
+
+                                </select>
+                            </div>
+
+                            <div class="form-group flex-1">
+                                <label>CATEGORIA</label>
+                                <select name="categoria" id="categoria" [(ngModel)]="itemGenerico_insercao.categoria">
+                                    <option value="" disabled selected>Selecione uma categoria</option>
+                                    @for(item of categoria | keyvalue; track item.key){
+                                        <option [value]="item.key">{{ item.value }}</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-footer">
+                            <button class="btn-confirmar" (click)="volta_modal_page()">
+                                <i class="bi bi-arrow-left"></i> VOLTAR
+                            </button>
+
+                            <button class="btn-confirmar" (click)="avanca_modal_page()">
+                                <i class="bi bi-arrow-right"></i> PROSSEGUIR
+                            </button>
+                        </div>
+
+                    </form>
+                    }
+
+                    @if(modal_page === 2){
+                    <div class="subtitulo">
+                        <h5>INFORMAÇÕES DO ITEM</h5>
+                        <hr>
+                    </div>
+
+                    <div>
+                        <p><b>CATMAT: {{itemGenerico_insercao.catmat}}</b></p>
+                        <p><b>CATEGORIA: {{ getCategoria(itemGenerico_insercao) }}</b></p>
+                        <p><b>UNIDADE DE MEDIDA: {{ getUnidadeMedida(itemGenerico_insercao) }}</b></p>
+                        <p><b>DESCRIÇÃO: {{itemGenerico_insercao.descricao}}</b></p>
+                    </div>
+
+                    <hr>
+
+                    <form class="form-fornecedor" #form="ngForm">
+
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label>QUANTIDADE LICITADA ({{ itemGenerico_insercao.unidade_medida }})</label>
+                                <input type="text" [(ngModel)]="itemAta_insercao.quantidade_licitada" name="quantidade_licitada">
+                            </div>
+                            <div class="form-group flex-2">
+                                <label>VALOR UNITARIO (R$)</label>
+                                <input type="text" [(ngModel)]="itemAta_insercao.valor_unitario" name="valor_unitario">
+                            </div>
+                            <div class="form-group flex-3">
+                                <label>MARCA</label>
+                                <input type="text" [(ngModel)]="itemAta_insercao.marca" name="marca">
+                            </div>
+                        </div>
+
+                        <div>
+                            <h5>VALOR TOTAL LICITADO (R$ / {{ itemGenerico_insercao.unidade_medida }}): {{ itemAta_insercao.valor_unitario * itemAta_insercao.quantidade_licitada | number:'1.2-2' }} </h5>
+                        </div>
+
+                        <div class="form-footer">
+                            @if(jump_page == true){
+                            <button class="btn-confirmar" (click)="volta_modal_page(0)">
+                                <i class="bi bi-arrow-left"></i> VOLTAR
+                            </button>
+
+                            <button class="btn-confirmar" (click)="saveItemAta()">
+                                <i class="bi bi-arrow-right"></i> PROSSEGUIR
+                            </button>
+                            }
+
+                            @if(jump_page == false){
+                            <button class="btn-confirmar" (click)="volta_modal_page()">
+                                <i class="bi bi-arrow-left"></i> VOLTAR
+                            </button>
+
+
+                            <button class="btn-confirmar" (click)="saveItemGenerico()">
+                                <i class="bi bi-arrow-right"></i> PROSSEGUIR
+                            </button>
+                            }
+                        </div>
+                    </form>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 
 </body>

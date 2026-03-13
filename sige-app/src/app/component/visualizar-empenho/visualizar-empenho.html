@@ -4,33 +4,34 @@
   <div class="container-empenho">
     <div class="cabecalho">
       <div>
-        <span class="nome-fornecedor">Nome do Fornecedor 1</span><br>
-        <span class="numero-empenho">EMP-XXX-XX</span>
+        <span class="nome-fornecedor">{{ empenho.ata.fornecedor.nome_fantasia }}</span><br>
+        <span class="numero-empenho">{{ empenho.codigo }}</span>
       </div>
 
-      <span (click)="enviarPara('/visualizar-ata')" class="span-arp"><b>ARP-XX-XXXX</b></span>
+      <span (click)="enviarPara('/visualizar-ata', empenho.ata.id)" class="span-arp"><b>{{ empenho.ata.numero_ata
+          }}</b></span>
     </div>
 
     <div class="info-fornecedor">
       <div>
-        <h5><b>Razão Social:</b> Nome do Fornecedor 1</h5>
-        <h5><b>CNPJ:</b> XX.XXX.XXX/XXXX-XX</h5>
+        <h5><b>Razão Social:</b> {{ empenho.ata.fornecedor.razao_social }}</h5>
+        <h5><b>CNPJ:</b> {{ empenho.ata.fornecedor.cnpj }}</h5>
         <div class="d-flex gap-1">
-          <h5><b>Telefone: (XX) XXXXX-XXXX</b></h5>
+          <h5><b>Telefone: {{ empenho.ata.fornecedor.telefone }}</b></h5>
           |
-          <h5><b>Email: XXXXXX@gmail.com</b></h5>
+          <h5><b>Email: {{ empenho.ata.fornecedor.email }}</b></h5>
         </div>
       </div>
 
       <div class="d-flex gap-5 cards-valor">
         <div class="valor-utilizado">
           <h4>Valor Utilizado</h4>
-          <p>R$ 5.100,00</p>
+          <p>R$ {{ empenho.saldo_utilizado }}</p>
         </div>
 
         <div class="valor-empenhado">
           <h4>Valor Empenhado</h4>
-          <p>R$ 40.100,00</p>
+          <p>R$ {{ empenho.valor_total }}</p>
         </div>
       </div>
     </div>
@@ -56,7 +57,14 @@
                 <span style="font-size: small;">(Disponivel)</span>
               </div>
             </th>
-            <th scope="col" >Quantidade Entregue</th>
+
+            <th scope="col">
+              <div>
+                <p class="m-0">Quantidade Empenhada</p>
+              </div>
+            </th>
+
+            <th scope="col">Quantidade Entregue</th>
 
             <th scope="col">Categoria</th>
 
@@ -65,81 +73,51 @@
         </thead>
         <tbody>
           <!-- Exemplo 1 -->
+          @for (item of itensEmpenho; track item.id) {
           <tr>
             <td>
               <input type="checkbox" name="" id="">
             </td>
             <td>
-              <span>Frango </span>
-              <span>(KG)</span>
+              <span>{{ item.item_ata.item_generico.descricao }} </span>
+              <span> {{ item.item_ata.item_generico.unidade_medida }} </span>
             </td>
 
             <td>
-              <span>R$ 20,00</span>
+              <span>R$ {{ item.item_ata.valor_unitario }}</span>
             </td>
 
             <td>
-              <span>500 </span>
-              <span>KG</span>
+              <span> {{ item.item_ata.quantidade_licitada - item.quantidade_atual | number:'1.2-2' }} </span>
+              <span> {{ item.item_ata.item_generico.unidade_medida }} </span>
             </td>
 
             <td>
-              <span>100 </span>
-              <span>KG</span>
+              <span> {{ item.quantidade_atual | number:'1.2-2' }} </span>
+              <span> {{ item.item_ata.item_generico.unidade_medida }} </span>
             </td>
 
-            <td>Proteinas</td>
+            <td>
+              <span> {{ item.quantidade_entrege | number:'1.2-2' }} </span>
+              <span> {{ item.item_ata.item_generico.unidade_medida }} </span>
+            </td>
+
+            <td> {{ getCategoria(item) }} </td>
 
             <td>
               <div class="botoes-acoes">
-                <button (click)="prepararOperacao('reforco')" data-bs-toggle="modal" data-bs-target="#modalSaldo">
+                <button (click)="prepararOperacao('reforco')" data-bs-toggle="modal" data-bs-target="#modalSaldo" (click)="carregarItemEmpenho(item); trocarOperacao('ref')">
                   <i class="bi bi-plus-circle reforcar"></i>
                 </button>
-                <button (click)="prepararOperacao('anulacao')" data-bs-toggle="modal" data-bs-target="#modalSaldo">
+                <button (click)="prepararOperacao('anulacao')" data-bs-toggle="modal" data-bs-target="#modalSaldo" (click)="carregarItemEmpenho(item); trocarOperacao('anl')">
                   <i class="bi bi-x-circle anular"></i>
                 </button>
               </div>
             </td>
+
           </tr>
+          }
 
-          <!-- Exemplo 2 -->
-          <tr>
-            <td>
-              <input type="checkbox" name="" id="">
-            </td>
-
-            <td>
-              <span>Carne Bovina </span>
-              <span>(KG)</span>
-            </td>
-
-            <td>
-              <span>R$ 30,00</span>
-            </td>
-
-            <td>
-              <span>800 </span>
-              <span>KG</span>
-            </td>
-
-            <td>
-              <span>300 </span>
-              <span>KG</span>
-            </td>
-
-            <td>Proteinas</td>
-
-            <td>
-              <div class="botoes-acoes">
-                <button (click)="prepararOperacao('reforco')" data-bs-toggle="modal" data-bs-target="#modalSaldo">
-                  <i class="bi bi-plus-circle reforcar"></i>
-                </button>
-                <button (click)="prepararOperacao('anulacao')" data-bs-toggle="modal" data-bs-target="#modalSaldo">
-                  <i class="bi bi-x-circle anular"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
         </tbody>
       </table>
     </div>
@@ -157,49 +135,34 @@
         </tr>
       </thead>
       <tbody>
+        @for (operacao of operacoesEmpenho; track operacao.id) {
         <tr>
-          <td>06/03/2024 14:30</td>
-          <td>Frango (KG)</td>
+          <td>{{ operacao.data  | date:'dd/MM/yyyy | HH:mm' }}</td>
+          <td> {{operacao.item_empenho.item_ata.item_generico.descricao }} 
+               ({{operacao.item_empenho.item_ata.item_generico.unidade_medida}}) </td>
           <td>
-            <span class="badge bg-primary">Reforço</span>
+            <span [ngClass]="getClassOperacao(operacao.tipo)">
+              {{ getTipoOperacao(operacao.tipo) }}
+            </span>
           </td>
-          <td>+50 KG</td>
-          <td>R$ 1.000,00</td>
+          <td > {{ operacao.valor }} ({{ operacao.item_empenho.item_ata.item_generico.unidade_medida }}) </td>
+          <td> R$ {{ operacao.item_empenho.item_ata.valor_unitario * operacao.valor | number:'1.2-2'}} </td>
         </tr>
-        <tr>
-          <td>06/03/2024 15:00</td>
-          <td>Carne Bovina (KG)</td>
-          <td>
-            <span class="badge bg-danger">Anulação</span>
-          </td>
-          <td>-20 KG</td>
-          <td>R$ 600,00</td>
-        </tr>
+        }
       </tbody>
     </table>
   </div>
 
   <!-- Modal -->
-  <div
-    #myModal
-    class="modal fade"
-    id="entregaModal"
-    tabindex="-1"
-    aria-labelledby="entregaModalLabel"
-    aria-hidden="true"
-  >
+  <div #myModal class="modal fade" id="entregaModal" tabindex="-1" aria-labelledby="entregaModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h1 class="modal-title fs-5" id="entregaModalLabel">
             <i class="bi bi-truck"></i> SOLICITAR ENTREGA
           </h1>
-          <button
-            type="button"
-            class="btn-close btn-close-white"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
         <div class="modal-body">
@@ -211,14 +174,8 @@
                 <span>Frango </span>
                 <span style="font-size: 0.7em">(KG)</span>
               </label>
-              <input
-                type="number"
-                id="alimento1"
-                name="alimento1"
-                min="0"
-                max="500"
-                placeholder="Quantidade a ser entregue (KG)"
-              />
+              <input type="number" id="alimento1" name="alimento1" min="0" max="500"
+                placeholder="Quantidade a ser entregue (KG)" />
             </div>
 
             <div class="d-flex flex-column">
@@ -226,14 +183,8 @@
                 <span>Carne Bovina </span>
                 <span>(KG)</span>
               </label>
-              <input
-                type="number"
-                id="alimento2"
-                name="alimento2"
-                min="0"
-                max="500"
-                placeholder="Quantidade a ser entregue (KG)"
-              />
+              <input type="number" id="alimento2" name="alimento2" min="0" max="500"
+                placeholder="Quantidade a ser entregue (KG)" />
             </div>
           </form>
           <small>Valor Total: 0,00</small>
@@ -246,44 +197,48 @@
     </div>
   </div>
 
- <div class="modal fade" id="modalSaldo" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header text-white" [ngClass]="tipo === 'anulacao' ? 'bg-danger' : 'bg-primary'">
-        <h5 class="modal-title">
-          {{ tipo === 'anulacao' ? 'ANULAÇÃO DE SALDO' : 'REFORÇO DE SALDO' }}
-        </h5>
-        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <label class="text-muted small">ITEM SELECIONADO</label>
-        <div class="bg-light p-2 rounded mb-3">Frango (KG)</div>
-
-        <label class="text-muted small">TIPO DA OPERAÇÃO</label>
-        <div class="btn-group w-100 mb-3">
-          <button class="btn" [ngClass]="tipo === 'reforco' ? 'btn-primary' : 'btn-outline-secondary'" (click)="tipo='reforco'">
-            Reforço
-          </button>
-          <button class="btn" [ngClass]="tipo === 'anulacao' ? 'btn-danger' : 'btn-outline-secondary'" (click)="tipo='anulacao'">
-            Anulação
-          </button>
+  <div class="modal fade" id="modalSaldo" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header text-white" [ngClass]="tipo === 'anulacao' ? 'bg-danger' : 'bg-primary'">
+          <h5 class="modal-title">
+            {{ tipo === 'anulacao' ? 'ANULAÇÃO DE SALDO' : 'REFORÇO DE SALDO' }}
+          </h5>
+          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
 
-        <label>Quantidade</label>
-        <input type="number" class="form-control" [placeholder]="tipo === 'anulacao' ? 'Qtd. para Anular' : 'Qtd. para Reforço'">
-      </div>
+        <div class="modal-body">
+          <label class="text-muted small">ITEM SELECIONADO</label>
+          <div class="bg-light p-2 rounded mb-3"> {{ itemEmpenhoModal.item_ata.item_generico.descricao }} 
+                                                  ({{ itemEmpenhoModal.item_ata.item_generico.unidade_medida }}) </div>
 
-      <div class="modal-footer">
-        <button class="btn w-100 mt-3 text-white" [ngClass]="tipo === 'anulacao' ? 'bg-danger' : 'bg-primary'">
-          <i class="bi bi-check-lg"></i>
-          {{
+          <label class="text-muted small">TIPO DA OPERAÇÃO</label>
+          <div class="btn-group w-100 mb-3">
+            <button class="btn" [ngClass]="tipo === 'reforco' ? 'btn-primary' : 'btn-outline-secondary'"
+              (click)="tipo='reforco'; trocarOperacao('ref')">
+              Reforço
+            </button>
+            <button class="btn" [ngClass]="tipo === 'anulacao' ? 'btn-danger' : 'btn-outline-secondary'"
+              (click)="tipo='anulacao'; trocarOperacao('anl')">
+              Anulação
+            </button>
+          </div>
+
+          <label>Quantidade ( {{ itemEmpenhoModal.item_ata.item_generico.unidade_medida }} )</label>
+          <input type="number" class="form-control"
+            [placeholder]="tipo === 'anulacao' ? 'Qtd. para Anular' : 'Qtd. para Reforço'" [(ngModel)]="operacaoItem_insercao.valor">
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn w-100 mt-3 text-white" [ngClass]="tipo === 'anulacao' ? 'bg-danger' : 'bg-primary'" (click)="salvarOperacaoItem()">
+            <i class="bi bi-check-lg"></i>
+            {{
             tipo === 'reforco' ? 'Confirmar Reforço' : 'Confirmar Anulação'
-          }}
-        </button>
+            }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
 </body>

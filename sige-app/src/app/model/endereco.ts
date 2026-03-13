@@ -5,4 +5,5 @@ export type Endereco = {
     bairro: string;
     municipio: string;
     estado: string;
+    cep: string;
 }
