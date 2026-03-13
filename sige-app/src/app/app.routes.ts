@@ -12,6 +12,7 @@ import { VisualizarFornecedor } from './component/visualizar-fornecedor/visualiz
 import { VisualizarGensAlimenticios } from './component/visualizar-gens-alimenticios/visualizar-gens-alimenticios';
 import { Login } from './component/login/login';
 import { Cadastro } from './component/cadastro/cadastro';
+import { VisualizarGenAlimenticio } from './component/visualizar-gen-alimenticio/visualizar-gen-alimenticio';
 
 export const routes: Routes = [
   {
@@ -71,5 +72,10 @@ export const routes: Routes = [
   {
     path: "visualizar-gens-alimenticios",
     component: VisualizarGensAlimenticios
+  },
+
+  {
+    path: 'visualizar-gen-alimenticio',
+    component: VisualizarGenAlimenticio
   }
 ];
