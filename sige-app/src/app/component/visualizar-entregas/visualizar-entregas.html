@@ -7,7 +7,7 @@
 
         </div>
 
-        <app-barra-pesquisa></app-barra-pesquisa>
+        <app-barra-pesquisa (pesquisar)="getEntregas($event)"></app-barra-pesquisa>
         <div class="container-entregas">
             @for (item of entregas; track item.id) {
             <div class="card-entrega">
