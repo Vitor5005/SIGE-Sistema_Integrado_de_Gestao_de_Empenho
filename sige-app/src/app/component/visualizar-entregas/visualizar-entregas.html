@@ -15,7 +15,7 @@
                 <div class="topo-entrega">
                     <div class="info-entrega" [ngClass]="classeStatus(item.status)">
 
-                        <div style="display: inline;">
+                        <div style="display: flex; gap: 5vw; align-items: center; padding-left: 1.5%;">
                             <span class="pedido-entrega">
                                 {{ item.codigo }}
                             </span>
@@ -35,7 +35,7 @@
 
                     </div>
 
-                    <div class="confirmar">
+                    <div style="display: flex; gap:2vw">
                         <button class="btn-confirmar" data-bs-toggle="modal" data-bs-target="#confirmarModal"
                             *ngIf="!confirmado">
                             <i class="bi bi-check-circle"></i>
@@ -49,6 +49,19 @@
                             VER PEDIDO
                         </button>
                     </div>
+                </div>
+
+                <div class="rodape-entrega">
+                    <div>
+                        <span>Data de emissão:</span>
+                        <span style="padding: 1%">{{ item.data_emissao | date: 'dd/MM/yyyy' }}</span>
+                    </div>
+                    @if( item.status === "con" ){
+                    <div>
+                        <span>Data de entrega:</span>
+                        <span style="padding: 1.35%">{{ item.data_entrega | date: 'dd/MM/yyyy' }}</span>
+                    </div>
+                    }   
                 </div>
 
             </div>

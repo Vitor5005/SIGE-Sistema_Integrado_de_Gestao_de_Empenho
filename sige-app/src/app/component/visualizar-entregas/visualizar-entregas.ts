@@ -55,7 +55,7 @@ export class VisualizarEntregas {
   getEntregas(termobusca?: string) {
     this.ordemEntregaService.get(termobusca).subscribe({
       next: (registro: OrdemEntrega[]) => {
-        this.entregas = registro;
+        this.entregas = this.ordenarEntregaPorStatusEData(registro);
       }
     });
   }
@@ -68,6 +68,29 @@ export class VisualizarEntregas {
       }
     })
 
+  }
+
+  verificarStatus(status: string): string {
+    if(status === "esp"){
+      return "Entrega em espera";
+    }
+    return "Entregua realizada";
+  }
+
+  classeStatus(status: string): string {
+    if(status === "esp"){
+      return "em_espera";
+    }
+    return "realizada";
+  }
+
+  ordenarEntregaPorStatusEData(entregas: OrdemEntrega[]): OrdemEntrega[] {
+    return entregas.sort((a, b) => {
+      if (a.status === b.status) {
+        return new Date(a.data_emissao).getTime() - new Date(b.data_emissao).getTime();
+      }
+      return a.status === 'esp' ? -1 : 1;
+    });
   }
 
 }
