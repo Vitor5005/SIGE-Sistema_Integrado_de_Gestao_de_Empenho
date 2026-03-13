@@ -6,10 +6,12 @@ import { OrdemEntregaService } from '../../service/ordem-entrega.service';
 import { OrdemEntrega } from '../../model/ordem_entrega';
 import { ItemOrdemService } from '../../service/item-ordem.service';
 import { ItemOrdem } from '../../model/itemOrdem';
+import { ItemOrdemInsert } from '../../model/itemOrdem_insert';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-visualizar-entregas',
-  imports: [BarraPesquisa, CommonModule],
+  imports: [BarraPesquisa, CommonModule, FormsModule],
   templateUrl: './visualizar-entregas.html',
   styleUrl: './visualizar-entregas.scss',
 })
@@ -66,19 +68,19 @@ export class VisualizarEntregas {
       next: (registro: ItemOrdem[]) => {
         this.pedidosDaOrdem = registro;
       }
-    })
+    });
 
   }
 
   verificarStatus(status: string): string {
-    if(status === "esp"){
+    if (status === "esp") {
       return "Entrega em espera";
     }
     return "Entrega realizada";
   }
 
   classeStatus(status: string): string {
-    if(status === "esp"){
+    if (status === "esp") {
       return "em_espera";
     }
     return "realizada";
@@ -91,6 +93,16 @@ export class VisualizarEntregas {
       }
       return a.status === 'esp' ? -1 : 1;
     });
+  }
+
+  verificarQuantidadeEntregue(item: ItemOrdem) {
+    if (item.quantidade_entregue > item.quantidade_solicitada) {
+      item.quantidade_entregue = item.quantidade_solicitada;
+    }
+    
+    if (item.quantidade_entregue < 0) {
+      item.quantidade_entregue = 0;
+    }
   }
 
 }

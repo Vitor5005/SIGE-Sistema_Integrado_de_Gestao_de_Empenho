@@ -36,11 +36,14 @@
                     </div>
 
                     <div style="display: flex; gap:2vw">
+
+                        @if( item.status !== "con" ){
                         <button class="btn-confirmar" data-bs-toggle="modal" data-bs-target="#confirmarModal"
-                            *ngIf="!confirmado">
+                            *ngIf="!confirmado" (click)="getItensOrdem(item.id)">
                             <i class="bi bi-check-circle"></i>
                             CONFIRMAR ENTREGA
                         </button>
+                        }
 
 
                         <button class="btn link-doc" data-bs-toggle="modal" data-bs-target="#verPedidoMordal"
@@ -53,15 +56,19 @@
 
                 <div class="rodape-entrega">
                     <div>
-                        <span>Data de emissão:</span>
-                        <span style="padding: 1%">{{ item.data_emissao | date: 'dd/MM/yyyy' }}</span>
+                        <span>Data de Emissão:</span>
+                        <span style="padding: 1%">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
+                    </div>
+                    <div>
+                        <span>Data de Entrega Prevista:</span>
+                        <span style="padding: 1%">{{ item.data_entrega_prevista| date: 'dd/MM/yyyy - HH:mm' }}</span>
                     </div>
                     @if( item.status === "con" ){
                     <div>
-                        <span>Data de entrega:</span>
-                        <span style="padding: 1.35%">{{ item.data_entrega | date: 'dd/MM/yyyy' }}</span>
+                        <span>Data de Entrega:</span>
+                        <span style="padding: 1.35%">{{ item.data_entrega | date: 'dd/MM/yyyy - HH:mm' }}</span>
                     </div>
-                    }   
+                    }
                 </div>
 
             </div>
@@ -75,7 +82,7 @@
     <div #myModal class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel"
         aria-hidden="true">
 
-        <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-entrega-lg">
             <div class="modal-content">
 
                 <div class="modal-header">
@@ -92,6 +99,7 @@
 
                         <div class="lista-itens">
 
+                            @for(item of pedidosDaOrdem; track $index) {
                             <div class="item-entrega">
 
                                 <div class="info-coluna">
@@ -101,11 +109,11 @@
 
                                     <div class="valor-info">
                                         <span class="nome-produto">
-                                            Frango
+                                            {{ item.item_empenho.item_ata.item_generico.descricao }}
                                         </span>
 
                                         <span class="unidade-modal">
-                                            kg
+                                            {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
                                         </span>
 
                                     </div>
@@ -117,11 +125,11 @@
 
                                     <div class="valor-info">
                                         <span class="valor">
-                                            30
+                                            {{ item.quantidade_solicitada }}
                                         </span>
 
                                         <span class="unidade-modal">
-                                            kg
+                                            {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
                                         </span>
 
                                     </div>
@@ -134,64 +142,52 @@
 
                                     <div class="valor-info">
                                         <span class="valor">
-                                            R$ 20,00
+                                            R$ {{ item.item_empenho.item_ata.valor_unitario | number:'1.2-2' }}
                                         </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="input-coluna">
-                                    <label class="label-input">
-                                        Quantidade Efetivamente Recebida (kg)
-                                    </label>
-                                    <div>
-                                        <input type="number" class="form-control input-quantidade">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="item-entrega">
-
-                                <div class="info-coluna">
-                                    <span class="label-info">Gênero Alimenticio</span>
-
-                                    <div class="valor-info">
-                                        <span class="nome-produto">Carne Bovina </span>
-
-                                        <span class="unidade-modal">kg</span>
 
                                     </div>
                                 </div>
 
                                 <div class="info-coluna">
                                     <span class="label-info">
-                                        Quantidade Solicitada</span>
-                                    <div class="valor-info">
-                                        <span class="valor">30 </span>
+                                        Valor Total do Item
+                                    </span>
 
-                                        <span class="unidade-modal">kg</span>
+                                    <div class="valor-info">
+                                        <span class="valor">
+                                            R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada
+                                            | number:'1.2-2' }}
+                                        </span>
 
                                     </div>
                                 </div>
 
-                                <div class="input-coluna">
-                                    <span class="label-info">Valor Unidade</span>
-
-                                    <div class="valor-info">
-                                        <span class="valor">R$ 30,00</span>
-
+                                <div class="input-coluna input-coluna-qtd">
+                                    <label class="label-input">
+                                        Quantidade Efetivamente Recebida ({{
+                                        item.item_empenho.item_ata.item_generico.unidade_medida }})
+                                    </label>
+                                    <div>
+                                        <input type="number" class="form-control input-quantidade" min="0" step="0.01"
+                                            inputmode="decimal" [max]="item.quantidade_solicitada"
+                                            [(ngModel)]="item.quantidade_entregue"
+                                            [name]="'quantidadeEntregue' + $index"
+                                            (change)="verificarQuantidadeEntregue(item)">
                                     </div>
                                 </div>
 
                                 <div class="input-coluna">
                                     <label class="label-input">
-                                        Quantidade Efetivamente Recebida (kg)
+                                        Observação sobre a entrega
                                     </label>
                                     <div>
-                                        <input type="number" class="form-control input-quantidade">
+                                        <textarea class="form-control textarea-observacao" [(ngModel)]="item.observacao"
+                                            [name]="'observacao' + $index"></textarea>
                                     </div>
                                 </div>
+
                             </div>
+                            }
 
                         </div>
 
