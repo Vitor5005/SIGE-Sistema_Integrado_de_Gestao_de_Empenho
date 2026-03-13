@@ -1,48 +1,50 @@
 <body class="listagem">
+  <div class="container-titulo">
+    <h3><i class="bi bi-clipboard2"></i> ATAS DE REGISTRO DE PREÇOS</h3>
+    <hr />
+  </div>
 
-    <div class="container-titulo">
-        <h3><i class="bi bi-clipboard2"></i> ATAS DE REGISTRO DE PREÇOS</h3>
-        <hr>
-    </div>
+  <app-barra-pesquisa [filtros]="filtros" (pesquisar)="get($event)" (filtrosAlterados)="aplicarFiltros($event)".>
+  </app-barra-pesquisa>
 
-    <app-barra-pesquisa [filtrosLicitacao]="licitacoesComAta" (pesquisar)="get($event)"></app-barra-pesquisa>
+  <table class="tabela">
+    <thead>
+      <tr>
+        <th>Identificação</th>
+        <th>Fornecedor</th>
+        <th>Status</th>
+        <th>Validade</th>
+        <th>Valor Total</th>
+      </tr>
+    </thead>
 
-    <table class="tabela">
-        <thead>
-            <tr>
-                <th scope="col">Identificação</th>
-                <th scope="col">Fornecedor</th>
-                <th scope="col">Status</th>
-                <th scope="col">Validade</th>
-                <th scope="col">Valor Total</th>
-            </tr>
-        </thead>
-        <tbody>
+    <tbody>
+      @for (item of atas; track item.id) {
+        <tr style="cursor: pointer" (click)="enviarPara('/visualizar-ata', item.id)">
+          <td>
+            <p>{{ item.numero_ata }}</p>
+            <small>cadastrado: {{ item.licitacao.data_abertura }}</small>
+          </td>
 
-            @for (item of atas; track item.id) {
-            <tr style="cursor: pointer;" (click)="enviarPara('/visualizar-ata', item.id)">
-                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                <td>
-                    <div>
-                        <p>{{ item.numero_ata }}</p>
-                        <small>cadastrado: {{ item.licitacao.data_abertura }}</small>
-                    </div>
-                </td>
-                <td>
-                    <p>{{ item.fornecedor.nome_fantasia }}</p>
-                    <small>{{ item.fornecedor.cnpj }}</small>
-                </td>
+          <td>
+            <p>{{ item.fornecedor.nome_fantasia }}</p>
+            <small>{{ item.fornecedor.cnpj }}</small>
+          </td>
 
-                <td ><span [ngClass]="classValidade(item)">{{
-                        verificarValidade(item) }}</span></td>
-                        <!-- Para modoficar as classes da validade
-                             é necessario alterar a função classValidade
-                             no arquivo visualizar-atas.ts -->
+          <td>
+            <span [ngClass]="classValidade(item)">
+              {{ verificarValidade(item) }}
+            </span>
+          </td>
 
-                <td><i class="bi bi-clock"></i> {{ item.licitacao.validade }} meses</td>
-                <td>R$ {{ item.ata_saldo_total}}</td>
-            </tr>
-            }
-    </table>
+          <td>
+            <i class="bi bi-clock"></i>
+            {{ item.licitacao.validade }} meses
+          </td>
 
+          <td>R$ {{ item.ata_saldo_total }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
 </body>

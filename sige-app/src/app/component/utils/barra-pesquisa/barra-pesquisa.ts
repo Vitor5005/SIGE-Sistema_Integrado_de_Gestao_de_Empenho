@@ -1,3 +1,4 @@
+import { FiltroConfig } from './../../../model/filtro-config';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, input, output, Output } from '@angular/core';
 import { Subject } from 'rxjs';
@@ -11,26 +12,19 @@ import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChang
   styleUrl: './barra-pesquisa.scss',
 })
 export class BarraPesquisa {
-  @Input() filtros: any[] = []
+  @Input() filtros: FiltroConfig[] = [];
 
   @Output() pesquisar = new EventEmitter<string>();
-  private searchSubject = new Subject<string>();
-  @Output() aplicarFiltro = new EventEmitter<any>();
+  @Output() filtrosAlterados = new EventEmitter<any>();
 
-  @Input() filtrosLicitacao: any[] = [];
-  @Output() filtrarLicitacao = new EventEmitter<number>();
-  
+  private searchSubject = new Subject<string>();
+
+  valores: any = {};
+
   ngOnInit(): void {
-    this.searchSubject.pipe(
-      debounceTime(300), // Aguarda 300ms após parar de digitar
-      distinctUntilChanged() // Só emite se o valor mudou
-    ).subscribe(termo => {
+    this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe((termo) => {
       this.pesquisar.emit(termo);
     });
-  }
-
-  onFiltroClick(filtro: any){
-    this.aplicarFiltro.emit(filtro)
   }
 
   onPesquisar(event: Event): void {
@@ -38,4 +32,17 @@ export class BarraPesquisa {
     this.searchSubject.next(termo);
   }
 
+  alterarFiltro(campo: string, valor: any) {
+    if (valor === null || valor === '') {
+      delete this.valores[campo];
+    } else {
+      this.valores[campo] = valor;
+    }
+
+    this.filtrosAlterados.emit(this.valores);
+  }
+  limparFiltros() {
+    this.valores = {};
+    this.filtrosAlterados.emit(this.valores);
+  }
 }

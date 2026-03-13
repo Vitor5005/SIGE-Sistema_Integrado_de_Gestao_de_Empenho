@@ -22,13 +22,14 @@ export class AtaService implements ICrudService<Ata> {
 
   apiUrl = environment.API_URL + '/atas/';
 
-  get(termobusca?: string): Observable<Ata[]> {
-    let url = this.apiUrl;
-    if (termobusca) {
-      url += '?search=' + termobusca;
-    }
-    return this.http.get<Ata[]>(url);
+  get(params?: any) {
+  let options = {};
+  
+  if (params) {
+    options = { params: params };
   }
+  return this.http.get<Ata[]>(this.apiUrl, options);
+}
 
   getByLicicao(termobusca?: string): Observable<Ata[]> {
     let url = this.apiUrl;
