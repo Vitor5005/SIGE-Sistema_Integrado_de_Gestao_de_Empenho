@@ -21,6 +21,14 @@ export class BarraPesquisa {
 
   valores: any = {};
 
+  filtrosLicitacoes: FiltroConfig[] = [
+    {
+      campo: 'data_abertura',
+      label: 'Período da venda',
+      tipo: 'date-range'
+    }
+  ];
+
   ngOnInit(): void {
     this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe((termo) => {
       this.pesquisar.emit(termo);

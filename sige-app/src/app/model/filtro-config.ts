@@ -3,7 +3,7 @@ export interface FiltroConfig {
 
   label: string;
 
-  tipo: 'checkbox' | 'radio' | 'select' | 'range';
+  tipo: 'checkbox' | 'radio' | 'select' | 'range' | 'date-range';
 
   opcoes?: any[];
 }

@@ -21,16 +21,12 @@ export class VisualizarLicitacoes {
   registro: Licitacao[] = [];
 
   filtros: FiltroConfig[] = [
-    {
-      campo: 'data_abertura',
-      label: 'Data de abertura',
-      tipo: 'radio',
-      opcoes: [
-        { valor: '2026-01-03', label: 'Janeiro 2024' },
-      ],
-    },
-  ];
-
+  {
+    campo: 'data_abertura',
+    label: 'Data de abertura',
+    tipo: 'date-range'
+  }
+];
   filtrosAtivos: any = {};
 
   ngOnInit() {

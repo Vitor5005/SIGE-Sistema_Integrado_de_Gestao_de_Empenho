@@ -55,11 +55,29 @@
               (change)="alterarFiltro(filtro.campo + '__lte', $any($event.target).value)"
             />
           </li>
+
         }
+        @if (filtro.tipo === 'date-range') {
+          <li class="dropdown-item">
+            <div class="d-flex gap-2">
+              <label>De:</label>
+              <input
+                type="date"
+                (change)="alterarFiltro(filtro.campo + '__gte', $any($event.target).value)"
+              />
+    
+              <label>Até:</label>
+              <input
+                type="date"
+                (change)="alterarFiltro(filtro.campo + '__lte', $any($event.target).value)"
+              />
+            </div>
+          </li>
+        }
+    }
 
         <li><hr class="dropdown-divider" /></li>
 
-      }
       <li>
         <a class="dropdown-item limpar" (click)="limparFiltros()">
           limpar filtros
