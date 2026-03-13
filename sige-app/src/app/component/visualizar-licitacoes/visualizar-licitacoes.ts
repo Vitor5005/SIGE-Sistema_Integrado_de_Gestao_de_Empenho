@@ -1,4 +1,4 @@
-
+import { FiltroConfig } from './../../model/filtro-config';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { Router } from '@angular/router';
@@ -13,23 +13,43 @@ import { CommonModule } from '@angular/common';
   styleUrl: './visualizar-licitacoes.scss',
 })
 export class VisualizarLicitacoes {
-
   constructor(
     private router: Router,
     private licitacaoService: LicitacaoService,
-  ) { }
+  ) {}
 
   registro: Licitacao[] = [];
 
+  filtros: FiltroConfig[] = [
+    {
+      campo: 'data_abertura',
+      label: 'Data de abertura',
+      tipo: 'radio',
+      opcoes: [
+        { valor: '2026-01-03', label: 'Janeiro 2024' },
+      ],
+    },
+  ];
+
+  filtrosAtivos: any = {};
+
   ngOnInit() {
-  this.get();
+    this.get();
+    this.filtrosAtivos = {};
   }
 
   get(termobusca?: string): void {
-  this.licitacaoService.get(termobusca).subscribe({
+  const filtrosParaEnvio = { ...this.filtrosAtivos };
+
+  if (termobusca) {
+    filtrosParaEnvio['search'] = termobusca;
+  }
+
+  // Se filtrosParaEnvio estiver vazio, buscar todos os registros
+  this.licitacaoService.getComFiltros(filtrosParaEnvio).subscribe({
     next: (resposta: Licitacao[]) => {
-      this.registro = this.ordenarLicitacoes(resposta);
-    }
+      this.registro = this.ordenarLicitacoes(resposta || []);
+    },
   });
 }
 
@@ -37,13 +57,18 @@ export class VisualizarLicitacoes {
     this.licitacaoService.get().subscribe({
       next: (resposta: Array<Licitacao>) => {
         this.registro = this.ordenarLicitacoes(resposta);
-      }
+      },
     });
-  };
+  }
 
   enviarPara(rota: string, id: number): void {
     this.router.navigate([rota], { queryParams: { id } });
   }
+
+  aplicarFiltros(filtrosAtivos: any) {
+  this.filtrosAtivos = filtrosAtivos || {};
+  this.get();
+}
 
   verificarValidade(licitacao: Licitacao): string {
     const dataAtual = new Date();
@@ -52,18 +77,17 @@ export class VisualizarLicitacoes {
     const dataExpiracao = new Date(dataAbertura);
     dataExpiracao.setMonth(dataExpiracao.getMonth() + Number(validade));
     if (dataAtual > dataExpiracao) {
-      return "Expirado";
+      return 'Expirado';
     } else {
-      return "Válido";
+      return 'Válido';
     }
   }
 
   classValidade(licitacao: Licitacao): string {
-    if (this.verificarValidade(licitacao) === "Expirado") {
-      return "bg-danger text-white";
-    }
-    else {
-      return "bg-success text-white";
+    if (this.verificarValidade(licitacao) === 'Expirado') {
+      return 'bg-danger text-white';
+    } else {
+      return 'bg-success text-white';
     }
   }
 
@@ -71,7 +95,6 @@ export class VisualizarLicitacoes {
     const dataAtual = new Date();
 
     return licitacoes.sort((a, b) => {
-
       const dataAberturaA = new Date(a.data_abertura);
       const dataExpiracaoA = new Date(dataAberturaA);
       dataExpiracaoA.setMonth(dataExpiracaoA.getMonth() + Number(a.validade));
@@ -90,5 +113,4 @@ export class VisualizarLicitacoes {
       return dataAberturaB.getTime() - dataAberturaA.getTime();
     });
   }
-
 }

@@ -1,20 +1,70 @@
 <div class="container-pesquisar">
   <div class="pesquisarEfiltrar">
-    <label for="pesquisarLicitacao">Pesquisar:</label>
-    <input type="text" , id="pesquisarLicitacao" (input)="onPesquisar($event)">
-  </div>
-  <div class="dropdown">
-    <button class="filtro dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"> <i class="bi bi-funnel"></i>
-      filtros</button>
-    <ul class="dropdown-menu" >
-      @for (filtro of filtros; track filtro) {
-        <li><a class="dropdown-item" (click)="onFiltroClick(filtro)">Action</a></li>
-      }
-      <li>
-        <hr class="dropdown-divider">
-      </li>
-      <li><a class="dropdown-item limpar" href="#">limpar filtros</a></li>
-    </ul>
+    <label>Pesquisar:</label>
+    <input type="text" (input)="onPesquisar($event)" />
   </div>
 
+  <div class="dropdown">
+    <button class="filtro dropdown-toggle" data-bs-toggle="dropdown">
+      <i class="bi bi-funnel"></i> filtros
+    </button>
+
+    <ul class="dropdown-menu">
+      @for (filtro of filtros; track filtro.campo) {
+        <li class="dropdown-item">
+          <strong>{{ filtro.label }}</strong>
+        </li>
+
+        <!-- CHECKBOX -->
+        @if (filtro.tipo === 'checkbox') {
+          @for (op of filtro.opcoes; track op.id) {
+            <li class="dropdown-item">
+              <input type="checkbox" (change)="alterarFiltro(filtro.campo, op.id)" />
+
+              {{ op.nome || op.numero }}
+            </li>
+          }
+        }
+
+        <!-- RADIO -->
+        @if (filtro.tipo === 'radio') {
+          @for (op of filtro.opcoes; track op.valor) {
+            <li class="dropdown-item">
+              <input
+                type="radio"
+                name="{{ filtro.campo }}"
+                (change)="alterarFiltro(filtro.campo, op.valor)"
+              />
+              {{ op.label }}
+            </li>
+          }
+        }
+
+        <!-- RANGE -->
+        @if (filtro.tipo === 'range') {
+          <li class="dropdown-item ">
+            <input
+              type="number"
+              placeholder="mín"
+              (change)="alterarFiltro(filtro.campo + '__gte', $any($event.target).value)"
+            />
+
+            <input
+              type="number"
+              placeholder="máx"
+              (change)="alterarFiltro(filtro.campo + '__lte', $any($event.target).value)"
+            />
+          </li>
+        }
+
+        <li><hr class="dropdown-divider" /></li>
+
+      }
+      <li>
+        <a class="dropdown-item limpar" (click)="limparFiltros()">
+          limpar filtros
+        </a>
+      </li>
+    </ul>
+  </div>
 </div>
