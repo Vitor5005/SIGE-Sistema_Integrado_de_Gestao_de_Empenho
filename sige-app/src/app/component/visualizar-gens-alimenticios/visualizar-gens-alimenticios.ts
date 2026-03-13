@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
-import { RouterLink, RouterModule, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-visualizar-gens-alimenticios',
-  imports: [BarraPesquisa, RouterLink],
+  imports: [BarraPesquisa, RouterLink, RouterModule],
   templateUrl: './visualizar-gens-alimenticios.html',
   styleUrl: './visualizar-gens-alimenticios.scss',
 })
