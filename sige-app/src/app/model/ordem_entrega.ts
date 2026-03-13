@@ -6,6 +6,7 @@ export type OrdemEntrega = {
     codigo: string;
     status: string;
     data_emissao: Date;
+    data_previsao_entrega: Date;
     data_entrega: Date | null;
     valor_total_executado: number;
 }

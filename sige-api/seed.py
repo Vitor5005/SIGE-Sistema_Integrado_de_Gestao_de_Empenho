@@ -3,6 +3,7 @@ import random
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from django.db import connection
+from django.utils import timezone
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sige_api.settings')
 import django
@@ -294,7 +295,7 @@ def seed_empenhos(atas=None):
     empenhos = []
     for i, ata in enumerate(atas):
         empenho = Empenho.objects.create(
-            codigo=formatar_codigo_empenho(numero=i + 1, ano=datetime.now().year),
+            codigo=formatar_codigo_empenho(numero=i + 1, ano=timezone.now().year),
             ata=ata,
             valor_total=Decimal("0.00"), # Será calculado pelos itens
             saldo_utilizado=Decimal("0.00")
@@ -367,7 +368,11 @@ def seed_operacoes_item(itens_empenho=None):
             item_empenho=item_empenho,
             tipo='inc',
             valor=limitar_valor_monetario(Decimal("1.00")),
-            data=datetime.now().date() - timedelta(days=random.randint(0, 60))
+            data=timezone.now() - timedelta(
+                days=random.randint(0, 60),
+                hours=random.randint(0, 23),
+                minutes=random.randint(0, 59)
+            )
         )
         operacoes.append(operacao_inclusao)
 
@@ -384,7 +389,11 @@ def seed_operacoes_item(itens_empenho=None):
                 item_empenho=item_empenho,
                 tipo=tipo,
                 valor=limitar_valor_monetario(valor),
-                data=datetime.now().date() - timedelta(days=random.randint(0, 60))
+                data=timezone.now() - timedelta(
+                    days=random.randint(0, 60),
+                    hours=random.randint(0, 23),
+                    minutes=random.randint(0, 59)
+                )
             )
             operacoes.append(operacao)
     return operacoes
@@ -405,17 +414,31 @@ def seed_ordens_entrega(empenhos=None):
         
         for j in range(num_ordens):
             status = random.choice(['esp', 'con'])
-            data_emissao = datetime.now().date() - timedelta(days=random.randint(1, 30))
+            data_emissao = timezone.now() - timedelta(
+                days=random.randint(1, 30),
+                hours=random.randint(0, 23),
+                minutes=random.randint(0, 59)
+            )
+            data_entrega_prevista = data_emissao + timedelta(
+                days=random.randint(2, 12),
+                hours=random.randint(0, 23),
+                minutes=random.randint(0, 59)
+            )
             
             # Data de entrega só existe se status é 'con'
             data_entrega = None
             if status == 'con':
-                data_entrega = data_emissao + timedelta(days=random.randint(1, 10))
+                data_entrega = data_emissao + timedelta(
+                    days=random.randint(1, 10),
+                    hours=random.randint(0, 23),
+                    minutes=random.randint(0, 59)
+                )
             
             ordem = OrdemEntrega.objects.create(
                 empenho=empenho,
                 codigo=f"OE-2026-{10000 + i*2 + j}",
                 status=status,
+                data_entrega_prevista=data_entrega_prevista,
                 data_entrega=data_entrega,
                 valor_total_executado=Decimal("0.00")  # Será recalculado pelos ItemOrdem
             )

@@ -137,7 +137,7 @@
       <tbody>
         @for (operacao of operacoesEmpenho; track operacao.id) {
         <tr>
-          <td>{{ operacao.data }}</td>
+          <td>{{ operacao.data  | date:'dd/MM/yyyy | HH:mm' }}</td>
           <td> {{operacao.item_empenho.item_ata.item_generico.descricao }} 
                ({{operacao.item_empenho.item_ata.item_generico.unidade_medida}}) </td>
           <td>
