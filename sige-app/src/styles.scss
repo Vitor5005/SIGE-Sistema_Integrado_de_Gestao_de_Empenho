@@ -24,7 +24,7 @@ p {
   --azul-claro: #0067BE; //usado nas fontes e botoes
   --branco: #ffffff;
   --verde: #28a745;
-  --verde-escuro: #106825;  //usado em botões de confirmação hover
+  --verde-escuro: #106825; //usado em botões de confirmação hover
   --amarelo: #E5B223;
   --box-shadow: 3px 1px 10px 2px rgba(0, 0, 0, 0.24); //esquema de sombreamento padrao para os componentes
   --borda1: 1px solid #dbdbdb; //borda para botoes com fundo branco
@@ -97,7 +97,10 @@ p {
 
     //esconder parte da descrição
     p.descricao {
-      max-width: 220px;
+      width: 220px;
+      max-width: 100%;
+      margin: 0 auto;
+      text-align: center;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -287,6 +290,7 @@ p {
 }
 
 
-#adicionarAtaModal .modal-body hr, #adicionarItemModal .modal-body hr {
+#adicionarAtaModal .modal-body hr,
+#adicionarItemModal .modal-body hr {
   width: 100%;
 }
