@@ -8,6 +8,9 @@ import { ItemOrdemService } from '../../service/item-ordem.service';
 import { ItemOrdem } from '../../model/itemOrdem';
 import { ItemOrdemInsert } from '../../model/itemOrdem_insert';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, Observable, of, switchMap } from 'rxjs';
+import { EmpenhoService } from '../../service/empenho.service';
+import { ItemEmpenhoService } from '../../service/item-empenho.service';
 
 @Component({
   selector: 'app-visualizar-entregas',
@@ -23,10 +26,14 @@ export class VisualizarEntregas {
   constructor(
     private router: Router,
     private ordemEntregaService: OrdemEntregaService,
+    private itensOrdemService: ItemOrdemService,
+    private empenhoService: EmpenhoService,
+    private itemEmpenhoService: ItemEmpenhoService
   ) { }
 
   entregas: OrdemEntrega[] = [];
   pedidosDaOrdem: ItemOrdem[] = [];
+  ordemSelecionada: number = 0;
 
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild('myInput') input!: ElementRef;
@@ -62,8 +69,8 @@ export class VisualizarEntregas {
     });
   }
 
-  getItensOrdem(id: number) {
-
+  getItensOrdem(id: number, index: number) {
+    this.ordemSelecionada = index;
     this.ordemEntregaService.getPedidos(id).subscribe({
       next: (registro: ItemOrdem[]) => {
         this.pedidosDaOrdem = registro;
@@ -99,10 +106,67 @@ export class VisualizarEntregas {
     if (item.quantidade_entregue > item.quantidade_solicitada) {
       item.quantidade_entregue = item.quantidade_solicitada;
     }
-    
+
     if (item.quantidade_entregue < 0) {
       item.quantidade_entregue = 0;
     }
   }
 
+  confirmarEntrega(ordemIndex: number): void {
+    const ordem = this.entregas[ordemIndex];
+    const somaValorEntregue = this.calcularSomaValorEntregue(this.pedidosDaOrdem);
+
+    this.atualizarItensDaOrdem(this.pedidosDaOrdem).pipe(
+      switchMap(() => this.atualizarOrdemComoConcluida(ordem.id)),
+      switchMap(() => this.atualizarSaldoEmpenho(ordem.empenho.id, ordem.empenho.saldo_utilizado, somaValorEntregue))
+    ).subscribe({
+      complete: () => window.location.reload(),
+      error: (err) => console.error('Erro ao confirmar entrega', err)
+    });
+  }
+
+  private calcularSomaValorEntregue(itens: ItemOrdem[]): number {
+    return itens.reduce((acc, item) => {
+      const valorItem = Number(
+        (Number(item.item_empenho.item_ata.valor_unitario) * Number(item.quantidade_entregue)).toFixed(2)
+      );
+      return Number((acc + valorItem).toFixed(2));
+    }, 0);
+  }
+
+  private atualizarItensDaOrdem(itens: ItemOrdem[]): Observable<any> {
+    if (!itens.length) return of(null);
+
+    const requests = itens.map(item => {
+      const itemUpdate = {
+        quantidade_entregue: item.quantidade_entregue,
+        observacao: item.observacao
+      };
+
+      const itemEmpenhoUpdate = {
+        quantidade_entrege: item.quantidade_entregue
+      };
+
+      return this.itensOrdemService.patch(item.id, itemUpdate).pipe(
+        switchMap(() =>
+          this.itemEmpenhoService.patch(item.item_empenho.id, itemEmpenhoUpdate)
+        )
+      );
+    });
+
+    return forkJoin(requests);
+  }
+
+  private atualizarOrdemComoConcluida(ordemId: number): Observable<any> {
+    const ordemUpdate = {
+      status: 'con',
+      data_entrega: new Date()
+    };
+    return this.ordemEntregaService.patch(ordemId, ordemUpdate);
+  }
+
+  private atualizarSaldoEmpenho(empenhoId: number, saldoAtual: number, somaValorEntregue: number): Observable<any> {
+    const novoSaldo = Number((Number(saldoAtual) + somaValorEntregue).toFixed(2));
+    return this.empenhoService.patch(empenhoId, { saldo_utilizado: novoSaldo });
+  }
 }

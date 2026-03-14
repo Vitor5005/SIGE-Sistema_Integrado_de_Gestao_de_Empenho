@@ -611,8 +611,8 @@ def seed_itens_ordem(ordens=None, itens_empenho=None):
                 quantidade_entregue = Decimal("0.00")
             
             observacao = None
-            # Se não entregou tudo, adiciona observação
-            if quantidade_entregue < quantidade_solicitada:
+            # Observação apenas para entrega parcial real (houve entrega, mas não total)
+            if quantidade_entregue > Decimal("0") and quantidade_entregue < quantidade_solicitada:
                 observacao = "Entrega parcial pendente"
             
             item_ordem = ItemOrdem.objects.create(

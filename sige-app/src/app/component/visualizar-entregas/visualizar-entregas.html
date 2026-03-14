@@ -8,7 +8,7 @@
 
         <app-barra-pesquisa (pesquisar)="getEntregas($event)"></app-barra-pesquisa>
         <div class="container-entregas">
-            @for (item of entregas; track item.id) {
+            @for (item of entregas; track $index) {
             <div class="card-entrega">
 
                 <div class="topo-entrega">
@@ -38,7 +38,7 @@
 
                         @if( item.status !== "con" ){
                         <button class="btn-confirmar" data-bs-toggle="modal" data-bs-target="#confirmarModal"
-                            *ngIf="!confirmado" (click)="getItensOrdem(item.id)">
+                            *ngIf="!confirmado" (click)="getItensOrdem(item.id, $index)">
                             <i class="bi bi-check-circle"></i>
                             CONFIRMAR ENTREGA
                         </button>
@@ -46,7 +46,7 @@
 
 
                         <button class="btn link-doc" data-bs-toggle="modal" data-bs-target="#verPedidoMordal"
-                            (click)="getItensOrdem(item.id)" *ngIf="!confirmado">
+                            (click)="getItensOrdem(item.id, $index)" *ngIf="!confirmado">
                             <i class="bi bi-eye"></i>
                             VER PEDIDO
                         </button>
@@ -124,7 +124,7 @@
 
                                     <div class="valor-info">
                                         <span class="valor">
-                                            {{ item.quantidade_solicitada }}
+                                            {{ item.quantidade_solicitada | number:'1.0-2' }}
                                         </span>
 
                                         <span class="unidade-modal">
@@ -156,6 +156,32 @@
                                         <span class="valor">
                                             R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada
                                             | number:'1.2-2' }}
+                                        </span>
+
+                                    </div>
+                                </div>
+
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Valor Total Entregue
+                                    </span>
+
+                                    <div class="valor-info">
+                                        <span class="valor">
+                                            R$ {{ (item.item_empenho.item_ata.valor_unitario * item.quantidade_entregue) | number:'1.2-2' }}
+                                        </span>
+
+                                    </div>
+                                </div>
+
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Valor Total em Dívida
+                                    </span>
+
+                                    <div class="valor-info">
+                                        <span class="valor">
+                                            R$ {{ (((item.quantidade_solicitada - item.quantidade_entregue) > 0 ? (item.quantidade_solicitada - item.quantidade_entregue) : 0) * item.item_empenho.item_ata.valor_unitario) | number:'1.2-2' }}
                                         </span>
 
                                     </div>
@@ -194,7 +220,7 @@
                 </div>
 
                 <div class="modal-footer footer-entrega">
-                    <button type="button" , class="btn-confirmar">
+                    <button type="button" , class="btn-confirmar" (click)="confirmarEntrega(ordemSelecionada)">
                         <i class="bi bi-check-lg"></i> CONFIRMAR ENTREGA
                     </button>
                 </div>
@@ -224,23 +250,47 @@
                     <div class="lista-produtos">
 
                         @for(item of pedidosDaOrdem; track item.id) {
-                        <div class="produto">
-                            <div>
-                                <span class="nome">
-                                    {{ item.item_empenho.item_ata.item_generico.descricao }}
-                                </span>
-                                <span class="unidade">
-                                    {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                                </span>
-                            </div>
+                            <div class="produto">
+                                <div class="produto-topo">
+                                    <div>
+                                        <span class="nome">{{ item.item_empenho.item_ata.item_generico.descricao }}</span>
+                                        <span class="unidade">{{ item.item_empenho.item_ata.item_generico.unidade_medida }}</span>
+                                    </div>
+                                </div>
 
-                            <div class="info">
-                                <p>{{ item.quantidade_solicitada }} {{
-                                    item.item_empenho.item_ata.item_generico.unidade_medida }}</p>
-                                <span>R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada|
-                                    number:'1.2-2' }}</span>
+                                <div class="info">
+                                    <p>
+                                        <strong>Qtd. solicitada:</strong>
+                                        {{ item.quantidade_solicitada | number:'1.0-2' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                                    </p>
+
+                                    <p>
+                                        <strong>Qtd. entregue:</strong>
+                                        {{ item.quantidade_entregue | number:'1.0-2' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                                    </p>
+
+                                    <p>
+                                        <strong>Valor entregue:</strong>
+                                        R$ {{ (item.quantidade_entregue * item.item_empenho.item_ata.valor_unitario) | number:'1.2-2' }}
+                                    </p>
+
+                                    <p>
+                                        <strong>Qtd. em dívida:</strong>
+                                        {{ ((item.quantidade_solicitada - item.quantidade_entregue) > 0 ? (item.quantidade_solicitada - item.quantidade_entregue) : 0) | number:'1.0-2' }}
+                                        {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                                    </p>
+
+                                    <p>
+                                        <strong>Valor em dívida:</strong>
+                                        R$ {{ (((item.quantidade_solicitada - item.quantidade_entregue) > 0 ? (item.quantidade_solicitada - item.quantidade_entregue) : 0) * item.item_empenho.item_ata.valor_unitario) | number:'1.2-2' }}
+                                    </p>
+
+                                    <p>
+                                        <strong>Observação:</strong>
+                                        {{ item.observacao ? item.observacao : 'Sem observação' }}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
                         }
 
 

@@ -4,7 +4,7 @@ import os
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.parsers import MultiPartParser,FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser,FormParser
 from rest_framework import viewsets
 
 from entrega.models import OrdemEntrega, ItemOrdem
@@ -15,7 +15,7 @@ from utils.permissions import IsAdmin, IsTecnico
 class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = OrdemEntrega.objects.all()
     serializer_class = OrdemEntregaSerializer
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     permission_classes = [IsAdmin|IsTecnico]
 
     def get_serializer_class(self):
@@ -37,7 +37,12 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     ordering_fields = ['data_emissao', 'data_entrega', 'valor_total_executado']
     ordering = ['-data_emissao']
     
-    @action(detail=True,methods=['post'],url_path='enviar-pedido')
+    @action(
+        detail=True,
+        methods=['post'],
+        url_path='enviar-pedido',
+        parser_classes=[MultiPartParser, FormParser]
+    )
     def EnviarPedidoPorEmail(self, request, pk=None):
         """
         Envia um e-mail com um Pedido de Entrega em anexo 
