@@ -3,7 +3,9 @@
     <h3><i class="bi bi-wallet"></i> EMPENHOS</h3>
     <hr>
   </div>
-    <app-barra-pesquisa (pesquisar)="get($event)"></app-barra-pesquisa>
+    <app-barra-pesquisa [filtros]="filtros"
+  (pesquisar)="get($event)"
+  (filtrosAlterados)="aplicarFiltros($event)"></app-barra-pesquisa>
 
     <table class="tabela">
         <thead>

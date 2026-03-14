@@ -1,0 +1,59 @@
+<body>
+  <div class="container-voltar">
+    <app-botao-voltar></app-botao-voltar>
+  </div>
+  <div class="container">
+
+
+    <div class="card">
+
+      <div class="titulo">
+        <p>Visualização de Gênero Alimentício</p>
+      </div>
+
+      <div class="form-grid">
+
+        <div class="campo">
+          <label>CATMAT</label>
+          <input value="616816" class="valor" [readonly]="!editando" [class.editando]="editando">
+        </div>
+
+        <div class="campo">
+          <label>CATEGORIA</label>
+          <select class="valor" [disabled]="!editando" [class.editando]="editando">
+            <option value="SECO/MERCEARIA">SECO/MERCEARIA</option>
+            <option value="BEBIDAS E COMPLEMENTOS">BEBIDAS E COMPLEMENTOS</option>
+            <option value="MOLHOS E CONDIMENTOS">MOLHOS E CONDIMENTOS</option>
+            <option value="LÁCTEOS E DERIVADOS">LÁCTEOS E DERIVADOS</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label>MARCA</label>
+          <input class="valor" value="CAFÉ DO BOCALOM" [readonly]="!editando" [class.editando]="editando">
+        </div>
+
+        <div class="campo">
+          <label>UNIDADE DE MEDIDA</label>
+          <select class="valor" [disabled]="!editando" [class.editando]="editando">
+            <option value="KG">QUILOGRAMA(KG)</option>
+            <option value="MG">MILIGRAMA(MG)</option>
+            <option value="L">LITROS(L)</option>
+          </select>
+        </div>
+
+        <div class="campo-descricao">
+          <label>DESCRIÇÃO</label>
+          <textarea   class="valor descricao"    [readonly] ="!editando" [class.editando]="editando">Café azul com chapeu, muito bom.</textarea>
+        </div>
+
+        <div class="container-botao">
+          <button   class="btn-editar"  value="btn-editar" type="button" (click)="habilitarEdicao()">{{ editando ? 'Salvar' : 'Editar' }}</button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</body>

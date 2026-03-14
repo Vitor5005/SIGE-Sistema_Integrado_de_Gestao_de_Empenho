@@ -5,5 +5,5 @@ export type OperacaoItemInsert = {
     item_empenho: number;
     tipo: string;
     valor: number;
-    data: string;
+    data: Date;
 }

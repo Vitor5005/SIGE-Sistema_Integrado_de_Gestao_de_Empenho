@@ -11,30 +11,99 @@
         <th scope="col">CATMAT</th>
         <th scope="col">Categoria</th>
         <th scope="col">Unidades de Medida</th>
-        <th scope="col">Marca</th>
         <th scope="col">Descrição</th>
-        <th scope="col">Editar</th>
+        <th scope="col">Ações</th>
       </tr>
     </thead>
     <tbody>
+      @for (item of registros; track $index) {
 
-         <!-- Exemplo 1 -->
-            <tr style="cursor: pointer;">
-                <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                <td>
-                    <div class="teste">
-                        <p>606523</p>
-                        <small>CADASTRADO: 22/07/2025</small>
-                    </div>
-                </td>
-                <td>
-                    <p>BEBIDAS E COMPLEMENTOS</p>
-                </td>
-                <td><p>Gramas(g)</p></td>
-                <td ><p>DISTRIBUIDORA LTDA...</p></td>
-                <td ><p class="descricao">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Adipisci neque nesciunt sunt doloribus recusandae! Quidem corrupti dolor odio cupiditate voluptates! Error dolorum dolorem reiciendis quod, soluta impedit voluptate commodi velit.</p></td>
-                <td><i class="bi bi-pencil-square"></i></td>
+      <tr>
+
+        <td>
+          <div class="teste">
+            <p>{{ item.catmat }}</p>
+          </div>
+        </td>
+        <td>
+          <p>{{ getCategoria(item) }}</p>
+        </td>
+        <td>
+          <p>{{ getUnidadeMedida(item) }}</p>
+        </td>
+        <td>
+          <p class="descricao">{{ item.descricao }}</p>
+        </td>
+        <td>
+          <button class="btn btn-primary" title="Editar usuário" data-bs-toggle="modal"
+            data-bs-target="#editarItemGenerico" (click)="carregarRegistro(item)">
+            <i class="bi bi-pencil"></i>
+          </button>
+
+        </td>
+
+      </tr>
+      }
     </tbody>
   </table>
+
+
+  <div #myModal class="modal fade" id="editarItemGenerico" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content modal-custom">
+
+        <div class="modal-header-azul">
+          <h2 class="modal-titulo" id="editarItemGenericoLabel">EDITAR GÊNERO ALIMENTÍCIO</h2>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <form class="form-fornecedor" (submit)="salvarRegistro(); $event.preventDefault()">
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="catmat">CATMAT</label>
+                <input #myInput type="text" id="catmat" name="catmat" [(ngModel)]="registroEditar.catmat" required>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="categoria">CATEGORIA</label>
+                <select id="categoria" name="categoria" [(ngModel)]="registroEditar.categoria" required>
+                  @for(cat of categoriasDisponiveis; track $index) {
+                  <option [value]="cat">{{ getCategoriaLabel(cat) }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="unidade">UNIDADE DE MEDIDA</label>
+                <select id="unidade" name="unidade" [(ngModel)]="registroEditar.unidade_medida" required>
+                  @for(uni of unidadesDisponiveis; track $index) {
+                  <option [value]="uni">{{ getUnidadeMedidaLabel(uni) }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="descricao">DESCRIÇÃO</label>
+                <textarea id="descricao" name="descricao" [(ngModel)]="registroEditar.descricao" required></textarea>
+              </div>
+            </div>
+
+            <div class="form-footer">
+              <button class="btn-confirmar" type="submit">
+                <i class="bi bi-check-lg"></i> SALVAR
+              </button>
+            </div>
+
+          </form>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
 
 </body>

@@ -19,7 +19,7 @@ signer = TimestampSigner()
 class UsuarioViewSet(BaseFiltroMixin, viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdmin]
     
     search_fields = ['username', 'first_name', 'last_name', 'email']
     filterset_fields = {

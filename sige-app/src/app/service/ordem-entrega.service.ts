@@ -57,4 +57,9 @@ export class OrdemEntregaService implements ICrudService<OrdemEntrega> {
     let url = this.apiUrl + `pedidos/?ordem_id=` + id;
     return this.http.get<ItemOrdem[]>(url);
   }
+
+  enviarEmail(id: number, arquivo: FormData): Observable<void> {
+    let url = this.apiUrl + id + '/enviar-pedido/';
+    return this.http.post<void>(url, arquivo);
+  }
 }

@@ -16,6 +16,9 @@ import { ItemAtaService } from '../../service/item-ata.service';
 import { ItemEmpenhoService } from '../../service/item-empenho.service';
 import { ItemAtaInsert } from '../../model/itemAta_insert';
 import { ItemEmpenhoInsert } from '../../model/itemEmpenho_insert';
+import { OperacaoItem } from '../../model/operacao_item';
+import { OperacaoItemService } from '../../service/operacao-item.service';
+import { OperacaoItemInsert } from '../../model/operacao_item_insert';
 
 @Component({
   selector: 'app-visualizar-ata',
@@ -31,7 +34,8 @@ export class VisualizarAta {
     private route: ActivatedRoute,
     private itemGenericoService: ItemGenericoService,
     private itemAtaService: ItemAtaService,
-    private itemEmpenhoService: ItemEmpenhoService
+    private itemEmpenhoService: ItemEmpenhoService,
+    private operacaService: OperacaoItemService
   ) { }
 
   @ViewChild('myModal') modal!: ElementRef;
@@ -67,6 +71,7 @@ export class VisualizarAta {
   validade: string = "";
   itemGenerico: Array<ItemGenerico> = [];
   itemGenericoCadastrados: Array<number> = []; 
+  operacaoInsercao = <OperacaoItemInsert>{};
 
   modal_page: number = 0;
   jump_page: boolean = false;
@@ -160,9 +165,6 @@ export class VisualizarAta {
     });
   }
 
-
-
-  
   verificarValidade(ata: Ata): string {
     const dataAtual = new Date();
     const dataAbertura = new Date(ata.licitacao.data_abertura);
@@ -238,11 +240,13 @@ export class VisualizarAta {
 
   saveItemAta(): void {
     this.itemAta_insercao.ata = this.ata.id;
+    this.itemAta_insercao.quantidade_licitada = Number(this.itemAta_insercao.quantidade_licitada) - 1;
     this.itemAtaService.save(this.itemAta_insercao).subscribe({
       next: (resposta: ItemAtaInsert) => {
         this.itemEmpenho_insercao.item_ata = resposta.id;
         this.itemEmpenho_insercao.empenho = this.empenho.id;
-        this.itemEmpenho_insercao.quantidade_atual = 0;
+        this.itemEmpenho_insercao.quantidade_atual = 1;
+        this.itemEmpenho_insercao.quantidade_entrege = 0;
         this.saveItemEmpenho();
       }
     });
@@ -250,12 +254,25 @@ export class VisualizarAta {
 
   saveItemEmpenho(): void {
     this.itemEmpenhoService.save(this.itemEmpenho_insercao).subscribe({
-      complete: () => {
-        this.atualizarAta();
+      next: (registro: ItemEmpenho) => {
+        this.realizarOperacaoInsercao(registro.id);
       }
     });
   }
 
+  realizarOperacaoInsercao(id: number): void {
+    this.operacaoInsercao.tipo = "inc";
+    this.operacaoInsercao.item_empenho = id;
+    this.operacaoInsercao.valor = 1;
+    this.operacaoInsercao.data = new Date();
+    this.operacaService.save(this.operacaoInsercao).subscribe({
+      complete: () => {
+        this.atualizarAta();
+      }
+    });
+
+  }
+  
   atualizarAta(): void {
     const valorTotal = Number(this.itemAta_insercao.valor_unitario) * Number(this.itemAta_insercao.quantidade_licitada);
     const saldoAtual = Number(this.ata.ata_saldo_total) || 0;

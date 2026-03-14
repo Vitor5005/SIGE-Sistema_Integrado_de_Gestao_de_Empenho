@@ -12,9 +12,11 @@ import { VisualizarFornecedor } from './component/visualizar-fornecedor/visualiz
 import { VisualizarGensAlimenticios } from './component/visualizar-gens-alimenticios/visualizar-gens-alimenticios';
 import { Login } from './component/login/login';
 import { Cadastro } from './component/cadastro/cadastro';
+import { VisualizarGenAlimenticio } from './component/visualizar-gen-alimenticio/visualizar-gen-alimenticio';
 import { RecuperarSenha } from './component/recuperar-senha/recuperar-senha';
 import { authGuard } from './guard/auth.guard';
 import { Home } from './component/home/home';
+import { VisualizarUsuarios } from './component/visualizar-usuarios/visualizar-usuarios';
 
 export const routes: Routes = [
   {
@@ -29,10 +31,6 @@ export const routes: Routes = [
   {
     path: 'recuperar-senha',
     component: RecuperarSenha
-  },
-  {
-    path: 'cadastrar-se',
-    component: Cadastro
   },
   {
     path: "",
@@ -86,6 +84,21 @@ export const routes: Routes = [
       {
         path: "visualizar-gens-alimenticios",
         component: VisualizarGensAlimenticios
+      },
+      {
+        path: 'visualizar-gen-alimenticio',
+        component: VisualizarGenAlimenticio
+      }
+    ]
+  },
+  {
+    path: "",
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN'] },
+    children: [
+      {
+        path: "visualizar-usuarios",
+        component: VisualizarUsuarios,
       }
     ]
   },

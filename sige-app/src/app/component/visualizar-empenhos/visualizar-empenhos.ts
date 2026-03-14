@@ -1,3 +1,4 @@
+import { FiltroConfig } from './../../model/filtro-config';
 import { Component } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { Router } from '@angular/router';
@@ -11,6 +12,17 @@ import { Empenho } from '../../model/empenho';
   styleUrl: './visualizar-empenhos.scss',
 })
 export class VisualizarEmpenhos {
+
+  filtros: FiltroConfig[] = [
+  {
+    campo: 'valor_total',
+    label: 'Valor empenhado',
+    tipo: 'range'
+  }
+];
+
+
+filtrosAtivos: any = {};
 
   constructor(
     private router: Router,
@@ -33,10 +45,29 @@ export class VisualizarEmpenhos {
   }
 
   get(termobusca?: string): void {
-    this.empenhoService.get(termobusca).subscribe({
-      next: (resposta: Array<Empenho>) => {
-        this.empenhos = resposta;
+
+  this.empenhoService.get(termobusca).subscribe({
+    next: (resposta: Array<Empenho>) => {
+      let lista = resposta || [];
+
+      const min = this.filtrosAtivos.valor_total__gte;
+      const max = this.filtrosAtivos.valor_total__lte;
+
+      if (min || max) {
+        lista = lista.filter(item => {
+
+          if (min && item.valor_total < Number(min)) return false;
+          if (max && item.valor_total > Number(max)) return false;
+
+          return true;
+        });
       }
-    });
-  }
+      this.empenhos = lista;
+    }
+  });
+}
+  aplicarFiltros(filtros: any) {
+  this.filtrosAtivos = filtros;
+  this.get();
+}
 }

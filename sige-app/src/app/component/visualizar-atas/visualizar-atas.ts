@@ -1,10 +1,10 @@
+import { FiltroConfig } from './../../model/filtro-config';
 import { Component } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { Router } from '@angular/router';
 import { AtaService } from '../../service/ata.service';
 import { Ata } from '../../model/ata';
 import { CommonModule } from '@angular/common';
-import { map } from 'rxjs';
 
 @Component({
   selector: 'app-visualizar-atas',
@@ -13,87 +13,106 @@ import { map } from 'rxjs';
   styleUrl: './visualizar-atas.scss',
 })
 export class VisualizarAtas {
-  constructor(
-    private router: Router,
-    private ataService: AtaService
-  ) { }
+  constructor(private router: Router, private ataService: AtaService,
+  ) {}
 
-  atas = Array<Ata>();
-  licitacoesComAta: any[] = [];
+  atas: Ata[] = [];
+
+  filtros: FiltroConfig[] = [
+    {
+      campo: 'ata_saldo_total',
+      label: 'Valor Total',
+      tipo: 'range',
+    },
+    {
+      campo: 'status',
+      label: 'Status',
+      tipo: 'radio',
+      opcoes: [
+        { valor: 'Válido', label: 'Válido' },
+        { valor: 'Expirado', label: 'Expirado' },
+      ],
+    },
+  ];
+
+  filtrosAtivos: any = {};
+
   ngOnInit() {
     this.get();
-    this.getLicitacoesComAta();
   }
 
   enviarPara(rota: string, id: number): void {
     this.router.navigate([rota], { queryParams: { id } });
   }
 
-  get(termobusca?: string): void {
-    this.ataService.get(termobusca).subscribe({
-      next: (resposta: Array<Ata>) => {
-        this.atas = this.ordenarAtas(resposta);
-      }
-    });
+  aplicarFiltros(filtros: any) {
+    this.filtrosAtivos = filtros;
+    this.get();
   }
+
+ get(termobusca?: string): void {
+
+  let params: any = { ...this.filtrosAtivos };
+
+  this.ataService.get(params).subscribe({
+    next: (resposta: Ata[]) => {
+
+      let lista = resposta;
+
+      if (termobusca) {
+        const termo = termobusca.toLowerCase();
+
+        lista = lista.filter(a =>
+          a.numero_ata?.toString().toLowerCase().includes(termo) ||
+          a.fornecedor?.nome_fantasia?.toLowerCase().includes(termo)
+        );
+      }
+      if (params.status) {
+        lista = lista.filter(a => this.verificarValidade(a) === params.status);
+      }
+
+      this.atas = this.ordenarAtas(lista);
+    }
+  });
+}
 
 
   verificarValidade(ata: Ata): string {
     const dataAtual = new Date();
     const dataAbertura = new Date(ata.licitacao.data_abertura);
     const validade = ata.licitacao.validade;
+
     const dataExpiracao = new Date(dataAbertura);
     dataExpiracao.setMonth(dataExpiracao.getMonth() + Number(validade));
-    if (dataAtual > dataExpiracao) {
-      return "Expirado";
-    } else {
-      return "Válido";
-    }
+
+    return dataAtual > dataExpiracao ? 'Expirado' : 'Válido';
   }
 
   classValidade(ata: Ata): string {
-    if (this.verificarValidade(ata) === "Expirado") {
-      return "bg-danger text-white";
-    }
-    else {
-      return "bg-success text-white";
-    }
+    return this.verificarValidade(ata) === 'Expirado'
+      ? 'bg-danger text-white'
+      : 'bg-success text-white';
   }
 
   ordenarAtas(licitacoes: Ata[]): Ata[] {
     const dataAtual = new Date();
 
     return licitacoes.sort((a, b) => {
+      const dataA = new Date(a.licitacao.data_abertura);
+      const dataExpA = new Date(dataA);
+      dataExpA.setMonth(dataExpA.getMonth() + Number(a.licitacao.validade));
 
-      const dataAberturaA = new Date(a.licitacao.data_abertura);
-      const dataExpiracaoA = new Date(dataAberturaA);
-      dataExpiracaoA.setMonth(dataExpiracaoA.getMonth() + Number(a.licitacao.validade));
-      const validaA = dataAtual <= dataExpiracaoA;
+      const dataB = new Date(b.licitacao.data_abertura);
+      const dataExpB = new Date(dataB);
+      dataExpB.setMonth(dataExpB.getMonth() + Number(b.licitacao.validade));
 
-      const dataAberturaB = new Date(b.licitacao.data_abertura);
-      const dataExpiracaoB = new Date(dataAberturaB);
-      dataExpiracaoB.setMonth(dataExpiracaoB.getMonth() + Number(b.licitacao.validade));
-      const validaB = dataAtual <= dataExpiracaoB;
+      const validaA = dataAtual <= dataExpA;
+      const validaB = dataAtual <= dataExpB;
 
-      // válidas primeiro
       if (validaA && !validaB) return -1;
       if (!validaA && validaB) return 1;
 
-      // ordenar por data (mais recente primeiro)
-      return dataAberturaB.getTime() - dataAberturaA.getTime();
+      return dataB.getTime() - dataA.getTime();
     });
   }
-  getLicitacoesComAta(){
-    this.ataService.get().subscribe({
-      next: (atas) => {
-        const mapa = new Map();
-
-        atas.forEach(ata => {
-          mapa.set(ata.licitacao.id, ata.licitacao);
-        });
-        this.licitacoesComAta = Array.from(mapa.values());
-      }
-    })
-  }
-
 }

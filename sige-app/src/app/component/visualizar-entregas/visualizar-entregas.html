@@ -4,29 +4,30 @@
         <div class="container-titulo">
             <h5><i class="bi bi-truck"></i> ENTREGAS </h5>
             <hr>
-
         </div>
 
         <app-barra-pesquisa (pesquisar)="getEntregas($event)"></app-barra-pesquisa>
         <div class="container-entregas">
-            @for (item of entregas; track item.id) {
+            @for (item of entregas; track $index) {
             <div class="card-entrega">
 
                 <div class="topo-entrega">
                     <div class="info-entrega" [ngClass]="classeStatus(item.status)">
 
-                        <div style="display: flex; gap: 5vw; align-items: center; padding-left: 1.5%;">
+                        <div class="info-entrega-principal">
                             <span class="pedido-entrega">
                                 {{ item.codigo }}
                             </span>
 
-                            <span class="link-emp" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
-                                {{ item.empenho.codigo }}
-                            </span>
+                            <div class="links-entrega">
+                                <span class="link-emp" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
+                                    {{ item.empenho.codigo }}
+                                </span>
 
-                            <span class="link-arp" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
-                                {{ item.empenho.ata.numero_ata }}
-                            </span>
+                                <span class="link-arp" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
+                                    {{ item.empenho.ata.numero_ata }}
+                                </span>
+                            </div>
                         </div>
 
                         <span class="status-entrega">
@@ -35,11 +36,11 @@
 
                     </div>
 
-                    <div style="display: flex; gap:2vw">
+                    <div class="acoes-entrega">
 
                         @if( item.status !== "con" ){
                         <button class="btn-confirmar" data-bs-toggle="modal" data-bs-target="#confirmarModal"
-                            *ngIf="!confirmado" (click)="getItensOrdem(item.id)">
+                            *ngIf="!confirmado" (click)="getItensOrdem(item.id, $index)">
                             <i class="bi bi-check-circle"></i>
                             CONFIRMAR ENTREGA
                         </button>
@@ -47,7 +48,7 @@
 
 
                         <button class="btn link-doc" data-bs-toggle="modal" data-bs-target="#verPedidoMordal"
-                            (click)="getItensOrdem(item.id)" *ngIf="!confirmado">
+                            (click)="getItensOrdem(item.id, $index)" *ngIf="!confirmado">
                             <i class="bi bi-eye"></i>
                             VER PEDIDO
                         </button>
@@ -55,18 +56,18 @@
                 </div>
 
                 <div class="rodape-entrega">
-                    <div>
-                        <span>Data de Emissão:</span>
-                        <span style="padding: 1%">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
+                    <div class="rodape-item">
+                        <span class="rodape-label">Data de Emissão</span>
+                        <span class="rodape-valor">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
                     </div>
-                    <div>
-                        <span>Data de Entrega Prevista:</span>
-                        <span style="padding: 1%">{{ item.data_entrega_prevista| date: 'dd/MM/yyyy - HH:mm' }}</span>
+                    <div class="rodape-item">
+                        <span class="rodape-label">Data de Entrega Prevista</span>
+                        <span class="rodape-valor">{{ item.data_entrega_prevista | date: 'dd/MM/yyyy' }}</span>
                     </div>
                     @if( item.status === "con" ){
-                    <div>
-                        <span>Data de Entrega:</span>
-                        <span style="padding: 1.35%">{{ item.data_entrega | date: 'dd/MM/yyyy - HH:mm' }}</span>
+                    <div class="rodape-item rodape-item-concluida">
+                        <span class="rodape-label">Data de Entrega</span>
+                        <span class="rodape-valor">{{ item.data_entrega | date: 'dd/MM/yyyy - HH:mm' }}</span>
                     </div>
                     }
                 </div>
@@ -125,7 +126,7 @@
 
                                     <div class="valor-info">
                                         <span class="valor">
-                                            {{ item.quantidade_solicitada }}
+                                            {{ item.quantidade_solicitada | number:'1.0-2' }}
                                         </span>
 
                                         <span class="unidade-modal">
@@ -157,6 +158,32 @@
                                         <span class="valor">
                                             R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada
                                             | number:'1.2-2' }}
+                                        </span>
+
+                                    </div>
+                                </div>
+
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Valor Total Entregue
+                                    </span>
+
+                                    <div class="valor-info">
+                                        <span class="valor">
+                                            R$ {{ (item.item_empenho.item_ata.valor_unitario * item.quantidade_entregue) | number:'1.2-2' }}
+                                        </span>
+
+                                    </div>
+                                </div>
+
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Valor Total em Dívida
+                                    </span>
+
+                                    <div class="valor-info">
+                                        <span class="valor">
+                                            R$ {{ (((item.quantidade_solicitada - item.quantidade_entregue) > 0 ? (item.quantidade_solicitada - item.quantidade_entregue) : 0) * item.item_empenho.item_ata.valor_unitario) | number:'1.2-2' }}
                                         </span>
 
                                     </div>
@@ -195,7 +222,7 @@
                 </div>
 
                 <div class="modal-footer footer-entrega">
-                    <button type="button" , class="btn-confirmar">
+                    <button type="button" , class="btn-confirmar" (click)="confirmarEntrega(ordemSelecionada)">
                         <i class="bi bi-check-lg"></i> CONFIRMAR ENTREGA
                     </button>
                 </div>
@@ -225,23 +252,47 @@
                     <div class="lista-produtos">
 
                         @for(item of pedidosDaOrdem; track item.id) {
-                        <div class="produto">
-                            <div>
-                                <span class="nome">
-                                    {{ item.item_empenho.item_ata.item_generico.descricao }}
-                                </span>
-                                <span class="unidade">
-                                    {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                                </span>
-                            </div>
+                            <div class="produto">
+                                <div class="produto-topo">
+                                    <div>
+                                        <span class="nome">{{ item.item_empenho.item_ata.item_generico.descricao }}</span>
+                                        <span class="unidade">{{ item.item_empenho.item_ata.item_generico.unidade_medida }}</span>
+                                    </div>
+                                </div>
 
-                            <div class="info">
-                                <p>{{ item.quantidade_solicitada }} {{
-                                    item.item_empenho.item_ata.item_generico.unidade_medida }}</p>
-                                <span>R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada|
-                                    number:'1.2-2' }}</span>
+                                <div class="info">
+                                    <p>
+                                        <strong>Qtd. solicitada:</strong>
+                                        {{ item.quantidade_solicitada | number:'1.0-2' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                                    </p>
+
+                                    <p>
+                                        <strong>Qtd. entregue:</strong>
+                                        {{ item.quantidade_entregue | number:'1.0-2' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                                    </p>
+
+                                    <p>
+                                        <strong>Valor entregue:</strong>
+                                        R$ {{ (item.quantidade_entregue * item.item_empenho.item_ata.valor_unitario) | number:'1.2-2' }}
+                                    </p>
+
+                                    <p>
+                                        <strong>Qtd. em dívida:</strong>
+                                        {{ ((item.quantidade_solicitada - item.quantidade_entregue) > 0 ? (item.quantidade_solicitada - item.quantidade_entregue) : 0) | number:'1.0-2' }}
+                                        {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                                    </p>
+
+                                    <p>
+                                        <strong>Valor em dívida:</strong>
+                                        R$ {{ (((item.quantidade_solicitada - item.quantidade_entregue) > 0 ? (item.quantidade_solicitada - item.quantidade_entregue) : 0) * item.item_empenho.item_ata.valor_unitario) | number:'1.2-2' }}
+                                    </p>
+
+                                    <p>
+                                        <strong>Observação:</strong>
+                                        {{ item.observacao ? item.observacao : 'Sem observação' }}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
                         }
 
 
