@@ -3,7 +3,9 @@
     <h3><i class="bi bi-card-list"></i> GÊNEROS ALIMENTÍCIOS</h3>
     <hr>
   </div>
-  <app-barra-pesquisa></app-barra-pesquisa>
+  <app-barra-pesquisa [filtros]="filtros"
+  (pesquisar)="getItens($event)"
+  (filtrosAlterados)="aplicarFiltros($event)"></app-barra-pesquisa>
 
   <table class="tabela">
     <thead>

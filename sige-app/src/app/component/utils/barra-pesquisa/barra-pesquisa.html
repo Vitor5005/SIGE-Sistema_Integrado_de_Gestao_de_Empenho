@@ -19,7 +19,7 @@
         @if (filtro.tipo === 'checkbox') {
           @for (op of filtro.opcoes; track op.id) {
             <li class="dropdown-item">
-              <input type="checkbox" (change)="alterarFiltro(filtro.campo, op.id)" />
+              <input type="checkbox" (change)="alterarFiltro(filtro.campo, op.id, $event)" />
 
               {{ op.nome || op.numero }}
             </li>
