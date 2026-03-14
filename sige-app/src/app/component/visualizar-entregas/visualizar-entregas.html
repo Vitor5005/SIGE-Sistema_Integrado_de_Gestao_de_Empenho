@@ -14,18 +14,20 @@
                 <div class="topo-entrega">
                     <div class="info-entrega" [ngClass]="classeStatus(item.status)">
 
-                        <div style="display: flex; gap: 5vw; align-items: center; padding-left: 1.5%;">
+                        <div class="info-entrega-principal">
                             <span class="pedido-entrega">
                                 {{ item.codigo }}
                             </span>
 
-                            <span class="link-emp" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
-                                {{ item.empenho.codigo }}
-                            </span>
+                            <div class="links-entrega">
+                                <span class="link-emp" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
+                                    {{ item.empenho.codigo }}
+                                </span>
 
-                            <span class="link-arp" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
-                                {{ item.empenho.ata.numero_ata }}
-                            </span>
+                                <span class="link-arp" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
+                                    {{ item.empenho.ata.numero_ata }}
+                                </span>
+                            </div>
                         </div>
 
                         <span class="status-entrega">
@@ -34,7 +36,7 @@
 
                     </div>
 
-                    <div style="display: flex; gap:2vw">
+                    <div class="acoes-entrega">
 
                         @if( item.status !== "con" ){
                         <button class="btn-confirmar" data-bs-toggle="modal" data-bs-target="#confirmarModal"
@@ -54,18 +56,18 @@
                 </div>
 
                 <div class="rodape-entrega">
-                    <div>
-                        <span>Data de Emissão:</span>
-                        <span style="padding: 1%">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
+                    <div class="rodape-item">
+                        <span class="rodape-label">Data de Emissão</span>
+                        <span class="rodape-valor">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
                     </div>
-                    <div>
-                        <span>Data de Entrega Prevista:</span>
-                        <span style="padding: 1%">{{ item.data_entrega_prevista| date: 'dd/MM/yyyy' }}</span>
+                    <div class="rodape-item">
+                        <span class="rodape-label">Data de Entrega Prevista</span>
+                        <span class="rodape-valor">{{ item.data_entrega_prevista | date: 'dd/MM/yyyy' }}</span>
                     </div>
                     @if( item.status === "con" ){
-                    <div>
-                        <span>Data de Entrega:</span>
-                        <span style="padding: 1.35%">{{ item.data_entrega | date: 'dd/MM/yyyy - HH:mm' }}</span>
+                    <div class="rodape-item rodape-item-concluida">
+                        <span class="rodape-label">Data de Entrega</span>
+                        <span class="rodape-valor">{{ item.data_entrega | date: 'dd/MM/yyyy - HH:mm' }}</span>
                     </div>
                     }
                 </div>

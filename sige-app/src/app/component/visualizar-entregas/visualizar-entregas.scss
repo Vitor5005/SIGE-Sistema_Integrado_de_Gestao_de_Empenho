@@ -30,7 +30,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
   gap: 15px;
 }
 
@@ -38,10 +37,11 @@
   display: flex;
   justify-content: center;
   flex-direction: column;
-  gap: 10%;
+  gap: 10px;
   padding: 15px 25px;
   border-radius: 8px;
-  width: 40%;
+  min-width: 0;
+  flex: 0 1 74%;
 
   &.em_espera {
     background: var(--amarelo);
@@ -50,6 +50,22 @@
   &.realizada {
     background: var(--verde);
   }
+}
+
+.info-entrega-principal {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(20px, 5vw, 72px);
+  flex-wrap: wrap;
+  padding-left: 1.5%;
+}
+
+.links-entrega {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .pedido-entrega {
@@ -72,6 +88,15 @@
   &:hover {
     color: var(--azul-claro);
   }
+}
+
+.acoes-entrega {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
 }
 
 .link-doc {
@@ -298,15 +323,76 @@
   align-self: flex-start;
 }
 
+@media (max-width: 768px) {
+  .topo-entrega {
+    flex-wrap: wrap;
+  }
+
+  .info-entrega {
+    min-width: 100%;
+    padding: 14px 18px;
+    flex-basis: 100%;
+  }
+
+  .info-entrega-principal,
+  .acoes-entrega {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .info-entrega-principal {
+    gap: 12px;
+    padding-left: 0;
+  }
+
+  .acoes-entrega {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
 .rodape-entrega {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px 0 0;
+  border-top: 1px solid #eee;
+}
+
+.rodape-item {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-top: 10px;
-  padding: 8px 15px 0;
-  border-top: 1px solid #eee;
-  font-size: 1vw;
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(244, 247, 250, 0.8);
+  border: 1px solid #e7edf3;
+  border-radius: 8px;
+}
+
+.rodape-item-concluida {
+  background: rgba(235, 248, 238, 0.9);
+  border-color: #d4e8d8;
+}
+
+.rodape-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--font-cinza2);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.rodape-valor {
+  font-size: 15px;
+  font-weight: 700;
   color: var(--azul-escuro);
+}
+
+@media (max-width: 768px) {
+  .rodape-entrega {
+    grid-template-columns: 1fr;
+  }
 }
 
 .textarea-observacao {
