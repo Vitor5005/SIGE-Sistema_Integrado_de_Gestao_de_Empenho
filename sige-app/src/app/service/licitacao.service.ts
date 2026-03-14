@@ -24,6 +24,24 @@ export class LicitacaoService implements ICrudService<Licitacao> {
     return this.http.get<Licitacao[]>(url);
   }
 
+  getComFiltros(filtros?: any): Observable<Licitacao[]> {
+  let url = this.apiUrl;
+
+  if (filtros && Object.keys(filtros).length > 0) {
+    const params = new URLSearchParams();
+
+    Object.entries(filtros).forEach(([chave, valor]) => {
+      if (valor !== null && valor !== '') {
+        params.set(chave, valor as any);
+      }
+    });
+
+    url += '?' + params.toString();
+  }
+
+  return this.http.get<Licitacao[]>(url);
+}
+
   getById(id: number): Observable<Licitacao> {
     const url = this.apiUrl + id + '/';
     return this.http.get<Licitacao>(url);

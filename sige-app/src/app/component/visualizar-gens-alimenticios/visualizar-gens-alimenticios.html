@@ -13,15 +13,14 @@
         <th scope="col">Unidades de Medida</th>
         <th scope="col">Marca</th>
         <th scope="col">Descrição</th>
-        <th scope="col">Editar</th>
       </tr>
     </thead>
     <tbody>
 
          <!-- Exemplo 1 -->
-            <tr style="cursor: pointer;">
+            <tr style="cursor: pointer;" [routerLink]="['/visualizar-gen-alimenticio']">
                 <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-                <td>
+                <td >
                     <div class="teste">
                         <p>606523</p>
                         <small>CADASTRADO: 22/07/2025</small>
@@ -33,8 +32,6 @@
                 <td><p>Gramas(g)</p></td>
                 <td ><p>DISTRIBUIDORA LTDA...</p></td>
                 <td ><p class="descricao">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Adipisci neque nesciunt sunt doloribus recusandae! Quidem corrupti dolor odio cupiditate voluptates! Error dolorum dolorem reiciendis quod, soluta impedit voluptate commodi velit.</p></td>
-                <td><i class="bi bi-pencil-square"></i></td>
     </tbody>
   </table>
-
 </body>
