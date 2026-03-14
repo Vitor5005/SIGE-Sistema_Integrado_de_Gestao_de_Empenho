@@ -7,5 +7,6 @@ export type ItemEmpenhoInsert = {
     empenho: number;
     item_ata: number;
     quantidade_atual: number;
+    quantidade_entrege: number;
 
 }

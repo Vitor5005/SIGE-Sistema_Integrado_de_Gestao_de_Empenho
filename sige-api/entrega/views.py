@@ -41,7 +41,7 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
         detail=True,
         methods=['post'],
         url_path='enviar-pedido',
-        parser_classes=[MultiPartParser, FormParser]
+        parser_classes=[JSONParser, MultiPartParser, FormParser]
     )
     def EnviarPedidoPorEmail(self, request, pk=None):
         """
@@ -59,7 +59,16 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
         if not fornecedor.email:
             return Response({'erro': f'O fornecedor "{fornecedor.nome_fantasia}" não possui um e-mail cadastrado.'}, status=status.HTTP_400_BAD_REQUEST)
         assunto = request.data.get('assunto', f'Pedido de Entrega: {ordem_de_entrega.codigo}')
-        corpo_mensagem = request.data.get('corpo_mensagem', f'Prezado Fornecedor {fornecedor.nome_fantasia},\n\nSegue em anexo o pedido de entrega referente à ordem {ordem_de_entrega.codigo}.\n\nAtenciosamente,\nEquipe SIGE.')
+        mensagem_requisicao = (
+            request.data.get('corpo_mensagem')
+            or request.data.get('mensagem')
+            or request.data.get('mensagem_solicitacao')
+        )
+        corpo_mensagem = mensagem_requisicao if mensagem_requisicao else (
+            f'Prezado Fornecedor {fornecedor.nome_fantasia},\n\n'
+            f'Segue em anexo o pedido de entrega referente à ordem {ordem_de_entrega.codigo}.\n\n'
+            f'Atenciosamente,\nEquipe SIGE.'
+        )
         anexo = request.FILES.get('anexo')
 
         if not anexo:
