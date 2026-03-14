@@ -113,7 +113,9 @@
                                     required>
                                     <option value="" disabled>Selecione um papel</option>
                                     <option value="ADMIN">Administrador</option>
-                                    <option value="TECNI">Tecnico</option>
+                                    @if(registro.id !== 1){
+                                        <option value="TECNI">Tecnico</option>
+                                    }
                                 </select>
                             </div>
                         </div>
