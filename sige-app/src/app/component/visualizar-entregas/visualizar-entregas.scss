@@ -112,35 +112,64 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
-.produto {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
-  flex-wrap: wrap;
-  gap: 5px;
+.lista-produtos .produto {
+  display: block;
+  background: var(--branco);
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  padding: 14px;
 }
 
-.nome {
-  font-size: 23px;
+.lista-produtos .produto-topo {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #f1f1f1;
+  padding-bottom: 8px;
+}
+
+.lista-produtos .nome {
+  font-size: 20px;
   font-weight: bold;
+  color: var(--azul-escuro);
 }
 
-.unidade {
-  font-size: 14px;
+.lista-produtos .unidade {
+  font-size: 13px;
   color: var(--font-cinza2);
-  margin-left: 5px;
+  margin-left: 6px;
   font-weight: bold;
 }
 
-.info {
-  text-align: right;
+.lista-produtos .info {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 8px 18px;
+  text-align: left;
 
   p {
-    font-weight: bold;
+    margin: 0;
+    font-size: 14px;
+    color: var(--azul-escuro);
+    line-height: 1.35;
+  }
+
+  strong {
+    color: var(--font-cinza2);
+    margin-right: 4px;
+  }
+}
+
+@media (max-width: 992px) {
+  .lista-produtos .info {
+    grid-template-columns: 1fr;
+  }
+
+  .lista-produtos .nome {
+    font-size: 18px;
   }
 }
 
@@ -152,57 +181,70 @@
 .lista-itens {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
+  max-height: 58vh;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .item-entrega {
   display: grid;
   width: 100%;
   align-items: flex-start;
-  column-gap: 6px;
-  row-gap: 8px;
-  justify-content: center;
-
-  grid-template-columns: 180px 180px 160px 190px 300px 270px;
+  column-gap: 12px;
+  row-gap: 10px;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid #e8ecef;
+  border-radius: 8px;
+  padding: 12px 10px;
 }
 
 .info-coluna {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .label-info {
-  font-size: 0.8vw;
-  color: #777777;
+  font-size: clamp(11px, 0.72vw, 13px);
+  color: var(--font-cinza2);
 }
 
 .label-info,
 .label-input {
-  white-space: nowrap;  
+  white-space: normal;
   line-height: 1.2;
 }
 
 .valor-info {
-  margin-top: 3px;
+  margin-top: 1px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .nome-produto {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--azul-escuro);
 }
 
 .valor {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--azul-escuro);
 }
 
 .unidade-modal {
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--font-cinza2);
 }
 
 .input-coluna-qtd {
-  width: 270px;
+  width: auto;
 }
 
 .input-coluna,
@@ -211,25 +253,31 @@
 }
 
 .input-coluna-qtd .input-quantidade {
-  width: 220px;
+  width: 100%;
   max-width: 100%;
 }
 
 .input-coluna {
   display: flex;
   flex-direction: column;
-  min-width: 150px;
+  min-width: 0;
+  grid-column: span 3;
+}
+
+.input-coluna-qtd {
+  grid-column: span 3;
 }
 
 .label-input {
-  font-size: 0.8vw;
-  color: var(--azul-claro);
+  font-size: clamp(11px, 0.72vw, 13px);
+  color: var(--font-cinza2);
 }
 
 .input-quantidade {
-  margin-top: 5px;
+  margin-top: 3px;
   width: 100%;
   border-color: var(--azul-claro);
+  height: 40px;
 }
 
 .footer-entrega {
@@ -263,9 +311,10 @@
 
 .textarea-observacao {
   resize: none;
-  margin-top: 5px;
+  margin-top: 3px;
   width: 100%;
-  height: 62px;
+  height: 40px;
+  min-height: 40px;
   border-color: var(--azul-claro);
   font-size: 14px;
   color: var(--azul-escuro);
@@ -284,5 +333,44 @@
 
 .modal-entrega-lg .modal-body {
   max-height: 70vh;
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+@media (max-width: 1400px) {
+  .item-entrega {
+    grid-template-columns: repeat(3, minmax(170px, 1fr));
+  }
+
+  .input-coluna,
+  .input-coluna-qtd {
+    grid-column: span 3;
+  }
+}
+
+@media (max-width: 992px) {
+  .item-entrega {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+
+  .input-coluna,
+  .input-coluna-qtd {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .item-entrega {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .input-coluna,
+  .input-coluna-qtd {
+    grid-column: span 1;
+  }
+
+  .nome-produto,
+  .valor {
+    font-size: 16px;
+  }
 }
