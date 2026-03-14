@@ -13,12 +13,13 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from usuario.models import Usuario, CodigoRedefiniçãoSenha 
 from usuario.serializers import UsuarioSerializer, CustomTokenObtainPairSerializer
 from licitacao.views import BaseFiltroMixin
-
+from utils.permissions import IsAdmin
 signer = TimestampSigner()
 
 class UsuarioViewSet(BaseFiltroMixin, viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
+    permission_classes = [AllowAny]
     
     search_fields = ['username', 'first_name', 'last_name', 'email']
     filterset_fields = {
@@ -113,3 +114,4 @@ class UsuarioViewSet(BaseFiltroMixin, viewsets.ModelViewSet):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    permission_classes = [AllowAny]

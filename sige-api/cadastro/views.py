@@ -2,13 +2,16 @@ from rest_framework import viewsets
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from cadastro.serializers import EnderecoSerializer, FornecedorSerializer, FornecedorCreateSerializer, ItemGenericoSerializer
 from licitacao.views import BaseFiltroMixin
+from utils.permissions import IsAdmin,IsTecnico
 class EnderecoViewSet(viewsets.ModelViewSet):
     queryset = Endereco.objects.all()
     serializer_class = EnderecoSerializer
+    permission_classes = [IsAdmin|IsTecnico]
 
 class FornecedorViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Fornecedor.objects.all()
     serializer_class = FornecedorSerializer
+    permission_classes = [IsAdmin|IsTecnico]
     
     def get_serializer_class(self):
         
@@ -37,6 +40,7 @@ class FornecedorViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 class ItemGenericoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = ItemGenerico.objects.all()
     serializer_class = ItemGenericoSerializer
+    permission_classes = [IsAdmin|IsTecnico]
 
     
     search_fields = [
