@@ -1,3 +1,4 @@
+import { FiltroConfig } from './../../model/filtro-config';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { CommonModule } from '@angular/common';
@@ -20,6 +21,24 @@ import { ItemEmpenhoService } from '../../service/item-empenho.service';
 })
 export class VisualizarEntregas {
 
+  filtros: FiltroConfig[] = [
+  {
+    campo: 'status',
+    label: 'Status da entrega',
+    tipo: 'radio',
+    opcoes: [
+      { valor: 'esp', label: 'Entrega em espera' },
+      { valor: 'con', label: 'Entrega realizada' }
+    ]
+  },
+  {
+    campo: 'data_emissao',
+    label: 'Data de emissão',
+    tipo: 'date-range'
+  }
+];
+
+filtrosAtivos: any = {};
 
   confirmado: boolean = false;
 
@@ -62,11 +81,19 @@ export class VisualizarEntregas {
   }
 
   getEntregas(termobusca?: string) {
-    this.ordemEntregaService.get(termobusca).subscribe({
+
+    const params = { ...this.filtrosAtivos };
+
+    if (termobusca) {
+      params['search'] = termobusca;
+    }
+
+    this.ordemEntregaService.getComFiltros(params).subscribe({
       next: (registro: OrdemEntrega[]) => {
         this.entregas = this.ordenarEntregaPorStatusEData(registro);
       }
     });
+
   }
 
   getItensOrdem(id: number, index: number) {
@@ -168,5 +195,10 @@ export class VisualizarEntregas {
   private atualizarSaldoEmpenho(empenhoId: number, saldoAtual: number, somaValorEntregue: number): Observable<any> {
     const novoSaldo = Number((Number(saldoAtual) + somaValorEntregue).toFixed(2));
     return this.empenhoService.patch(empenhoId, { saldo_utilizado: novoSaldo });
+  }
+
+  aplicarFiltros(filtros: any) {
+    this.filtrosAtivos = filtros;
+    this.getEntregas();
   }
 }

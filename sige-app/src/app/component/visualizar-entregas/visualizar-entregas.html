@@ -1,307 +1,350 @@
 <body class="listagem">
+  <div class="entrega">
+    <div class="container-titulo">
+      <h5><i class="bi bi-truck"></i> ENTREGAS</h5>
+      <hr />
+    </div>
 
-    <div class="entrega">
-        <div class="container-titulo">
-            <h5><i class="bi bi-truck"></i> ENTREGAS </h5>
-            <hr>
-        </div>
+    <app-barra-pesquisa
+      [filtros]="filtros"
+      (pesquisar)="getEntregas($event)"
+      (filtrosAlterados)="aplicarFiltros($event)"
+    ></app-barra-pesquisa>
+    <div class="container-entregas">
+      @for (item of entregas; track $index) {
+        <div class="card-entrega">
+          <div class="topo-entrega">
+            <div class="info-entrega" [ngClass]="classeStatus(item.status)">
+              <div class="info-entrega-principal">
+                <span class="pedido-entrega">
+                  {{ item.codigo }}
+                </span>
 
-        <app-barra-pesquisa (pesquisar)="getEntregas($event)"></app-barra-pesquisa>
-        <div class="container-entregas">
-            @for (item of entregas; track $index) {
-            <div class="card-entrega">
+                <div class="links-entrega">
+                  <span
+                    class="link-emp"
+                    (click)="enviarPara('/visualizar-empenho', item.empenho.id)"
+                  >
+                    {{ item.empenho.codigo }}
+                  </span>
 
-                <div class="topo-entrega">
-                    <div class="info-entrega" [ngClass]="classeStatus(item.status)">
-
-                        <div class="info-entrega-principal">
-                            <span class="pedido-entrega">
-                                {{ item.codigo }}
-                            </span>
-
-                            <div class="links-entrega">
-                                <span class="link-emp" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
-                                    {{ item.empenho.codigo }}
-                                </span>
-
-                                <span class="link-arp" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
-                                    {{ item.empenho.ata.numero_ata }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <span class="status-entrega">
-                            {{ verificarStatus(item.status) }}
-                        </span>
-
-                    </div>
-
-                    <div class="acoes-entrega">
-
-                        @if( item.status !== "con" ){
-                        <button class="btn-confirmar" data-bs-toggle="modal" data-bs-target="#confirmarModal"
-                            *ngIf="!confirmado" (click)="getItensOrdem(item.id, $index)">
-                            <i class="bi bi-check-circle"></i>
-                            CONFIRMAR ENTREGA
-                        </button>
-                        }
-
-
-                        <button class="btn link-doc" data-bs-toggle="modal" data-bs-target="#verPedidoMordal"
-                            (click)="getItensOrdem(item.id, $index)" *ngIf="!confirmado">
-                            <i class="bi bi-eye"></i>
-                            VER PEDIDO
-                        </button>
-                    </div>
+                  <span
+                    class="link-arp"
+                    (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)"
+                  >
+                    {{ item.empenho.ata.numero_ata }}
+                  </span>
                 </div>
+              </div>
 
-                <div class="rodape-entrega">
-                    <div class="rodape-item">
-                        <span class="rodape-label">Data de Emissão</span>
-                        <span class="rodape-valor">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
-                    </div>
-                    <div class="rodape-item">
-                        <span class="rodape-label">Data de Entrega Prevista</span>
-                        <span class="rodape-valor">{{ item.data_entrega_prevista | date: 'dd/MM/yyyy' }}</span>
-                    </div>
-                    @if( item.status === "con" ){
-                    <div class="rodape-item rodape-item-concluida">
-                        <span class="rodape-label">Data de Entrega</span>
-                        <span class="rodape-valor">{{ item.data_entrega | date: 'dd/MM/yyyy - HH:mm' }}</span>
-                    </div>
-                    }
-                </div>
-
+              <span class="status-entrega">
+                {{ verificarStatus(item.status) }}
+              </span>
             </div>
+
+            <div class="acoes-entrega">
+              @if (item.status !== 'con') {
+                <button
+                  class="btn-confirmar"
+                  data-bs-toggle="modal"
+                  data-bs-target="#confirmarModal"
+                  *ngIf="!confirmado"
+                  (click)="getItensOrdem(item.id, $index)"
+                >
+                  <i class="bi bi-check-circle"></i>
+                  CONFIRMAR ENTREGA
+                </button>
+              }
+
+              <button
+                class="btn link-doc"
+                data-bs-toggle="modal"
+                data-bs-target="#verPedidoMordal"
+                (click)="getItensOrdem(item.id, $index)"
+                *ngIf="!confirmado"
+              >
+                <i class="bi bi-eye"></i>
+                VER PEDIDO
+              </button>
+            </div>
+          </div>
+
+          <div class="rodape-entrega">
+            <div class="rodape-item">
+              <span class="rodape-label">Data de Emissão</span>
+              <span class="rodape-valor">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
+            </div>
+            <div class="rodape-item">
+              <span class="rodape-label">Data de Entrega Prevista</span>
+              <span class="rodape-valor">{{
+                item.data_entrega_prevista | date: 'dd/MM/yyyy'
+              }}</span>
+            </div>
+            @if (item.status === 'con') {
+              <div class="rodape-item rodape-item-concluida">
+                <span class="rodape-label">Data de Entrega</span>
+                <span class="rodape-valor">{{
+                  item.data_entrega | date: 'dd/MM/yyyy - HH:mm'
+                }}</span>
+              </div>
             }
+          </div>
         </div>
+      }
     </div>
+  </div>
 
+  <!-- Modal -->
 
-    <!-- Modal -->
-
-    <div #myModal class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel"
-        aria-hidden="true">
-
-        <div class="modal-dialog modal-dialog-centered modal-xl modal-entrega-lg">
-            <div class="modal-content">
-
-                <div class="modal-header">
-
-                    <h1 class="modal-title fs-5" id="entregaModalLabel">
-                        CONFIRMAR ENTREGA <i class="bi bi-truck"></i>
-                    </h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-
-                </div>
-
-                <div class="modal-body">
-                    <form class="form-entrega">
-
-                        <div class="lista-itens">
-
-                            @for(item of pedidosDaOrdem; track $index) {
-                            <div class="item-entrega">
-
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Gênero Alimenticio
-                                    </span>
-
-                                    <div class="valor-info">
-                                        <span class="nome-produto">
-                                            {{ item.item_empenho.item_ata.item_generico.descricao }}
-                                        </span>
-
-                                        <span class="unidade-modal">
-                                            {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                                        </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Quantidade Solicitada</span>
-
-                                    <div class="valor-info">
-                                        <span class="valor">
-                                            {{ item.quantidade_solicitada | number:'1.0-2' }}
-                                        </span>
-
-                                        <span class="unidade-modal">
-                                            {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                                        </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Valor Unidade
-                                    </span>
-
-                                    <div class="valor-info">
-                                        <span class="valor">
-                                            R$ {{ item.item_empenho.item_ata.valor_unitario | number:'1.2-2' }}
-                                        </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Valor Total do Item
-                                    </span>
-
-                                    <div class="valor-info">
-                                        <span class="valor">
-                                            R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada
-                                            | number:'1.2-2' }}
-                                        </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Valor Total Entregue
-                                    </span>
-
-                                    <div class="valor-info">
-                                        <span class="valor">
-                                            R$ {{ (item.item_empenho.item_ata.valor_unitario * item.quantidade_entregue) | number:'1.2-2' }}
-                                        </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Valor Total em Dívida
-                                    </span>
-
-                                    <div class="valor-info">
-                                        <span class="valor">
-                                            R$ {{ (((item.quantidade_solicitada - item.quantidade_entregue) > 0 ? (item.quantidade_solicitada - item.quantidade_entregue) : 0) * item.item_empenho.item_ata.valor_unitario) | number:'1.2-2' }}
-                                        </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="input-coluna input-coluna-qtd">
-                                    <label class="label-input">
-                                        Quantidade Efetivamente Recebida ({{
-                                        item.item_empenho.item_ata.item_generico.unidade_medida }})
-                                    </label>
-                                    <div>
-                                        <input type="number" class="form-control input-quantidade" min="0" step="0.01"
-                                            inputmode="decimal" [max]="item.quantidade_solicitada"
-                                            [(ngModel)]="item.quantidade_entregue"
-                                            [name]="'quantidadeEntregue' + $index"
-                                            (change)="verificarQuantidadeEntregue(item)">
-                                    </div>
-                                </div>
-
-                                <div class="input-coluna">
-                                    <label class="label-input">
-                                        Observação sobre a entrega
-                                    </label>
-                                    <div>
-                                        <textarea class="form-control textarea-observacao" [(ngModel)]="item.observacao"
-                                            [name]="'observacao' + $index"></textarea>
-                                    </div>
-                                </div>
-
-                            </div>
-                            }
-
-                        </div>
-
-                    </form>
-                </div>
-
-                <div class="modal-footer footer-entrega">
-                    <button type="button" , class="btn-confirmar" (click)="confirmarEntrega(ordemSelecionada)">
-                        <i class="bi bi-check-lg"></i> CONFIRMAR ENTREGA
-                    </button>
-                </div>
-
-            </div>
+  <div
+    #myModal
+    class="modal fade"
+    id="confirmarModal"
+    tabindex="-1"
+    aria-labelledby="confirmarModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-entrega-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="entregaModalLabel">
+            CONFIRMAR ENTREGA <i class="bi bi-truck"></i>
+          </h1>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
         </div>
 
-    </div>
+        <div class="modal-body">
+          <form class="form-entrega">
+            <div class="lista-itens">
+              @for (item of pedidosDaOrdem; track $index) {
+                <div class="item-entrega">
+                  <div class="info-coluna">
+                    <span class="label-info"> Gênero Alimenticio </span>
 
+                    <div class="valor-info">
+                      <span class="nome-produto">
+                        {{ item.item_empenho.item_ata.item_generico.descricao }}
+                      </span>
 
-    <div #myModal class="modal fade" id="verPedidoMordal" tabindex="-1" aria-labelledby="verPedidoMordalLabel"
-        aria-hidden="true">
-
-        <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content">
-
-                <div class="modal-header">
-
-                    <h1 class="modal-title fs-5" id="entregaModalLabel">
-                        VER PEDIDO <i class="bi bi-truck"></i>
-                    </h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-
-                </div>
-
-                <div class="modal-body">
-                    <div class="lista-produtos">
-
-                        @for(item of pedidosDaOrdem; track item.id) {
-                            <div class="produto">
-                                <div class="produto-topo">
-                                    <div>
-                                        <span class="nome">{{ item.item_empenho.item_ata.item_generico.descricao }}</span>
-                                        <span class="unidade">{{ item.item_empenho.item_ata.item_generico.unidade_medida }}</span>
-                                    </div>
-                                </div>
-
-                                <div class="info">
-                                    <p>
-                                        <strong>Qtd. solicitada:</strong>
-                                        {{ item.quantidade_solicitada | number:'1.0-2' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                                    </p>
-
-                                    <p>
-                                        <strong>Qtd. entregue:</strong>
-                                        {{ item.quantidade_entregue | number:'1.0-2' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                                    </p>
-
-                                    <p>
-                                        <strong>Valor entregue:</strong>
-                                        R$ {{ (item.quantidade_entregue * item.item_empenho.item_ata.valor_unitario) | number:'1.2-2' }}
-                                    </p>
-
-                                    <p>
-                                        <strong>Qtd. em dívida:</strong>
-                                        {{ ((item.quantidade_solicitada - item.quantidade_entregue) > 0 ? (item.quantidade_solicitada - item.quantidade_entregue) : 0) | number:'1.0-2' }}
-                                        {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                                    </p>
-
-                                    <p>
-                                        <strong>Valor em dívida:</strong>
-                                        R$ {{ (((item.quantidade_solicitada - item.quantidade_entregue) > 0 ? (item.quantidade_solicitada - item.quantidade_entregue) : 0) * item.item_empenho.item_ata.valor_unitario) | number:'1.2-2' }}
-                                    </p>
-
-                                    <p>
-                                        <strong>Observação:</strong>
-                                        {{ item.observacao ? item.observacao : 'Sem observação' }}
-                                    </p>
-                                </div>
-                            </div>
-                        }
-
-
+                      <span class="unidade-modal">
+                        {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                      </span>
                     </div>
-                </div>
+                  </div>
 
+                  <div class="info-coluna">
+                    <span class="label-info"> Quantidade Solicitada</span>
+
+                    <div class="valor-info">
+                      <span class="valor">
+                        {{ item.quantidade_solicitada | number: '1.0-2' }}
+                      </span>
+
+                      <span class="unidade-modal">
+                        {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="info-coluna">
+                    <span class="label-info"> Valor Unidade </span>
+
+                    <div class="valor-info">
+                      <span class="valor">
+                        R$ {{ item.item_empenho.item_ata.valor_unitario | number: '1.2-2' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="info-coluna">
+                    <span class="label-info"> Valor Total do Item </span>
+
+                    <div class="valor-info">
+                      <span class="valor">
+                        R$
+                        {{
+                          item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada
+                            | number: '1.2-2'
+                        }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="info-coluna">
+                    <span class="label-info"> Valor Total Entregue </span>
+
+                    <div class="valor-info">
+                      <span class="valor">
+                        R$
+                        {{
+                          item.item_empenho.item_ata.valor_unitario * item.quantidade_entregue
+                            | number: '1.2-2'
+                        }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="info-coluna">
+                    <span class="label-info"> Valor Total em Dívida </span>
+
+                    <div class="valor-info">
+                      <span class="valor">
+                        R$
+                        {{
+                          (item.quantidade_solicitada - item.quantidade_entregue > 0
+                            ? item.quantidade_solicitada - item.quantidade_entregue
+                            : 0) * item.item_empenho.item_ata.valor_unitario | number: '1.2-2'
+                        }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="input-coluna input-coluna-qtd">
+                    <label class="label-input">
+                      Quantidade Efetivamente Recebida ({{
+                        item.item_empenho.item_ata.item_generico.unidade_medida
+                      }})
+                    </label>
+                    <div>
+                      <input
+                        type="number"
+                        class="form-control input-quantidade"
+                        min="0"
+                        step="0.01"
+                        inputmode="decimal"
+                        [max]="item.quantidade_solicitada"
+                        [(ngModel)]="item.quantidade_entregue"
+                        [name]="'quantidadeEntregue' + $index"
+                        (change)="verificarQuantidadeEntregue(item)"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="input-coluna">
+                    <label class="label-input"> Observação sobre a entrega </label>
+                    <div>
+                      <textarea
+                        class="form-control textarea-observacao"
+                        [(ngModel)]="item.observacao"
+                        [name]="'observacao' + $index"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+              }
             </div>
+          </form>
         </div>
 
+        <div class="modal-footer footer-entrega">
+          <button
+            type="button"
+            ,
+            class="btn-confirmar"
+            (click)="confirmarEntrega(ordemSelecionada)"
+          >
+            <i class="bi bi-check-lg"></i> CONFIRMAR ENTREGA
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
 
+  <div
+    #myModal
+    class="modal fade"
+    id="verPedidoMordal"
+    tabindex="-1"
+    aria-labelledby="verPedidoMordalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="entregaModalLabel">
+            VER PEDIDO <i class="bi bi-truck"></i>
+          </h1>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="lista-produtos">
+            @for (item of pedidosDaOrdem; track item.id) {
+              <div class="produto">
+                <div class="produto-topo">
+                  <div>
+                    <span class="nome">{{
+                      item.item_empenho.item_ata.item_generico.descricao
+                    }}</span>
+                    <span class="unidade">{{
+                      item.item_empenho.item_ata.item_generico.unidade_medida
+                    }}</span>
+                  </div>
+                </div>
+
+                <div class="info">
+                  <p>
+                    <strong>Qtd. solicitada:</strong>
+                    {{ item.quantidade_solicitada | number: '1.0-2' }}
+                    {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                  </p>
+
+                  <p>
+                    <strong>Qtd. entregue:</strong>
+                    {{ item.quantidade_entregue | number: '1.0-2' }}
+                    {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                  </p>
+
+                  <p>
+                    <strong>Valor entregue:</strong>
+                    R$
+                    {{
+                      item.quantidade_entregue * item.item_empenho.item_ata.valor_unitario
+                        | number: '1.2-2'
+                    }}
+                  </p>
+
+                  <p>
+                    <strong>Qtd. em dívida:</strong>
+                    {{
+                      (item.quantidade_solicitada - item.quantidade_entregue > 0
+                        ? item.quantidade_solicitada - item.quantidade_entregue
+                        : 0
+                      ) | number: '1.0-2'
+                    }}
+                    {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                  </p>
+
+                  <p>
+                    <strong>Valor em dívida:</strong>
+                    R$
+                    {{
+                      (item.quantidade_solicitada - item.quantidade_entregue > 0
+                        ? item.quantidade_solicitada - item.quantidade_entregue
+                        : 0) * item.item_empenho.item_ata.valor_unitario | number: '1.2-2'
+                    }}
+                  </p>
+
+                  <p>
+                    <strong>Observação:</strong>
+                    {{ item.observacao ? item.observacao : 'Sem observação' }}
+                  </p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>

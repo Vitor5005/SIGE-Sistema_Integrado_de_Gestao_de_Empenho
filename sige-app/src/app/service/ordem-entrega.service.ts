@@ -17,7 +17,7 @@ export class OrdemEntregaService implements ICrudService<OrdemEntrega> {
   ) {}
 
   apiUrl = environment.API_URL + '/entregas/';
-  
+
   get(termobusca?: string): Observable<OrdemEntrega[]> {
     let url = this.apiUrl
     if (termobusca) {
@@ -30,7 +30,7 @@ export class OrdemEntregaService implements ICrudService<OrdemEntrega> {
     let url = this.apiUrl + id + '/';
     return this.http.get<OrdemEntrega>(url);
   }
-  
+
 
   save(item: OrdemEntregaInsert): Observable<OrdemEntregaInsert> {
     let url = this.apiUrl;
@@ -56,5 +56,10 @@ export class OrdemEntregaService implements ICrudService<OrdemEntrega> {
   getPedidos(id: number): Observable<ItemOrdem[]> {
     let url = this.apiUrl + `pedidos/?ordem_id=` + id;
     return this.http.get<ItemOrdem[]>(url);
+  }
+  getComFiltros(params: any): Observable<OrdemEntrega[]> {
+    const query = new URLSearchParams(params).toString();
+    return this.http.get<OrdemEntrega[]>(this.apiUrl + '?' + query);
+
   }
 }
