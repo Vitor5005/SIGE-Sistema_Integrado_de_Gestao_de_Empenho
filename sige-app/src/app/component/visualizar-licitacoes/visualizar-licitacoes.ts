@@ -22,10 +22,19 @@ export class VisualizarLicitacoes {
 
   filtros: FiltroConfig[] = [
   {
+      campo: 'status',
+      label: 'Status',
+      tipo: 'radio',
+      opcoes: [
+        { valor: 'Válido', label: 'Válido' },
+        { valor: 'Expirado', label: 'Expirado' },
+      ],
+  },
+  {
     campo: 'data_abertura',
     label: 'Data de abertura',
     tipo: 'date-range'
-  }
+  },
 ];
   filtrosAtivos: any = {};
 
@@ -36,15 +45,24 @@ export class VisualizarLicitacoes {
 
   get(termobusca?: string): void {
   const filtrosParaEnvio = { ...this.filtrosAtivos };
-
+  delete filtrosParaEnvio.status;
   if (termobusca) {
     filtrosParaEnvio['search'] = termobusca;
   }
 
-  // Se filtrosParaEnvio estiver vazio, buscar todos os registros
   this.licitacaoService.getComFiltros(filtrosParaEnvio).subscribe({
     next: (resposta: Licitacao[]) => {
-      this.registro = this.ordenarLicitacoes(resposta || []);
+
+      let dados = resposta || [];
+
+      // FILTRO DE STATUS
+      if (this.filtrosAtivos.status) {
+        dados = dados.filter(item =>
+          this.verificarValidade(item) === this.filtrosAtivos.status
+        );
+      }
+
+      this.registro = this.ordenarLicitacoes(dados);
     },
   });
 }

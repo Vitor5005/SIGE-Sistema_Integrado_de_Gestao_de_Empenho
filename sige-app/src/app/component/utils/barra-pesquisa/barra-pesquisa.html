@@ -65,7 +65,7 @@
                 type="date"
                 (change)="alterarFiltro(filtro.campo + '__gte', $any($event.target).value)"
               />
-    
+
               <label>Até:</label>
               <input
                 type="date"
@@ -79,7 +79,7 @@
         <li><hr class="dropdown-divider" /></li>
 
       <li>
-        <a class="dropdown-item limpar" (click)="limparFiltros()">
+        <a class="dropdown-item limpar badge bg-danger" (click)="limparFiltros()">
           limpar filtros
         </a>
       </li>

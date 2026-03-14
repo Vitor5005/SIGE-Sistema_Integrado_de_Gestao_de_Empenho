@@ -4,7 +4,9 @@
     <hr />
   </div>
 
-  <app-barra-pesquisa [filtros]="filtros" (pesquisar)="get($event)" (filtrosAlterados)="aplicarFiltros($event)".>
+  <app-barra-pesquisa [filtros]="filtros"
+  (pesquisar)="get($event)"
+  (filtrosAlterados)="aplicarFiltros($event)">
   </app-barra-pesquisa>
 
   <table class="tabela">

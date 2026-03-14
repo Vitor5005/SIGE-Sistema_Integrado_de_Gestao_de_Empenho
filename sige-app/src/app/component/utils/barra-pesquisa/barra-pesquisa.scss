@@ -38,6 +38,7 @@
   .limpar:hover {
     background-color: #c71c1c;
     color: var(--branco);
+    cursor: pointer;
   }
   ul.dropdown-menu{
     .dropdown-item{
@@ -45,18 +46,18 @@
       align-items: center;
       gap: 10px;
       height: 30px;
-        input[type="checkbox"]{
-          width: 20px;
-        }
-        input[type="radio"]{
-          width: 20px;
-        }
-        input[type="number"]{
-          width: 100px;
-        }
-        input[type="date"]{
-          width: 100px;
-        }
+      input[type="checkbox"]{
+        width: 20px;
+      }
+      input[type="radio"]{
+        width: 20px;
+      }
+      input[type="number"]{
+        width: 100px;
+      }
+      input[type="date"]{
+        width: 100px;
+      }
     }
   }
 }

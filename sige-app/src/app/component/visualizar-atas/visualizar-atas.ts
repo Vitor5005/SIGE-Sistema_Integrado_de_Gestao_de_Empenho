@@ -5,7 +5,6 @@ import { Router } from '@angular/router';
 import { AtaService } from '../../service/ata.service';
 import { Ata } from '../../model/ata';
 import { CommonModule } from '@angular/common';
-import { map } from 'rxjs';
 
 @Component({
   selector: 'app-visualizar-atas',
@@ -21,14 +20,8 @@ export class VisualizarAtas {
 
   filtros: FiltroConfig[] = [
     {
-      campo: 'licitacao__id',
-      label: 'Licitação',
-      tipo: 'checkbox',
-      opcoes: [],
-    },
-    {
       campo: 'ata_saldo_total',
-      label: 'Preço',
+      label: 'Valor Total',
       tipo: 'range',
     },
     {
@@ -46,7 +39,6 @@ export class VisualizarAtas {
 
   ngOnInit() {
     this.get();
-    this.carregarLicitacoes();
   }
 
   enviarPara(rota: string, id: number): void {
@@ -58,40 +50,32 @@ export class VisualizarAtas {
     this.get();
   }
 
-  get(termobusca?: string): void {
-    let params: any = { ...this.filtrosAtivos };
-    if (termobusca) {
-      params.search = termobusca;
+ get(termobusca?: string): void {
+
+  let params: any = { ...this.filtrosAtivos };
+
+  this.ataService.get(params).subscribe({
+    next: (resposta: Ata[]) => {
+
+      let lista = resposta;
+
+      if (termobusca) {
+        const termo = termobusca.toLowerCase();
+
+        lista = lista.filter(a =>
+          a.numero_ata?.toString().toLowerCase().includes(termo) ||
+          a.fornecedor?.nome_fantasia?.toLowerCase().includes(termo)
+        );
+      }
+      if (params.status) {
+        lista = lista.filter(a => this.verificarValidade(a) === params.status);
+      }
+
+      this.atas = this.ordenarAtas(lista);
     }
+  });
+}
 
-    this.ataService.get(params).subscribe({
-      next: (resposta: Ata[]) => {
-        let lista = this.ordenarAtas(resposta);
-
-        if (params.status) {
-          lista = lista.filter((a) => this.verificarValidade(a) === params.status);
-        }
-        this.atas = lista;
-      },
-    });
-  }
-
-  carregarLicitacoes() {
-    this.ataService.get().subscribe({
-      next: (atas) => {
-        const mapa = new Map();
-
-        atas.forEach((ata) => {
-          mapa.set(ata.licitacao.id, {
-            id: ata.licitacao.id,
-            numero: ata.licitacao.numero_licitacao,
-          });
-        });
-
-        this.filtros[0].opcoes = Array.from(mapa.values());
-      },
-    });
-  }
 
   verificarValidade(ata: Ata): string {
     const dataAtual = new Date();
