@@ -10,8 +10,9 @@ class OrdemEntrega(models.Model):
         ("con", "Concluída")
     )
     status = models.CharField(max_length=3, choices=status_tipo, default="esp")
-    data_emissao = models.DateField(auto_now_add=True)
-    data_entrega = models.DateField(null=True, blank=True)
+    data_emissao = models.DateTimeField(auto_now_add=True)
+    data_entrega_prevista = models.DateTimeField()
+    data_entrega = models.DateTimeField(null=True, blank=True)
     valor_total_executado = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):

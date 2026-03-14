@@ -8,7 +8,7 @@ from rest_framework.parsers import MultiPartParser,FormParser
 from rest_framework import viewsets
 
 from entrega.models import OrdemEntrega, ItemOrdem
-from entrega.serializers import OrdemEntregaSerializer, ItemOrdemSerializer
+from entrega.serializers import OrdemEntregaInsertSerializer, OrdemEntregaSerializer, ItemOrdemSerializer, itemOrdemInsertSerializer
 from licitacao.views import BaseFiltroMixin
 from utils.permissions import IsAdmin, IsTecnico
 
@@ -18,6 +18,13 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
     permission_classes = [IsAdmin|IsTecnico]
 
+    def get_serializer_class(self):
+        
+        if self.action in ['create', 'update']:
+            return OrdemEntregaInsertSerializer
+        
+        return OrdemEntregaSerializer
+    
     search_fields = ['codigo', 'empenho__codigo']
     filterset_fields = {
         'status': ['exact'],                         
@@ -29,6 +36,7 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 
     ordering_fields = ['data_emissao', 'data_entrega', 'valor_total_executado']
     ordering = ['-data_emissao']
+    
     @action(detail=True,methods=['post'],url_path='enviar-pedido')
     def EnviarPedidoPorEmail(self, request, pk=None):
         """
@@ -94,6 +102,12 @@ class ItemEntregaViewSet(viewsets.ModelViewSet):
     serializer_class = ItemOrdemSerializer
     permission_classes = [IsAdmin|IsTecnico]
 
+    def get_serializer_class(self):
+        
+        if self.action in ['create', 'update']:
+            return itemOrdemInsertSerializer
+        
+        return itemOrdemInsertSerializer
     
     search_fields = ['observacao', 'ordem_entrega__codigo', 'item_empenho__item_ata__item_generico__descricao']
 

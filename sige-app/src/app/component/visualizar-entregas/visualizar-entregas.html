@@ -2,38 +2,48 @@
 
     <div class="entrega">
         <div class="container-titulo">
-            <h5>ENTREGAS <i class="bi bi-truck"></i></h5>
+            <h5><i class="bi bi-truck"></i> ENTREGAS </h5>
             <hr>
 
         </div>
 
-        <app-barra-pesquisa></app-barra-pesquisa>
+        <app-barra-pesquisa (pesquisar)="getEntregas($event)"></app-barra-pesquisa>
         <div class="container-entregas">
             @for (item of entregas; track item.id) {
             <div class="card-entrega">
 
                 <div class="topo-entrega">
-                    <div class="info-entrega">
-                        <span class="pedido-entrega">
-                            {{ item.codigo }}
-                        </span>
+                    <div class="info-entrega" [ngClass]="classeStatus(item.status)">
 
-                        <span class="link-doc" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
-                            {{ item.empenho.codigo }}
-                        </span>
+                        <div style="display: flex; gap: 5vw; align-items: center; padding-left: 1.5%;">
+                            <span class="pedido-entrega">
+                                {{ item.codigo }}
+                            </span>
 
-                        <span class="link-doc" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
-                            {{ item.empenho.ata.numero_ata }}
+                            <span class="link-emp" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
+                                {{ item.empenho.codigo }}
+                            </span>
+
+                            <span class="link-arp" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
+                                {{ item.empenho.ata.numero_ata }}
+                            </span>
+                        </div>
+
+                        <span class="status-entrega">
+                            {{ verificarStatus(item.status) }}
                         </span>
 
                     </div>
 
-                    <div style="display: flex; gap: 1em;">
+                    <div style="display: flex; gap:2vw">
+
+                        @if( item.status !== "con" ){
                         <button class="btn-confirmar" data-bs-toggle="modal" data-bs-target="#confirmarModal"
-                            *ngIf="!confirmado">
+                            *ngIf="!confirmado" (click)="getItensOrdem(item.id)">
                             <i class="bi bi-check-circle"></i>
                             CONFIRMAR ENTREGA
                         </button>
+                        }
 
 
                         <button class="btn link-doc" data-bs-toggle="modal" data-bs-target="#verPedidoMordal"
@@ -42,6 +52,23 @@
                             VER PEDIDO
                         </button>
                     </div>
+                </div>
+
+                <div class="rodape-entrega">
+                    <div>
+                        <span>Data de Emissão:</span>
+                        <span style="padding: 1%">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
+                    </div>
+                    <div>
+                        <span>Data de Entrega Prevista:</span>
+                        <span style="padding: 1%">{{ item.data_entrega_prevista| date: 'dd/MM/yyyy - HH:mm' }}</span>
+                    </div>
+                    @if( item.status === "con" ){
+                    <div>
+                        <span>Data de Entrega:</span>
+                        <span style="padding: 1.35%">{{ item.data_entrega | date: 'dd/MM/yyyy - HH:mm' }}</span>
+                    </div>
+                    }
                 </div>
 
             </div>
@@ -55,7 +82,7 @@
     <div #myModal class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel"
         aria-hidden="true">
 
-        <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-entrega-lg">
             <div class="modal-content">
 
                 <div class="modal-header">
@@ -68,106 +95,108 @@
                 </div>
 
                 <div class="modal-body">
-                    <form>
+                    <form class="form-entrega">
 
-                        <div style="display: flex; flex-direction: column; gap: 2em;">
-                            <!-- display, flex-direction e gap temporários -->
-                            <div style="display: flex; gap: 5em; justify-content: center;">
-                                <!-- display, gap e justify temporários -->
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Gênero Alimenticio</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">Frango </span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
+                        <div class="lista-itens">
+
+                            @for(item of pedidosDaOrdem; track $index) {
+                            <div class="item-entrega">
+
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Gênero Alimenticio
+                                    </span>
+
+                                    <div class="valor-info">
+                                        <span class="nome-produto">
+                                            {{ item.item_empenho.item_ata.item_generico.descricao }}
+                                        </span>
+
+                                        <span class="unidade-modal">
+                                            {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                                        </span>
+
                                     </div>
                                 </div>
 
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Quantidade
-                                        Solicitada</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">30 </span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Quantidade Solicitada</span>
+
+                                    <div class="valor-info">
+                                        <span class="valor">
+                                            {{ item.quantidade_solicitada }}
+                                        </span>
+
+                                        <span class="unidade-modal">
+                                            {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                                        </span>
+
                                     </div>
                                 </div>
 
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Valor Unidade</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">R$ 20,00</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Valor Unidade
+                                    </span>
+
+                                    <div class="valor-info">
+                                        <span class="valor">
+                                            R$ {{ item.item_empenho.item_ata.valor_unitario | number:'1.2-2' }}
+                                        </span>
+
                                     </div>
                                 </div>
 
-                                <div style="justify-content: center;">
-                                    <label style="font-size: 1.2em; color: rgb(63, 127, 244);">Quantidade Efetivamente
-                                        Recebida (kg)</label> <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <input type="number" class="form-control"
-                                            style="border-color: rgb(63, 127, 244);">
+                                <div class="info-coluna">
+                                    <span class="label-info">
+                                        Valor Total do Item
+                                    </span>
+
+                                    <div class="valor-info">
+                                        <span class="valor">
+                                            R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada
+                                            | number:'1.2-2' }}
+                                        </span>
+
                                     </div>
                                 </div>
+
+                                <div class="input-coluna input-coluna-qtd">
+                                    <label class="label-input">
+                                        Quantidade Efetivamente Recebida ({{
+                                        item.item_empenho.item_ata.item_generico.unidade_medida }})
+                                    </label>
+                                    <div>
+                                        <input type="number" class="form-control input-quantidade" min="0" step="0.01"
+                                            inputmode="decimal" [max]="item.quantidade_solicitada"
+                                            [(ngModel)]="item.quantidade_entregue"
+                                            [name]="'quantidadeEntregue' + $index"
+                                            (change)="verificarQuantidadeEntregue(item)">
+                                    </div>
+                                </div>
+
+                                <div class="input-coluna">
+                                    <label class="label-input">
+                                        Observação sobre a entrega
+                                    </label>
+                                    <div>
+                                        <textarea class="form-control textarea-observacao" [(ngModel)]="item.observacao"
+                                            [name]="'observacao' + $index"></textarea>
+                                    </div>
+                                </div>
+
                             </div>
-
-                            <div style="display: flex; gap: 5em; justify-content: center;">
-                                <!-- display, gap e justify temporários -->
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Gênero Alimenticio</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">Carne Bovina </span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Quantidade
-                                        Solicitada</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">30 </span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                        <span style="font-size: 0.9em; font-weight: bold;">kg</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <span style="font-size: 1.2em; color: rgb(119, 119, 119);">Valor Unidade</span>
-                                    <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <span style="font-size: 1.15em; font-weight: bold;">R$ 30,00</span>
-                                        <!-- alterando tamanho da fonte temporariamente -->
-                                    </div>
-                                </div>
-
-                                <div style="justify-content: center;">
-                                    <label style="font-size: 1.2em; color: rgb(63, 127, 244);">Quantidade Efetivamente
-                                        Recebida (kg)</label> <!-- alterando tamanho da fonte e cor temporariamente -->
-                                    <div> <!-- margin temporário -->
-                                        <input type="number" class="form-control"
-                                            style="border-color: rgb(63, 127, 244);">
-                                    </div>
-                                </div>
-                            </div>
+                            }
 
                         </div>
 
                     </form>
                 </div>
 
-                <div class="modal-footer" style="justify-content: center;">
-                    <button type="button">
-                        <i class="bi bi-check-lg"></i> Confirmar Entrega
+                <div class="modal-footer footer-entrega">
+                    <button type="button" , class="btn-confirmar">
+                        <i class="bi bi-check-lg"></i> CONFIRMAR ENTREGA
                     </button>
                 </div>
 

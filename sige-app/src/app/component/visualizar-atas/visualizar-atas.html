@@ -1,11 +1,11 @@
 <body class="listagem">
 
     <div class="container-titulo">
-        <h3>ATAS DE REGISTRO DE PREÇOS</h3>
+        <h3><i class="bi bi-clipboard2"></i> ATAS DE REGISTRO DE PREÇOS</h3>
         <hr>
     </div>
 
-    <app-barra-pesquisa></app-barra-pesquisa>
+    <app-barra-pesquisa [filtrosLicitacao]="licitacoesComAta" (pesquisar)="get($event)"></app-barra-pesquisa>
 
     <table class="tabela">
         <thead>

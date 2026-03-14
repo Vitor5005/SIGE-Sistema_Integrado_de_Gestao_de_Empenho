@@ -3,6 +3,7 @@ import random
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from django.db import connection
+from django.utils import timezone
 import random
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sige_api.settings')
@@ -183,34 +184,77 @@ ENDERECOS = [
 
 ITENS_ALIMENTOS = [
     # Secos / Mercearia (SM)
-    {"catmat": "100001", "descricao": "Arroz Integral 5kg", "categoria": "SM", "unidade": "KG"},
-    {"catmat": "100002", "descricao": "Feijão Carioca 1kg", "categoria": "SM", "unidade": "KG"},
-    {"catmat": "100003", "descricao": "Macarrão Integral 500g", "categoria": "SM", "unidade": "G"},
-    {"catmat": "100004", "descricao": "Açúcar Cristal 1kg", "categoria": "SM", "unidade": "KG"},
-    {"catmat": "100005", "descricao": "Sal Refinado 1kg", "categoria": "SM", "unidade": "KG"},
+    {"catmat": "100001", "descricao": "Arroz Integral", "categoria": "SM", "unidade": "KG"},
+    {"catmat": "100002", "descricao": "Feijão Carioca", "categoria": "SM", "unidade": "KG"},
+    {"catmat": "100003", "descricao": "Macarrão Integral", "categoria": "SM", "unidade": "G"},
+    {"catmat": "100004", "descricao": "Açúcar Cristal", "categoria": "SM", "unidade": "KG"},
+    {"catmat": "100005", "descricao": "Sal Refinado", "categoria": "SM", "unidade": "KG"},
     # Lácteos (Lac)
-    {"catmat": "200001", "descricao": "Leite Integral 1L", "categoria": "Lac", "unidade": "L"},
-    {"catmat": "200002", "descricao": "Queijo Meia Cura 500g", "categoria": "Lac", "unidade": "G"},
-    {"catmat": "200003", "descricao": "Iogurte Natural 500ml", "categoria": "Lac", "unidade": "mL"},
-    {"catmat": "200004", "descricao": "Manteiga 200g", "categoria": "Lac", "unidade": "G"},
+    {"catmat": "200001", "descricao": "Leite Integral", "categoria": "Lac", "unidade": "L"},
+    {"catmat": "200002", "descricao": "Queijo Meia Cura", "categoria": "Lac", "unidade": "G"},
+    {"catmat": "200003", "descricao": "Iogurte Natural", "categoria": "Lac", "unidade": "mL"},
+    {"catmat": "200004", "descricao": "Manteiga", "categoria": "Lac", "unidade": "G"},
     # Óleos e Azeites (Oli)
-    {"catmat": "300001", "descricao": "Óleo de Soja 900ml", "categoria": "Oli", "unidade": "mL"},
-    {"catmat": "300002", "descricao": "Azeite Extra Virgem 500ml", "categoria": "Oli", "unidade": "mL"},
-    {"catmat": "300003", "descricao": "Vinagre Branco 750ml", "categoria": "Oli", "unidade": "mL"},
+    {"catmat": "300001", "descricao": "Óleo de Soja", "categoria": "Oli", "unidade": "mL"},
+    {"catmat": "300002", "descricao": "Azeite Extra Virgem", "categoria": "Oli", "unidade": "mL"},
+    {"catmat": "300003", "descricao": "Vinagre Branco", "categoria": "Oli", "unidade": "mL"},
     # Frutas (Fr)
-    {"catmat": "400001", "descricao": "Banana Prata kg", "categoria": "Fr", "unidade": "KG"},
-    {"catmat": "400002", "descricao": "Maçã Gala kg", "categoria": "Fr", "unidade": "KG"},
-    {"catmat": "400003", "descricao": "Laranja Pera kg", "categoria": "Fr", "unidade": "KG"},
+    {"catmat": "400001", "descricao": "Banana Prata", "categoria": "Fr", "unidade": "KG"},
+    {"catmat": "400002", "descricao": "Maçã Gala", "categoria": "Fr", "unidade": "KG"},
+    {"catmat": "400003", "descricao": "Laranja Pera", "categoria": "Fr", "unidade": "KG"},
     # Legumes (Le)
-    {"catmat": "500001", "descricao": "Alface Crespa kg", "categoria": "Le", "unidade": "KG"},
-    {"catmat": "500002", "descricao": "Tomate kg", "categoria": "Le", "unidade": "KG"},
-    {"catmat": "500003", "descricao": "Cebola kg", "categoria": "Le", "unidade": "KG"},
-    {"catmat": "500004", "descricao": "Batata Doce kg", "categoria": "Le", "unidade": "KG"},
+    {"catmat": "500001", "descricao": "Alface Crespa", "categoria": "Le", "unidade": "KG"},
+    {"catmat": "500002", "descricao": "Tomate", "categoria": "Le", "unidade": "KG"},
+    {"catmat": "500003", "descricao": "Cebola", "categoria": "Le", "unidade": "KG"},
+    {"catmat": "500004", "descricao": "Batata Doce", "categoria": "Le", "unidade": "KG"},
     # Proteínas (Pr)
-    {"catmat": "600001", "descricao": "Frango Congelado kg", "categoria": "Pr", "unidade": "KG"},
-    {"catmat": "600002", "descricao": "Carne Bovina kg", "categoria": "Pr", "unidade": "KG"},
-    {"catmat": "600003", "descricao": "Ovos Caipira Dúzia", "categoria": "Pr", "unidade": "duzia"},
+    {"catmat": "600001", "descricao": "Frango Congelado", "categoria": "Pr", "unidade": "KG"},
+    {"catmat": "600002", "descricao": "Carne Bovina", "categoria": "Pr", "unidade": "KG"},
+    {"catmat": "600003", "descricao": "Ovos Caipira", "categoria": "Pr", "unidade": "duzia"},
 ]
+
+# Faixas de preço unitário (R$) por item para gerar valores coerentes
+# Formato: catmat -> (preço_mínimo, preço_máximo)
+FAIXAS_PRECO_UNITARIO = {
+    "100001": (Decimal("5.50"), Decimal("9.50")),    # Arroz Integral
+    "100002": (Decimal("6.50"), Decimal("11.50")),   # Feijão Carioca
+    "100003": (Decimal("0.02"), Decimal("0.08")),    # Macarrão Integral (G)
+    "100004": (Decimal("3.80"), Decimal("6.50")),    # Açúcar Cristal
+    "100005": (Decimal("1.80"), Decimal("4.20")),    # Sal Refinado
+    "200001": (Decimal("3.80"), Decimal("6.90")),    # Leite Integral
+    "200002": (Decimal("0.05"), Decimal("0.16")),    # Queijo Meia Cura (G)
+    "200003": (Decimal("0.01"), Decimal("0.04")),    # Iogurte Natural (mL)
+    "200004": (Decimal("0.03"), Decimal("0.12")),    # Manteiga (G)
+    "300001": (Decimal("0.01"), Decimal("0.03")),    # Óleo de Soja (mL)
+    "300002": (Decimal("0.02"), Decimal("0.08")),    # Azeite Extra Virgem (mL)
+    "300003": (Decimal("0.01"), Decimal("0.03")),    # Vinagre Branco (mL)
+    "400001": (Decimal("3.20"), Decimal("7.50")),    # Banana Prata
+    "400002": (Decimal("4.90"), Decimal("10.90")),   # Maçã Gala
+    "400003": (Decimal("2.80"), Decimal("6.90")),    # Laranja Pera
+    "500001": (Decimal("2.50"), Decimal("5.80")),    # Alface Crespa
+    "500002": (Decimal("4.00"), Decimal("8.90")),    # Tomate
+    "500003": (Decimal("2.90"), Decimal("6.20")),    # Cebola
+    "500004": (Decimal("2.20"), Decimal("5.10")),    # Batata Doce
+    "600001": (Decimal("9.50"), Decimal("16.90")),   # Frango Congelado
+    "600002": (Decimal("24.90"), Decimal("44.90")),  # Carne Bovina
+    "600003": (Decimal("10.00"), Decimal("22.00")),  # Ovos Caipira (dúzia)
+}
+
+
+def gerar_valor_unitario_item(catmat: str) -> Decimal:
+    faixa = FAIXAS_PRECO_UNITARIO.get(catmat)
+    if not faixa:
+        return Decimal(random.randint(10, 100)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    minimo, maximo = faixa
+    minimo_centavos = int((minimo * 100).to_integral_value(rounding=ROUND_HALF_UP))
+    maximo_centavos = int((maximo * 100).to_integral_value(rounding=ROUND_HALF_UP))
+
+    if maximo_centavos < minimo_centavos:
+        minimo_centavos, maximo_centavos = maximo_centavos, minimo_centavos
+
+    valor_centavos = random.randint(minimo_centavos, maximo_centavos)
+    return (Decimal(valor_centavos) / Decimal(100)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 def seed_enderecos():
     """Cria endereços com dados realistas"""
@@ -324,7 +368,7 @@ def seed_itens_ata(atas=None, itens_genericos=None):
         for item_generico in itens_sorteados:
             # CORRETO: usar função que respeita unidades decimais (KG, L) vs inteiras (duzia, cento, un)
             qtd = gerar_quantidade_licitada_por_unidade(item_generico.unidade_medida)
-            valor_uni = Decimal(random.randint(10, 100)) + Decimal(random.randint(0, 99)) / 100
+            valor_uni = gerar_valor_unitario_item(item_generico.catmat)
             
             item_ata = ItemAta.objects.create(
                 ata=ata,
@@ -348,7 +392,7 @@ def seed_empenhos(atas=None):
     empenhos = []
     for i, ata in enumerate(atas):
         empenho = Empenho.objects.create(
-            codigo=formatar_codigo_empenho(numero=i + 1, ano=datetime.now().year),
+            codigo=formatar_codigo_empenho(numero=i + 1, ano=timezone.now().year),
             ata=ata,
             valor_total=Decimal("0.00"), # Será calculado pelos itens
             saldo_utilizado=Decimal("0.00")
@@ -421,7 +465,11 @@ def seed_operacoes_item(itens_empenho=None):
             item_empenho=item_empenho,
             tipo='inc',
             valor=limitar_valor_monetario(Decimal("1.00")),
-            data=datetime.now().date() - timedelta(days=random.randint(0, 60))
+            data=timezone.now() - timedelta(
+                days=random.randint(0, 60),
+                hours=random.randint(0, 23),
+                minutes=random.randint(0, 59)
+            )
         )
         operacoes.append(operacao_inclusao)
 
@@ -438,7 +486,11 @@ def seed_operacoes_item(itens_empenho=None):
                 item_empenho=item_empenho,
                 tipo=tipo,
                 valor=limitar_valor_monetario(valor),
-                data=datetime.now().date() - timedelta(days=random.randint(0, 60))
+                data=timezone.now() - timedelta(
+                    days=random.randint(0, 60),
+                    hours=random.randint(0, 23),
+                    minutes=random.randint(0, 59)
+                )
             )
             operacoes.append(operacao)
     return operacoes
@@ -446,10 +498,14 @@ def seed_operacoes_item(itens_empenho=None):
 
 def seed_ordens_entrega(empenhos=None):
     """
-    Cria ordens de entrega com:
-    - Uma a duas ordens por empenho
-    - Status realista
-    - Datas coerentes (entrega >= emissão)
+        Cria ordens de entrega com:
+        - Uma a duas ordens por empenho
+        - Status realista
+        - Datas e horários coerentes:
+            emissão <= previsão
+            emissão <= entrega (quando houver)
+        - Parte das ordens concluídas com atraso (entrega > previsão)
+        - Ordens em espera sem data de entrega
     """
     ordens = []
     
@@ -459,20 +515,55 @@ def seed_ordens_entrega(empenhos=None):
         
         for j in range(num_ordens):
             status = random.choice(['esp', 'con'])
-            data_emissao = datetime.now().date() - timedelta(days=random.randint(1, 30))
+
+            # Emissão sempre no passado recente
+            data_emissao = timezone.now() - timedelta(
+                days=random.randint(1, 30),
+                hours=random.randint(0, 23),
+                minutes=random.randint(0, 59)
+            )
+
+            # Previsão sempre após emissão
+            data_entrega_prevista = data_emissao + timedelta(
+                days=random.randint(2, 12),
+                hours=random.randint(0, 23),
+                minutes=random.randint(0, 59)
+            )
             
             # Data de entrega só existe se status é 'con'
             data_entrega = None
             if status == 'con':
-                data_entrega = data_emissao + timedelta(days=random.randint(1, 10))
+                # ~30% de chance de entrega atrasada (após a previsão)
+                houve_atraso = random.random() < 0.30
+
+                if houve_atraso:
+                    data_entrega = data_entrega_prevista + timedelta(
+                        days=random.randint(1, 5),
+                        hours=random.randint(0, 23),
+                        minutes=random.randint(0, 59)
+                    )
+                else:
+                    # Entrega no prazo: entre emissão e previsão
+                    intervalo_segundos = max(int((data_entrega_prevista - data_emissao).total_seconds()), 1)
+                    segundos_apos_emissao = random.randint(1, intervalo_segundos)
+                    data_entrega = data_emissao + timedelta(seconds=segundos_apos_emissao)
+            else:
+                # Regra explícita: ordens em espera não possuem data de entrega
+                data_entrega = None
             
             ordem = OrdemEntrega.objects.create(
                 empenho=empenho,
                 codigo=f"OE-2026-{10000 + i*2 + j}",
                 status=status,
+                data_entrega_prevista=data_entrega_prevista,
                 data_entrega=data_entrega,
                 valor_total_executado=Decimal("0.00")  # Será recalculado pelos ItemOrdem
             )
+
+            # O campo data_emissao usa auto_now_add; por isso ajustamos após criar
+            ordem.data_emissao = data_emissao
+            ordem.save(update_fields=["data_emissao"])
+
             ordens.append(ordem)
     return ordens
 
@@ -482,7 +573,7 @@ def seed_itens_ordem(ordens=None, itens_empenho=None):
     - quantidade_solicitada = quantidade_atual do ItemEmpenho (o que foi empenhado)
     - VALIDAÇÃO: quantidade_entregue <= quantidade_solicitada (NUNCA entregar mais que solicitou/empenhou)
     - Se status='con' (concluída): entregou pelo menos 85%
-    - Se status='esp' (espera): pode entregar de 0% a 60%
+    - Se status='esp' (espera): quantidade_entregue deve ser sempre 0
     
     Cascata para CIMA:
     - ItemOrdem.quantidade_entregue afeta Empenho.saldo_utilizado (na recalcular_todos_valores)
@@ -503,23 +594,21 @@ def seed_itens_ordem(ordens=None, itens_empenho=None):
             # Se ordem está concluída, deve ter entregado pelo menos 85%
             if ordem.status == 'con':
                 taxa_entrega = Decimal(random.randint(PCT_ENTREGA_CONCLUIDA_MIN, PCT_ENTREGA_CONCLUIDA_MAX)) / Decimal(100)
-            else:
-                # Se em espera, pode ter entregado de 0% a 60%
-                taxa_entrega = Decimal(random.randint(PCT_ENTREGA_ESPERA_MIN, PCT_ENTREGA_ESPERA_MAX)) / Decimal(100)
-            
-            quantidade_entregue_bruta = quantidade_solicitada * taxa_entrega
-            quantidade_entregue = arredondar_quantidade_por_unidade(
-                quantidade_entregue_bruta,
-                unidade,
-                permitir_zero=(ordem.status != 'con')
-            )
-            # CASCATA: quantidade_entregue NUNCA pode ser > quantidade_solicitada
-            quantidade_entregue = min(quantidade_entregue, quantidade_solicitada)
-            
-            # Força pelo menos 0.01/1 para ordens concluídas
-            if ordem.status == 'con' and quantidade_entregue <= Decimal("0"):
-                quantidade_entregue = Decimal("0.01") if unidade in UNIDADES_DECIMAIS else Decimal("1")
+                quantidade_entregue_bruta = quantidade_solicitada * taxa_entrega
+                quantidade_entregue = arredondar_quantidade_por_unidade(
+                    quantidade_entregue_bruta,
+                    unidade,
+                    permitir_zero=False
+                )
+                # CASCATA: quantidade_entregue NUNCA pode ser > quantidade_solicitada
                 quantidade_entregue = min(quantidade_entregue, quantidade_solicitada)
+
+                # Força pelo menos 0.01/1 para ordens concluídas
+                if quantidade_entregue <= Decimal("0"):
+                    quantidade_entregue = Decimal("0.01") if unidade in UNIDADES_DECIMAIS else Decimal("1")
+                    quantidade_entregue = min(quantidade_entregue, quantidade_solicitada)
+            else:
+                quantidade_entregue = Decimal("0.00")
             
             observacao = None
             # Se não entregou tudo, adiciona observação

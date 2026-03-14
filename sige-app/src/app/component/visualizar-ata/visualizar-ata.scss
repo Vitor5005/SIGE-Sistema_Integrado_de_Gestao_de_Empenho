@@ -2,7 +2,7 @@ body{
   display: flex;
   flex-direction: column;
   align-items: center;
-  
+
   .container-visualizar-ata{
     width: 80vw;
     box-shadow: var(--box-shadow);
@@ -12,6 +12,7 @@ body{
     flex-direction: column;
     align-items: center;
     margin-top: 20px;
+    margin-bottom: 40px;
     .cabecalho-arp{
       display: flex;
       align-items: center;
