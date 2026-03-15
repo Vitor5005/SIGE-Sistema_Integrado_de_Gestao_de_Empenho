@@ -1,67 +1,142 @@
 # S.I.G.E — Sistema Integrado de Gestão de Empenho 🍽️
 
-> **Plataforma centralizada para gestão de aquisições e fluxo orçamentário do Restaurante Universitário (UFAC).**
+> Plataforma para gestão de **licitações**, **atas (ARP)**, **empenhos** e **entregas** no contexto do Restaurante Universitário (UFAC).
 
 ![Status](https://img.shields.io/badge/status-em_desenvolvimento-green?style=for-the-badge)
 ![Local](https://img.shields.io/badge/local-Rio_Branco--AC-red?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT%20%2F%20BSD%20%2F%20GPL-lightgrey?style=for-the-badge)
+![Backend](https://img.shields.io/badge/backend-Django%206-092E20?style=for-the-badge&logo=django&logoColor=white)
+![Frontend](https://img.shields.io/badge/frontend-Angular%2021-DD0031?style=for-the-badge&logo=angular&logoColor=white)
+![Database](https://img.shields.io/badge/database-MySQL%208-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 
----
+## 📚 Sumário
 
-## 📑 Tabela de Conteúdos
-- [Visão Geral](#-visão-geral)
-- [Especificações Técnicas](#-especificações-técnicas)
-- [Detalhamento de Requisitos](#-detalhamento-de-requisitos)
-- [Equipe de Desenvolvimento](#-equipe-de-desenvolvimento)
+- [Visão geral](#-visão-geral)
+- [Arquitetura](#-arquitetura)
+- [Tecnologias](#-tecnologias)
+- [Como rodar com Docker](#-como-rodar-com-docker)
+- [Como rodar localmente (sem Docker)](#-como-rodar-localmente-sem-docker)
+- [API (rotas principais)](#-api-rotas-principais)
+- [Variáveis de ambiente](#-variáveis-de-ambiente)
+- [Estrutura do repositório](#-estrutura-do-repositório)
+- [DER](#-der)
+- [Equipe](#-equipe)
 
----
+## 🔎 Visão geral
 
-## 📖 Visão Geral
+O projeto é dividido em dois módulos principais:
 
-O **S.I.G.E** é uma solução de software projetada para modernizar a gestão do Restaurante Universitário da **Universidade Federal do Acre (UFAC)**. O foco do sistema é o domínio da aquisição de gêneros alimentícios, substituindo processos manuais e planilhas descentralizadas que geravam erros de busca e falta de controle orçamentário.
+- `sige-api`: API REST com regras de negócio.
+- `sige-app`: aplicação web para uso administrativo.
 
-### Objetivos Principais:
-* **Centralização:** Interligar Licitação, ARP, Empenho e Ordens de Entrega.
-* **Integridade:** Impedir a reserva de saldos superiores ao disponível em Ata (ARP).
-* **Auditabilidade:** Rastrear cada inclusão, reforço ou anulação de empenho.
+Objetivos centrais do sistema:
 
----
+- centralizar o fluxo entre licitação, ata, empenho e entrega;
+- preservar integridade de saldo ao longo do processo;
+- aumentar rastreabilidade das operações.
 
-## 🛠️ Especificações Técnicas
+## 🧩 Arquitetura
 
-A stack tecnológica foi escolhida visando a futura integração com os sistemas do **NTI (Núcleo de Tecnologia da Informação)** da UFAC:
+No ambiente Docker, o sistema sobe com 3 serviços:
 
-* **Linguagem:** ![Python](https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54) (Licença PSFL)
-* **Backend:** ![Django](https://img.shields.io/badge/django-%23092e20.svg?style=flat-square&logo=django&logoColor=white) (Licença BSD)
-* **Frontend:** ![Angular](https://img.shields.io/badge/Angular-%23DD0031.svg?style=flat-square&logo=angular&logoColor=white) (Licença MIT)
-* **Banco de Dados:** ![MySQL](https://img.shields.io/badge/mysql-%2300f.svg?style=flat-square&logo=mysql&logoColor=white) (Licença GPL)
-* **Modelagem:** MySQL Workbench
-* **IDE:** Visual Studio Code
+| Serviço | Stack | Porta (host) | Finalidade |
+|---|---|---:|---|
+| `db` | MySQL 8 | `3307` | Persistência de dados |
+| `api` | Django + DRF | `8000` | API REST + autenticação |
+| `app` | Angular | `4200` | Interface web |
 
----
+## 🛠 Tecnologias
 
-## 📋 Detalhamento de Requisitos
+- **Backend:** Python 3.12, Django 6, Django REST Framework, `django-filter`, JWT (`simplejwt`)
+- **Frontend:** Angular 21, Bootstrap 5
+- **Banco de dados (execução Docker):** MySQL 8
+- **Orquestração:** Docker Compose
 
-### Requisitos Funcionais (RF)
-* **[1] Gestão de Licitação:** Cadastro de editais, fornecedores e catálogo de produtos (unidade de medida, categoria e valor).
-* **[2] ARP (Ata de Registro de Preços):** Geração automática de atas por fornecedor, permitindo o acompanhamento do saldo financeiro total.
-* **[3] Operações de Empenho:**
-    * **Inclusão:** Criação da reserva inicial de saldo (Mínimo de 1.00 unidade).
-    * **Reforço:** Adição de saldo a itens já empenhados.
-    * **Anulação:** Devolução total ou parcial do saldo do empenho para a ARP.
-* **[4] Ordem de Entrega:** Registro da entrega física. Itens solicitados mas não entregues ("sobras") retornam automaticamente ao saldo do empenho.
+## 🚀 Como rodar com Docker
 
-### Requisitos Não Funcionais (RNF)
-* **[1] API de Integração:** Disponibilidade de endpoints para sistemas externos (Estoque/Contabilidade).
-* **[2] Interface Padronizada:** UX focada na clareza visual para processos administrativos complexos.
----
+### Pré-requisitos
 
-## Diagrama Entidade Relacionamento (DER)
+- Docker
+- Docker Compose
 
-<img src="Artefatos\DER\Sige-Diagrama-Entidade-Relacionamento.png" alt="Imagem do DER do sistema SIGE">
+### Subir o ambiente
 
-## Modelo .env 
+Na raiz do repositório:
 
+```bash
+docker compose up --build
+```
+
+### Endereços
+
+- Frontend: `http://localhost:4200`
+- API: `http://localhost:8000`
+- Django Admin: `http://localhost:8000/admin`
+- MySQL (host): `localhost:3307`
+
+### Fluxo automático da API no startup
+
+Quando o container da API inicia, o `entrypoint.sh` executa:
+
+1. espera o MySQL ficar disponível;
+2. `python manage.py makemigrations`;
+3. `python manage.py migrate`;
+4. `python manage.py createsuperuser --noinput` (se necessário);
+5. `python seed.py` para carga inicial;
+6. `python manage.py runserver 0.0.0.0:8000`.
+
+**Credenciais padrão (ambiente Docker):**
+
+- usuário: `admin`
+- senha: `admin`
+
+## 💻 Como rodar localmente (sem Docker)
+
+### Backend (`sige-api`)
+
+```bash
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+> O backend usa MySQL configurado por variáveis de ambiente em `sige_api/settings.py`.
+
+### Frontend (`sige-app`)
+
+```bash
+npm install
+npm start
+```
+
+No ambiente de desenvolvimento, o frontend aponta para:
+
+`API_URL = http://localhost:8000/api/v1`
+
+## 🔌 API (rotas principais)
+
+Prefixo base:
+
+`http://localhost:8000/api/v1/`
+
+### Módulos disponíveis
+
+- `cadastro` (endereços, fornecedores, itens genéricos)
+- `licitacao` (licitações, atas e itens de ata)
+- `empenho` (empenhos, itens e operações)
+- `entrega` (ordens e itens de entrega)
+- `usuario` (usuários e autenticação)
+
+### Autenticação JWT
+
+- `POST /api/v1/login/`
+- `POST /api/v1/login/refresh/`
+- `POST /api/v1/login/verify/`
+
+## ⚙ Variáveis de ambiente
+
+Exemplo utilizado no ambiente Docker:
+
+```env
 DB_NAME=sige
 DB_USER=root
 DB_PASSWORD=root
@@ -74,16 +149,32 @@ DJANGO_SUPERUSER_PASSWORD=admin
 
 DEBUG=True
 DJANGO_SECRET_KEY=chave_super_secreta_aqui
+```
 
+## 📁 Estrutura do repositório
 
-## 👥 Equipe de Desenvolvimento
+```text
+.
+├── Artefatos/
+│   └── DER/
+├── sige-api/
+├── sige-app/
+├── docker-compose.yml
+└── README.md
+```
 
-* **Andrey da Cunha Marques**
-* **Carlos Eduardo Marin Bezerra**
-* **Gabriela Santos de Oliveira**
-* **João Vitor Ferreira da Silva**
-* **Marcos Antonio da Silva Manuares**
+## 🧱 DER
+
+Os arquivos de modelagem estão em `Artefatos/DER/`.
+
+## 👥 Equipe
+
+- Andrey da Cunha Marques
+- Carlos Eduardo Marin Bezerra
+- Gabriela Santos de Oliveira
+- João Vitor Ferreira da Silva
+- Marcos Antonio da Silva Manuares
 
 ---
 
-**Rio Branco - AC, 2026**
+Rio Branco - AC, 2026
