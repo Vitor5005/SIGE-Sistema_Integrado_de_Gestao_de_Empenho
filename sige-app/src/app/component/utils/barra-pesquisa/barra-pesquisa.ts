@@ -7,6 +7,7 @@ import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChang
 
 @Component({
   selector: 'app-barra-pesquisa',
+  standalone: true,
   imports: [CommonModule],
   templateUrl: './barra-pesquisa.html',
   styleUrl: './barra-pesquisa.scss',

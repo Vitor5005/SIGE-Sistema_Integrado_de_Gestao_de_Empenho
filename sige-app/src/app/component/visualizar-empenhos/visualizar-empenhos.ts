@@ -8,6 +8,7 @@ import { Empenho } from '../../model/empenho';
 
 @Component({
   selector: 'app-visualizar-empenhos',
+  standalone: true,
   imports: [BarraPesquisa, Paginacao],
   templateUrl: './visualizar-empenhos.html',
   styleUrl: './visualizar-empenhos.scss',
@@ -57,23 +58,9 @@ filtrosAtivos: any = {};
     this.currentPage = 1;
   }
 
-  this.empenhoService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe({
+  this.empenhoService.get(this.termoBuscaAtual, this.currentPage, this.pageSize, this.filtrosAtivos).subscribe({
     next: (resposta) => {
-      let lista = resposta.results || [];
-
-      const min = this.filtrosAtivos.valor_total__gte;
-      const max = this.filtrosAtivos.valor_total__lte;
-
-      if (min || max) {
-        lista = lista.filter(item => {
-
-          if (min && item.valor_total < Number(min)) return false;
-          if (max && item.valor_total > Number(max)) return false;
-
-          return true;
-        });
-      }
-      this.empenhos = lista;
+      this.empenhos = resposta.results || [];
       this.total = resposta.count;
       this.hasNext = Boolean(resposta.next);
       this.hasPrev = Boolean(resposta.previous);

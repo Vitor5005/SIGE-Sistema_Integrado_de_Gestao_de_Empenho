@@ -64,22 +64,26 @@ export class ItemGenericoService implements ICrudService<ItemGenerico> {
   }
 
   getComFiltros(params: any) {
+    const filtros = { ...params };
+    const page = Number(filtros.page) || 1;
+    const pageSize = Number(filtros.page_size) || 10;
+    const search = filtros.search || '';
 
-    let httpParams: any = {};
+    delete filtros.page;
+    delete filtros.page_size;
+    delete filtros.search;
 
-    Object.entries(params).forEach(([key, value]) => {
-
+    Object.entries(filtros).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        httpParams[key] = value; // envia múltiplos
-      } else {
-        httpParams[key] = value;
+        delete filtros[key];
+        if (value.length === 1) {
+          filtros[key] = value[0];
+        } else if (value.length > 1) {
+          filtros[`${key}__in`] = value.join(',');
+        }
       }
-
     });
 
-    return this.http.get<ItemGenerico[]>(this.apiUrl, {
-      params: httpParams
-    });
-
+    return this.get(search, page, pageSize, filtros);
   }
 }

@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-visualizar-atas',
+  standalone: true,
   imports: [BarraPesquisa, CommonModule, Paginacao],
   templateUrl: './visualizar-atas.html',
   styleUrl: './visualizar-atas.scss',
@@ -54,6 +55,7 @@ export class VisualizarAtas {
 
   aplicarFiltros(filtros: any) {
     this.filtrosAtivos = filtros;
+    this.currentPage = 1;
     this.get();
   }
 
@@ -63,32 +65,61 @@ export class VisualizarAtas {
     this.currentPage = 1;
   }
 
-  let params: any = { ...this.filtrosAtivos };
+  const status = this.filtrosAtivos.status;
+  if (status) {
+    this.carregarAtasComFiltroStatus(status);
+    return;
+  }
+
+  const params = this.montarParametrosFiltro();
 
   this.ataService.get(params, this.currentPage, this.pageSize).subscribe({
     next: (resposta) => {
-
-      let lista = resposta.results || [];
-
-      if (this.termoBuscaAtual) {
-        const termo = this.termoBuscaAtual.toLowerCase();
-
-        lista = lista.filter(a =>
-          a.numero_ata?.toString().toLowerCase().includes(termo) ||
-          a.fornecedor?.nome_fantasia?.toLowerCase().includes(termo)
-        );
-      }
-      if (params.status) {
-        lista = lista.filter(a => this.verificarValidade(a) === params.status);
-      }
-
-      this.atas = this.ordenarAtas(lista);
+      this.atas = this.ordenarAtas(resposta.results || []);
       this.total = resposta.count;
       this.hasNext = Boolean(resposta.next);
       this.hasPrev = Boolean(resposta.previous);
     }
   });
 }
+
+  private montarParametrosFiltro(): any {
+    const params: any = { ...this.filtrosAtivos };
+
+    if (this.termoBuscaAtual) {
+      params.search = this.termoBuscaAtual;
+    }
+
+    delete params.status;
+
+    return params;
+  }
+
+  private carregarAtasComFiltroStatus(status: string, page: number = 1, acumulados: Ata[] = []): void {
+    this.ataService.get(this.montarParametrosFiltro(), page, 100).subscribe({
+      next: (resposta) => {
+        const registros = [...acumulados, ...(resposta.results || [])];
+
+        if (resposta.next) {
+          this.carregarAtasComFiltroStatus(status, page + 1, registros);
+          return;
+        }
+
+        const filtrados = this.ordenarAtas(registros.filter((ata) => this.verificarValidade(ata) === status));
+        this.total = filtrados.length;
+
+        const totalPaginas = Math.max(1, Math.ceil(this.total / this.pageSize));
+        if (this.currentPage > totalPaginas) {
+          this.currentPage = totalPaginas;
+        }
+
+        const inicio = (this.currentPage - 1) * this.pageSize;
+        this.atas = filtrados.slice(inicio, inicio + this.pageSize);
+        this.hasPrev = this.currentPage > 1;
+        this.hasNext = this.currentPage < totalPaginas;
+      }
+    });
+  }
 
   proximaPagina(): void {
     if (!this.hasNext) {

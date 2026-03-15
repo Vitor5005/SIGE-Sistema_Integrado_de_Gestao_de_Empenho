@@ -8,6 +8,7 @@ import { CommonModule, JsonPipe } from '@angular/common';
 
 @Component({
   selector: 'app-visualizar-fornecedores',
+  standalone: true,
   imports: [CommonModule, BarraPesquisa, Paginacao],
   templateUrl: './visualizar-fornecedores.html',
   styleUrl: './visualizar-fornecedores.scss',

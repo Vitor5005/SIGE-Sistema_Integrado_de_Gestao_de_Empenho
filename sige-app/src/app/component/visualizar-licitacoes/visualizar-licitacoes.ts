@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-licitacoes',
+  standalone: true,
   imports: [BarraPesquisa, CommonModule, Paginacao],
   templateUrl: './visualizar-licitacoes.html',
   styleUrl: './visualizar-licitacoes.scss',
@@ -56,6 +57,11 @@ export class VisualizarLicitacoes {
     this.currentPage = 1;
   }
 
+  if (this.filtrosAtivos.status) {
+    this.carregarLicitacoesComFiltroStatus(this.filtrosAtivos.status);
+    return;
+  }
+
   const filtrosParaEnvio = {
     ...this.filtrosAtivos,
     page: this.currentPage,
@@ -68,16 +74,7 @@ export class VisualizarLicitacoes {
   this.licitacaoService.getComFiltros(filtrosParaEnvio).subscribe({
     next: (resposta) => {
 
-      let dados = resposta.results || [];
-
-      // FILTRO DE STATUS
-      if (this.filtrosAtivos.status) {
-        dados = dados.filter(item =>
-          this.verificarValidade(item) === this.filtrosAtivos.status
-        );
-      }
-
-      this.registro = this.ordenarLicitacoes(dados);
+      this.registro = this.ordenarLicitacoes(resposta.results || []);
 
       this.total = resposta.count;
       this.hasNext = Boolean(resposta.next);
@@ -85,6 +82,41 @@ export class VisualizarLicitacoes {
     },
   });
 }
+
+  private carregarLicitacoesComFiltroStatus(status: string, page: number = 1, acumulados: Licitacao[] = []): void {
+    const filtrosParaEnvio = {
+      ...this.filtrosAtivos,
+      page,
+      page_size: 100,
+      search: this.termoBuscaAtual,
+    };
+
+    delete filtrosParaEnvio.status;
+
+    this.licitacaoService.getComFiltros(filtrosParaEnvio).subscribe({
+      next: (resposta) => {
+        const registros = [...acumulados, ...(resposta.results || [])];
+
+        if (resposta.next) {
+          this.carregarLicitacoesComFiltroStatus(status, page + 1, registros);
+          return;
+        }
+
+        const filtrados = this.ordenarLicitacoes(registros.filter((item) => this.verificarValidade(item) === status));
+        this.total = filtrados.length;
+
+        const totalPaginas = Math.max(1, Math.ceil(this.total / this.pageSize));
+        if (this.currentPage > totalPaginas) {
+          this.currentPage = totalPaginas;
+        }
+
+        const inicio = (this.currentPage - 1) * this.pageSize;
+        this.registro = filtrados.slice(inicio, inicio + this.pageSize);
+        this.hasPrev = this.currentPage > 1;
+        this.hasNext = this.currentPage < totalPaginas;
+      }
+    });
+  }
 
   getOrdenadoValidade(): void {
     this.licitacaoService.get().subscribe({

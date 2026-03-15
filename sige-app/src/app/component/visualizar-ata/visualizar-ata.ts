@@ -22,6 +22,7 @@ import { EmpenhoService } from '../../service/empenho.service';
 
 @Component({
   selector: 'app-visualizar-ata',
+  standalone: true,
   imports: [DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe, Paginacao],
   templateUrl: './visualizar-ata.html',
   styleUrl: './visualizar-ata.scss',

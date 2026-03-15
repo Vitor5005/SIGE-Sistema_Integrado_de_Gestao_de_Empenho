@@ -9,6 +9,7 @@ import { Paginacao } from '../utils/paginacao/paginacao';
 
 @Component({
   selector: 'app-visualizar-usuarios',
+  standalone: true,
   imports: [CommonModule, FormsModule, BarraPesquisa, Paginacao],
   templateUrl: './visualizar-usuarios.html',
   styleUrl: './visualizar-usuarios.scss',

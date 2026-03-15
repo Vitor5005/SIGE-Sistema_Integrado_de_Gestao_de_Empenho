@@ -3,6 +3,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-paginacao',
+  standalone: true,
   imports: [CommonModule],
   templateUrl: './paginacao.html',
   styleUrl: './paginacao.scss',
