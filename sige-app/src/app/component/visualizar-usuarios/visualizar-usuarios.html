@@ -14,19 +14,6 @@
 
     <app-barra-pesquisa (pesquisar)="getUsuarios($event)"></app-barra-pesquisa>
 
-    @if(isLoadingUsuarios) {
-    <div class="status-processamento-modal status-listagem">
-        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-        <small>Carregando usuários...</small>
-    </div>
-    }
-
-    @if(errorMessagePage) {
-    <div class="mensagem-erro-modal mensagem-listagem-erro">
-        <small>{{ errorMessagePage }}</small>
-    </div>
-    }
-
     <table class="tabela">
         <thead>
             <tr>
@@ -40,7 +27,26 @@
             </tr>
         </thead>
         <tbody>
+            @if(isLoadingUsuarios) {
+            <tr class="linha-vazia-tabela">
+                <td colspan="7" class="mensagem-tabela-vazia">
+                    <div class="conteudo-status-tabela">
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <small>Carregando usuários...</small>
+                    </div>
+                </td>
+            </tr>
+            }
 
+            @if(!isLoadingUsuarios && errorMessagePage) {
+            <tr class="linha-vazia-tabela">
+                <td colspan="7" class="mensagem-tabela-vazia">
+                    <small>{{ errorMessagePage }}</small>
+                </td>
+            </tr>
+            }
+
+            @if(!isLoadingUsuarios && !errorMessagePage) {
             @for(usuario of usuarios; track $index) {
             <tr>
                 <td> {{usuario.username}} </td>
@@ -71,19 +77,21 @@
                 </td>
             </tr>
             }
+            }
+
+            @if(!isLoadingUsuarios && !errorMessagePage && usuarios.length === 0) {
+            <tr class="linha-vazia-tabela">
+                <td colspan="7" class="mensagem-tabela-vazia">
+                    Nenhum registro encontrado.
+                    <small>Clique em "Adicionar Usuário" para realizar o primeiro cadastro.</small>
+                </td>
+            </tr>
+            }
         </tbody>
     </table>
 
     <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
         totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
-
-    @if(!isLoadingUsuarios && usuarios.length === 0) {
-    <div class="estado-vazio-usuarios">
-        <h5>Nenhum usuário encontrado.</h5>
-        <small>Clique em "Adicionar Usuário" para realizar o primeiro cadastro.</small>
-    </div>
-    }
-
 
     <div #myModal class="modal fade" id="adicionarUsuario" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">

@@ -31,6 +31,15 @@
                 <td>{{ item.email }}</td>
             </tr>
             }
+
+            @if(fornecedores.length === 0) {
+            <tr class="linha-vazia-tabela">
+                <td colspan="5" class="mensagem-tabela-vazia">
+                    Nenhum registro encontrado.
+                    <small>Ajuste a busca ou realize um novo cadastro para continuar.</small>
+                </td>
+            </tr>
+            }
         </tbody>
     </table>
 

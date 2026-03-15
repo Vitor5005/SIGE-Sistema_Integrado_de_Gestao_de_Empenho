@@ -44,6 +44,15 @@
 
       </tr>
       }
+
+      @if(registros.length === 0) {
+      <tr class="linha-vazia-tabela">
+        <td colspan="5" class="mensagem-tabela-vazia">
+          Nenhum registro encontrado.
+          <small>Ajuste a busca ou cadastre um novo gênero alimentício para continuar.</small>
+        </td>
+      </tr>
+      }
     </tbody>
   </table>
 

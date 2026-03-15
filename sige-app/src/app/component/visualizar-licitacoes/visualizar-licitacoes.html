@@ -34,6 +34,15 @@
         </tr>
       }
 
+      @if(registro.length === 0) {
+      <tr class="linha-vazia-tabela">
+        <td colspan="4" class="mensagem-tabela-vazia">
+          Nenhum registro encontrado.
+          <small>Ajuste os filtros ou cadastre uma nova licitação para continuar.</small>
+        </td>
+      </tr>
+      }
+
     </tbody>
 
   </table>

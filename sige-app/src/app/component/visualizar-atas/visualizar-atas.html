@@ -47,6 +47,15 @@
           <td>R$ {{ item.ata_saldo_total }}</td>
         </tr>
       }
+
+      @if(atas.length === 0) {
+      <tr class="linha-vazia-tabela">
+        <td colspan="5" class="mensagem-tabela-vazia">
+          Nenhum registro encontrado.
+          <small>Ajuste os filtros ou realize um novo cadastro para continuar.</small>
+        </td>
+      </tr>
+      }
     </tbody>
   </table>
 

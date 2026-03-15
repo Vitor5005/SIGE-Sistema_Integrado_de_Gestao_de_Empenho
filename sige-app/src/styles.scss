@@ -117,6 +117,37 @@ p {
   background: #c5e4fe;
 }
 
+.tabela tbody tr.linha-vazia-tabela:hover {
+  background: transparent;
+}
+
+.mensagem-tabela-vazia {
+  padding: 24px 16px !important;
+  text-align: center;
+  color: var(--font-cinza2);
+  font-weight: 600;
+
+  small {
+    display: block;
+    margin-top: 4px;
+    color: var(--font-cinza);
+    font-weight: 500;
+  }
+}
+
+.conteudo-status-tabela {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 72px;
+
+  small {
+    margin-top: 0;
+    color: var(--font-cinza2);
+  }
+}
+
 ///impede a quebra da data para outra linha em "CADASTRADO"
 .teste {
   display: flex;

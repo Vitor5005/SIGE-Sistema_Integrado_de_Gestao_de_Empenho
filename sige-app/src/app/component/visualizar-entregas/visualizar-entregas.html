@@ -8,20 +8,22 @@
 
         <app-barra-pesquisa (pesquisar)="getEntregas($event)"></app-barra-pesquisa>
 
-        @if(isLoadingEntregas) {
-        <div class="status-processamento-modal status-listagem">
-            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-            <small>Carregando entregas...</small>
-        </div>
-        }
-
-        @if(errorMessagePage) {
-        <div class="mensagem-erro-modal mensagem-listagem-erro">
-            <small>{{ errorMessagePage }}</small>
-        </div>
-        }
-
         <div class="container-entregas">
+            @if(isLoadingEntregas) {
+            <div class="estado-vazio-entregas conteudo-carregamento-lista">
+                <div class="conteudo-status-tabela">
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                    <small>Carregando entregas...</small>
+                </div>
+            </div>
+            }
+
+            @if(!isLoadingEntregas && errorMessagePage) {
+            <div class="estado-vazio-entregas conteudo-carregamento-lista">
+                <small>{{ errorMessagePage }}</small>
+            </div>
+            }
+
             @if(!isLoadingEntregas && entregas.length === 0) {
             <div class="estado-vazio-entregas">
                 <h5>Nenhuma entrega encontrada.</h5>
@@ -29,6 +31,7 @@
             </div>
             }
 
+            @if(!isLoadingEntregas && !errorMessagePage) {
             @for (item of entregas; track $index) {
             <div class="card-entrega">
 
@@ -94,6 +97,7 @@
                 </div>
 
             </div>
+            }
             }
         </div>
 

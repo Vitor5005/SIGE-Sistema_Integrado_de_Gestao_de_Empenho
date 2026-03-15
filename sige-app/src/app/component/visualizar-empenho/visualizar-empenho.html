@@ -138,6 +138,15 @@
           </tr>
           }
 
+          @if(itensEmpenho.length === 0) {
+          <tr class="linha-vazia-tabela">
+            <td colspan="8" class="mensagem-tabela-vazia">
+              Nenhum registro encontrado.
+              <small>Nenhum item foi registrado para este empenho até o momento.</small>
+            </td>
+          </tr>
+          }
+
         </tbody>
       </table>
     </div>
@@ -164,9 +173,10 @@
             </thead>
             <tbody>
               @if(operacoesEmpenho.length === 0) {
-              <tr>
-                <td colspan="5" class="historico-vazio">
-                  Nenhuma operação registrada para este empenho.
+              <tr class="linha-vazia-tabela">
+                <td colspan="5" class="historico-vazio mensagem-tabela-vazia">
+                  Nenhum registro encontrado.
+                  <small>Nenhuma operação foi registrada para este empenho.</small>
                 </td>
               </tr>
               }

@@ -111,8 +111,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (item of fornecedores; track item.id) {
-                @if (!fornecedores_licitados.includes(item.id)) {
+                @for (item of fornecedoresDisponiveis; track item.id) {
                 <tr class="linha-fornecedor" (click)="escolherFornecedor(item)">
                   <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
                   <td>{{ item.razao_social }}</td>
@@ -122,6 +121,14 @@
                   <td>{{ item.cnpj }}</td>
                 </tr>
                 }
+
+                @if(fornecedoresDisponiveis.length === 0) {
+                <tr class="linha-vazia-tabela">
+                  <td colspan="3" class="mensagem-tabela-vazia">
+                    Nenhum registro encontrado.
+                    <small>Refine a busca ou cadastre um novo fornecedor para continuar.</small>
+                  </td>
+                </tr>
                 }
               </tbody>
             </table>

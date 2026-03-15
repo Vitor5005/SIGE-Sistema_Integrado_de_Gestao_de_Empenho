@@ -260,6 +260,10 @@ export class VisualizarLicitacao {
     return !this.isSaving && this.ataFormValido && (this.jump_page || this.fornecedorFormValido);
   }
 
+  get fornecedoresDisponiveis(): Fornecedor[] {
+    return this.fornecedores.filter((item) => !this.fornecedores_licitados.includes(item.id));
+  }
+
   private salvarAtaEEmpenho(): void {
     this.ataService.save(this.ata_insercao).subscribe({
       next: (resposta: AtaInsert) => {

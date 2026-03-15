@@ -124,10 +124,10 @@
 
                     }
                     @if (itens.length === 0) {
-                    <tr>
-                        <td colspan="5">
-                            <h5>Nenhum item registrado para esta ata.</h5>
-                            <h5>Clique no botão "Adicionar Item" para adicionar um novo item.</h5>
+                    <tr class="linha-vazia-tabela">
+                        <td colspan="6" class="mensagem-tabela-vazia">
+                            Nenhum registro encontrado.
+                            <small>Clique no botão "Adicionar Item" para cadastrar o primeiro item desta ata.</small>
                         </td>
                     </tr>
                     }
@@ -172,19 +172,6 @@
 
                         <app-barra-pesquisa (pesquisar)="getItemGenerico($event)"></app-barra-pesquisa>
 
-                        @if(isLoadingItemGenerico) {
-                        <div class="status-processamento-modal status-listagem-modal">
-                            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                            <small>Carregando itens disponíveis...</small>
-                        </div>
-                        }
-
-                        @if(errorMessageItemGenerico) {
-                        <div class="mensagem-erro-modal mensagem-listagem-modal">
-                            <small>{{ errorMessageItemGenerico }}</small>
-                        </div>
-                        }
-
                         <table class="tabela tabela-itens">
                             <thead>
                                 <tr>
@@ -195,6 +182,26 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                @if(isLoadingItemGenerico) {
+                                <tr class="linha-vazia-tabela">
+                                    <td colspan="4" class="mensagem-tabela-vazia">
+                                        <div class="conteudo-status-tabela">
+                                            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                                            <small>Carregando itens disponíveis...</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                                }
+
+                                @if(!isLoadingItemGenerico && errorMessageItemGenerico) {
+                                <tr class="linha-vazia-tabela">
+                                    <td colspan="4" class="mensagem-tabela-vazia">
+                                        <small>{{ errorMessageItemGenerico }}</small>
+                                    </td>
+                                </tr>
+                                }
+
+                                @if(!isLoadingItemGenerico && !errorMessageItemGenerico) {
                                 @for(item of itensGenericosPaginados; track item.id){
                                     <tr class="linha-item" (click)="escolherItem(item)">
                                         <td>{{ item.catmat }}</td>
@@ -204,12 +211,13 @@
 
                                     </tr>
                                 }
+                                }
 
-                                @if(!isLoadingItemGenerico && itensGenericosPaginados.length === 0) {
-                                <tr>
-                                    <td colspan="4">
+                                @if(!isLoadingItemGenerico && !errorMessageItemGenerico && itensGenericosPaginados.length === 0) {
+                                <tr class="linha-vazia-tabela">
+                                    <td colspan="4" class="mensagem-tabela-vazia">
                                         <div class="estado-vazio-selecao">
-                                            <h6>Nenhum item disponível para seleção.</h6>
+                                            <h6>Nenhum registro encontrado.</h6>
                                             <small>Refine a busca ou cadastre um novo item para continuar.</small>
                                         </div>
                                     </td>

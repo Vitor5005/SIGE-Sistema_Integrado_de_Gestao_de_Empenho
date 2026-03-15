@@ -37,6 +37,17 @@
                 </tr>
             }
 
+            @if(empenhos.length === 0) {
+            <tr class="linha-vazia-tabela">
+                <td colspan="4" class="mensagem-tabela-vazia">
+                    Nenhum registro encontrado.
+                    <small>Ajuste os filtros ou realize um novo cadastro para continuar.</small>
+                </td>
+            </tr>
+            }
+
+        </tbody>
+
     </table>
 
     <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
