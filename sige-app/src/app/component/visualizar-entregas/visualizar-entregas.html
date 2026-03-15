@@ -7,7 +7,28 @@
         </div>
 
         <app-barra-pesquisa (pesquisar)="getEntregas($event)"></app-barra-pesquisa>
+
+        @if(isLoadingEntregas) {
+        <div class="status-processamento-modal status-listagem">
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <small>Carregando entregas...</small>
+        </div>
+        }
+
+        @if(errorMessagePage) {
+        <div class="mensagem-erro-modal mensagem-listagem-erro">
+            <small>{{ errorMessagePage }}</small>
+        </div>
+        }
+
         <div class="container-entregas">
+            @if(!isLoadingEntregas && entregas.length === 0) {
+            <div class="estado-vazio-entregas">
+                <h5>Nenhuma entrega encontrada.</h5>
+                <small>Tente ajustar os filtros da busca para localizar ordens de entrega.</small>
+            </div>
+            }
+
             @for (item of entregas; track $index) {
             <div class="card-entrega">
 
@@ -91,17 +112,36 @@
                     <h1 class="modal-title fs-5" id="entregaModalLabel">
                         CONFIRMAR ENTREGA <i class="bi bi-truck"></i>
                     </h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" [disabled]="isConfirmandoEntrega" data-bs-dismiss="modal" aria-label="Close"></button>
 
                 </div>
 
                 <div class="modal-body">
+                    @if(isLoadingPedidos) {
+                    <div class="status-processamento-modal">
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <small>Carregando itens da entrega...</small>
+                    </div>
+                    }
+
+                    @if(errorMessageModal) {
+                    <div class="mensagem-erro-modal">
+                        <small>{{ errorMessageModal }}</small>
+                    </div>
+                    }
+
                     <form class="form-entrega">
+
+                        @if(!isLoadingPedidos && pedidosDaOrdem.length === 0) {
+                        <div class="estado-vazio-modal">
+                            <small>Nenhum item encontrado para esta entrega.</small>
+                        </div>
+                        }
 
                         <div class="lista-itens">
 
                             @for(item of pedidosDaOrdem; track $index) {
-                            <div class="item-entrega">
+                            <div class="item-entrega" [class.item-entrega-invalido]="formSubmittedConfirmacao && !itemEntregaValido(item)">
 
                                 <div class="info-coluna">
                                     <span class="label-info">
@@ -199,7 +239,12 @@
                                             inputmode="decimal" [max]="item.quantidade_solicitada"
                                             [(ngModel)]="item.quantidade_entregue"
                                             [name]="'quantidadeEntregue' + $index"
+                                            [disabled]="isConfirmandoEntrega"
+                                            [class.campo-invalido]="formSubmittedConfirmacao && !quantidadeEntregueValida(item)"
                                             (change)="verificarQuantidadeEntregue(item)">
+                                        @if(formSubmittedConfirmacao && !quantidadeEntregueValida(item)) {
+                                        <small class="mensagem-campo-invalido">Informe uma quantidade válida entre 0 e a quantidade solicitada.</small>
+                                        }
                                     </div>
                                 </div>
 
@@ -209,7 +254,12 @@
                                     </label>
                                     <div>
                                         <textarea class="form-control textarea-observacao" [(ngModel)]="item.observacao"
-                                            [name]="'observacao' + $index"></textarea>
+                                            [name]="'observacao' + $index" [disabled]="isConfirmandoEntrega" maxlength="300"
+                                            [class.campo-invalido]="formSubmittedConfirmacao && !observacaoValida(item)"></textarea>
+                                        <small class="texto-apoio-input">{{ 300 - ((item.observacao || '').length) }} caracteres restantes.</small>
+                                        @if(formSubmittedConfirmacao && !observacaoValida(item)) {
+                                        <small class="mensagem-campo-invalido">Para entrega parcial, informe uma observação.</small>
+                                        }
                                     </div>
                                 </div>
 
@@ -218,11 +268,19 @@
 
                         </div>
 
+                        <div class="requisitos-modal" [class.requisitos-ok]="podeConfirmarEntrega">
+                            <small><b>Obrigatório:</b> preencher quantidades válidas; em entrega parcial, informar observação.</small>
+                        </div>
+
                     </form>
                 </div>
 
                 <div class="modal-footer footer-entrega">
-                    <button type="button" , class="btn-confirmar" (click)="confirmarEntrega(ordemSelecionada)">
+                    <button type="button" class="btn-confirmar" [disabled]="isConfirmandoEntrega || !podeConfirmarEntrega"
+                        [class.btn-confirmar-desabilitado]="isConfirmandoEntrega || !podeConfirmarEntrega" (click)="confirmarEntrega(ordemSelecionada)">
+                        @if(isConfirmandoEntrega) {
+                        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                        }
                         <i class="bi bi-check-lg"></i> CONFIRMAR ENTREGA
                     </button>
                 </div>
@@ -244,7 +302,7 @@
                     <h1 class="modal-title fs-5" id="entregaModalLabel">
                         VER PEDIDO <i class="bi bi-truck"></i>
                     </h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" [disabled]="isConfirmandoEntrega" data-bs-dismiss="modal" aria-label="Close"></button>
 
                 </div>
 

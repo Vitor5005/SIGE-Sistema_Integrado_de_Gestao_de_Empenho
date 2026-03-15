@@ -19,6 +19,28 @@
   gap: 15px;
 }
 
+.status-listagem,
+.mensagem-listagem-erro,
+.estado-vazio-entregas {
+  width: 85vw;
+}
+
+.estado-vazio-entregas {
+  background-color: #ffffff;
+  border: 1px solid #e5eaf1;
+  border-radius: 12px;
+  padding: 18px;
+
+  h5 {
+    margin: 0 0 6px;
+    color: var(--font-cinza2);
+  }
+
+  small {
+    color: #6b7280;
+  }
+}
+
 .card-entrega {
   background: var(--branco);
   box-shadow: var(--box-shadow);
@@ -225,6 +247,11 @@
   padding: 12px 10px;
 }
 
+.item-entrega-invalido {
+  border-color: #efc4c4;
+  background: #fff8f8;
+}
+
 .info-coluna {
   display: flex;
   flex-direction: column;
@@ -305,9 +332,96 @@
   height: 40px;
 }
 
+.texto-apoio-input {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.estado-vazio-modal {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e3eaf3;
+  background-color: #f6f9fd;
+  margin-bottom: 12px;
+
+  small {
+    color: #4b647f;
+  }
+}
+
+.status-processamento-modal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d7e3f7;
+  background-color: #f4f8ff;
+  margin-bottom: 12px;
+
+  small {
+    color: #36598d;
+  }
+}
+
+.mensagem-erro-modal {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #efc4c4;
+  background-color: #fff4f4;
+  margin-bottom: 12px;
+
+  small {
+    color: #b42318;
+    font-weight: 600;
+  }
+}
+
+.campo-invalido {
+  border: 1px solid #e18b8b !important;
+  background-color: #fff8f8;
+}
+
+.mensagem-campo-invalido {
+  font-size: 12px;
+  color: #b42318;
+  font-weight: 600;
+  margin-top: 4px;
+  display: block;
+}
+
+.requisitos-modal {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid #e5d6a5;
+  background-color: #fff9e9;
+
+  small {
+    color: #7b5a00;
+  }
+}
+
+.requisitos-ok {
+  border-color: #b8dfc7;
+  background-color: #f2fbf5;
+
+  small {
+    color: #1c6b3e;
+  }
+}
+
 .footer-entrega {
   display: flex;
   justify-content: center;
+}
+
+.btn-confirmar-desabilitado,
+.btn-confirmar:disabled {
+  opacity: .6;
+  cursor: not-allowed;
 }
 
 .status-entrega {
