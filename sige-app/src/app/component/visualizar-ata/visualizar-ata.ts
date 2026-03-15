@@ -17,6 +17,7 @@ import { ItemAtaInsert } from '../../model/itemAta_insert';
 import { ItemEmpenhoInsert } from '../../model/itemEmpenho_insert';
 import { OperacaoItemService } from '../../service/operacao-item.service';
 import { OperacaoItemInsert } from '../../model/operacao_item_insert';
+import { EmpenhoService } from '../../service/empenho.service';
 
 @Component({
   selector: 'app-visualizar-ata',
@@ -33,7 +34,8 @@ export class VisualizarAta {
     private itemGenericoService: ItemGenericoService,
     private itemAtaService: ItemAtaService,
     private itemEmpenhoService: ItemEmpenhoService,
-    private operacaService: OperacaoItemService
+    private operacaService: OperacaoItemService,
+    private empenhoService: EmpenhoService
   ) { }
 
   @ViewChild('myModal') modal!: ElementRef;
@@ -427,11 +429,27 @@ export class VisualizarAta {
 
     this.operacaService.save(this.operacaoInsercao).subscribe({
       complete: () => {
-        this.atualizarAta();
+        this.atualizarEmpenho();
       },
       error: () => {
         this.isSaving = false;
         this.errorMessageModal = 'Não foi possível registrar a operação de inclusão. Tente novamente.';
+      }
+    });
+  }
+
+  atualizarEmpenho(): void {
+    const valorInclusaoInicial = Number(this.itemAta_insercao.valor_unitario) || 0;
+    const valorEmpenhadoAtual = Number(this.empenho.valor_total) || 0;
+    const novoValorEmpenhado = this.arredondarDuasCasas(valorEmpenhadoAtual + valorInclusaoInicial);
+
+    this.empenhoService.patch(this.empenho.id, { valor_total: novoValorEmpenhado }).subscribe({
+      complete: () => {
+        this.atualizarAta();
+      },
+      error: () => {
+        this.isSaving = false;
+        this.errorMessageModal = 'Item salvo, mas houve erro ao atualizar o valor empenhado.';
       }
     });
   }

@@ -484,7 +484,7 @@ export class VisualizarEmpenho {
     }
 
     this.ordemEntregaService.enviarEmail(ordemId, formData).subscribe({
-      complete: () => {
+      next: () => {
         alert('Pedido de entrega solicitado com sucesso!');
         window.location.reload();
       },

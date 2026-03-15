@@ -65,7 +65,7 @@
             <th scope="col">
               <div>
                 <p class="m-0">Quantidade em Ata</p>
-                <span style="font-size: small;">(Disponivel)</span>
+                <span class="unidade-item-suave">(Disponivel)</span>
               </div>
             </th>
 
@@ -91,7 +91,7 @@
             </td>
             <td>
               <span>{{ item.item_ata.item_generico.descricao }} </span>
-              <span> {{ item.item_ata.item_generico.unidade_medida }} </span>
+              <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
             </td>
 
             <td>
@@ -107,17 +107,17 @@
                 ) | number:'1.2-2'
                 }}
               </span>
-              <span> {{ item.item_ata.item_generico.unidade_medida }} </span>
+              <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
             </td>
 
             <td>
               <span> {{ item.quantidade_atual | number:'1.2-2' }} </span>
-              <span> {{ item.item_ata.item_generico.unidade_medida }} </span>
+              <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
             </td>
 
             <td>
               <span> {{ item.quantidade_entrege | number:'1.2-2' }} </span>
-              <span> {{ item.item_ata.item_generico.unidade_medida }} </span>
+              <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
             </td>
 
             <td> {{ getCategoria(item) }} </td>
@@ -141,36 +141,60 @@
         </tbody>
       </table>
     </div>
-  </div>
-  <h3 class="mt-5">Histórico de Operações</h3>
-  <div class="mt-3 paitabela">
-    <table class="tabela">
-      <thead>
-        <tr>
-          <th scope="col">Data/Hora</th>
-          <th scope="col">Item</th>
-          <th scope="col">Tipo</th>
-          <th scope="col">Quantidade</th>
-          <th scope="col">Valor</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (operacao of operacoesEmpenho; track operacao.id) {
-        <tr>
-          <td>{{ operacao.data | date:'dd/MM/yyyy | HH:mm' }}</td>
-          <td> {{operacao.item_empenho.item_ata.item_generico.descricao }}
-            ({{operacao.item_empenho.item_ata.item_generico.unidade_medida}}) </td>
-          <td>
-            <span [ngClass]="getClassOperacao(operacao.tipo)">
-              {{ getTipoOperacao(operacao.tipo) }}
-            </span>
-          </td>
-          <td> {{ operacao.valor }} ({{ operacao.item_empenho.item_ata.item_generico.unidade_medida }}) </td>
-          <td> R$ {{ operacao.item_empenho.item_ata.valor_unitario * operacao.valor | number:'1.2-2'}} </td>
-        </tr>
-        }
-      </tbody>
-    </table>
+    <section class="historico-operacoes">
+      <div class="historico-operacoes-cabecalho">
+        <button class="btn-toggle-historico" type="button" data-bs-toggle="collapse"
+          data-bs-target="#historicoOperacoesCollapse" aria-expanded="false" aria-controls="historicoOperacoesCollapse">
+          <i class="bi bi-clock-history"></i> Histórico de Operações
+        </button>
+        <small>Total de registros: <b>{{ operacoesEmpenho.length }}</b></small>
+      </div>
+
+      <div class="collapse mt-3" id="historicoOperacoesCollapse">
+        <div class="paitabela historico-tabela-wrap">
+          <table class="tabela tabela-historico">
+            <thead>
+              <tr>
+                <th scope="col">Data/Hora</th>
+                <th scope="col">Item</th>
+                <th scope="col">Tipo</th>
+                <th scope="col" class="coluna-direita">Quantidade</th>
+                <th scope="col" class="coluna-direita">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if(operacoesEmpenho.length === 0) {
+              <tr>
+                <td colspan="5" class="historico-vazio">
+                  Nenhuma operação registrada para este empenho.
+                </td>
+              </tr>
+              }
+
+              @for (operacao of operacoesEmpenho; track operacao.id) {
+              <tr>
+                <td class="coluna-data">{{ operacao.data | date:'dd/MM/yyyy | HH:mm' }}</td>
+                <td class="coluna-item">
+                  <span class="descricao-item-historico">{{ operacao.item_empenho.item_ata.item_generico.descricao }}</span>
+                  <span class="unidade-item-suave">({{ operacao.item_empenho.item_ata.item_generico.unidade_medida }})</span>
+                </td>
+                <td>
+                  <span [ngClass]="getClassOperacao(operacao.tipo)">
+                    {{ getTipoOperacao(operacao.tipo) }}
+                  </span>
+                </td>
+                <td class="coluna-direita coluna-quantidade">
+                  {{ operacao.valor | number:'1.2-2' }}
+                  <span class="unidade-item-suave">({{ operacao.item_empenho.item_ata.item_generico.unidade_medida }})</span>
+                </td>
+                <td class="coluna-direita coluna-valor">R$ {{ operacao.item_empenho.item_ata.valor_unitario * operacao.valor | number:'1.2-2' }}</td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </div>
 
   <!-- Modal -->
@@ -178,7 +202,7 @@
     data-bs-backdrop="static"
     data-bs-keyboard="false"
     aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl entrega-modal-dialog">
       <div class="modal-content entrega-modal-content">
         <div class="modal-header">
           <h1 class="modal-title fs-5" id="entregaModalLabel">
@@ -191,61 +215,69 @@
 
         <div class="modal-body entrega-modal-body">
           <form action="" class="entrega-form">
-            <div class="secao-formulario">
+            <div class="secao-formulario secao-formulario-dados">
               <h6>Dados da solicitação</h6>
 
-              <div class="d-flex flex-column mb-3">
-                <label for="dataPrevisaoEntrega">Data de previsão de entrega</label>
-                <input id="dataPrevisaoEntrega" name="dataPrevisaoEntrega" type="date" class="form-control"
-                  [min]="todayDate" [disabled]="isSolicitandoEntrega"
-                  [(ngModel)]="ordemEntregaInsert.data_entrega_prevista" />
-              </div>
+              <div class="campos-dados-grid">
+                <div class="d-flex flex-column mb-3 campo-form campo-data-previsao">
+                  <label for="dataPrevisaoEntrega">Data de previsão de entrega</label>
+                  <input id="dataPrevisaoEntrega" name="dataPrevisaoEntrega" type="date" class="form-control"
+                    [min]="todayDate" [disabled]="isSolicitandoEntrega"
+                    [(ngModel)]="ordemEntregaInsert.data_entrega_prevista" />
+                </div>
 
-              <div class="d-flex flex-column mb-3">
-                <label for="mensagemSolicitacao">Mensagem</label>
-                <textarea id="mensagemSolicitacao" name="mensagemSolicitacao" rows="3" class="form-control"
-                  [disabled]="isSolicitandoEntrega"
-                  [placeholder]="placeholderMensagemSolicitacao"
-                  [(ngModel)]="mensagemSolicitacao"></textarea>
-                <small class="texto-apoio-campo">Se não preencher, será enviada a mensagem padrão do sistema.</small>
-              </div>
+                <div class="d-flex flex-column mb-3 campo-form campo-arquivo">
+                  <label for="arquivoSolicitacao">Adicionar arquivo</label>
+                  <input #arquivoSolicitacaoInput id="arquivoSolicitacao" name="arquivoSolicitacao" type="file"
+                    class="form-control" [disabled]="isSolicitandoEntrega" (change)="onArquivoSelecionado($event)" />
+                </div>
 
-              <div class="d-flex flex-column mb-3">
-                <label for="arquivoSolicitacao">Adicionar arquivo</label>
-                <input #arquivoSolicitacaoInput id="arquivoSolicitacao" name="arquivoSolicitacao" type="file"
-                  class="form-control" [disabled]="isSolicitandoEntrega" (change)="onArquivoSelecionado($event)" />
+                <div class="d-flex flex-column mb-3 campo-form campo-mensagem">
+                  <label for="mensagemSolicitacao">Mensagem</label>
+                  <textarea id="mensagemSolicitacao" name="mensagemSolicitacao" rows="3" class="form-control"
+                    [disabled]="isSolicitandoEntrega"
+                    [placeholder]="placeholderMensagemSolicitacao"
+                    [(ngModel)]="mensagemSolicitacao"></textarea>
+                  <small class="texto-apoio-campo">Se não preencher, será enviada a mensagem padrão do sistema.</small>
+                </div>
               </div>
             </div>
 
-            <div class="secao-formulario">
+            <div class="secao-formulario secao-formulario-itens">
               <h6>Itens selecionados</h6>
-
-              @for(item of itensEmpenho; track $index) {
-              @if(itensSelecionados[$index]) {
-              <div class="item-solicitacao" [class.item-solicitacao-invalido]="!ehQuantidadeSolicitadaValida($index, item)">
-                <label [for]="'alimento' + $index" class="titulo-item-solicitacao">
-                  <span> {{ item.item_ata.item_generico.descricao }} </span>
-                  <span class="unidade-item-solicitacao">({{ item.item_ata.item_generico.unidade_medida }})</span>
-                </label>
-                <small>Quantidade empenhada: {{ item.quantidade_atual | number:'1.2-2' }} {{
-                  item.item_ata.item_generico.unidade_medida }}</small>
-                <small>Preço unitário: R$ {{ item.item_ata.valor_unitario | number:'1.2-2' }}</small>
-                <label [for]="'alimento' + $index" class="label-quantidade-solicitada">Quantidade a solicitar *</label>
-                <input type="number" [id]="'alimento' + $index" [name]="'alimento' + $index" min="0"
-                  [max]="getQuantidadeEmpenhadaMax(item)" step="0.01" class="form-control"
-                  [disabled]="isSolicitandoEntrega"
-                  [placeholder]="'Ex.: 10,50 ' + item.item_ata.item_generico.unidade_medida"
-                  [(ngModel)]="itensOrdemInsert[$index].quantidade_solicitada"
-                  (change)="validarQuantidadeSolicitada($index, item)" />
-                <small class="texto-apoio-campo">Informe um valor maior que 0 e até a quantidade empenhada.</small>
-                @if(!ehQuantidadeSolicitadaValida($index, item)) {
-                <small class="mensagem-campo-invalido">Preencha a quantidade solicitada deste item para continuar.</small>
-                }
-                <small class="valor-item-solicitado">Valor total solicitado: R$ {{
-                  calcularValorTotalItemSolicitado(item, $index) | number:'1.2-2' }}</small>
+              <div class="cabecalho-itens-solicitados">
+                <small>Itens selecionados: <b>{{ itensSelecionadosCount }}</b></small>
+                <small>Preencha as quantidades para cada item abaixo.</small>
               </div>
-              }
-              }
+
+              <div class="itens-solicitados-lista">
+                @for(item of itensEmpenho; track $index) {
+                @if(itensSelecionados[$index]) {
+                <div class="item-solicitacao" [class.item-solicitacao-invalido]="!ehQuantidadeSolicitadaValida($index, item)">
+                  <label [for]="'alimento' + $index" class="titulo-item-solicitacao">
+                    <span> {{ item.item_ata.item_generico.descricao }} </span>
+                    <span class="unidade-item-solicitacao">({{ item.item_ata.item_generico.unidade_medida }})</span>
+                  </label>
+                  <small>Quantidade empenhada: {{ item.quantidade_atual | number:'1.2-2' }} ({{
+                    item.item_ata.item_generico.unidade_medida }})</small>
+                  <small>Preço unitário: R$ {{ item.item_ata.valor_unitario | number:'1.2-2' }}</small>
+                  <label [for]="'alimento' + $index" class="label-quantidade-solicitada">Quantidade a solicitar *</label>
+                  <input type="number" [id]="'alimento' + $index" [name]="'alimento' + $index" min="0"
+                    [max]="getQuantidadeEmpenhadaMax(item)" step="0.01" class="form-control"
+                    [disabled]="isSolicitandoEntrega"
+                    [placeholder]="'Ex.: 10,50 ' + item.item_ata.item_generico.unidade_medida"
+                    [(ngModel)]="itensOrdemInsert[$index].quantidade_solicitada"
+                    (change)="validarQuantidadeSolicitada($index, item)" />
+                  <small class="texto-apoio-campo">Informe um valor maior que 0 e até a quantidade empenhada.</small>
+                  @if(!ehQuantidadeSolicitadaValida($index, item)) {
+                  <small class="mensagem-campo-invalido">Preencha a quantidade solicitada deste item para continuar.</small>
+                  }
+                  <small class="valor-item-solicitado">Valor total solicitado: R$ {{
+                    calcularValorTotalItemSolicitado(item, $index) | number:'1.2-2' }}</small>
+                </div>
+                }
+                }
+              </div>
             </div>
           </form>
         </div>
