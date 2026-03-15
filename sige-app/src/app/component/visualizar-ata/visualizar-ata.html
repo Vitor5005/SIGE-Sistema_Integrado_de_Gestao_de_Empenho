@@ -10,7 +10,7 @@
                     <i class="bi bi-file-earmark-text"></i> {{ ata.numero_ata }}
                 </span>
             </div>
-            <button data-bs-toggle="modal" data-bs-target="#adicionarItemModal" (click)="reiniciar_Modal()"><i
+            <button #myInput data-bs-toggle="modal" data-bs-target="#adicionarItemModal" [disabled]="isSaving" (click)="reiniciar_Modal()"><i
                     class="bi bi-file-earmark-plus"></i>
                 Adiconar Item </button>
         </div>
@@ -136,27 +136,43 @@
 
     </div>
 
-    <div #myModal class="modal fade" id="adicionarItemModal" tabindex="-1" aria-hidden="true">
+    <div #myModal class="modal fade" id="adicionarItemModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content modal-custom">
                 <div class="modal-header-azul">
                     <h2 class="modal-titulo">ADICIONAR ITEM À ATA</h2>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()"
                         aria-label="Close"></button>
+                    <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body modal-body-item-ata">
+                    @if(isSaving) {
+                    <div class="status-processamento-modal">
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <small>Processando cadastro. Aguarde a finalização para continuar.</small>
+                    </div>
+                    }
+
+                    @if(errorMessageModal) {
+                    <div class="mensagem-erro-modal">
+                        <small>{{ errorMessageModal }}</small>
+                    </div>
+                    }
+
                     @if (modal_page === 0) {
-                    <div class="subtitulo">
+                    <div class="subtitulo subtitulo-modal">
                         <h5>SELECIONE UM ITEM</h5>
                         <hr>
                     </div>
 
 
-                    <div class="listagem">
+                    <p class="texto-orientacao-modal">Selecione um item existente para continuar ou cadastre um novo item.</p>
+
+                    <div class="listagem listagem-itens">
 
                         <app-barra-pesquisa></app-barra-pesquisa>
 
-                        <table class="tabela">
+                        <table class="tabela tabela-itens">
                             <thead>
                                 <tr>
                                     <th scope="col">CATMAT</th>
@@ -168,7 +184,7 @@
                             <tbody>
                                 @for(item of itemGenerico; track item.id){
                                 @if(verificarItemCadastrado(item.id) === false){
-                                    <tr style="cursor: pointer;" (click)="escolherItem(item)">
+                                    <tr class="linha-item" (click)="escolherItem(item)">
                                         <td>{{ item.catmat }}</td>
                                         <td>{{ getCategoria(item) }}</td>
                                         <td>{{ getUnidadeMedida(item) }}</td>
@@ -180,10 +196,10 @@
                             </tbody>
                         </table>
 
-                        <h6>* Caso o Item não esteja registrado no sistema, clique no botão "ADICIONAR NOVO
+                        <h6 class="texto-ajuda-item">* Caso o Item não esteja registrado no sistema, clique no botão "ADICIONAR NOVO
                             ITEM"</h6>
                         <div class="form-footer">
-                            <button class="btn-confirmar" (click)="avanca_modal_page()">
+                            <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="avanca_modal_page()">
                                 <i class="bi bi-box"></i> ADICIONAR NOVO ITEM
                             </button>
                         </div>
@@ -192,53 +208,77 @@
                     }
 
                     @if (modal_page === 1){
-                    <div class="subtitulo">
+                    <div class="subtitulo subtitulo-modal">
                         <h5>ADICIONAR NOVO ITEM</h5>
                         <hr>
                     </div>
-                    <form class="form-fornecedor" #form="ngForm">
+                    <p class="texto-orientacao-modal">Preencha os dados do item genérico para cadastro.</p>
+                    <form class="form-fornecedor form-item-cadastro" #form="ngForm">
 
                         <div class="form-row">
                             <div class="form-group flex-2">
                                 <label>CATMAT</label>
-                                <input type="text" name="catmat" [(ngModel)]="itemGenerico_insercao.catmat">
+                                <input type="text" name="catmat" maxlength="6" placeholder="Ex.: 123456" inputmode="numeric" [disabled]="isSaving"
+                                    [(ngModel)]="itemGenerico_insercao.catmat"
+                                    (input)="onCatmatInput()"
+                                    [class.campo-invalido]="formSubmittedPage1 && !catmatValido">
+                                @if(formSubmittedPage1 && !catmatValido) {
+                                <small class="mensagem-campo-invalido">CATMAT deve conter exatamente 6 dígitos.</small>
+                                }
                             </div>
                             <div class="form-group">
                                 <label>DESCRIÇÃO</label>
-                                <textarea type="text" style="resize: none;" name="descricao"
-                                    [(ngModel)]="itemGenerico_insercao.descricao"></textarea>
+                                <textarea type="text" style="resize: none;" name="descricao" maxlength="300" placeholder="Ex.: Arroz tipo 1"
+                                    [disabled]="isSaving" [(ngModel)]="itemGenerico_insercao.descricao" (input)="onDescricaoInput()"
+                                    [class.campo-invalido]="formSubmittedPage1 && !descricaoValida"></textarea>
+                                @if(formSubmittedPage1 && !descricaoValida) {
+                                <small class="mensagem-campo-invalido">Descrição é obrigatória (até 300 caracteres).</small>
+                                }
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group flex-2">
                                 <label>Unidade de Medida</label>
                                 <select name="unidade_medida" id="unidade_medida"
-                                    [(ngModel)]="itemGenerico_insercao.unidade_medida" >
+                                    [(ngModel)]="itemGenerico_insercao.unidade_medida" [disabled]="isSaving"
+                                    [class.campo-invalido]="formSubmittedPage1 && !unidadeMedidaValida">
                                     <option value="" disabled selected>Selecione uma unidade</option>
                                     @for(item of unidade_medida | keyvalue; track item.key){
                                         <option [value]="item.key">{{ item.value }}</option>
                                     }
 
                                 </select>
+                                @if(formSubmittedPage1 && !unidadeMedidaValida) {
+                                <small class="mensagem-campo-invalido">Selecione uma unidade de medida.</small>
+                                }
                             </div>
 
                             <div class="form-group flex-1">
                                 <label>CATEGORIA</label>
-                                <select name="categoria" id="categoria" [(ngModel)]="itemGenerico_insercao.categoria">
+                                <select name="categoria" id="categoria" [(ngModel)]="itemGenerico_insercao.categoria"
+                                    [disabled]="isSaving" [class.campo-invalido]="formSubmittedPage1 && !categoriaValida">
                                     <option value="" disabled selected>Selecione uma categoria</option>
                                     @for(item of categoria | keyvalue; track item.key){
                                         <option [value]="item.key">{{ item.value }}</option>
                                     }
                                 </select>
+                                @if(formSubmittedPage1 && !categoriaValida) {
+                                <small class="mensagem-campo-invalido">Selecione uma categoria.</small>
+                                }
                             </div>
                         </div>
 
+                        <div class="requisitos-modal" [class.requisitos-ok]="itemGenericoFormValido">
+                            <small><b>Obrigatório:</b> preencher CATMAT, descrição, unidade e categoria.</small>
+                        </div>
+
                         <div class="form-footer">
-                            <button class="btn-confirmar" (click)="volta_modal_page()">
+                            <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page()">
                                 <i class="bi bi-arrow-left"></i> VOLTAR
                             </button>
 
-                            <button class="btn-confirmar" (click)="avanca_modal_page()">
+                            <button type="button" class="btn-confirmar" [disabled]="isSaving || !itemGenericoFormValido"
+                                [class.btn-confirmar-desabilitado]="isSaving || !itemGenericoFormValido" (click)="avanca_modal_page()">
                                 <i class="bi bi-arrow-right"></i> PROSSEGUIR
                             </button>
                         </div>
@@ -247,12 +287,12 @@
                     }
 
                     @if(modal_page === 2){
-                    <div class="subtitulo">
+                    <div class="subtitulo subtitulo-modal">
                         <h5>INFORMAÇÕES DO ITEM</h5>
                         <hr>
                     </div>
 
-                    <div>
+                    <div class="resumo-item-generico">
                         <p><b>CATMAT: {{itemGenerico_insercao.catmat}}</b></p>
                         <p><b>CATEGORIA: {{ getCategoria(itemGenerico_insercao) }}</b></p>
                         <p><b>UNIDADE DE MEDIDA: {{ getUnidadeMedida(itemGenerico_insercao) }}</b></p>
@@ -261,21 +301,45 @@
 
                     <hr>
 
-                    <form class="form-fornecedor" #form="ngForm">
+                    <form class="form-fornecedor form-item-finalizacao" #form="ngForm">
 
                         <div class="form-row">
                             <div class="form-group flex-1">
                                 <label>QUANTIDADE LICITADA ({{ itemGenerico_insercao.unidade_medida }})</label>
-                                <input type="text" [(ngModel)]="itemAta_insercao.quantidade_licitada" name="quantidade_licitada">
+                                <input type="number" min="0" step="0.01" [disabled]="isSaving"
+                                    [(ngModel)]="itemAta_insercao.quantidade_licitada" name="quantidade_licitada"
+                                    placeholder="Ex.: 100.00"
+                                    (change)="validarQuantidadeLicitada()"
+                                    [class.campo-invalido]="formSubmittedPage2 && !quantidadeLicitadaValida">
+                                @if(formSubmittedPage2 && !quantidadeLicitadaValida) {
+                                <small class="mensagem-campo-invalido">Informe uma quantidade maior que zero.</small>
+                                }
                             </div>
                             <div class="form-group flex-2">
                                 <label>VALOR UNITARIO (R$)</label>
-                                <input type="text" [(ngModel)]="itemAta_insercao.valor_unitario" name="valor_unitario">
+                                <input type="number" min="0" step="0.01" [disabled]="isSaving"
+                                    [(ngModel)]="itemAta_insercao.valor_unitario" name="valor_unitario"
+                                    placeholder="Ex.: 12.50"
+                                    (change)="validarValorUnitario()"
+                                    [class.campo-invalido]="formSubmittedPage2 && !valorUnitarioValido">
+                                @if(formSubmittedPage2 && !valorUnitarioValido) {
+                                <small class="mensagem-campo-invalido">Informe um valor unitário maior que zero.</small>
+                                }
                             </div>
                             <div class="form-group flex-3">
                                 <label>MARCA</label>
-                                <input type="text" [(ngModel)]="itemAta_insercao.marca" name="marca">
+                                <input type="text" maxlength="255" [disabled]="isSaving" placeholder="Ex.: Marca Exemplo"
+                                    [(ngModel)]="itemAta_insercao.marca" name="marca"
+                                    (input)="onMarcaInput()"
+                                    [class.campo-invalido]="formSubmittedPage2 && !marcaValida">
+                                @if(formSubmittedPage2 && !marcaValida) {
+                                <small class="mensagem-campo-invalido">Informe a marca (até 255 caracteres).</small>
+                                }
                             </div>
+                        </div>
+
+                        <div class="requisitos-modal" [class.requisitos-ok]="itemAtaFormValido">
+                            <small><b>Obrigatório:</b> informar quantidade, valor unitário e marca para concluir.</small>
                         </div>
 
                         <div>
@@ -284,22 +348,30 @@
 
                         <div class="form-footer">
                             @if(jump_page == true){
-                            <button class="btn-confirmar" (click)="volta_modal_page(0)">
+                            <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page(0)">
                                 <i class="bi bi-arrow-left"></i> VOLTAR
                             </button>
 
-                            <button class="btn-confirmar" (click)="saveItemAta()">
+                            <button type="button" class="btn-confirmar" [disabled]="!podeConcluirCadastroItem"
+                                [class.btn-confirmar-desabilitado]="!podeConcluirCadastroItem" (click)="saveItemAta()">
+                                @if(isSaving) {
+                                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                                }
                                 <i class="bi bi-arrow-right"></i> PROSSEGUIR
                             </button>
                             }
 
                             @if(jump_page == false){
-                            <button class="btn-confirmar" (click)="volta_modal_page()">
+                            <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page()">
                                 <i class="bi bi-arrow-left"></i> VOLTAR
                             </button>
 
 
-                            <button class="btn-confirmar" (click)="saveItemGenerico()">
+                            <button type="button" class="btn-confirmar" [disabled]="!podeConcluirCadastroItem"
+                                [class.btn-confirmar-desabilitado]="!podeConcluirCadastroItem" (click)="saveItemGenerico()">
+                                @if(isSaving) {
+                                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                                }
                                 <i class="bi bi-arrow-right"></i> PROSSEGUIR
                             </button>
                             }
