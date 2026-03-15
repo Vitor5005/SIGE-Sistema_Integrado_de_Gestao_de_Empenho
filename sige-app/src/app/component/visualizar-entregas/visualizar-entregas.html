@@ -101,8 +101,8 @@
 
     <!-- Modal -->
 
-    <div #myModal class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel"
-        aria-hidden="true">
+    <div #confirmarModalRef class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel"
+        data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
 
         <div class="modal-dialog modal-dialog-centered modal-xl modal-entrega-lg">
             <div class="modal-content">
@@ -112,7 +112,8 @@
                     <h1 class="modal-title fs-5" id="entregaModalLabel">
                         CONFIRMAR ENTREGA <i class="bi bi-truck"></i>
                     </h1>
-                    <button type="button" class="btn-close" [disabled]="isConfirmandoEntrega" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" [disabled]="isConfirmandoEntrega" (click)="tentarFecharModalConfirmacao()" aria-label="Close"></button>
+                    <button #fecharConfirmacaoInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
 
                 </div>
 
@@ -291,7 +292,7 @@
     </div>
 
 
-    <div #myModal class="modal fade" id="verPedidoMordal" tabindex="-1" aria-labelledby="verPedidoMordalLabel"
+    <div class="modal fade" id="verPedidoMordal" tabindex="-1" aria-labelledby="verPedidoMordalLabel"
         aria-hidden="true">
 
         <div class="modal-dialog modal-dialog-centered modal-xl">

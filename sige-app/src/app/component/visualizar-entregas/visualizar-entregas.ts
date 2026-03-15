@@ -28,6 +28,8 @@ export class VisualizarEntregas {
   formSubmittedConfirmacao: boolean = false;
   errorMessagePage: string = '';
   errorMessageModal: string = '';
+  private permitirFecharModalSemConfirmacao: boolean = false;
+  private estadoInicialPedidosModal: Array<{ id: number; quantidade_entregue: number; observacao: string }> = [];
 
   constructor(
     private router: Router,
@@ -41,8 +43,9 @@ export class VisualizarEntregas {
   pedidosDaOrdem: ItemOrdem[] = [];
   ordemSelecionada: number = 0;
 
-  @ViewChild('myModal') modal!: ElementRef;
+  @ViewChild('confirmarModalRef') modal!: ElementRef;
   @ViewChild('myInput') input?: ElementRef;
+  @ViewChild('fecharConfirmacaoInternoBtn') fecharConfirmacaoInternoBtn!: ElementRef<HTMLButtonElement>;
 
   get possuiEntregaParcialSemObservacao(): boolean {
     return this.pedidosDaOrdem.some((item) => this.precisaObservacao(item) && !this.observacaoPreenchida(item));
@@ -62,6 +65,24 @@ export class VisualizarEntregas {
     }
 
     return !this.possuiQuantidadeInvalida && !this.possuiEntregaParcialSemObservacao && this.possuiQuantidadeEntregueInformada;
+  }
+
+  get possuiDadosModalPreenchidos(): boolean {
+    if (!this.pedidosDaOrdem.length || !this.estadoInicialPedidosModal.length) {
+      return false;
+    }
+
+    return this.pedidosDaOrdem.some((item) => {
+      const estadoInicial = this.estadoInicialPedidosModal.find((registro) => registro.id === item.id);
+      if (!estadoInicial) {
+        return false;
+      }
+
+      const quantidadeAtual = Number(item.quantidade_entregue) || 0;
+      const observacaoAtual = (item.observacao || '').trim();
+
+      return quantidadeAtual !== estadoInicial.quantidade_entregue || observacaoAtual !== estadoInicial.observacao;
+    });
   }
 
   enviarPara(rota: string, id?: number) {
@@ -86,6 +107,25 @@ export class VisualizarEntregas {
     modalElement.addEventListener('shown.bs.modal', () => {
       if (this.input?.nativeElement) {
         this.input.nativeElement.focus();
+      }
+    });
+
+    modalElement.addEventListener('hide.bs.modal', (event: Event) => {
+      if (this.permitirFecharModalSemConfirmacao) {
+        this.permitirFecharModalSemConfirmacao = false;
+        return;
+      }
+
+      if (this.isConfirmandoEntrega) {
+        event.preventDefault();
+        return;
+      }
+
+      if (this.possuiDadosModalPreenchidos) {
+        const desejaSair = confirm('Você já preencheu dados da confirmação de entrega. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
+        if (!desejaSair) {
+          event.preventDefault();
+        }
       }
     });
 
@@ -117,6 +157,11 @@ export class VisualizarEntregas {
     this.ordemEntregaService.getPedidos(id).subscribe({
       next: (registro: ItemOrdem[]) => {
         this.pedidosDaOrdem = registro;
+        this.estadoInicialPedidosModal = registro.map((item) => ({
+          id: item.id,
+          quantidade_entregue: Number(item.quantidade_entregue) || 0,
+          observacao: (item.observacao || '').trim()
+        }));
       },
       error: () => {
         this.errorMessageModal = 'Não foi possível carregar os itens desta entrega.';
@@ -188,6 +233,24 @@ export class VisualizarEntregas {
 
   itemEntregaValido(item: ItemOrdem): boolean {
     return this.quantidadeEntregueValida(item) && this.observacaoValida(item);
+  }
+
+  tentarFecharModalConfirmacao(): void {
+    if (this.isConfirmandoEntrega) {
+      return;
+    }
+
+    if (this.possuiDadosModalPreenchidos) {
+      const desejaSair = confirm('Você já preencheu dados da confirmação de entrega. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
+      if (!desejaSair) {
+        return;
+      }
+    }
+
+    if (this.fecharConfirmacaoInternoBtn?.nativeElement) {
+      this.permitirFecharModalSemConfirmacao = true;
+      this.fecharConfirmacaoInternoBtn.nativeElement.click();
+    }
   }
 
   private precisaObservacao(item: ItemOrdem): boolean {
