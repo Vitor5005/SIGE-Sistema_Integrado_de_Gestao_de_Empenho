@@ -8,6 +8,7 @@ import { Empenho } from '../model/empenho';
 import { ItemAta } from '../model/itemAta';
 import { ItemEmpenho } from '../model/itemEmpenho';
 import { AtaInsert } from '../model/ata_insert';
+import { normalizePaginatedResponse, PaginatedResponse } from '../model/pagination';
 
 @Injectable({
   providedIn: 'root',
@@ -22,21 +23,30 @@ export class AtaService implements ICrudService<Ata> {
 
   apiUrl = environment.API_URL + '/atas/';
 
-  get(params?: any) {
-  let options = {};
-  
-  if (params) {
-    options = { params: params };
-  }
-  return this.http.get<Ata[]>(this.apiUrl, options);
-}
+  get(params?: any, page: number = 1, pageSize: number = 10): Observable<PaginatedResponse<Ata>> {
+    const queryParams = { ...(params || {}) };
+    queryParams.page = page;
+    queryParams.page_size = pageSize;
 
-  getByLicicao(termobusca?: string): Observable<Ata[]> {
-    let url = this.apiUrl;
-    if (termobusca) {
-      url += '?licitacao__id=' + termobusca;
+    return this.http.get<PaginatedResponse<Ata> | Ata[]>(this.apiUrl, { params: queryParams }).pipe(
+      map((response) => normalizePaginatedResponse<Ata>(response))
+    );
+  }
+
+  getByLicicao(termobusca?: string, page: number = 1, pageSize: number = 10): Observable<PaginatedResponse<Ata>> {
+    const params: any = {
+      licitacao__id: termobusca || '',
+      page,
+      page_size: pageSize,
+    };
+
+    if (!termobusca) {
+      delete params.licitacao__id;
     }
-    return this.http.get<Ata[]>(url);
+
+    return this.http.get<PaginatedResponse<Ata> | Ata[]>(this.apiUrl, { params }).pipe(
+      map((response) => normalizePaginatedResponse<Ata>(response))
+    );
   }
 
   getById(id: number): Observable<Ata> {
@@ -72,7 +82,9 @@ export class AtaService implements ICrudService<Ata> {
 
   getItens(ataId: number): Observable<ItemEmpenho[]> {
     const url = this.apiUrl + 'itens_da_ata/?ata_id=' + ataId;
-    return this.http.get<ItemEmpenho[]>(url);
+    return this.http.get<PaginatedResponse<ItemEmpenho> | ItemEmpenho[]>(url).pipe(
+      map((response) => normalizePaginatedResponse<ItemEmpenho>(response).results)
+    );
   }
 
 }

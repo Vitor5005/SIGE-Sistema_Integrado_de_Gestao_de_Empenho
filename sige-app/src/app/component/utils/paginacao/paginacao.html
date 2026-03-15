@@ -1,0 +1,33 @@
+@if(totalPages > 1) {
+<nav class="paginacao-wrapper" aria-label="Paginação">
+  <ul class="pagination pagination-sm justify-content-center mb-0">
+    <li class="page-item" [class.disabled]="currentPage === 1">
+      <button class="page-link" type="button" (click)="paginaAnterior()" [disabled]="currentPage === 1" aria-label="Página anterior">
+        <span aria-hidden="true">&lsaquo;</span>
+      </button>
+    </li>
+
+    @for(page of visiblePages; track $index) {
+      @if(page === '...') {
+      <li class="page-item disabled ellipsis-item">
+        <span class="page-link">&hellip;</span>
+      </li>
+      } @else {
+      <li class="page-item" [class.active]="page === currentPage">
+        <button class="page-link" type="button" (click)="irParaPagina(+page)">{{ page }}</button>
+      </li>
+      }
+    }
+
+    <li class="page-item" [class.disabled]="currentPage === totalPages">
+      <button class="page-link" type="button" (click)="proximaPagina()" [disabled]="currentPage === totalPages" aria-label="Próxima página">
+        <span aria-hidden="true">&rsaquo;</span>
+      </button>
+    </li>
+  </ul>
+
+  @if(showTotal) {
+  <small class="texto-total">{{ totalLabel }}: {{ totalItems }}</small>
+  }
+</nav>
+}

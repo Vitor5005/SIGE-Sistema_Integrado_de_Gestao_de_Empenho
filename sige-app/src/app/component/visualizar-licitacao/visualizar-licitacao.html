@@ -55,6 +55,9 @@
         </div>
       </div>
     </div>
+
+    <app-paginacao class="paginacao-lista" *ngIf="totalAtas > 0" [currentPage]="currentPageAtas" [pageSize]="pageSizeAtas"
+      [totalItems]="totalAtas" totalLabel="Total de atas" (pageChange)="irParaPaginaAtas($event)"></app-paginacao>
   </div>
 
   <div class="container-atas vazia" *ngIf="atas.length === 0">
@@ -97,7 +100,7 @@
 
           <div class="listagem listagem-fornecedores">
 
-            <app-barra-pesquisa></app-barra-pesquisa>
+            <app-barra-pesquisa (pesquisar)="getFornecedores($event)"></app-barra-pesquisa>
 
             <table class="tabela tabela-fornecedores">
               <thead>
@@ -122,6 +125,10 @@
                 }
               </tbody>
             </table>
+
+            <app-paginacao class="paginacao-lista paginacao-modal" [currentPage]="currentPageFornecedores"
+              [pageSize]="pageSizeFornecedores" [totalItems]="totalFornecedores" totalLabel="Total de fornecedores"
+              (pageChange)="irParaPaginaFornecedores($event)"></app-paginacao>
 
             <h6 class="texto-ajuda-fornecedor">* Caso o fornecedor não esteja registrado no sistema, clique no botão "ADICIONAR NOVO FORNECEDOR"</h6>
             <div class="form-footer">

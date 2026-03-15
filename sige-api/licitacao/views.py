@@ -94,7 +94,8 @@ class ValorDoEmpenhoViewSet(viewsets.ModelViewSet):
 class ItensDaAtaViewSet(viewsets.ModelViewSet):
     serializer_class = ItensEmpenhoDaAtaSerializer
     permission_classes = [IsAdmin|IsTecnico]
+    pagination_class = None
 
     def get_queryset(self):
         ata_id = self.request.query_params.get('ata_id')
-        return ItemEmpenho.objects.filter(empenho_id=ata_id)
+        return ItemEmpenho.objects.filter(empenho__ata_id=ata_id)

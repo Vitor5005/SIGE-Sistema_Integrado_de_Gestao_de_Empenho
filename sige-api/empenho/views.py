@@ -28,6 +28,7 @@ class ItemDoEmpehoViewSet(viewsets.ModelViewSet):
     queryset = ItemEmpenho.objects.all()
     serializer_class = ItemEmpenhoSerializer
     permission_classes = [IsAdmin|IsTecnico]
+    pagination_class = None
     
     def get_queryset(self):
         empenho_id = self.request.query_params.get('empenho_id')
@@ -48,6 +49,7 @@ class OperacaoDoEmpenhoViewSet(viewsets.ModelViewSet):
     queryset = OperacaoItem.objects.all()
     serializer_class = OperacaoItemSerializer
     permission_classes = [IsAdmin|IsTecnico]
+    pagination_class = None
     
     def get_queryset(self):
         empenho_id = self.request.query_params.get('empenho_id')

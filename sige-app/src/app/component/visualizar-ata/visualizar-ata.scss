@@ -190,6 +190,11 @@ body{
     padding: 12px;
   }
 
+  .status-listagem-modal,
+  .mensagem-listagem-modal {
+    margin-top: 10px;
+  }
+
   .tabela-itens {
     margin-top: 10px;
 
@@ -214,6 +219,25 @@ body{
     &:hover {
       background-color: #f4f8ff;
     }
+  }
+
+  .estado-vazio-selecao {
+    padding: 18px 10px;
+    text-align: center;
+
+    h6 {
+      margin: 0 0 4px;
+      color: #334155;
+      font-weight: 700;
+    }
+
+    small {
+      color: #64748b;
+    }
+  }
+
+  .paginacao-modal-selecao {
+    margin-top: 8px;
   }
 
   .texto-ajuda-item {

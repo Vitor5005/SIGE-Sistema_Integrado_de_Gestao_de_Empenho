@@ -4,10 +4,12 @@ import { UsuarioService } from '../../service/usuario.service';
 import { Usuario } from '../../model/usuario';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
+import { Paginacao } from '../utils/paginacao/paginacao';
 
 @Component({
   selector: 'app-visualizar-usuarios',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BarraPesquisa, Paginacao],
   templateUrl: './visualizar-usuarios.html',
   styleUrl: './visualizar-usuarios.scss',
 })
@@ -31,6 +33,12 @@ export class VisualizarUsuarios {
   isLoadingUsuarios: boolean = false;
   errorMessagePage: string = '';
   errorMessageModal: string = '';
+  currentPage: number = 1;
+  pageSize: number = 5;
+  total: number = 0;
+  hasNext: boolean = false;
+  hasPrev: boolean = false;
+  termoBuscaAtual: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
   private estadoInicialModal: { username: string; email: string; first_name: string; last_name: string; papel: string; password: string } = {
     username: '',
@@ -139,14 +147,22 @@ export class VisualizarUsuarios {
 
   }
 
-  getUsuarios() {
+  getUsuarios(termobusca?: string) {
+    if (termobusca !== undefined) {
+      this.termoBuscaAtual = termobusca;
+      this.currentPage = 1;
+    }
+
     this.isLoadingUsuarios = true;
     this.errorMessagePage = '';
 
-    this.usuarioService.get().subscribe(
+    this.usuarioService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe(
       {
-        next: (registro: Usuario[]) => {
-          this.usuarios = registro;
+        next: (registro) => {
+          this.usuarios = registro.results;
+          this.total = registro.count;
+          this.hasNext = Boolean(registro.next);
+          this.hasPrev = Boolean(registro.previous);
         },
         error: () => {
           this.errorMessagePage = 'Não foi possível carregar os usuários no momento.';
@@ -156,6 +172,33 @@ export class VisualizarUsuarios {
         }
       }
     );
+  }
+
+  proximaPagina(): void {
+    if (!this.hasNext) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.getUsuarios();
+  }
+
+  paginaAnterior(): void {
+    if (!this.hasPrev || this.currentPage === 1) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.getUsuarios();
+  }
+
+  irParaPagina(page: number): void {
+    if (page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.getUsuarios();
   }
 
   verificarPapel(papel: string): string {

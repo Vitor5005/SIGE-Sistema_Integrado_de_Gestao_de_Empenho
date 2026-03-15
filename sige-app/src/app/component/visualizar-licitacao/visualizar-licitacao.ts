@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { VisualizarFornecedores } from '../visualizar-fornecedores/visualizar-fornecedores';
 import { FornecedorService } from '../../service/fornecedor.service';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
+import { Paginacao } from '../utils/paginacao/paginacao';
 import { AtaInsert } from '../../model/ata_insert';
 import { FornecedorInsert } from '../../model/fornecedor_insert';
 import { EnderecoService } from '../../service/endereco.service';
@@ -20,7 +21,7 @@ import { EmpenhoService } from '../../service/empenho.service';
 
 @Component({
   selector: 'app-visualizar-licitacao',
-  imports: [CommonModule, BotaoVoltar, FormsModule, BarraPesquisa],
+  imports: [CommonModule, BotaoVoltar, FormsModule, BarraPesquisa, Paginacao],
   templateUrl: './visualizar-licitacao.html',
   styleUrl: './visualizar-licitacao.scss',
 })
@@ -44,6 +45,17 @@ export class VisualizarLicitacao {
   atas: Array<Ata> = Array<Ata>();
   fornecedores: Fornecedor[] = [];
   fornecedores_licitados: number[] = [];
+  currentPageAtas: number = 1;
+  pageSizeAtas: number = 5;
+  totalAtas: number = 0;
+  hasNextAtas: boolean = false;
+  hasPrevAtas: boolean = false;
+  currentPageFornecedores: number = 1;
+  pageSizeFornecedores: number = 5;
+  totalFornecedores: number = 0;
+  hasNextFornecedores: boolean = false;
+  hasPrevFornecedores: boolean = false;
+  termoBuscaFornecedor: string = '';
 
   fornecedor_insercao: FornecedorInsert = <FornecedorInsert>{};
   endereco_insercao: Endereco = <Endereco>{};
@@ -279,6 +291,7 @@ export class VisualizarLicitacao {
       this.get(Number(id));
       this.getFornecedores();
       this.ata_insercao.licitacao = Number(id);
+      this.carregarFornecedoresLicitados(Number(id));
     }
   }
 
@@ -335,24 +348,100 @@ export class VisualizarLicitacao {
   }
 
   getAtas(licitacaoId: number): void {
-    this.ataService.getByLicicao(String(licitacaoId)).subscribe({
-      next: (resposta: Array<Ata>) => {
-        this.atas = resposta;
-      },
-      complete: () => {
-        this.atas.forEach(ata => {
-          this.fornecedores_licitados.push(ata.fornecedor.id);
-        });
+    this.ataService.getByLicicao(String(licitacaoId), this.currentPageAtas, this.pageSizeAtas).subscribe({
+      next: (resposta) => {
+        this.atas = resposta.results;
+        this.totalAtas = resposta.count;
+        this.hasNextAtas = Boolean(resposta.next);
+        this.hasPrevAtas = Boolean(resposta.previous);
       }
     });
   }
 
-  getFornecedores(): void {
-    this.fornecedorService.get().subscribe({
-      next: (resposta: Fornecedor[]) => {
-        this.fornecedores = resposta;
+  private carregarFornecedoresLicitados(licitacaoId: number, page: number = 1): void {
+    this.ataService.getByLicicao(String(licitacaoId), page, 100).subscribe({
+      next: (resposta) => {
+        resposta.results.forEach((ata) => {
+          if (!this.fornecedores_licitados.includes(ata.fornecedor.id)) {
+            this.fornecedores_licitados.push(ata.fornecedor.id);
+          }
+        });
+
+        if (resposta.next) {
+          this.carregarFornecedoresLicitados(licitacaoId, page + 1);
+        }
       }
     });
+  }
+
+  getFornecedores(termobusca?: string): void {
+    if (termobusca !== undefined) {
+      this.termoBuscaFornecedor = termobusca;
+      this.currentPageFornecedores = 1;
+    }
+
+    this.fornecedorService.get(this.termoBuscaFornecedor, this.currentPageFornecedores, this.pageSizeFornecedores).subscribe({
+      next: (resposta) => {
+        this.fornecedores = resposta.results;
+        this.totalFornecedores = resposta.count;
+        this.hasNextFornecedores = Boolean(resposta.next);
+        this.hasPrevFornecedores = Boolean(resposta.previous);
+      }
+    });
+  }
+
+  proximaPaginaAtas(): void {
+    if (!this.hasNextAtas) {
+      return;
+    }
+
+    this.currentPageAtas += 1;
+    this.getAtas(this.licitacao.id);
+  }
+
+  paginaAnteriorAtas(): void {
+    if (!this.hasPrevAtas || this.currentPageAtas === 1) {
+      return;
+    }
+
+    this.currentPageAtas -= 1;
+    this.getAtas(this.licitacao.id);
+  }
+
+  irParaPaginaAtas(page: number): void {
+    if (page === this.currentPageAtas) {
+      return;
+    }
+
+    this.currentPageAtas = page;
+    this.getAtas(this.licitacao.id);
+  }
+
+  proximaPaginaFornecedores(): void {
+    if (!this.hasNextFornecedores) {
+      return;
+    }
+
+    this.currentPageFornecedores += 1;
+    this.getFornecedores();
+  }
+
+  paginaAnteriorFornecedores(): void {
+    if (!this.hasPrevFornecedores || this.currentPageFornecedores === 1) {
+      return;
+    }
+
+    this.currentPageFornecedores -= 1;
+    this.getFornecedores();
+  }
+
+  irParaPaginaFornecedores(page: number): void {
+    if (page === this.currentPageFornecedores) {
+      return;
+    }
+
+    this.currentPageFornecedores = page;
+    this.getFornecedores();
   }
 
   escolherFornecedor(fornecedor: Fornecedor): void {

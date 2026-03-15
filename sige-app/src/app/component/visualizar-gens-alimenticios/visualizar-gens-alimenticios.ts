@@ -1,5 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
+import { Paginacao } from '../utils/paginacao/paginacao';
 import { Router } from '@angular/router';
 import { ItemGenericoService } from '../../service/item-generico.service';
 import { ItemGenerico } from '../../model/item_generico';
@@ -7,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-visualizar-gens-alimenticios',
-  imports: [BarraPesquisa, FormsModule],
+  imports: [BarraPesquisa, FormsModule, Paginacao],
   templateUrl: './visualizar-gens-alimenticios.html',
   styleUrl: './visualizar-gens-alimenticios.scss',
 })
@@ -23,6 +24,12 @@ export class VisualizarGensAlimenticios {
   ) { }
 
   registros: ItemGenerico[] = [];
+  currentPage: number = 1;
+  pageSize: number = 5;
+  total: number = 0;
+  hasNext: boolean = false;
+  hasPrev: boolean = false;
+  termoBuscaAtual: string = '';
   registroEditar: ItemGenerico = <ItemGenerico>{};
   registroOriginalModal: ItemGenerico | null = null;
   formSubmitted: boolean = false;
@@ -59,15 +66,50 @@ export class VisualizarGensAlimenticios {
   categoriasDisponiveis = Object.keys(this.categoria);
   unidadesDisponiveis = Object.keys(this.unidade_medida);
 
-  getItens() {
-    this.ItemGenericoService.get().subscribe(
-      (registro: ItemGenerico[]) => {
-        this.registros = registro;
+  getItens(termobusca?: string) {
+    if (termobusca !== undefined) {
+      this.termoBuscaAtual = termobusca;
+      this.currentPage = 1;
+    }
+
+    this.ItemGenericoService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe(
+      (resposta) => {
+        this.registros = resposta.results;
+        this.total = resposta.count;
+        this.hasNext = Boolean(resposta.next);
+        this.hasPrev = Boolean(resposta.previous);
       }
     );
   }
 
   ngOnInit() {
+    this.getItens();
+  }
+
+  proximaPagina(): void {
+    if (!this.hasNext) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.getItens();
+  }
+
+  paginaAnterior(): void {
+    if (!this.hasPrev || this.currentPage === 1) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.getItens();
+  }
+
+  irParaPagina(page: number): void {
+    if (page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
     this.getItens();
   }
 

@@ -1,6 +1,7 @@
 import { FiltroConfig } from './../../model/filtro-config';
 import { Component } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
+import { Paginacao } from '../utils/paginacao/paginacao';
 import { Router } from '@angular/router';
 import { AtaService } from '../../service/ata.service';
 import { Ata } from '../../model/ata';
@@ -8,7 +9,7 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-visualizar-atas',
-  imports: [BarraPesquisa, CommonModule],
+  imports: [BarraPesquisa, CommonModule, Paginacao],
   templateUrl: './visualizar-atas.html',
   styleUrl: './visualizar-atas.scss',
 })
@@ -17,6 +18,12 @@ export class VisualizarAtas {
   ) {}
 
   atas: Ata[] = [];
+  currentPage: number = 1;
+  pageSize: number = 5;
+  total: number = 0;
+  hasNext: boolean = false;
+  hasPrev: boolean = false;
+  termoBuscaAtual: string = '';
 
   filtros: FiltroConfig[] = [
     {
@@ -51,16 +58,20 @@ export class VisualizarAtas {
   }
 
  get(termobusca?: string): void {
+  if (termobusca !== undefined) {
+    this.termoBuscaAtual = termobusca;
+    this.currentPage = 1;
+  }
 
   let params: any = { ...this.filtrosAtivos };
 
-  this.ataService.get(params).subscribe({
-    next: (resposta: Ata[]) => {
+  this.ataService.get(params, this.currentPage, this.pageSize).subscribe({
+    next: (resposta) => {
 
-      let lista = resposta;
+      let lista = resposta.results || [];
 
-      if (termobusca) {
-        const termo = termobusca.toLowerCase();
+      if (this.termoBuscaAtual) {
+        const termo = this.termoBuscaAtual.toLowerCase();
 
         lista = lista.filter(a =>
           a.numero_ata?.toString().toLowerCase().includes(termo) ||
@@ -72,9 +83,39 @@ export class VisualizarAtas {
       }
 
       this.atas = this.ordenarAtas(lista);
+      this.total = resposta.count;
+      this.hasNext = Boolean(resposta.next);
+      this.hasPrev = Boolean(resposta.previous);
     }
   });
 }
+
+  proximaPagina(): void {
+    if (!this.hasNext) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.get();
+  }
+
+  paginaAnterior(): void {
+    if (!this.hasPrev || this.currentPage === 1) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.get();
+  }
+
+  irParaPagina(page: number): void {
+    if (page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.get();
+  }
 
 
   verificarValidade(ata: Ata): string {

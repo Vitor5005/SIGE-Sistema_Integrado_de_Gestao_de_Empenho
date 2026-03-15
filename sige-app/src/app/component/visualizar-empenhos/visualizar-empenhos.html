@@ -39,4 +39,7 @@
 
     </table>
 
+    <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
+        totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+
 </body>

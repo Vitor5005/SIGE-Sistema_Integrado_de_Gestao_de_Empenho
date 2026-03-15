@@ -25,6 +25,19 @@
   width: 85vw;
 }
 
+.paginacao-lista {
+  width: 85vw;
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.texto-total-registros {
+  color: #64748b;
+}
+
 .estado-vazio-entregas {
   background-color: #ffffff;
   border: 1px solid #e5eaf1;

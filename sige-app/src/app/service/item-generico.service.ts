@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { ICrudService } from './i-crud-service';
 import { ItemGenerico } from '../model/item_generico';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../environments/environment';
 import { HttpClient } from '@angular/common/http';
+import { normalizePaginatedResponse, PaginatedResponse } from '../model/pagination';
 
 @Injectable({
   providedIn: 'root',
@@ -16,12 +17,25 @@ export class ItemGenericoService implements ICrudService<ItemGenerico> {
 
   apiUrl = environment.API_URL + '/itemgenericos/';
 
-  get(termobusca?: string): Observable<ItemGenerico[]> {
-    let url = this.apiUrl
+  get(termobusca?: string, page: number = 1, pageSize: number = 10, filtros: any = {}): Observable<PaginatedResponse<ItemGenerico>> {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('page_size', String(pageSize));
+
     if (termobusca) {
-      url += `?search=${termobusca}`;
+      params.set('search', termobusca);
     }
-    return this.http.get<ItemGenerico[]>(url);
+
+    Object.entries(filtros || {}).forEach(([chave, valor]) => {
+      if (valor !== null && valor !== undefined && valor !== '') {
+        params.set(chave, String(valor));
+      }
+    });
+
+    const url = `${this.apiUrl}?${params.toString()}`;
+    return this.http.get<PaginatedResponse<ItemGenerico> | ItemGenerico[]>(url).pipe(
+      map((response) => normalizePaginatedResponse<ItemGenerico>(response))
+    );
   }
 
   getById(id: number): Observable<ItemGenerico> {

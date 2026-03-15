@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { OrdemEntrega } from '../model/ordem_entrega';
 import { OrdemEntregaInsert } from '../model/ordem_entrega_insert';
 import { ICrudService } from './i-crud-service';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../environments/environment.development';
 import { HttpClient } from '@angular/common/http';
 import { ItemOrdem } from '../model/itemOrdem';
+import { normalizePaginatedResponse, PaginatedResponse } from '../model/pagination';
 
 @Injectable({
   providedIn: 'root',
@@ -18,12 +19,25 @@ export class OrdemEntregaService implements ICrudService<OrdemEntrega> {
 
   apiUrl = environment.API_URL + '/entregas/';
   
-  get(termobusca?: string): Observable<OrdemEntrega[]> {
-    let url = this.apiUrl
+  get(termobusca?: string, page: number = 1, pageSize: number = 10, filtros: any = {}): Observable<PaginatedResponse<OrdemEntrega>> {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('page_size', String(pageSize));
+
     if (termobusca) {
-      url += `?search=${termobusca}`;
+      params.set('search', termobusca);
     }
-    return this.http.get<OrdemEntrega[]>(url);
+
+    Object.entries(filtros || {}).forEach(([chave, valor]) => {
+      if (valor !== null && valor !== undefined && valor !== '') {
+        params.set(chave, String(valor));
+      }
+    });
+
+    const url = `${this.apiUrl}?${params.toString()}`;
+    return this.http.get<PaginatedResponse<OrdemEntrega> | OrdemEntrega[]>(url).pipe(
+      map((response) => normalizePaginatedResponse<OrdemEntrega>(response))
+    );
   }
 
   getById(id: number): Observable<OrdemEntrega> {

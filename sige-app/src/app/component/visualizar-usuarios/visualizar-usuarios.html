@@ -12,6 +12,8 @@
     </div>
     <!-- Tabela da licitações cadastradas no sistema -->
 
+    <app-barra-pesquisa (pesquisar)="getUsuarios($event)"></app-barra-pesquisa>
+
     @if(isLoadingUsuarios) {
     <div class="status-processamento-modal status-listagem">
         <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
@@ -71,6 +73,9 @@
             }
         </tbody>
     </table>
+
+    <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
+        totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
 
     @if(!isLoadingUsuarios && usuarios.length === 0) {
     <div class="estado-vazio-usuarios">

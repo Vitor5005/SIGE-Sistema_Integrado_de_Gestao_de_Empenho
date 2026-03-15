@@ -170,7 +170,20 @@
 
                     <div class="listagem listagem-itens">
 
-                        <app-barra-pesquisa></app-barra-pesquisa>
+                        <app-barra-pesquisa (pesquisar)="getItemGenerico($event)"></app-barra-pesquisa>
+
+                        @if(isLoadingItemGenerico) {
+                        <div class="status-processamento-modal status-listagem-modal">
+                            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                            <small>Carregando itens disponíveis...</small>
+                        </div>
+                        }
+
+                        @if(errorMessageItemGenerico) {
+                        <div class="mensagem-erro-modal mensagem-listagem-modal">
+                            <small>{{ errorMessageItemGenerico }}</small>
+                        </div>
+                        }
 
                         <table class="tabela tabela-itens">
                             <thead>
@@ -182,8 +195,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @for(item of itemGenerico; track item.id){
-                                @if(verificarItemCadastrado(item.id) === false){
+                                @for(item of itensGenericosPaginados; track item.id){
                                     <tr class="linha-item" (click)="escolherItem(item)">
                                         <td>{{ item.catmat }}</td>
                                         <td>{{ getCategoria(item) }}</td>
@@ -192,9 +204,23 @@
 
                                     </tr>
                                 }
+
+                                @if(!isLoadingItemGenerico && itensGenericosPaginados.length === 0) {
+                                <tr>
+                                    <td colspan="4">
+                                        <div class="estado-vazio-selecao">
+                                            <h6>Nenhum item disponível para seleção.</h6>
+                                            <small>Refine a busca ou cadastre um novo item para continuar.</small>
+                                        </div>
+                                    </td>
+                                </tr>
                                 }
                             </tbody>
                         </table>
+
+                        <app-paginacao class="paginacao-modal-selecao" [currentPage]="currentPageItemGenerico"
+                            [pageSize]="pageSizeItemGenerico" [totalItems]="totalItensGenericosDisponiveis"
+                            totalLabel="Itens disponíveis" (pageChange)="irParaPaginaItemGenerico($event)"></app-paginacao>
 
                         <h6 class="texto-ajuda-item">* Caso o Item não esteja registrado no sistema, clique no botão "ADICIONAR NOVO
                             ITEM"</h6>

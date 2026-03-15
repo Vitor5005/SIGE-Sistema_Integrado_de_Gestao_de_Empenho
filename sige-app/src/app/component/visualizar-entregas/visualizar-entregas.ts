@@ -11,10 +11,11 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, Observable, of, switchMap } from 'rxjs';
 import { EmpenhoService } from '../../service/empenho.service';
 import { ItemEmpenhoService } from '../../service/item-empenho.service';
+import { Paginacao } from '../utils/paginacao/paginacao';
 
 @Component({
   selector: 'app-visualizar-entregas',
-  imports: [BarraPesquisa, CommonModule, FormsModule],
+  imports: [BarraPesquisa, CommonModule, FormsModule, Paginacao],
   templateUrl: './visualizar-entregas.html',
   styleUrl: './visualizar-entregas.scss',
 })
@@ -28,6 +29,12 @@ export class VisualizarEntregas {
   formSubmittedConfirmacao: boolean = false;
   errorMessagePage: string = '';
   errorMessageModal: string = '';
+  currentPage: number = 1;
+  pageSize: number = 3;
+  total: number = 0;
+  hasNext: boolean = false;
+  hasPrev: boolean = false;
+  termoBuscaAtual: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
   private estadoInicialPedidosModal: Array<{ id: number; quantidade_entregue: number; observacao: string }> = [];
 
@@ -132,12 +139,20 @@ export class VisualizarEntregas {
   }
 
   getEntregas(termobusca?: string) {
+    if (termobusca !== undefined) {
+      this.termoBuscaAtual = termobusca;
+      this.currentPage = 1;
+    }
+
     this.isLoadingEntregas = true;
     this.errorMessagePage = '';
 
-    this.ordemEntregaService.get(termobusca).subscribe({
-      next: (registro: OrdemEntrega[]) => {
-        this.entregas = this.ordenarEntregaPorStatusEData(registro);
+    this.ordemEntregaService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe({
+      next: (resposta) => {
+        this.entregas = this.ordenarEntregaPorStatusEData(resposta.results);
+        this.total = resposta.count;
+        this.hasNext = Boolean(resposta.next);
+        this.hasPrev = Boolean(resposta.previous);
       },
       error: () => {
         this.errorMessagePage = 'Não foi possível carregar as entregas no momento.';
@@ -146,6 +161,33 @@ export class VisualizarEntregas {
         this.isLoadingEntregas = false;
       }
     });
+  }
+
+  proximaPagina(): void {
+    if (!this.hasNext) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.getEntregas();
+  }
+
+  paginaAnterior(): void {
+    if (!this.hasPrev || this.currentPage === 1) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.getEntregas();
+  }
+
+  irParaPagina(page: number): void {
+    if (page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.getEntregas();
   }
 
   getItensOrdem(id: number, index: number) {

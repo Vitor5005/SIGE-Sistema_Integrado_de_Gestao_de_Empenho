@@ -150,6 +150,18 @@ body{
       }
     }
   }
+
+  .paginacao-lista {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .texto-total-registros {
+    color: #64748b;
+  }
 }
 
 #adicionarAtaModal {
@@ -445,6 +457,10 @@ body{
   .btn-confirmar:disabled {
     opacity: .6;
     cursor: not-allowed;
+  }
+
+  .paginacao-modal {
+    margin-top: 4px;
   }
 
   @media (max-width: 1200px) {

@@ -9,6 +9,7 @@ import { ItemAta } from '../../model/itemAta';
 import { ItemEmpenho } from '../../model/itemEmpenho';
 import { FormsModule } from '@angular/forms';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
+import { Paginacao } from '../utils/paginacao/paginacao';
 import { ItemGenericoService } from '../../service/item-generico.service';
 import { ItemGenerico } from '../../model/item_generico';
 import { ItemAtaService } from '../../service/item-ata.service';
@@ -21,7 +22,7 @@ import { EmpenhoService } from '../../service/empenho.service';
 
 @Component({
   selector: 'app-visualizar-ata',
-  imports: [DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe],
+  imports: [DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe, Paginacao],
   templateUrl: './visualizar-ata.html',
   styleUrl: './visualizar-ata.scss',
 })
@@ -48,6 +49,11 @@ export class VisualizarAta {
   validade: string = '';
   itemGenerico: Array<ItemGenerico> = [];
   itemGenericoCadastrados: Array<number> = [];
+  currentPageItemGenerico: number = 1;
+  pageSizeItemGenerico: number = 5;
+  termoBuscaItemGenerico: string = '';
+  isLoadingItemGenerico: boolean = false;
+  errorMessageItemGenerico: string = '';
   operacaoInsercao = <OperacaoItemInsert>{};
 
   modal_page: number = 0;
@@ -139,6 +145,15 @@ export class VisualizarAta {
     return !this.isSaving && this.itemAtaFormValido && (this.jump_page || this.itemGenericoFormValido);
   }
 
+  get itensGenericosPaginados(): ItemGenerico[] {
+    const inicio = (this.currentPageItemGenerico - 1) * this.pageSizeItemGenerico;
+    return this.itemGenerico.slice(inicio, inicio + this.pageSizeItemGenerico);
+  }
+
+  get totalItensGenericosDisponiveis(): number {
+    return this.itemGenerico.length;
+  }
+
   get possuiDadosModalPreenchidos(): boolean {
     return Boolean(
       this.itemGenerico_insercao.catmat ||
@@ -186,7 +201,6 @@ export class VisualizarAta {
       this.get(Number(id));
       this.getEmpenho(Number(id));
       this.getItens(Number(id));
-      this.getItemGenerico();
     }
   }
 
@@ -250,6 +264,7 @@ export class VisualizarAta {
         this.itens.forEach((item) => {
           this.itemGenericoCadastrados.push(item.item_ata.item_generico.id);
         });
+        this.getItemGenerico();
       },
     });
   }
@@ -258,12 +273,54 @@ export class VisualizarAta {
     return this.itemGenericoCadastrados.includes(itemGenericoId);
   }
 
-  getItemGenerico(): void {
-    this.itemGenericoService.get().subscribe({
-      next: (resposta: ItemGenerico[]) => {
-        this.itemGenerico = resposta;
+  getItemGenerico(termobusca?: string): void {
+    if (termobusca !== undefined) {
+      this.termoBuscaItemGenerico = termobusca;
+      this.currentPageItemGenerico = 1;
+    }
+
+    this.isLoadingItemGenerico = true;
+    this.errorMessageItemGenerico = '';
+    this.itemGenerico = [];
+    this.carregarPaginaItemGenerico();
+  }
+
+  private carregarPaginaItemGenerico(page: number = 1, acumulados: ItemGenerico[] = []): void {
+    this.itemGenericoService.get(this.termoBuscaItemGenerico, page, 100).subscribe({
+      next: (resposta) => {
+        const registros = [...acumulados, ...(resposta.results || [])];
+
+        if (resposta.next) {
+          this.carregarPaginaItemGenerico(page + 1, registros);
+          return;
+        }
+
+        this.itemGenerico = registros.filter((item) => !this.verificarItemCadastrado(item.id));
+        this.ajustarPaginaItemGenerico();
+        this.isLoadingItemGenerico = false;
       },
+      error: () => {
+        this.itemGenerico = [];
+        this.errorMessageItemGenerico = 'Não foi possível carregar os itens disponíveis no momento.';
+        this.isLoadingItemGenerico = false;
+      }
     });
+  }
+
+  private ajustarPaginaItemGenerico(): void {
+    const totalPaginas = Math.max(1, Math.ceil(this.itemGenerico.length / this.pageSizeItemGenerico));
+
+    if (this.currentPageItemGenerico > totalPaginas) {
+      this.currentPageItemGenerico = totalPaginas;
+    }
+  }
+
+  irParaPaginaItemGenerico(page: number): void {
+    if (page === this.currentPageItemGenerico) {
+      return;
+    }
+
+    this.currentPageItemGenerico = page;
   }
 
   verificarValidade(ata: Ata): string {
@@ -311,8 +368,12 @@ export class VisualizarAta {
     this.formSubmittedPage1 = false;
     this.formSubmittedPage2 = false;
     this.errorMessageModal = '';
+    this.errorMessageItemGenerico = '';
+    this.termoBuscaItemGenerico = '';
+    this.currentPageItemGenerico = 1;
     this.itemGenerico_insercao = <ItemGenerico>{ unidade_medida: '', categoria: '' };
     this.itemAta_insercao = <ItemAtaInsert>{ quantidade_licitada: 0, valor_unitario: 0 };
+    this.getItemGenerico();
   }
 
   avanca_modal_page(valor?: number): void {

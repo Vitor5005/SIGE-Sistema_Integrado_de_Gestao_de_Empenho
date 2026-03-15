@@ -1,6 +1,7 @@
 import { FiltroConfig } from './../../model/filtro-config';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
+import { Paginacao } from '../utils/paginacao/paginacao';
 import { Router } from '@angular/router';
 import { Licitacao } from '../../model/licitacao';
 import { LicitacaoService } from '../../service/licitacao.service';
@@ -8,7 +9,7 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-licitacoes',
-  imports: [BarraPesquisa, CommonModule],
+  imports: [BarraPesquisa, CommonModule, Paginacao],
   templateUrl: './visualizar-licitacoes.html',
   styleUrl: './visualizar-licitacoes.scss',
 })
@@ -19,6 +20,12 @@ export class VisualizarLicitacoes {
   ) {}
 
   registro: Licitacao[] = [];
+  currentPage: number = 1;
+  pageSize: number = 5;
+  total: number = 0;
+  hasNext: boolean = false;
+  hasPrev: boolean = false;
+  termoBuscaAtual: string = '';
 
   filtros: FiltroConfig[] = [
   {
@@ -44,16 +51,24 @@ export class VisualizarLicitacoes {
   }
 
   get(termobusca?: string): void {
-  const filtrosParaEnvio = { ...this.filtrosAtivos };
-  delete filtrosParaEnvio.status;
-  if (termobusca) {
-    filtrosParaEnvio['search'] = termobusca;
+  if (termobusca !== undefined) {
+    this.termoBuscaAtual = termobusca;
+    this.currentPage = 1;
   }
 
-  this.licitacaoService.getComFiltros(filtrosParaEnvio).subscribe({
-    next: (resposta: Licitacao[]) => {
+  const filtrosParaEnvio = {
+    ...this.filtrosAtivos,
+    page: this.currentPage,
+    page_size: this.pageSize,
+    search: this.termoBuscaAtual,
+  };
 
-      let dados = resposta || [];
+  delete filtrosParaEnvio.status;
+
+  this.licitacaoService.getComFiltros(filtrosParaEnvio).subscribe({
+    next: (resposta) => {
+
+      let dados = resposta.results || [];
 
       // FILTRO DE STATUS
       if (this.filtrosAtivos.status) {
@@ -63,14 +78,18 @@ export class VisualizarLicitacoes {
       }
 
       this.registro = this.ordenarLicitacoes(dados);
+
+      this.total = resposta.count;
+      this.hasNext = Boolean(resposta.next);
+      this.hasPrev = Boolean(resposta.previous);
     },
   });
 }
 
   getOrdenadoValidade(): void {
     this.licitacaoService.get().subscribe({
-      next: (resposta: Array<Licitacao>) => {
-        this.registro = this.ordenarLicitacoes(resposta);
+      next: (resposta) => {
+        this.registro = this.ordenarLicitacoes(resposta.results);
       },
     });
   }
@@ -81,8 +100,36 @@ export class VisualizarLicitacoes {
 
   aplicarFiltros(filtrosAtivos: any) {
   this.filtrosAtivos = filtrosAtivos || {};
+  this.currentPage = 1;
   this.get();
 }
+
+  proximaPagina(): void {
+    if (!this.hasNext) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.get();
+  }
+
+  paginaAnterior(): void {
+    if (!this.hasPrev || this.currentPage === 1) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.get();
+  }
+
+  irParaPagina(page: number): void {
+    if (page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.get();
+  }
 
   verificarValidade(licitacao: Licitacao): string {
     const dataAtual = new Date();

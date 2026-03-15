@@ -23,6 +23,18 @@
     margin-bottom: 12px;
 }
 
+.paginacao-lista {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.texto-total-registros {
+    color: #64748b;
+}
+
 .estado-vazio-usuarios {
     background-color: #ffffff;
     border: 1px solid #e5eaf1;

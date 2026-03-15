@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { ICrudService } from './i-crud-service';
 import { Fornecedor } from '../model/fornecedor';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { FornecedorInsert } from '../model/fornecedor_insert';
+import { normalizePaginatedResponse, PaginatedResponse } from '../model/pagination';
 
 @Injectable({
   providedIn: 'root',
@@ -17,13 +18,25 @@ export class FornecedorService implements ICrudService<Fornecedor> {
 
   apiUrl = environment.API_URL + '/fornecedores/';
 
-  get(termobusca?: string): Observable<Fornecedor[]> {
+  get(termobusca?: string, page: number = 1, pageSize: number = 10, filtros: any = {}): Observable<PaginatedResponse<Fornecedor>> {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('page_size', String(pageSize));
 
-    let url = this.apiUrl;
     if (termobusca) {
-      url += '?search=' + termobusca;
+      params.set('search', termobusca);
     }
-    return this.http.get<Fornecedor[]>(url);
+
+    Object.entries(filtros || {}).forEach(([chave, valor]) => {
+      if (valor !== null && valor !== undefined && valor !== '') {
+        params.set(chave, String(valor));
+      }
+    });
+
+    const url = `${this.apiUrl}?${params.toString()}`;
+    return this.http.get<PaginatedResponse<Fornecedor> | Fornecedor[]>(url).pipe(
+      map((response) => normalizePaginatedResponse<Fornecedor>(response))
+    );
 
   }
 

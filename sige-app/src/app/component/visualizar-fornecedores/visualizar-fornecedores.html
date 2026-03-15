@@ -3,6 +3,9 @@
         <h3><i class="bi bi-shop-window"></i> FORNECEDORES</h3>
         <hr>
     </div>
+
+    <app-barra-pesquisa (pesquisar)="get($event)"></app-barra-pesquisa>
+
     <!-- Tabela da licitações cadastradas no sistema -->
 
     <table class="tabela">
@@ -30,4 +33,7 @@
             }
         </tbody>
     </table>
+
+    <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
+        totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
 </body>

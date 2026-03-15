@@ -1,13 +1,14 @@
 import { FiltroConfig } from './../../model/filtro-config';
 import { Component } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
+import { Paginacao } from '../utils/paginacao/paginacao';
 import { Router } from '@angular/router';
 import { EmpenhoService } from '../../service/empenho.service';
 import { Empenho } from '../../model/empenho';
 
 @Component({
   selector: 'app-visualizar-empenhos',
-  imports: [BarraPesquisa],
+  imports: [BarraPesquisa, Paginacao],
   templateUrl: './visualizar-empenhos.html',
   styleUrl: './visualizar-empenhos.scss',
 })
@@ -30,6 +31,12 @@ filtrosAtivos: any = {};
   ) { }
 
   empenhos = Array<Empenho>();
+  currentPage: number = 1;
+  pageSize: number = 5;
+  total: number = 0;
+  hasNext: boolean = false;
+  hasPrev: boolean = false;
+  termoBuscaAtual: string = '';
 
   ngOnInit() {
     this.get();
@@ -45,10 +52,14 @@ filtrosAtivos: any = {};
   }
 
   get(termobusca?: string): void {
+  if (termobusca !== undefined) {
+    this.termoBuscaAtual = termobusca;
+    this.currentPage = 1;
+  }
 
-  this.empenhoService.get(termobusca).subscribe({
-    next: (resposta: Array<Empenho>) => {
-      let lista = resposta || [];
+  this.empenhoService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe({
+    next: (resposta) => {
+      let lista = resposta.results || [];
 
       const min = this.filtrosAtivos.valor_total__gte;
       const max = this.filtrosAtivos.valor_total__lte;
@@ -63,11 +74,42 @@ filtrosAtivos: any = {};
         });
       }
       this.empenhos = lista;
+      this.total = resposta.count;
+      this.hasNext = Boolean(resposta.next);
+      this.hasPrev = Boolean(resposta.previous);
     }
   });
 }
   aplicarFiltros(filtros: any) {
   this.filtrosAtivos = filtros;
+  this.currentPage = 1;
   this.get();
 }
+
+  proximaPagina(): void {
+    if (!this.hasNext) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.get();
+  }
+
+  paginaAnterior(): void {
+    if (!this.hasPrev || this.currentPage === 1) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.get();
+  }
+
+  irParaPagina(page: number): void {
+    if (page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.get();
+  }
 }

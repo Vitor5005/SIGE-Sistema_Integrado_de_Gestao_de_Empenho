@@ -1,13 +1,14 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
+import { Paginacao } from '../utils/paginacao/paginacao';
 import { FornecedorService } from '../../service/fornecedor.service';
 import { Fornecedor } from '../../model/fornecedor';
 import { CommonModule, JsonPipe } from '@angular/common';
 
 @Component({
   selector: 'app-visualizar-fornecedores',
-  imports: [CommonModule],
+  imports: [CommonModule, BarraPesquisa, Paginacao],
   templateUrl: './visualizar-fornecedores.html',
   styleUrl: './visualizar-fornecedores.scss',
 })
@@ -19,6 +20,12 @@ export class VisualizarFornecedores {
   ) { }
 
   fornecedores = Array<Fornecedor>()
+  currentPage: number = 1;
+  pageSize: number = 5;
+  total: number = 0;
+  hasNext: boolean = false;
+  hasPrev: boolean = false;
+  termoBuscaAtual: string = '';
 
   ngOnInit(){
 
@@ -35,13 +42,48 @@ export class VisualizarFornecedores {
   }
 
   get(termobusca?: string): void {
-    this.fornecedorService.get(termobusca).subscribe(
+    if (termobusca !== undefined) {
+      this.termoBuscaAtual = termobusca;
+      this.currentPage = 1;
+    }
+
+    this.fornecedorService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe(
       {
-        next: (resposta: Array<Fornecedor>) => {
-          this.fornecedores = resposta
+        next: (resposta) => {
+          this.fornecedores = resposta.results
+          this.total = resposta.count;
+          this.hasNext = Boolean(resposta.next);
+          this.hasPrev = Boolean(resposta.previous);
         }
       }
     )
+  }
+
+  proximaPagina(): void {
+    if (!this.hasNext) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.get();
+  }
+
+  paginaAnterior(): void {
+    if (!this.hasPrev || this.currentPage === 1) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.get();
+  }
+
+  irParaPagina(page: number): void {
+    if (page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.get();
   }
 
 }
