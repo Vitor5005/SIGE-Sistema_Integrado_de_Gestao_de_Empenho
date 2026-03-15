@@ -12,6 +12,19 @@
     </div>
     <!-- Tabela da licitações cadastradas no sistema -->
 
+    @if(isLoadingUsuarios) {
+    <div class="status-processamento-modal status-listagem">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        <small>Carregando usuários...</small>
+    </div>
+    }
+
+    @if(errorMessagePage) {
+    <div class="mensagem-erro-modal mensagem-listagem-erro">
+        <small>{{ errorMessagePage }}</small>
+    </div>
+    }
+
     <table class="tabela">
         <thead>
             <tr>
@@ -59,69 +72,154 @@
         </tbody>
     </table>
 
+    @if(!isLoadingUsuarios && usuarios.length === 0) {
+    <div class="estado-vazio-usuarios">
+        <h5>Nenhum usuário encontrado.</h5>
+        <small>Clique em "Adicionar Usuário" para realizar o primeiro cadastro.</small>
+    </div>
+    }
 
-    <div #myModal class="modal fade" id="adicionarUsuario" tabindex="-1" aria-hidden="true">
+
+    <div #myModal class="modal fade" id="adicionarUsuario" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content modal-custom">
 
                 <div class="modal-header-azul">
-                    <h2 class="modal-titulo" id="adicionarUsuarioLabel">ADICIONAR USUÁRIO</h2>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    <h2 class="modal-titulo" id="adicionarUsuarioLabel">{{ tituloModal }}</h2>
+                    <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()"
                         aria-label="Close"></button>
+                    <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
                 </div>
 
                 <div class="modal-body">
-                    <form class="form-fornecedor" (submit)="saveUsuario()">
+                    <form class="form-fornecedor" (submit)="saveUsuario(); $event.preventDefault()">
 
-                        <div class="form-row">
-                            <div class="form-group flex-1">
-                                <label for="user">USUÁRIO</label>
-                                <input #myInput type="text" id="user" name="user" [(ngModel)]="registro.username"
-                                    required>
-                            </div>
-                            <div class="form-group flex-2">
-                                <label for="email">EMAIL</label>
-                                <input type="email" id="email" name="email" [(ngModel)]="registro.email" required>
-                            </div>
+                        <p class="texto-orientacao-modal">Preencha os dados do usuário. Campos inválidos são destacados em vermelho.</p>
+
+                        @if(isSaving) {
+                        <div class="status-processamento-modal">
+                            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                            <small>Processando cadastro. Aguarde a finalização para continuar.</small>
                         </div>
+                        }
 
-                        <div class="form-row">
-                            <div class="form-group flex-1">
-                                <label for="nome">NOME</label>
-                                <input type="text" id="nome" name="nome" [(ngModel)]="registro.first_name" required>
-                            </div>
-                            <div class="form-group flex-1">
-                                <label for="sobrenome">SOBRENOME</label>
-                                <input type="text" id="sobrenome" name="sobrenome" [(ngModel)]="registro.last_name"
-                                    required>
-                            </div>
+                        @if(errorMessageModal) {
+                        <div class="mensagem-erro-modal">
+                            <small>{{ errorMessageModal }}</small>
                         </div>
+                        }
 
-                        <div class="form-row">
-                            <div class="form-group flex-1">
-                                <label for="senha">SENHA</label>
-                                <div class="campo-senha">
-                                    <input [type]="mostrarSenha ? 'text' : 'password'" name="senha" id="senha"
-                                        [(ngModel)]="registro.password">
-                                    <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye' : 'bi-eye-slash'"
-                                        (click)="toggleSenha()"></i>
+                        <section class="form-secao">
+                            <div class="form-secao-titulo">Dados de acesso</div>
+
+                                <div class="form-row form-row-compacta">
+                                    <div class="form-group flex-1">
+                                        <label for="user">USUÁRIO</label>
+                                        <input #myInput type="text" id="user" name="user" [(ngModel)]="registro.username"
+                                            [disabled]="isSaving" maxlength="150" placeholder="Ex.: joao.silva" (input)="onUsernameInput()"
+                                            [class.campo-invalido]="formSubmitted && !usernameValido" required>
+                                        @if(formSubmitted && !usernameValido) {
+                                        <small class="mensagem-campo-invalido">Use de 3 a 150 caracteres (letras, números, ponto, traço ou underscore).</small>
+                                        }
+                                    </div>
+                                    <div class="form-group flex-2">
+                                        <label for="email">EMAIL</label>
+                                        <input type="email" id="email" name="email" [(ngModel)]="registro.email" [disabled]="isSaving"
+                                            maxlength="255" placeholder="usuario@dominio.com" (input)="onEmailInput()"
+                                            [class.campo-invalido]="formSubmitted && !emailValido" required>
+                                        @if(formSubmitted && !emailValido) {
+                                        <small class="mensagem-campo-invalido">Informe um e-mail válido.</small>
+                                        }
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="form-group flex-1">
-                                <label for="papel">PAPEL</label>
-                                <select class="campo-select" name="papel" id="papel" [(ngModel)]="registro.papel"
-                                    required>
-                                    <option value="" disabled>Selecione um papel</option>
-                                    <option value="ADMIN">Administrador</option>
-                                    @if(registro.id !== 1){
-                                        <option value="TECNI">Tecnico</option>
-                                    }
-                                </select>
-                            </div>
+
+                                <div class="form-row form-row-compacta">
+                                    <div class="form-group flex-1">
+                                        <label for="papel">PAPEL</label>
+                                        <select class="campo-select" name="papel" id="papel" [(ngModel)]="registro.papel"
+                                            [disabled]="isSaving" [class.campo-invalido]="formSubmitted && !papelValido" required>
+                                            <option value="" disabled>Selecione um papel</option>
+                                            <option value="ADMIN">Administrador</option>
+                                            @if(registro.id !== 1){
+                                                <option value="TECNI">Tecnico</option>
+                                            }
+                                        </select>
+                                        @if(formSubmitted && !papelValido) {
+                                        <small class="mensagem-campo-invalido">Selecione um papel válido.</small>
+                                        }
+                                    </div>
+                                </div>
+                        </section>
+
+                        <section class="form-secao">
+                            <div class="form-secao-titulo">Dados pessoais</div>
+
+                                <div class="form-row form-row-compacta">
+                                    <div class="form-group flex-1">
+                                        <label for="nome">NOME</label>
+                                        <input type="text" id="nome" name="nome" [(ngModel)]="registro.first_name" [disabled]="isSaving"
+                                            maxlength="150" placeholder="Ex.: João" (input)="onNomeInput()"
+                                            [class.campo-invalido]="formSubmitted && !nomeValido" required>
+                                        @if(formSubmitted && !nomeValido) {
+                                        <small class="mensagem-campo-invalido">Informe o nome com 2 a 150 caracteres.</small>
+                                        }
+                                    </div>
+                                    <div class="form-group flex-1">
+                                        <label for="sobrenome">SOBRENOME</label>
+                                        <input type="text" id="sobrenome" name="sobrenome" [(ngModel)]="registro.last_name"
+                                            [disabled]="isSaving" maxlength="150" placeholder="Ex.: Silva" (input)="onSobrenomeInput()"
+                                            [class.campo-invalido]="formSubmitted && !sobrenomeValido" required>
+                                        @if(formSubmitted && !sobrenomeValido) {
+                                        <small class="mensagem-campo-invalido">Informe o sobrenome com 2 a 150 caracteres.</small>
+                                        }
+                                    </div>
+                                </div>
+                        </section>
+
+                        <section class="form-secao">
+                            <div class="form-secao-titulo">Segurança</div>
+
+                                <div class="form-row form-row-compacta">
+                                    <div class="form-group flex-1">
+                                        <label for="senha">SENHA @if(senhaObrigatoria){<span>*</span>}</label>
+                                        <div class="campo-senha">
+                                            <input [type]="mostrarSenha ? 'text' : 'password'" name="senha" id="senha"
+                                                [(ngModel)]="registro.password" [disabled]="isSaving" maxlength="128"
+                                                placeholder="Mínimo de 6 caracteres" (input)="onSenhaInput()"
+                                                [class.campo-invalido]="formSubmitted && !senhaValida">
+                                            <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye' : 'bi-eye-slash'"
+                                                (click)="toggleSenha()"></i>
+                                        </div>
+                                        <small class="texto-apoio-input">
+                                            @if(senhaObrigatoria) {
+                                            Cadastro: senha obrigatória.
+                                            } @else {
+                                            Edição: deixe em branco para manter a senha atual.
+                                            }
+                                        </small>
+                                        @if(formSubmitted && !senhaValida) {
+                                        <small class="mensagem-campo-invalido">
+                                            @if(senhaObrigatoria) {
+                                            Senha obrigatória com no mínimo 6 caracteres.
+                                            } @else {
+                                            Se informada, a senha deve ter entre 6 e 128 caracteres.
+                                            }
+                                        </small>
+                                        }
+                                    </div>
+                                </div>
+                        </section>
+
+                        <div class="requisitos-modal" [class.requisitos-ok]="formularioValido">
+                            <small><b>Obrigatório:</b> usuário válido, e-mail válido, nome, sobrenome, papel e senha válida.</small>
                         </div>
 
                         <div class="form-footer">
-                            <button type="submit" class="btn-confirmar">
+                            <button type="submit" class="btn-confirmar" [disabled]="!podeSalvarUsuario"
+                                [class.btn-confirmar-desabilitado]="!podeSalvarUsuario">
+                                @if(isSaving) {
+                                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                                }
                                 <i class="bi bi-check-lg"></i>  {{ mensagemBotao }}
                             </button>
                         </div>
