@@ -1,3 +1,4 @@
+import { FiltroConfig } from './../../model/filtro-config';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { Paginacao } from '../utils/paginacao/paginacao';
@@ -8,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-visualizar-gens-alimenticios',
+  standalone: true,
   imports: [BarraPesquisa, FormsModule, Paginacao],
   templateUrl: './visualizar-gens-alimenticios.html',
   styleUrl: './visualizar-gens-alimenticios.scss',
@@ -17,6 +19,23 @@ export class VisualizarGensAlimenticios {
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild('myInput') input!: ElementRef;
   @ViewChild('fecharModalInternoBtn') fecharModalInternoBtn!: ElementRef<HTMLButtonElement>;
+
+  filtros: FiltroConfig[] = [
+  {
+    campo: 'categoria',
+    label: 'Categoria',
+    tipo: 'checkbox',
+    opcoes: []
+  },
+  {
+    campo: 'unidade_medida',
+    label: 'Unidade de medida',
+    tipo: 'checkbox',
+    opcoes: []
+  }
+];
+
+filtrosAtivos: any = {};
 
   constructor(
     private ItemGenericoService: ItemGenericoService,
@@ -72,7 +91,7 @@ export class VisualizarGensAlimenticios {
       this.currentPage = 1;
     }
 
-    this.ItemGenericoService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe(
+    this.ItemGenericoService.get(this.termoBuscaAtual, this.currentPage, this.pageSize, this.normalizarFiltrosParaEnvio()).subscribe(
       (resposta) => {
         this.registros = resposta.results;
         this.total = resposta.count;
@@ -80,10 +99,39 @@ export class VisualizarGensAlimenticios {
         this.hasPrev = Boolean(resposta.previous);
       }
     );
+
+  }
+
+  private normalizarFiltrosParaEnvio(): any {
+    const filtros = { ...this.filtrosAtivos };
+
+    Object.entries(filtros).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        delete filtros[key];
+
+        if (value.length === 1) {
+          filtros[key] = value[0];
+        } else if (value.length > 1) {
+          filtros[`${key}__in`] = value.join(',');
+        }
+      }
+    });
+
+    return filtros;
   }
 
   ngOnInit() {
     this.getItens();
+
+    this.filtros[0].opcoes = this.categoriasDisponiveis.map(cat => ({
+      id: cat,
+      nome: this.getCategoriaLabel(cat)
+    }));
+
+    this.filtros[1].opcoes = this.unidadesDisponiveis.map(un => ({
+      id: un,
+      nome: this.getUnidadeMedidaLabel(un)
+    }));
   }
 
   proximaPagina(): void {
@@ -258,6 +306,12 @@ export class VisualizarGensAlimenticios {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();
     }
+  }
+
+  aplicarFiltros(filtros: any) {
+    this.filtrosAtivos = filtros;
+    this.currentPage = 1;
+    this.getItens();
   }
 
 }

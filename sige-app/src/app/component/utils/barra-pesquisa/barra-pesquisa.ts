@@ -11,7 +11,7 @@ import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChang
   templateUrl: './barra-pesquisa.html',
   styleUrl: './barra-pesquisa.scss',
 })
-export class BarraPesquisa {
+export class BarraPesquisa {  
   @Input() filtros: FiltroConfig[] = [];
 
   @Output() pesquisar = new EventEmitter<string>();
@@ -40,15 +40,39 @@ export class BarraPesquisa {
     this.searchSubject.next(termo);
   }
 
-  alterarFiltro(campo: string, valor: any) {
-    if (valor === null || valor === '') {
-      delete this.valores[campo];
+  alterarFiltro(campo: string, valor: any, evento?: Event) {
+
+    const checkbox = evento?.target as HTMLInputElement;
+
+    if (checkbox && checkbox.type === 'checkbox') {
+
+      if (!this.valores[campo]) {
+        this.valores[campo] = [];
+      }
+
+      if (checkbox.checked) {
+        this.valores[campo].push(valor);
+      } else {
+        this.valores[campo] = this.valores[campo].filter((v: any) => v !== valor);
+      }
+
+      if (this.valores[campo].length === 0) {
+        delete this.valores[campo];
+      }
+
     } else {
-      this.valores[campo] = valor;
+
+      if (valor === null || valor === '') {
+        delete this.valores[campo];
+      } else {
+        this.valores[campo] = valor;
+      }
+
     }
 
     this.filtrosAlterados.emit(this.valores);
   }
+
   limparFiltros() {
     this.valores = {};
     this.filtrosAlterados.emit(this.valores);

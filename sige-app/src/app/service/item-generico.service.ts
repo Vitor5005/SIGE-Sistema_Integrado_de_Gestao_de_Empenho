@@ -63,4 +63,23 @@ export class ItemGenericoService implements ICrudService<ItemGenerico> {
     return this.http.delete<void>(url);
   }
 
+  getComFiltros(params: any) {
+
+    let httpParams: any = {};
+
+    Object.entries(params).forEach(([key, value]) => {
+
+      if (Array.isArray(value)) {
+        httpParams[key] = value; // envia múltiplos
+      } else {
+        httpParams[key] = value;
+      }
+
+    });
+
+    return this.http.get<ItemGenerico[]>(this.apiUrl, {
+      params: httpParams
+    });
+
+  }
 }

@@ -1,233 +1,249 @@
-<body class="listagem">
-
-    <div class="entrega">
-        <div class="container-titulo">
-            <h5><i class="bi bi-truck"></i> ENTREGAS </h5>
-            <hr>
-        </div>
-
-        <app-barra-pesquisa (pesquisar)="getEntregas($event)"></app-barra-pesquisa>
-
-        <div class="container-entregas">
-            @if(isLoadingEntregas) {
-            <div class="estado-vazio-entregas conteudo-carregamento-lista">
-                <div class="conteudo-status-tabela">
-                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                    <small>Carregando entregas...</small>
-                </div>
-            </div>
-            }
-
-            @if(!isLoadingEntregas && errorMessagePage) {
-            <div class="estado-vazio-entregas conteudo-carregamento-lista">
-                <small>{{ errorMessagePage }}</small>
-            </div>
-            }
-
-            @if(!isLoadingEntregas && entregas.length === 0) {
-            <div class="estado-vazio-entregas">
-                <h5>Nenhuma entrega encontrada.</h5>
-                <small>Tente ajustar os filtros da busca para localizar ordens de entrega.</small>
-            </div>
-            }
-
-            @if(!isLoadingEntregas && !errorMessagePage) {
-            @for (item of entregas; track $index) {
-            <div class="card-entrega">
-
-                <div class="topo-entrega">
-                    <div class="info-entrega" [ngClass]="classeStatus(item.status)">
-
-                        <div class="info-entrega-principal">
-                            <span class="pedido-entrega">
-                                {{ item.codigo }}
-                            </span>
-
-                            <div class="links-entrega">
-                                <span class="link-emp" (click)="enviarPara('/visualizar-empenho', item.empenho.id)">
-                                    {{ item.empenho.codigo }}
-                                </span>
-
-                                <span class="link-arp" (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)">
-                                    {{ item.empenho.ata.numero_ata }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <span class="status-entrega">
-                            {{ verificarStatus(item.status) }}
-                        </span>
-
-                    </div>
-
-                    <div class="acoes-entrega">
-
-                        @if( item.status !== "con" ){
-                        <button class="btn-confirmar" data-bs-toggle="modal" data-bs-target="#confirmarModal"
-                            *ngIf="!confirmado" (click)="getItensOrdem(item.id, $index)">
-                            <i class="bi bi-check-circle"></i>
-                            CONFIRMAR ENTREGA
-                        </button>
-                        }
-
-
-                        <button class="btn link-doc" data-bs-toggle="modal" data-bs-target="#verPedidoMordal"
-                            (click)="getItensOrdem(item.id, $index)" *ngIf="!confirmado">
-                            <i class="bi bi-eye"></i>
-                            VER PEDIDO
-                        </button>
-                    </div>
-                </div>
-
-                <div class="rodape-entrega">
-                    <div class="rodape-item">
-                        <span class="rodape-label">Data de Emissão</span>
-                        <span class="rodape-valor">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
-                    </div>
-                    <div class="rodape-item">
-                        <span class="rodape-label">Data de Entrega Prevista</span>
-                        <span class="rodape-valor">{{ item.data_entrega_prevista | date: 'dd/MM/yyyy' }}</span>
-                    </div>
-                    @if( item.status === "con" ){
-                    <div class="rodape-item rodape-item-concluida">
-                        <span class="rodape-label">Data de Entrega</span>
-                        <span class="rodape-valor">{{ item.data_entrega | date: 'dd/MM/yyyy - HH:mm' }}</span>
-                    </div>
-                    }
-                </div>
-
-            </div>
-            }
-            }
-        </div>
-
-        <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-            totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+<div class="listagem">
+  <div class="entrega">
+    <div class="container-titulo">
+      <h5><i class="bi bi-truck"></i> ENTREGAS</h5>
+      <hr />
     </div>
 
+    <app-barra-pesquisa
+      [filtros]="filtros"
+      (pesquisar)="getEntregas($event)"
+      (filtrosAlterados)="aplicarFiltros($event)"
+    ></app-barra-pesquisa>
 
-    <!-- Modal -->
+    <div class="container-entregas">
+      @if(isLoadingEntregas) {
+      <div class="estado-vazio-entregas conteudo-carregamento-lista">
+        <div class="conteudo-status-tabela">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+          <small>Carregando entregas...</small>
+        </div>
+      </div>
+      }
 
-    <div #confirmarModalRef class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel"
-        data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+      @if(!isLoadingEntregas && errorMessagePage) {
+      <div class="estado-vazio-entregas conteudo-carregamento-lista">
+        <small>{{ errorMessagePage }}</small>
+      </div>
+      }
 
-        <div class="modal-dialog modal-dialog-centered modal-xl modal-entrega-lg">
-            <div class="modal-content">
+      @if(!isLoadingEntregas && !errorMessagePage && entregas.length === 0) {
+      <div class="estado-vazio-entregas">
+        <h5>Nenhuma entrega encontrada.</h5>
+        <small>Tente ajustar os filtros da busca para localizar ordens de entrega.</small>
+      </div>
+      }
 
-                <div class="modal-header">
+      @if(!isLoadingEntregas && !errorMessagePage) {
+      @for (item of entregas; track $index) {
+        <div class="card-entrega">
+          <div class="topo-entrega">
+            <div class="info-entrega" [ngClass]="classeStatus(item.status)">
+              <div class="info-entrega-principal">
+                <span class="pedido-entrega">
+                  {{ item.codigo }}
+                </span>
 
-                    <h1 class="modal-title fs-5" id="entregaModalLabel">
-                        CONFIRMAR ENTREGA <i class="bi bi-truck"></i>
-                    </h1>
-                    <button type="button" class="btn-close" [disabled]="isConfirmandoEntrega" (click)="tentarFecharModalConfirmacao()" aria-label="Close"></button>
-                    <button #fecharConfirmacaoInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
+                <div class="links-entrega">
+                  <span
+                    class="link-emp"
+                    (click)="enviarPara('/visualizar-empenho', item.empenho.id)"
+                  >
+                    {{ item.empenho.codigo }}
+                  </span>
 
+                  <span
+                    class="link-arp"
+                    (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)"
+                  >
+                    {{ item.empenho.ata.numero_ata }}
+                  </span>
+                </div>
+              </div>
+
+              <span class="status-entrega">
+                {{ verificarStatus(item.status) }}
+              </span>
+            </div>
+
+            <div class="acoes-entrega">
+              @if (item.status !== 'con') {
+                <button
+                  class="btn-confirmar"
+                  data-bs-toggle="modal"
+                  data-bs-target="#confirmarModal"
+                  *ngIf="!confirmado"
+                  (click)="getItensOrdem(item.id, $index)"
+                >
+                  <i class="bi bi-check-circle"></i>
+                  CONFIRMAR ENTREGA
+                </button>
+              }
+
+              <button
+                class="btn link-doc"
+                data-bs-toggle="modal"
+                data-bs-target="#verPedidoMordal"
+                (click)="getItensOrdem(item.id, $index)"
+                *ngIf="!confirmado"
+              >
+                <i class="bi bi-eye"></i>
+                VER PEDIDO
+              </button>
+            </div>
+          </div>
+
+          <div class="rodape-entrega">
+            <div class="rodape-item">
+              <span class="rodape-label">Data de Emissão</span>
+              <span class="rodape-valor">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
+            </div>
+            <div class="rodape-item">
+              <span class="rodape-label">Data de Entrega Prevista</span>
+              <span class="rodape-valor">{{
+                item.data_entrega_prevista | date: 'dd/MM/yyyy'
+              }}</span>
+            </div>
+            @if (item.status === 'con') {
+              <div class="rodape-item rodape-item-concluida">
+                <span class="rodape-label">Data de Entrega</span>
+                <span class="rodape-valor">{{
+                  item.data_entrega | date: 'dd/MM/yyyy - HH:mm'
+                }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+      }
+    </div>
+
+    <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
+      totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+  </div>
+
+  <!-- Modal -->
+
+  <div #confirmarModalRef class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel"
+    data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-entrega-lg">
+      <div class="modal-content">
+
+        <div class="modal-header">
+
+          <h1 class="modal-title fs-5" id="entregaModalLabel">
+            CONFIRMAR ENTREGA <i class="bi bi-truck"></i>
+          </h1>
+          <button type="button" class="btn-close" [disabled]="isConfirmandoEntrega" (click)="tentarFecharModalConfirmacao()" aria-label="Close"></button>
+          <button #fecharConfirmacaoInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
+
+        </div>
+
+        <div class="modal-body">
+          @if(isLoadingPedidos) {
+          <div class="status-processamento-modal">
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <small>Carregando itens da entrega...</small>
+          </div>
+          }
+
+          @if(errorMessageModal) {
+          <div class="mensagem-erro-modal">
+            <small>{{ errorMessageModal }}</small>
+          </div>
+          }
+
+          <form class="form-entrega">
+
+            @if(!isLoadingPedidos && pedidosDaOrdem.length === 0) {
+            <div class="estado-vazio-modal">
+              <small>Nenhum item encontrado para esta entrega.</small>
+            </div>
+            }
+
+            <div class="lista-itens">
+
+              @for(item of pedidosDaOrdem; track $index) {
+              <div class="item-entrega" [class.item-entrega-invalido]="formSubmittedConfirmacao && !itemEntregaValido(item)">
+
+                <div class="info-coluna">
+                  <span class="label-info">
+                    Gênero Alimenticio
+                  </span>
+
+                  <div class="valor-info">
+                    <span class="nome-produto">
+                      {{ item.item_empenho.item_ata.item_generico.descricao }}
+                    </span>
+
+                    <span class="unidade-modal">
+                      {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                    </span>
+
+                  </div>
                 </div>
 
-                <div class="modal-body">
-                    @if(isLoadingPedidos) {
-                    <div class="status-processamento-modal">
-                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                        <small>Carregando itens da entrega...</small>
-                    </div>
-                    }
+                <div class="info-coluna">
+                  <span class="label-info">
+                    Quantidade Solicitada</span>
 
-                    @if(errorMessageModal) {
-                    <div class="mensagem-erro-modal">
-                        <small>{{ errorMessageModal }}</small>
-                    </div>
-                    }
+                  <div class="valor-info">
+                    <span class="valor">
+                      {{ item.quantidade_solicitada | number:'1.0-2' }}
+                    </span>
 
-                    <form class="form-entrega">
+                    <span class="unidade-modal">
+                      {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
+                    </span>
 
-                        @if(!isLoadingPedidos && pedidosDaOrdem.length === 0) {
-                        <div class="estado-vazio-modal">
-                            <small>Nenhum item encontrado para esta entrega.</small>
-                        </div>
-                        }
+                  </div>
+                </div>
 
-                        <div class="lista-itens">
+                <div class="info-coluna">
+                  <span class="label-info">
+                    Valor Unidade
+                  </span>
 
-                            @for(item of pedidosDaOrdem; track $index) {
-                            <div class="item-entrega" [class.item-entrega-invalido]="formSubmittedConfirmacao && !itemEntregaValido(item)">
+                  <div class="valor-info">
+                    <span class="valor">
+                      R$ {{ item.item_empenho.item_ata.valor_unitario | number:'1.2-2' }}
+                    </span>
 
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Gênero Alimenticio
-                                    </span>
+                  </div>
+                </div>
 
-                                    <div class="valor-info">
-                                        <span class="nome-produto">
-                                            {{ item.item_empenho.item_ata.item_generico.descricao }}
-                                        </span>
+                <div class="info-coluna">
+                  <span class="label-info">
+                    Valor Total do Item
+                  </span>
 
-                                        <span class="unidade-modal">
-                                            {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                                        </span>
+                  <div class="valor-info">
+                    <span class="valor">
+                      R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada
+                      | number:'1.2-2' }}
+                    </span>
 
-                                    </div>
-                                </div>
+                  </div>
+                </div>
 
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Quantidade Solicitada</span>
+                <div class="info-coluna">
+                  <span class="label-info">
+                    Valor Total Entregue
+                  </span>
 
-                                    <div class="valor-info">
-                                        <span class="valor">
-                                            {{ item.quantidade_solicitada | number:'1.0-2' }}
-                                        </span>
+                  <div class="valor-info">
+                    <span class="valor">
+                      R$ {{ (item.item_empenho.item_ata.valor_unitario * item.quantidade_entregue) | number:'1.2-2' }}
+                    </span>
 
-                                        <span class="unidade-modal">
-                                            {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                                        </span>
+                  </div>
+                </div>
 
-                                    </div>
-                                </div>
-
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Valor Unidade
-                                    </span>
-
-                                    <div class="valor-info">
-                                        <span class="valor">
-                                            R$ {{ item.item_empenho.item_ata.valor_unitario | number:'1.2-2' }}
-                                        </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Valor Total do Item
-                                    </span>
-
-                                    <div class="valor-info">
-                                        <span class="valor">
-                                            R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada
-                                            | number:'1.2-2' }}
-                                        </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Valor Total Entregue
-                                    </span>
-
-                                    <div class="valor-info">
-                                        <span class="valor">
-                                            R$ {{ (item.item_empenho.item_ata.valor_unitario * item.quantidade_entregue) | number:'1.2-2' }}
-                                        </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="info-coluna">
-                                    <span class="label-info">
-                                        Valor Total em Dívida
-                                    </span>
+                <div class="info-coluna">
+                  <span class="label-info">
+                    Valor Total em Dívida
+                  </span>
 
                                     <div class="valor-info">
                                         <span class="valor">
@@ -360,14 +376,4 @@
                                 </div>
                             </div>
                         }
-
-
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-    </div>
-
-</body>
+</div>

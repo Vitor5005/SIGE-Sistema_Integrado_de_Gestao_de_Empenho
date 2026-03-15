@@ -69,6 +69,14 @@ body{
       .card-licitacao{
         background-color: #DAE6FF;
         color: var(--azul-claro);
+        span{
+          color: #7B8CDF;
+          cursor: pointer;
+        }
+        span:hover{
+          color: rgba(38, 53, 94, 0.9);
+          transition: ease-in-out 0.5ms;
+        }
       }
       .card-validade{
         background-color: transparent;
@@ -115,7 +123,13 @@ body{
         border-radius: 20px;
         span{
           color: #7B8CDF;
+          cursor: pointer;
         }
+        span:hover{
+          color: rgba(183, 200, 247, 0.9);
+          transition: ease-in-out 0.5ms;
+        }
+
       }
       p{
         margin-bottom: 0;

@@ -18,7 +18,7 @@ export class OrdemEntregaService implements ICrudService<OrdemEntrega> {
   ) {}
 
   apiUrl = environment.API_URL + '/entregas/';
-  
+
   get(termobusca?: string, page: number = 1, pageSize: number = 10, filtros: any = {}): Observable<PaginatedResponse<OrdemEntrega>> {
     const params = new URLSearchParams();
     params.set('page', String(page));
@@ -40,11 +40,20 @@ export class OrdemEntregaService implements ICrudService<OrdemEntrega> {
     );
   }
 
+  getComFiltros(filtros: any = {}, page: number = 1, pageSize: number = 10): Observable<PaginatedResponse<OrdemEntrega>> {
+    const filtrosParaEnvio = { ...filtros };
+    const search = filtrosParaEnvio.search || '';
+
+    delete filtrosParaEnvio.search;
+
+    return this.get(search, page, pageSize, filtrosParaEnvio);
+  }
+
   getById(id: number): Observable<OrdemEntrega> {
     let url = this.apiUrl + id + '/';
     return this.http.get<OrdemEntrega>(url);
   }
-  
+
 
   save(item: OrdemEntregaInsert): Observable<OrdemEntregaInsert> {
     let url = this.apiUrl;

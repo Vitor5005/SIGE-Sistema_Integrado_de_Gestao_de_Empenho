@@ -1,3 +1,4 @@
+import { FiltroConfig } from './../../model/filtro-config';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { CommonModule } from '@angular/common';
@@ -15,12 +16,31 @@ import { Paginacao } from '../utils/paginacao/paginacao';
 
 @Component({
   selector: 'app-visualizar-entregas',
+  standalone: true,
   imports: [BarraPesquisa, CommonModule, FormsModule, Paginacao],
   templateUrl: './visualizar-entregas.html',
   styleUrl: './visualizar-entregas.scss',
 })
 export class VisualizarEntregas {
 
+  filtros: FiltroConfig[] = [
+  {
+    campo: 'status',
+    label: 'Status da entrega',
+    tipo: 'radio',
+    opcoes: [
+      { valor: 'esp', label: 'Entrega em espera' },
+      { valor: 'con', label: 'Entrega realizada' }
+    ]
+  },
+  {
+    campo: 'data_emissao',
+    label: 'Data de emissão',
+    tipo: 'date-range'
+  }
+];
+
+filtrosAtivos: any = {};
 
   confirmado: boolean = false;
   isLoadingEntregas: boolean = false;
@@ -147,7 +167,7 @@ export class VisualizarEntregas {
     this.isLoadingEntregas = true;
     this.errorMessagePage = '';
 
-    this.ordemEntregaService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe({
+    this.ordemEntregaService.get(this.termoBuscaAtual, this.currentPage, this.pageSize, this.filtrosAtivos).subscribe({
       next: (resposta) => {
         this.entregas = this.ordenarEntregaPorStatusEData(resposta.results);
         this.total = resposta.count;
@@ -161,6 +181,7 @@ export class VisualizarEntregas {
         this.isLoadingEntregas = false;
       }
     });
+
   }
 
   proximaPagina(): void {
@@ -373,5 +394,11 @@ export class VisualizarEntregas {
   private atualizarSaldoEmpenho(empenhoId: number, saldoAtual: number, somaValorEntregue: number): Observable<any> {
     const novoSaldo = Number((Number(saldoAtual) + somaValorEntregue).toFixed(2));
     return this.empenhoService.patch(empenhoId, { saldo_utilizado: novoSaldo });
+  }
+
+  aplicarFiltros(filtros: any) {
+    this.filtrosAtivos = filtros;
+    this.currentPage = 1;
+    this.getEntregas();
   }
 }
