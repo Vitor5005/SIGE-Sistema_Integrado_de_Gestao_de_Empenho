@@ -215,56 +215,65 @@
                     <p class="texto-orientacao-modal">Preencha os dados do item genérico para cadastro.</p>
                     <form class="form-fornecedor form-item-cadastro" #form="ngForm">
 
-                        <div class="form-row">
-                            <div class="form-group flex-2">
-                                <label>CATMAT</label>
-                                <input type="text" name="catmat" maxlength="6" placeholder="Ex.: 123456" inputmode="numeric" [disabled]="isSaving"
-                                    [(ngModel)]="itemGenerico_insercao.catmat"
-                                    (input)="onCatmatInput()"
-                                    [class.campo-invalido]="formSubmittedPage1 && !catmatValido">
-                                @if(formSubmittedPage1 && !catmatValido) {
-                                <small class="mensagem-campo-invalido">CATMAT deve conter exatamente 6 dígitos.</small>
-                                }
-                            </div>
-                            <div class="form-group">
-                                <label>DESCRIÇÃO</label>
-                                <textarea type="text" style="resize: none;" name="descricao" maxlength="300" placeholder="Ex.: Arroz tipo 1"
-                                    [disabled]="isSaving" [(ngModel)]="itemGenerico_insercao.descricao" (input)="onDescricaoInput()"
-                                    [class.campo-invalido]="formSubmittedPage1 && !descricaoValida"></textarea>
-                                @if(formSubmittedPage1 && !descricaoValida) {
-                                <small class="mensagem-campo-invalido">Descrição é obrigatória (até 300 caracteres).</small>
-                                }
+                        <div class="bloco-formulario">
+                            <div class="bloco-titulo">Dados principais</div>
+                            <div class="form-row">
+                                <div class="form-group flex-2">
+                                    <label>CATMAT</label>
+                                    <input type="text" name="catmat" maxlength="6" placeholder="Ex.: 123456" inputmode="numeric" [disabled]="isSaving"
+                                        [(ngModel)]="itemGenerico_insercao.catmat"
+                                        (input)="onCatmatInput()"
+                                        [class.campo-invalido]="formSubmittedPage1 && !catmatValido">
+                                    @if(formSubmittedPage1 && !catmatValido) {
+                                    <small class="mensagem-campo-invalido">CATMAT deve conter exatamente 6 dígitos.</small>
+                                    }
+                                </div>
+
+                                <div class="form-group">
+                                    <label>DESCRIÇÃO</label>
+                                    <textarea type="text" style="resize: none;" name="descricao" maxlength="300" placeholder="Ex.: Arroz tipo 1"
+                                        [disabled]="isSaving" [(ngModel)]="itemGenerico_insercao.descricao" (input)="onDescricaoInput()"
+                                        [class.campo-invalido]="formSubmittedPage1 && !descricaoValida"></textarea>
+                                    <small class="texto-apoio-input">{{ 300 - (itemGenerico_insercao.descricao || '').length }} caracteres restantes.</small>
+                                    @if(formSubmittedPage1 && !descricaoValida) {
+                                    <small class="mensagem-campo-invalido">Descrição é obrigatória (até 300 caracteres).</small>
+                                    }
+                                </div>
                             </div>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group flex-2">
-                                <label>Unidade de Medida</label>
-                                <select name="unidade_medida" id="unidade_medida"
-                                    [(ngModel)]="itemGenerico_insercao.unidade_medida" [disabled]="isSaving"
-                                    [class.campo-invalido]="formSubmittedPage1 && !unidadeMedidaValida">
-                                    <option value="" disabled selected>Selecione uma unidade</option>
-                                    @for(item of unidade_medida | keyvalue; track item.key){
-                                        <option [value]="item.key">{{ item.value }}</option>
-                                    }
 
-                                </select>
-                                @if(formSubmittedPage1 && !unidadeMedidaValida) {
-                                <small class="mensagem-campo-invalido">Selecione uma unidade de medida.</small>
-                                }
-                            </div>
+                        <div class="bloco-formulario">
+                            <div class="bloco-titulo">Classificação</div>
+                            <div class="form-row">
+                                <div class="form-group flex-2">
+                                    <label>Unidade de Medida</label>
+                                    <select name="unidade_medida" id="unidade_medida"
+                                        [(ngModel)]="itemGenerico_insercao.unidade_medida" [disabled]="isSaving"
+                                        [class.campo-invalido]="formSubmittedPage1 && !unidadeMedidaValida">
+                                        <option value="" disabled selected>Selecione uma unidade</option>
+                                        @for(item of unidade_medida | keyvalue; track item.key){
+                                            <option [value]="item.key">{{ item.value }}</option>
+                                        }
 
-                            <div class="form-group flex-1">
-                                <label>CATEGORIA</label>
-                                <select name="categoria" id="categoria" [(ngModel)]="itemGenerico_insercao.categoria"
-                                    [disabled]="isSaving" [class.campo-invalido]="formSubmittedPage1 && !categoriaValida">
-                                    <option value="" disabled selected>Selecione uma categoria</option>
-                                    @for(item of categoria | keyvalue; track item.key){
-                                        <option [value]="item.key">{{ item.value }}</option>
+                                    </select>
+                                    @if(formSubmittedPage1 && !unidadeMedidaValida) {
+                                    <small class="mensagem-campo-invalido">Selecione uma unidade de medida.</small>
                                     }
-                                </select>
-                                @if(formSubmittedPage1 && !categoriaValida) {
-                                <small class="mensagem-campo-invalido">Selecione uma categoria.</small>
-                                }
+                                </div>
+
+                                <div class="form-group flex-1">
+                                    <label>CATEGORIA</label>
+                                    <select name="categoria" id="categoria" [(ngModel)]="itemGenerico_insercao.categoria"
+                                        [disabled]="isSaving" [class.campo-invalido]="formSubmittedPage1 && !categoriaValida">
+                                        <option value="" disabled selected>Selecione uma categoria</option>
+                                        @for(item of categoria | keyvalue; track item.key){
+                                            <option [value]="item.key">{{ item.value }}</option>
+                                        }
+                                    </select>
+                                    @if(formSubmittedPage1 && !categoriaValida) {
+                                    <small class="mensagem-campo-invalido">Selecione uma categoria.</small>
+                                    }
+                                </div>
                             </div>
                         </div>
 
@@ -292,49 +301,53 @@
                         <hr>
                     </div>
 
-                    <div class="resumo-item-generico">
-                        <p><b>CATMAT: {{itemGenerico_insercao.catmat}}</b></p>
-                        <p><b>CATEGORIA: {{ getCategoria(itemGenerico_insercao) }}</b></p>
-                        <p><b>UNIDADE DE MEDIDA: {{ getUnidadeMedida(itemGenerico_insercao) }}</b></p>
-                        <p><b>DESCRIÇÃO: {{itemGenerico_insercao.descricao}}</b></p>
-                    </div>
+                    <form class="form-fornecedor form-item-cadastro" #form="ngForm">
 
-                    <hr>
-
-                    <form class="form-fornecedor form-item-finalizacao" #form="ngForm">
-
-                        <div class="form-row">
-                            <div class="form-group flex-1">
-                                <label>QUANTIDADE LICITADA ({{ itemGenerico_insercao.unidade_medida }})</label>
-                                <input type="number" min="0" step="0.01" [disabled]="isSaving"
-                                    [(ngModel)]="itemAta_insercao.quantidade_licitada" name="quantidade_licitada"
-                                    placeholder="Ex.: 100.00"
-                                    (change)="validarQuantidadeLicitada()"
-                                    [class.campo-invalido]="formSubmittedPage2 && !quantidadeLicitadaValida">
-                                @if(formSubmittedPage2 && !quantidadeLicitadaValida) {
-                                <small class="mensagem-campo-invalido">Informe uma quantidade maior que zero.</small>
-                                }
+                        <div class="bloco-formulario">
+                            <div class="bloco-titulo">Dados principais</div>
+                            <div class="resumo-item-generico">
+                                <p><b>CATMAT: {{itemGenerico_insercao.catmat}}</b></p>
+                                <p><b>CATEGORIA: {{ getCategoria(itemGenerico_insercao) }}</b></p>
+                                <p><b>UNIDADE DE MEDIDA: {{ getUnidadeMedida(itemGenerico_insercao) }}</b></p>
+                                <p><b>DESCRIÇÃO: {{itemGenerico_insercao.descricao}}</b></p>
                             </div>
-                            <div class="form-group flex-2">
-                                <label>VALOR UNITARIO (R$)</label>
-                                <input type="number" min="0" step="0.01" [disabled]="isSaving"
-                                    [(ngModel)]="itemAta_insercao.valor_unitario" name="valor_unitario"
-                                    placeholder="Ex.: 12.50"
-                                    (change)="validarValorUnitario()"
-                                    [class.campo-invalido]="formSubmittedPage2 && !valorUnitarioValido">
-                                @if(formSubmittedPage2 && !valorUnitarioValido) {
-                                <small class="mensagem-campo-invalido">Informe um valor unitário maior que zero.</small>
-                                }
-                            </div>
-                            <div class="form-group flex-3">
-                                <label>MARCA</label>
-                                <input type="text" maxlength="255" [disabled]="isSaving" placeholder="Ex.: Marca Exemplo"
-                                    [(ngModel)]="itemAta_insercao.marca" name="marca"
-                                    (input)="onMarcaInput()"
-                                    [class.campo-invalido]="formSubmittedPage2 && !marcaValida">
-                                @if(formSubmittedPage2 && !marcaValida) {
-                                <small class="mensagem-campo-invalido">Informe a marca (até 255 caracteres).</small>
-                                }
+                        </div>
+
+                        <div class="bloco-formulario">
+                            <div class="bloco-titulo">Dados da ata</div>
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label>QUANTIDADE LICITADA ({{ itemGenerico_insercao.unidade_medida }})</label>
+                                    <input type="number" min="0" step="0.01" [disabled]="isSaving"
+                                        [(ngModel)]="itemAta_insercao.quantidade_licitada" name="quantidade_licitada"
+                                        placeholder="Ex.: 100.00"
+                                        (change)="validarQuantidadeLicitada()"
+                                        [class.campo-invalido]="formSubmittedPage2 && !quantidadeLicitadaValida">
+                                    @if(formSubmittedPage2 && !quantidadeLicitadaValida) {
+                                    <small class="mensagem-campo-invalido">Informe uma quantidade maior que zero.</small>
+                                    }
+                                </div>
+                                <div class="form-group flex-2">
+                                    <label>VALOR UNITARIO (R$)</label>
+                                    <input type="number" min="0" step="0.01" [disabled]="isSaving"
+                                        [(ngModel)]="itemAta_insercao.valor_unitario" name="valor_unitario"
+                                        placeholder="Ex.: 12.50"
+                                        (change)="validarValorUnitario()"
+                                        [class.campo-invalido]="formSubmittedPage2 && !valorUnitarioValido">
+                                    @if(formSubmittedPage2 && !valorUnitarioValido) {
+                                    <small class="mensagem-campo-invalido">Informe um valor unitário maior que zero.</small>
+                                    }
+                                </div>
+                                <div class="form-group flex-3">
+                                    <label>MARCA</label>
+                                    <input type="text" maxlength="255" [disabled]="isSaving" placeholder="Ex.: Marca Exemplo"
+                                        [(ngModel)]="itemAta_insercao.marca" name="marca"
+                                        (input)="onMarcaInput()"
+                                        [class.campo-invalido]="formSubmittedPage2 && !marcaValida">
+                                    @if(formSubmittedPage2 && !marcaValida) {
+                                    <small class="mensagem-campo-invalido">Informe a marca (até 255 caracteres).</small>
+                                    }
+                                </div>
                             </div>
                         </div>
 
@@ -342,7 +355,8 @@
                             <small><b>Obrigatório:</b> informar quantidade, valor unitário e marca para concluir.</small>
                         </div>
 
-                        <div>
+                        <div class="bloco-formulario bloco-resultado-total">
+                            <div class="bloco-titulo">Resultado</div>
                             <h5>VALOR TOTAL LICITADO (R$ / {{ itemGenerico_insercao.unidade_medida }}): {{ itemAta_insercao.valor_unitario * itemAta_insercao.quantidade_licitada | number:'1.2-2' }} </h5>
                         </div>
 

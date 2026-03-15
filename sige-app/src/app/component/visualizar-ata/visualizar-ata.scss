@@ -229,6 +229,29 @@ body{
     padding: 14px;
   }
 
+  .form-item-cadastro {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .bloco-formulario {
+    border: 1px solid #e7eef7;
+    border-radius: 12px;
+    padding: 12px;
+    background-color: #fbfdff;
+    margin-bottom: 10px;
+  }
+
+  .bloco-titulo {
+    margin-bottom: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: #475569;
+  }
+
   .form-row {
     display: flex;
     gap: 12px;
@@ -272,7 +295,7 @@ body{
     border: 1px solid #e5eaf1;
     border-radius: 12px;
     padding: 14px;
-    margin-bottom: 14px;
+    margin-bottom: 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px 14px;
@@ -294,6 +317,21 @@ body{
       margin: 4px 0 14px;
       width: 100%;
     }
+  }
+
+  .bloco-resultado-total {
+    h5 {
+      margin: 0;
+      color: #1e3a5f;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+  }
+
+  .texto-apoio-input {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
   }
 
   .form-footer {

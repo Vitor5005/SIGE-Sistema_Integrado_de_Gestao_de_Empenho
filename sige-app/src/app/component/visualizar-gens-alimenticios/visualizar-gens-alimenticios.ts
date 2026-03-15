@@ -15,6 +15,7 @@ export class VisualizarGensAlimenticios {
 
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild('myInput') input!: ElementRef;
+  @ViewChild('fecharModalInternoBtn') fecharModalInternoBtn!: ElementRef<HTMLButtonElement>;
 
   constructor(
     private ItemGenericoService: ItemGenericoService,
@@ -23,6 +24,11 @@ export class VisualizarGensAlimenticios {
 
   registros: ItemGenerico[] = [];
   registroEditar: ItemGenerico = <ItemGenerico>{};
+  registroOriginalModal: ItemGenerico | null = null;
+  formSubmitted: boolean = false;
+  isSaving: boolean = false;
+  errorMessageModal: string = '';
+  private permitirFecharModalSemConfirmacao: boolean = false;
 
   unidade_medida = {
     "KG": "Quilograma(KG)",
@@ -65,6 +71,33 @@ export class VisualizarGensAlimenticios {
     this.getItens();
   }
 
+  ngAfterViewInit() {
+    const modalElement = this.modal.nativeElement;
+
+    modalElement.addEventListener('shown.bs.modal', () => {
+      this.input?.nativeElement?.focus();
+    });
+
+    modalElement.addEventListener('hide.bs.modal', (event: Event) => {
+      if (this.permitirFecharModalSemConfirmacao) {
+        this.permitirFecharModalSemConfirmacao = false;
+        return;
+      }
+
+      if (this.isSaving) {
+        event.preventDefault();
+        return;
+      }
+
+      if (this.possuiDadosAlteradosModal) {
+        const desejaSair = confirm('Você alterou dados do gênero alimentício. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
+        if (!desejaSair) {
+          event.preventDefault();
+        }
+      }
+    });
+  }
+
   enviarPara(rota: string, id?: number) {
     if (id) {
       this.router.navigate([rota], { queryParams: { id } });
@@ -75,7 +108,55 @@ export class VisualizarGensAlimenticios {
   }
 
   carregarRegistro(registro: ItemGenerico) {
+    this.formSubmitted = false;
+    this.errorMessageModal = '';
+    this.registroOriginalModal = { ...registro };
     this.registroEditar = { ...registro };
+  }
+
+  onCatmatInput(): void {
+    this.registroEditar.catmat = (this.registroEditar.catmat || '')
+      .replace(/\D/g, '')
+      .slice(0, 6);
+  }
+
+  onDescricaoInput(): void {
+    this.registroEditar.descricao = (this.registroEditar.descricao || '').slice(0, 300);
+  }
+
+  get catmatValido(): boolean {
+    const catmat = (this.registroEditar.catmat || '').trim();
+    return /^\d{6}$/.test(catmat);
+  }
+
+  get descricaoValida(): boolean {
+    const descricao = (this.registroEditar.descricao || '').trim();
+    return descricao.length > 0 && descricao.length <= 300;
+  }
+
+  get categoriaValida(): boolean {
+    return Boolean(this.registroEditar.categoria?.trim());
+  }
+
+  get unidadeValida(): boolean {
+    return Boolean(this.registroEditar.unidade_medida?.trim());
+  }
+
+  get formularioValido(): boolean {
+    return this.catmatValido && this.descricaoValida && this.categoriaValida && this.unidadeValida;
+  }
+
+  get possuiDadosAlteradosModal(): boolean {
+    if (!this.registroOriginalModal) {
+      return false;
+    }
+
+    return (
+      (this.registroOriginalModal.catmat || '') !== (this.registroEditar.catmat || '') ||
+      (this.registroOriginalModal.categoria || '') !== (this.registroEditar.categoria || '') ||
+      (this.registroOriginalModal.unidade_medida || '') !== (this.registroEditar.unidade_medida || '') ||
+      (this.registroOriginalModal.descricao || '') !== (this.registroEditar.descricao || '')
+    );
   }
 
   getUnidadeMedida(item: ItemGenerico): string {
@@ -99,11 +180,42 @@ export class VisualizarGensAlimenticios {
   }
 
   salvarRegistro() {
+    this.formSubmitted = true;
+    this.errorMessageModal = '';
+
+    if (this.isSaving || !this.formularioValido) {
+      return;
+    }
+
+    this.isSaving = true;
+
     this.ItemGenericoService.save(this.registroEditar).subscribe({
       next: () => {
         window.location.reload();
+      },
+      error: () => {
+        this.isSaving = false;
+        this.errorMessageModal = 'Não foi possível salvar as alterações. Verifique os dados e tente novamente.';
       }
     });
+  }
+
+  tentarFecharModal(): void {
+    if (this.isSaving) {
+      return;
+    }
+
+    if (this.possuiDadosAlteradosModal) {
+      const desejaSair = confirm('Você alterou dados do gênero alimentício. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
+      if (!desejaSair) {
+        return;
+      }
+    }
+
+    if (this.fecharModalInternoBtn?.nativeElement) {
+      this.permitirFecharModalSemConfirmacao = true;
+      this.fecharModalInternoBtn.nativeElement.click();
+    }
   }
 
 }

@@ -54,46 +54,97 @@
 
         <div class="modal-header-azul">
           <h2 class="modal-titulo" id="editarItemGenericoLabel">EDITAR GÊNERO ALIMENTÍCIO</h2>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()"
+            aria-label="Close"></button>
+          <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
         </div>
 
         <div class="modal-body">
           <form class="form-fornecedor" (submit)="salvarRegistro(); $event.preventDefault()">
 
+            <div class="subtitulo subtitulo-modal">
+              <h5>ADICIONAR NOVO ITEM</h5>
+              <hr>
+            </div>
+
+            <p class="texto-orientacao-modal">Preencha os dados do item genérico para cadastro.</p>
+
+            @if(isSaving) {
+            <div class="status-processamento-modal">
+              <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              <small>Processando atualização. Aguarde a finalização para continuar.</small>
+            </div>
+            }
+
+            @if(errorMessageModal) {
+            <div class="mensagem-erro-modal">
+              <small>{{ errorMessageModal }}</small>
+            </div>
+            }
+
             <div class="form-row">
-              <div class="form-group flex-1">
+              <div class="form-group flex-2">
                 <label for="catmat">CATMAT</label>
-                <input #myInput type="text" id="catmat" name="catmat" [(ngModel)]="registroEditar.catmat" required>
+                <input #myInput type="text" id="catmat" name="catmat" [disabled]="isSaving"
+                  [(ngModel)]="registroEditar.catmat" maxlength="6" inputmode="numeric" placeholder="Ex.: 123456"
+                  (input)="onCatmatInput()" [class.campo-invalido]="formSubmitted && !catmatValido" required>
+                @if(formSubmitted && !catmatValido) {
+                <small class="mensagem-campo-invalido">CATMAT deve conter exatamente 6 dígitos.</small>
+                }
               </div>
 
-              <div class="form-group flex-1">
-                <label for="categoria">CATEGORIA</label>
-                <select id="categoria" name="categoria" [(ngModel)]="registroEditar.categoria" required>
-                  @for(cat of categoriasDisponiveis; track $index) {
-                  <option [value]="cat">{{ getCategoriaLabel(cat) }}</option>
-                  }
-                </select>
+              <div class="form-group">
+                <label for="descricao">DESCRIÇÃO</label>
+                <textarea id="descricao" name="descricao" [(ngModel)]="registroEditar.descricao" [disabled]="isSaving"
+                  maxlength="300" placeholder="Ex.: Arroz tipo 1" (input)="onDescricaoInput()"
+                  [class.campo-invalido]="formSubmitted && !descricaoValida" required></textarea>
+                <small class="texto-apoio-input">{{ 300 - (registroEditar.descricao || '').length }} caracteres restantes.</small>
+                @if(formSubmitted && !descricaoValida) {
+                <small class="mensagem-campo-invalido">Descrição é obrigatória (até 300 caracteres).</small>
+                }
               </div>
+            </div>
 
-              <div class="form-group flex-1">
-                <label for="unidade">UNIDADE DE MEDIDA</label>
-                <select id="unidade" name="unidade" [(ngModel)]="registroEditar.unidade_medida" required>
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="unidade">Unidade de Medida</label>
+                <select id="unidade" name="unidade" [(ngModel)]="registroEditar.unidade_medida" [disabled]="isSaving"
+                  [class.campo-invalido]="formSubmitted && !unidadeValida" required>
+                  <option value="" disabled>Selecione uma unidade</option>
                   @for(uni of unidadesDisponiveis; track $index) {
                   <option [value]="uni">{{ getUnidadeMedidaLabel(uni) }}</option>
                   }
                 </select>
+                @if(formSubmitted && !unidadeValida) {
+                <small class="mensagem-campo-invalido">Selecione uma unidade de medida.</small>
+                }
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="categoria">CATEGORIA</label>
+                <select id="categoria" name="categoria" [(ngModel)]="registroEditar.categoria" [disabled]="isSaving"
+                  [class.campo-invalido]="formSubmitted && !categoriaValida" required>
+                  <option value="" disabled>Selecione uma categoria</option>
+                  @for(cat of categoriasDisponiveis; track $index) {
+                  <option [value]="cat">{{ getCategoriaLabel(cat) }}</option>
+                  }
+                </select>
+                @if(formSubmitted && !categoriaValida) {
+                <small class="mensagem-campo-invalido">Selecione uma categoria.</small>
+                }
               </div>
             </div>
 
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label for="descricao">DESCRIÇÃO</label>
-                <textarea id="descricao" name="descricao" [(ngModel)]="registroEditar.descricao" required></textarea>
-              </div>
+            <div class="requisitos-modal" [class.requisitos-ok]="formularioValido">
+              <small><b>Obrigatório:</b> preencher CATMAT válido, categoria, unidade de medida e descrição.</small>
             </div>
 
             <div class="form-footer">
-              <button class="btn-confirmar" type="submit">
+              <button class="btn-confirmar" type="submit" [disabled]="isSaving || !formularioValido"
+                [class.btn-confirmar-desabilitado]="isSaving || !formularioValido">
+                @if(isSaving) {
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                }
                 <i class="bi bi-check-lg"></i> SALVAR
               </button>
             </div>

@@ -153,6 +153,10 @@ body{
 }
 
 #adicionarAtaModal {
+  .modal-dialog {
+    max-width: min(1240px, 96vw);
+  }
+
   .modal-custom {
     border-radius: 18px;
     border: none;
@@ -175,9 +179,9 @@ body{
   }
 
   .modal-body-ata {
-    max-height: 72vh;
-    overflow-y: auto;
-    padding: 16px 18px;
+    max-height: none;
+    overflow: visible;
+    padding: 14px 16px;
     background-color: #f8f9fb;
   }
 
@@ -249,11 +253,42 @@ body{
     padding: 14px;
   }
 
+  .form-fornecedor-cadastro {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 12px;
+  }
+
+  .form-fornecedor-cadastro .texto-orientacao-modal {
+    margin: 0;
+    grid-column: 1 / -1;
+  }
+
+  .form-secao {
+    border: 1px solid #e6edf6;
+    border-radius: 12px;
+    padding: 10px;
+    background: #fbfcfe;
+  }
+
+  .form-secao-titulo {
+    margin-bottom: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: #475569;
+  }
+
   .form-row {
     display: flex;
     gap: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     flex-wrap: wrap;
+  }
+
+  .form-secao .form-row:last-child {
+    margin-bottom: 0;
   }
 
   .form-group {
@@ -263,18 +298,18 @@ body{
     flex: 1;
 
     label {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       color: #475569;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
       letter-spacing: .02em;
     }
 
     input {
       border: 1px solid #d4dce6;
       border-radius: 10px;
-      padding: 9px 11px;
-      font-size: 14px;
+      padding: 8px 10px;
+      font-size: 13px;
       transition: border-color .15s ease, box-shadow .15s ease;
 
       &:focus {
@@ -367,10 +402,21 @@ body{
   }
 
   .mensagem-campo-invalido {
-    font-size: 12px;
+    font-size: 11px;
     color: #b42318;
     font-weight: 600;
     margin-top: 4px;
+  }
+
+  .form-fornecedor-cadastro .requisitos-modal {
+    grid-column: 1 / -1;
+  }
+
+  .form-fornecedor-cadastro .form-footer {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e6edf6;
   }
 
   .requisitos-modal {
@@ -399,6 +445,17 @@ body{
   .btn-confirmar:disabled {
     opacity: .6;
     cursor: not-allowed;
+  }
+
+  @media (max-width: 1200px) {
+    .modal-body-ata {
+      max-height: 74vh;
+      overflow-y: auto;
+    }
+
+    .form-fornecedor-cadastro {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 992px) {

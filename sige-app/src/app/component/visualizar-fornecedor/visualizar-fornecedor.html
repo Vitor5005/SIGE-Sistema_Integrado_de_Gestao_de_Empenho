@@ -71,70 +71,162 @@
       <div class="modal-content modal-custom">
         <div class="modal-header-azul">
           <h2 class="modal-titulo">EDIÇÃO DE FORNECEDOR</h2>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()"
+            aria-label="Close"></button>
+          <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
         </div>
         <div class="modal-body">
           <form class="form-fornecedor" #form="ngForm">
 
-            <div class="form-row">
-              <div class="form-group flex-2">
-                <label>RAZÂO SOCIAL</label>
-                <input type="text" [(ngModel)]="fornecedor_editar.razao_social" name="razao_social">
+            <p class="texto-orientacao-modal">Revise e atualize os dados abaixo. Campos com validação exibem alerta em vermelho quando inválidos.</p>
+
+            @if(isSaving) {
+            <div class="status-processamento-modal">
+              <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              <small>Processando atualização. Aguarde a finalização para continuar.</small>
+            </div>
+            }
+
+            @if(errorMessageModal) {
+            <div class="mensagem-erro-modal">
+              <small>{{ errorMessageModal }}</small>
+            </div>
+            }
+
+            <section class="form-secao">
+              <div class="form-secao-titulo">Dados do fornecedor</div>
+
+              <div class="form-row">
+                <div class="form-group flex-2">
+                  <label>RAZÂO SOCIAL</label>
+                  <input #myInput type="text" [(ngModel)]="fornecedor_editar.razao_social" name="razao_social"
+                    [disabled]="isSaving" maxlength="255" placeholder="Ex.: Empresa LTDA" (input)="onRazaoSocialInput()"
+                    [class.campo-invalido]="formSubmitted && !fornecedor_editar.razao_social.trim()">
+                  @if(formSubmitted && !fornecedor_editar.razao_social.trim()) {
+                  <small class="mensagem-campo-invalido">Razão social é obrigatória.</small>
+                  }
+                </div>
               </div>
+
+              <div class="form-row">
+                <div class="form-group flex-2">
+                  <label>NOME FANTASIA</label>
+                  <input type="text" [(ngModel)]="fornecedor_editar.nome_fantasia" name="nome_fantasia" [disabled]="isSaving"
+                    maxlength="255" placeholder="Ex.: Empresa" (input)="onNomeFantasiaInput()"
+                    [class.campo-invalido]="formSubmitted && !fornecedor_editar.nome_fantasia.trim()">
+                  @if(formSubmitted && !fornecedor_editar.nome_fantasia.trim()) {
+                  <small class="mensagem-campo-invalido">Nome fantasia é obrigatório.</small>
+                  }
+                </div>
+                <div class="form-group flex-1">
+                  <label>CNPJ</label>
+                  <input type="text" [(ngModel)]="fornecedor_editar.cnpj" name="cnpj" [disabled]="isSaving"
+                    maxlength="18" placeholder="00.000.000/0000-00" inputmode="numeric" (input)="onCnpjInput()"
+                    [class.campo-invalido]="formSubmitted && !cnpjValido">
+                  @if(formSubmitted && !cnpjValido) {
+                  <small class="mensagem-campo-invalido">CNPJ inválido.</small>
+                  }
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>TELEFONE</label>
+                  <input type="text" [(ngModel)]="fornecedor_editar.telefone" name="telefone" [disabled]="isSaving"
+                    maxlength="15" placeholder="(00) 00000-0000" inputmode="numeric" (input)="onTelefoneInput()"
+                    [class.campo-invalido]="formSubmitted && !telefoneValido">
+                  @if(formSubmitted && !telefoneValido) {
+                  <small class="mensagem-campo-invalido">Telefone inválido.</small>
+                  }
+                </div>
+                <div class="form-group flex-2">
+                  <label>E-MAIL</label>
+                  <input type="email" [(ngModel)]="fornecedor_editar.email" name="email" [disabled]="isSaving" maxlength="255"
+                    placeholder="contato@empresa.com.br" (input)="onEmailInput()"
+                    [class.campo-invalido]="formSubmitted && !emailValido">
+                  @if(formSubmitted && !emailValido) {
+                  <small class="mensagem-campo-invalido">E-mail inválido.</small>
+                  }
+                </div>
+              </div>
+            </section>
+
+            <section class="form-secao">
+              <div class="form-secao-titulo">Endereço</div>
+
+              <div class="form-row">
+                <div class="form-group flex-2">
+                  <label>RUA</label>
+                  <input type="text" [(ngModel)]="endereco_editar.lagradouro" name="logradouro" [disabled]="isSaving"
+                    maxlength="255" placeholder="Ex.: Rua Exemplo" (input)="onLogradouroInput()"
+                    [class.campo-invalido]="formSubmitted && !endereco_editar.lagradouro.trim()">
+                  @if(formSubmitted && !endereco_editar.lagradouro.trim()) {
+                  <small class="mensagem-campo-invalido">Rua é obrigatória.</small>
+                  }
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-2">
+                  <label>CEP</label>
+                  <input type="text" [(ngModel)]="endereco_editar.cep" name="cep" [disabled]="isSaving" maxlength="9"
+                    placeholder="00000-000" inputmode="numeric" (input)="onCepInput()"
+                    [class.campo-invalido]="formSubmitted && !cepValido">
+                  @if(formSubmitted && !cepValido) {
+                  <small class="mensagem-campo-invalido">CEP inválido.</small>
+                  }
+                </div>
+                <div class="form-group flex-1">
+                  <label>NÚMERO</label>
+                  <input type="text" [(ngModel)]="endereco_editar.numero" name="numero" [disabled]="isSaving"
+                    maxlength="20" placeholder="Ex.: 123" (input)="onNumeroEnderecoInput()"
+                    [class.campo-invalido]="formSubmitted && !endereco_editar.numero.trim()">
+                  @if(formSubmitted && !endereco_editar.numero.trim()) {
+                  <small class="mensagem-campo-invalido">Número é obrigatório.</small>
+                  }
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>BAIRRO</label>
+                  <input type="text" [(ngModel)]="endereco_editar.bairro" name="bairro" [disabled]="isSaving" maxlength="100"
+                    placeholder="Ex.: Centro" (input)="onBairroInput()"
+                    [class.campo-invalido]="formSubmitted && !endereco_editar.bairro.trim()">
+                  @if(formSubmitted && !endereco_editar.bairro.trim()) {
+                  <small class="mensagem-campo-invalido">Bairro é obrigatório.</small>
+                  }
+                </div>
+                <div class="form-group">
+                  <label>MUNICÍPIO</label>
+                  <input type="text" [(ngModel)]="endereco_editar.municipio" name="municipio" [disabled]="isSaving"
+                    maxlength="100" placeholder="Ex.: São Paulo" (input)="onMunicipioInput()"
+                    [class.campo-invalido]="formSubmitted && !endereco_editar.municipio.trim()">
+                  @if(formSubmitted && !endereco_editar.municipio.trim()) {
+                  <small class="mensagem-campo-invalido">Município é obrigatório.</small>
+                  }
+                </div>
+                <div class="form-group">
+                  <label>ESTADO</label>
+                  <input type="text" [(ngModel)]="endereco_editar.estado" name="estado" [disabled]="isSaving" maxlength="2"
+                    placeholder="UF" (input)="onEstadoInput()" [class.campo-invalido]="formSubmitted && !estadoValido">
+                  @if(formSubmitted && !estadoValido) {
+                  <small class="mensagem-campo-invalido">Use a UF com 2 letras.</small>
+                  }
+                </div>
+              </div>
+            </section>
+
+            <div class="requisitos-modal" [class.requisitos-ok]="fornecedorFormValido">
+              <small><b>Obrigatório:</b> preencher todos os dados com formato válido para confirmar alterações.</small>
             </div>
 
-            <div class="form-row">
-              <div class="form-group flex-2">
-                <label>NOME FANTASIA</label>
-                <input type="text" [(ngModel)]="fornecedor_editar.nome_fantasia" name="nome_fantasia">
-              </div>
-              <div class="form-group flex-1">
-                <label>CNPJ</label>
-                <input type="text" [(ngModel)]="fornecedor_editar.cnpj" name="cnpj">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group flex-2">
-                <label>RUA</label>
-                <input type="text" [(ngModel)]="endereco_editar.lagradouro" name="logradouro">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group flex-2">
-                <label>CEP</label>
-                <input type="text" [(ngModel)]="endereco_editar.cep" name="cep">
-              </div>
-              <div class="form-group flex-1">
-                <label>NÚMERO</label>
-                <input type="text" [(ngModel)]="endereco_editar.numero" name="numero">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>BAIRRO</label>
-                <input type="text" [(ngModel)]="endereco_editar.bairro" name="bairro">
-              </div>
-              <div class="form-group">
-                <label>MUNICÍPIO</label>
-                <input type="text" [(ngModel)]="endereco_editar.municipio" name="municipio">
-              </div>
-              <div class="form-group">
-                <label>ESTADO</label>
-                <input type="text" [(ngModel)]="endereco_editar.estado" name="estado">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label>TELEFONE</label>
-                <input type="text" [(ngModel)]="fornecedor_editar.telefone" name="telefone">
-              </div>
-              <div class="form-group flex-2">
-                <label>E-MAIL</label>
-                <input type="email" [(ngModel)]="fornecedor_editar.email" name="email">
-              </div>
-            </div>
             <div class="form-footer">
-              <button type="submit" class="btn-confirmar" (click)="save()">
+              <button type="button" class="btn-confirmar" [disabled]="isSaving || !fornecedorFormValido"
+                [class.btn-confirmar-desabilitado]="isSaving || !fornecedorFormValido" (click)="save()">
+                @if(isSaving) {
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                }
                 <i class="bi bi-check-lg"></i> CONFIRMAR ALTERAÇÕES
               </button>
             </div>
