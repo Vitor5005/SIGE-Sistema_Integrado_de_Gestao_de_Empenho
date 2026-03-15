@@ -102,6 +102,7 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 class PedidosDaOrdemViewSet(viewsets.ModelViewSet):
     queryset = ItemOrdem.objects.all()
     serializer_class = ItemOrdemSerializer
+    pagination_class = None
     permission_classes = [IsAdmin|IsTecnico]
     
     def get_queryset(self):
