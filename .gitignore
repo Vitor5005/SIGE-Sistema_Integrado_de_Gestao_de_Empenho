@@ -149,3 +149,6 @@ sige-api/usuario/migrations/0001_initial.py
 sige-api/usuario/migrations/0001_initial.py
 sige-api/usuario/migrations/0001_initial.py
 sige-api/usuario/migrations/0001_initial.py
+sige-api/empenho/migrations/0003_alter_operacaoitem_data.py
+sige-api/entrega/migrations/0002_ordementrega_data_entrega_prevista_and_more.py
+sige-api/usuario/migrations/0001_initial.py
