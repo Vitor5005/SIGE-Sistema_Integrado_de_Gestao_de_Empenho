@@ -4,7 +4,7 @@
   <div class="container1">
     <div class="container-numero">
       <b>{{ licitacao.numero_licitacao }}</b>
-      <button data-bs-toggle="modal" data-bs-target="#adicionarAtaModal" (click)="reiniciar_Modal()">
+      <button #myInput data-bs-toggle="modal" data-bs-target="#adicionarAtaModal" [disabled]="isSaving" (click)="reiniciar_Modal()">
         <i class="bi bi-file-earmark-plus"></i>
         Adicionar Ata
       </button>
@@ -62,28 +62,44 @@
     <h5>Clique no botão "Adicionar Ata" para adicionar uma nova ata.</h5>
   </div>
 
-  <div #myModal class="modal fade" id="adicionarAtaModal" tabindex="-1" aria-hidden="true">
+  <div #myModal class="modal fade" id="adicionarAtaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content modal-custom">
         <div class="modal-header-azul">
           <h2 class="modal-titulo">Adicionar Ata </h2>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()" aria-label="Close"></button>
+          <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body modal-body-ata">
+
+          @if(isSaving) {
+          <div class="status-processamento-modal">
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <small>Processando cadastro. Aguarde a finalização para continuar.</small>
+          </div>
+          }
+
+          @if(errorMessageModal) {
+          <div class="mensagem-erro-modal">
+            <small>{{ errorMessageModal }}</small>
+          </div>
+          }
 
           @if (modal_page === 0){
 
-          <div class="subtitulo">
+          <div class="subtitulo subtitulo-modal">
             <h5>SELECIONE UM FORNECEDOR</h5>
             <hr>
           </div>
 
 
-          <div class="listagem">
+          <p class="texto-orientacao-modal">Selecione um fornecedor existente ou avance para cadastrar um novo.</p>
+
+          <div class="listagem listagem-fornecedores">
 
             <app-barra-pesquisa></app-barra-pesquisa>
 
-            <table class="tabela">
+            <table class="tabela tabela-fornecedores">
               <thead>
                 <tr>
                   <th scope="col">Razão Social</th>
@@ -94,7 +110,7 @@
               <tbody>
                 @for (item of fornecedores; track item.id) {
                 @if (!fornecedores_licitados.includes(item.id)) {
-                <tr style="cursor: pointer;" (click)="escolherFornecedor(item)">
+                <tr class="linha-fornecedor" (click)="escolherFornecedor(item)">
                   <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
                   <td>{{ item.razao_social }}</td>
                   <td>
@@ -107,9 +123,9 @@
               </tbody>
             </table>
 
-            <h6>* Caso o fornecedor não esteja registrado no sistema, clique no botão "ADICIONAR NOVO FORNECEDOR"</h6>
+            <h6 class="texto-ajuda-fornecedor">* Caso o fornecedor não esteja registrado no sistema, clique no botão "ADICIONAR NOVO FORNECEDOR"</h6>
             <div class="form-footer">
-              <button class="btn-confirmar" (click)="avanca_modal_page()">
+              <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="avanca_modal_page()">
                 <i class="bi bi-person-add"></i> ADICIONAR NOVO FORNECEDOR
               </button>
             </div>
@@ -119,75 +135,136 @@
           }
 
           @if (modal_page === 1){
-          <div class="subtitulo">
+          <div class="subtitulo subtitulo-modal">
             <h5>ADICIONAR NOVO FORNECEDOR</h5>
             <hr>
           </div>
-          <form class="form-fornecedor" #form="ngForm">
+          <p class="texto-orientacao-modal">Preencha os dados abaixo para cadastrar o fornecedor e o endereço.</p>
+          <form class="form-fornecedor form-fornecedor-cadastro" #form="ngForm">
             <div class="form-row">
               <div class="form-group flex-2">
                 <label>RAZÂO SOCIAL</label>
-                <input type="text" [(ngModel)]="fornecedor_insercao.razao_social" name="razao_social">
+                <input type="text" [(ngModel)]="fornecedor_insercao.razao_social" name="razao_social" [disabled]="isSaving"
+                  maxlength="255" placeholder="Ex.: Empresa Brasileira de Alimentos LTDA" (input)="onRazaoSocialInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !fornecedor_insercao.razao_social.trim()">
+                @if(formSubmittedPage1 && !fornecedor_insercao.razao_social.trim()) {
+                <small class="mensagem-campo-invalido">Razão social é obrigatória.</small>
+                }
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group flex-2">
                 <label>NOME FANTASIA</label>
-                <input type="text" [(ngModel)]="fornecedor_insercao.nome_fantasia" name="nome_fantasia">
+                <input type="text" [(ngModel)]="fornecedor_insercao.nome_fantasia" name="nome_fantasia" [disabled]="isSaving"
+                  maxlength="255" placeholder="Ex.: Alimentos Brasil" (input)="onNomeFantasiaInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !fornecedor_insercao.nome_fantasia.trim()">
+                @if(formSubmittedPage1 && !fornecedor_insercao.nome_fantasia.trim()) {
+                <small class="mensagem-campo-invalido">Nome fantasia é obrigatório.</small>
+                }
               </div>
               <div class="form-group flex-1">
                 <label>CNPJ</label>
-                <input type="text" [(ngModel)]="fornecedor_insercao.cnpj" name="cnpj">
+                <input type="text" [(ngModel)]="fornecedor_insercao.cnpj" name="cnpj" [disabled]="isSaving"
+                  maxlength="18" placeholder="00.000.000/0000-00" inputmode="numeric" (input)="onCnpjInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !cnpjValido">
+                @if(formSubmittedPage1 && !cnpjValido) {
+                <small class="mensagem-campo-invalido">CNPJ inválido (14 dígitos).</small>
+                }
               </div>
             </div>
             <div class="form-row">
               <div class="form-group flex-2">
                 <label>RUA</label>
-                <input type="text" [(ngModel)]="endereco_insercao.lagradouro" name="logradouro">
+                <input type="text" [(ngModel)]="endereco_insercao.lagradouro" name="logradouro" [disabled]="isSaving"
+                  maxlength="255" placeholder="Ex.: Rua das Flores" (input)="onLogradouroInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !endereco_insercao.lagradouro.trim()">
+                @if(formSubmittedPage1 && !endereco_insercao.lagradouro.trim()) {
+                <small class="mensagem-campo-invalido">Rua é obrigatória.</small>
+                }
               </div>
             </div>
             <div class="form-row">
               <div class="form-group flex-2">
                 <label>CEP</label>
-                <input type="text" [(ngModel)]="endereco_insercao.cep" name="cep">
+                <input type="text" [(ngModel)]="endereco_insercao.cep" name="cep" [disabled]="isSaving"
+                  maxlength="9" placeholder="00000-000" inputmode="numeric" (input)="onCepInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !cepValido">
+                @if(formSubmittedPage1 && !cepValido) {
+                <small class="mensagem-campo-invalido">CEP inválido (8 dígitos).</small>
+                }
               </div>
               <div class="form-group flex-1">
                 <label>NÚMERO</label>
-                <input type="text" [(ngModel)]="endereco_insercao.numero" name="numero">
+                <input type="text" [(ngModel)]="endereco_insercao.numero" name="numero" [disabled]="isSaving"
+                  maxlength="20" placeholder="Ex.: 123" (input)="onNumeroEnderecoInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !endereco_insercao.numero.trim()">
+                @if(formSubmittedPage1 && !endereco_insercao.numero.trim()) {
+                <small class="mensagem-campo-invalido">Número é obrigatório.</small>
+                }
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label>BAIRRO</label>
-                <input type="text" [(ngModel)]="endereco_insercao.bairro" name="bairro">
+                <input type="text" [(ngModel)]="endereco_insercao.bairro" name="bairro" [disabled]="isSaving"
+                  maxlength="100" placeholder="Ex.: Centro" (input)="onBairroInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !endereco_insercao.bairro.trim()">
+                @if(formSubmittedPage1 && !endereco_insercao.bairro.trim()) {
+                <small class="mensagem-campo-invalido">Bairro é obrigatório.</small>
+                }
               </div>
               <div class="form-group">
                 <label>MUNICÍPIO</label>
-                <input type="text" [(ngModel)]="endereco_insercao.municipio" name="municipio">
+                <input type="text" [(ngModel)]="endereco_insercao.municipio" name="municipio" [disabled]="isSaving"
+                  maxlength="100" placeholder="Ex.: São Paulo" (input)="onMunicipioInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !endereco_insercao.municipio.trim()">
+                @if(formSubmittedPage1 && !endereco_insercao.municipio.trim()) {
+                <small class="mensagem-campo-invalido">Município é obrigatório.</small>
+                }
               </div>
               <div class="form-group">
                 <label>ESTADO</label>
-                <input type="text" [(ngModel)]="endereco_insercao.estado" name="estado">
+                <input type="text" [(ngModel)]="endereco_insercao.estado" name="estado" [disabled]="isSaving"
+                  maxlength="2" placeholder="UF" (input)="onEstadoInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !estadoValido">
+                @if(formSubmittedPage1 && !estadoValido) {
+                <small class="mensagem-campo-invalido">Use a UF com 2 letras.</small>
+                }
               </div>
             </div>
             <div class="form-row">
               <div class="form-group flex-1">
                 <label>TELEFONE</label>
-                <input type="text" [(ngModel)]="fornecedor_insercao.telefone" name="telefone">
+                <input type="text" [(ngModel)]="fornecedor_insercao.telefone" name="telefone" [disabled]="isSaving"
+                  maxlength="15" placeholder="(00) 00000-0000" inputmode="numeric" (input)="onTelefoneInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !telefoneValido">
+                @if(formSubmittedPage1 && !telefoneValido) {
+                <small class="mensagem-campo-invalido">Telefone inválido.</small>
+                }
               </div>
               <div class="form-group flex-2">
                 <label>E-MAIL</label>
-                <input type="email" [(ngModel)]="fornecedor_insercao.email" name="email">
+                <input type="email" [(ngModel)]="fornecedor_insercao.email" name="email" [disabled]="isSaving"
+                  maxlength="255" placeholder="contato@empresa.com.br" (input)="onEmailInput()"
+                  [class.campo-invalido]="formSubmittedPage1 && !emailValido">
+                @if(formSubmittedPage1 && !emailValido) {
+                <small class="mensagem-campo-invalido">E-mail inválido.</small>
+                }
               </div>
             </div>
 
+            <div class="requisitos-modal" [class.requisitos-ok]="fornecedorFormValido">
+              <small><b>Obrigatório:</b> preencher todos os dados do fornecedor e endereço com formato válido.</small>
+            </div>
+
             <div class="form-footer">
-              <button class="btn-confirmar" (click)="volta_modal_page()">
+              <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page()">
                 <i class="bi bi-arrow-left"></i> VOLTAR
               </button>
 
-              <button class="btn-confirmar" (click)="avanca_modal_page()">
+              <button type="button" class="btn-confirmar" [disabled]="isSaving || !fornecedorFormValido"
+                [class.btn-confirmar-desabilitado]="isSaving || !fornecedorFormValido" (click)="avanca_modal_page()">
                 <i class="bi bi-arrow-right"></i> PROSSEGUIR
               </button>
             </div>
@@ -197,12 +274,12 @@
 
           @if (modal_page === 2){
 
-          <div class="subtitulo">
+          <div class="subtitulo subtitulo-modal">
             <h5>INFORMAÇÔES DO FORNECEDOR</h5>
             <hr>
           </div>
 
-          <div>
+          <div class="resumo-fornecedor">
             <p><b>RAZÃO SOCIAL:</b> {{ fornecedor_insercao.razao_social }}</p>
             <p><b>NOME FANTASIA:</b> {{ fornecedor_insercao.nome_fantasia }}</p>
             <p><b>CNPJ:</b> {{ fornecedor_insercao.cnpj }}</p>
@@ -217,37 +294,59 @@
 
           </div>
 
-          <form class="form-fornecedor" #form="ngForm">
+          <form class="form-fornecedor form-finalizacao" #form="ngForm">
             <hr>
             <div class="form-row">
               <div class="form-group flex-1">
                 <label>CONTRATO DA ATA</label>
-                <input type="text" [(ngModel)]="ata_insercao.numero_ata" name="contrato">
+                <input type="text" [(ngModel)]="ata_insercao.numero_ata" name="contrato" [disabled]="isSaving"
+                  maxlength="50" placeholder="Ex.: ATA-2026-001" (input)="onNumeroAtaInput()"
+                  [class.campo-invalido]="formSubmittedPage2 && !ata_insercao.numero_ata.trim()">
+                @if(formSubmittedPage2 && !ata_insercao.numero_ata.trim()) {
+                <small class="mensagem-campo-invalido">Contrato da ata é obrigatório.</small>
+                }
               </div>
 
               <div class="form-group flex-2">
                 <label>NUMERO DO EMPENHO</label>
-                <input type="text" [(ngModel)]="empenho_insercao.codigo" name="numero_empenho">
+                <input type="text" [(ngModel)]="empenho_insercao.codigo" name="numero_empenho" [disabled]="isSaving"
+                  maxlength="50" placeholder="Ex.: EMP-2026-0001" (input)="onCodigoEmpenhoInput()"
+                  [class.campo-invalido]="formSubmittedPage2 && !empenho_insercao.codigo.trim()">
+                @if(formSubmittedPage2 && !empenho_insercao.codigo.trim()) {
+                <small class="mensagem-campo-invalido">Número do empenho é obrigatório.</small>
+                }
               </div>
+            </div>
+
+            <div class="requisitos-modal" [class.requisitos-ok]="ataFormValido">
+              <small><b>Obrigatório:</b> informar contrato da ata e número do empenho para concluir.</small>
             </div>
 
             <div class="form-footer">
               @if (jump_page == false) {
-              <button class="btn-confirmar" (click)="volta_modal_page()">
+              <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page()">
                 <i class="bi bi-arrow-left"></i> VOLTAR
               </button>
 
-              <button class="btn-confirmar" (click)="saveFornecedor()">
+              <button type="button" class="btn-confirmar" [disabled]="!podeConcluirCadastro"
+                [class.btn-confirmar-desabilitado]="!podeConcluirCadastro" (click)="saveFornecedor()">
+                @if(isSaving) {
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                }
                 <i class="bi bi-check-lg"></i> CONCLUIR
               </button>
               }
 
               @if (jump_page == true) {
-              <button class="btn-confirmar" (click)="volta_modal_page(0)">
+              <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page(0)">
                 <i class="bi bi-arrow-left"></i> VOLTAR
               </button>
 
-              <button class="btn-confirmar" (click)="saveAta()">
+              <button type="button" class="btn-confirmar" [disabled]="!podeConcluirCadastro"
+                [class.btn-confirmar-desabilitado]="!podeConcluirCadastro" (click)="saveAta()">
+                @if(isSaving) {
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                }
                 <i class="bi bi-check-lg"></i> CONCLUIR
               </button>
               }

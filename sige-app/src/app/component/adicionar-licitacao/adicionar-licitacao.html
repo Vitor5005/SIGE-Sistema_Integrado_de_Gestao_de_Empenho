@@ -1,5 +1,5 @@
 <body>
-  <form (submit)="save()">
+  <form (ngSubmit)="save($event)">
 
     <div class="container-titulo">
       <h3><i class="bi bi-plus"></i>
@@ -17,32 +17,66 @@
       <div class="conteudo">
         <div class="grupo-inputs">
           <div class="d-flex flex-column">
-            <label>Número da Licitação</label>
+            <label>Número da Licitação *</label>
             <input type="text" placeholder="Ex.: 001/2026" [(ngModel)]="licitacao.numero_licitacao"
-              name="numero_licitacao">
+              name="numero_licitacao" [disabled]="isSaving"
+              [class.campo-invalido]="formSubmitted && !numeroLicitacaoValido">
+            @if(formSubmitted && !numeroLicitacaoValido) {
+            <small class="mensagem-campo-invalido">Informe o número da licitação.</small>
+            }
           </div>
 
           <div class="d-flex flex-column">
-            <label>Validade (em meses)</label>
-            <input type="number" placeholder="12" [(ngModel)]="licitacao.validade" name="validade">
+            <label>Validade (em meses) *</label>
+            <input type="number" placeholder="12" [(ngModel)]="licitacao.validade" name="validade"
+              min="1" max="120" step="1" [disabled]="isSaving"
+              [class.campo-invalido]="formSubmitted && !validadeValida">
+            <small class="texto-apoio-campo">Use um valor inteiro entre 1 e 120 meses.</small>
+            @if(formSubmitted && !validadeValida) {
+            <small class="mensagem-campo-invalido">Informe uma validade válida (1 a 120 meses).</small>
+            }
           </div>
 
           <div class="d-flex flex-column">
-            <label>Data de abertura</label>
-            <input type="date" [(ngModel)]="licitacao.data_abertura" name="data_abertura">
+            <label>Data de abertura *</label>
+            <input type="date" [(ngModel)]="licitacao.data_abertura" name="data_abertura"
+              [max]="todayDate" [disabled]="isSaving"
+              [class.campo-invalido]="formSubmitted && !dataAberturaValida">
+            <small class="texto-apoio-campo">A data não pode ser futura.</small>
+            @if(formSubmitted && !dataAberturaValida) {
+            <small class="mensagem-campo-invalido">Informe uma data válida (hoje ou anterior).</small>
+            }
           </div>
         </div>
 
         <div>
           <label>Descrição (opcional)</label>
-          <textarea rows="5" [(ngModel)]="licitacao.descricao" name="descricao"></textarea>
+          <textarea rows="5" [(ngModel)]="licitacao.descricao" name="descricao" [disabled]="isSaving"></textarea>
         </div>
       </div>
     </section>
 
 
     <div class="container-botoes">
-      <button class="botao bnt-criar">Criar Licitação</button>
+      <div class="requisitos-licitacao" [class.requisitos-ok]="podeCriarLicitacao">
+        <small><b>Campos obrigatórios para criar:</b> número da licitação, validade e data de abertura.</small>
+      </div>
+
+      @if(errorMessage) {
+      <div class="mensagem-erro-submit">
+        <small>{{ errorMessage }}</small>
+      </div>
+      }
+
+      <button class="botao bnt-criar" type="submit" [disabled]="!podeCriarLicitacao"
+        [class.botao-desabilitado]="!podeCriarLicitacao">
+        @if(isSaving) {
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        Salvando...
+        } @else {
+        Criar Licitação
+        }
+      </button>
     </div>
 
   </form>
