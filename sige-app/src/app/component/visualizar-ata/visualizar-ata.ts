@@ -454,7 +454,7 @@ export class VisualizarAta {
 
   private salvarItemAtaECriarEmpenho(): void {
     this.itemAta_insercao.ata = this.ata.id;
-    this.itemAta_insercao.quantidade_licitada = Number(this.itemAta_insercao.quantidade_licitada) - 1;
+    this.itemAta_insercao.quantidade_licitada = Number(this.itemAta_insercao.quantidade_licitada);
 
     this.itemAtaService.save(this.itemAta_insercao).subscribe({
       next: (resposta: ItemAtaInsert) => {
