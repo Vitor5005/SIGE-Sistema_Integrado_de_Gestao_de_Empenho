@@ -85,6 +85,18 @@ docker compose --env-file .env.production -f docker-compose.yml -f docker-compos
 
 Em produção, o frontend é compilado e servido pelo Nginx na porta definida por `APP_PORT` (porta `80` por padrão). O Nginx encaminha `/api`, `/admin` e `/static` para o Django.
 
+### Deploy no Render
+
+O arquivo `render.yaml` cria os recursos necessários pelo Render Blueprint:
+
+- `sige-mysql`: MySQL privado com disco persistente de 10 GB;
+- `sige-api`: API Django/Gunicorn;
+- `sige-app`: frontend Angular servido pelo Nginx.
+
+Depois de enviar a branch `deploy` para o repositório remoto, acesse **New > Blueprint** no Render, conecte o repositório, selecione essa branch e aplique o Blueprint. As senhas do MySQL e a chave do Django são geradas automaticamente pelo Render.
+
+> O MySQL privado e a API usam o plano `starter`. O frontend usa o plano `free` e pode entrar em suspensão quando ficar ocioso.
+
 ### Fluxo automático da API no startup
 
 Quando o container da API inicia, o `entrypoint.sh` executa:
