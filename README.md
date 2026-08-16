@@ -58,12 +58,13 @@ No ambiente Docker, o sistema sobe com 3 serviços:
 - Docker
 - Docker Compose
 
-### Subir o ambiente
+### Subir o ambiente de desenvolvimento
 
 Na raiz do repositório:
 
 ```bash
-docker compose up --build
+cp .env.development.example .env.development
+docker compose --env-file .env.development -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
 ### Endereços
@@ -73,16 +74,26 @@ docker compose up --build
 - Django Admin: `http://localhost:8000/admin`
 - MySQL (host): `localhost:3308`
 
+### Subir o ambiente de produção
+
+Preencha as credenciais e os domínios antes de iniciar:
+
+```bash
+cp .env.production.example .env.production
+docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+```
+
+Em produção, o frontend é compilado e servido pelo Nginx na porta definida por `APP_PORT` (porta `80` por padrão). O Nginx encaminha `/api`, `/admin` e `/static` para o Django.
+
 ### Fluxo automático da API no startup
 
 Quando o container da API inicia, o `entrypoint.sh` executa:
 
 1. espera o MySQL ficar disponível;
-2. `python manage.py makemigrations`;
-3. `python manage.py migrate`;
-4. `python manage.py createsuperuser --noinput` (se necessário);
-5. `python seed.py` para carga inicial;
-6. `python manage.py runserver 0.0.0.0:8000`.
+2. executa `python manage.py migrate`;
+3. opcionalmente cria o superusuário quando `CREATE_SUPERUSER=True`;
+4. opcionalmente carrega dados iniciais quando `SEED_DATA=True`;
+5. inicia o comando definido pelo ambiente: servidor de desenvolvimento ou Gunicorn.
 
 **Credenciais padrão (ambiente Docker):**
 
@@ -134,27 +145,31 @@ Prefixo base:
 
 ## ⚙ Variáveis de ambiente
 
-Exemplo utilizado no ambiente Docker:
+Use `.env.development.example` como base para desenvolvimento e `.env.production.example` como base para produção. As principais variáveis são:
 
 ```env
 DB_NAME=sige
-DB_USER=root
-DB_PASSWORD=root
-DB_HOST=db
-DB_PORT=3306
+DB_USER=sige
+DB_PASSWORD=troque-esta-senha
+DB_ROOT_PASSWORD=troque-esta-senha-root
 
 DJANGO_SUPERUSER_USERNAME=admin
 DJANGO_SUPERUSER_EMAIL=admin@gmail.com
-DJANGO_SUPERUSER_PASSWORD=admin
+DJANGO_SUPERUSER_PASSWORD=troque-esta-senha
+CREATE_SUPERUSER=False
+SEED_DATA=False
 
-DEBUG=True
-DJANGO_SECRET_KEY=chave_super_secreta_aqui
+DEBUG=False
+DJANGO_SECRET_KEY=gere-uma-chave-secreta-longa-e-aleatoria
+ALLOWED_HOSTS=seu-dominio.example.com
+CORS_ALLOWED_ORIGINS=https://seu-dominio.example.com
+CSRF_TRUSTED_ORIGINS=https://seu-dominio.example.com
 
 EMAIL_HOST_USER=seu_email_google@gmail.com
 EMAIL_HOST_PASSWORD=sua_senha_de_app_google
 ```
 
-Para testar localmente, crie `sige-api/.env` com essas variáveis. O backend lê esse arquivo automaticamente via `python-dotenv`.
+Para executar sem Docker, crie `sige-api/.env`. O backend lê esse arquivo automaticamente via `python-dotenv`. Nunca versione arquivos `.env` com segredos reais.
 
 ## 📁 Estrutura do repositório
 
@@ -165,6 +180,8 @@ Para testar localmente, crie `sige-api/.env` com essas variáveis. O backend lê
 ├── sige-api/
 ├── sige-app/
 ├── docker-compose.yml
+├── docker-compose.dev.yml
+├── docker-compose.prod.yml
 └── README.md
 ```
 

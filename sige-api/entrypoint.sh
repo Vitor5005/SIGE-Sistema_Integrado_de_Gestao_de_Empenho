@@ -1,22 +1,31 @@
 #!/bin/sh
+set -e
 
 echo "Aguardando banco de dados..."
 
-while ! nc -z db 3306; do
+while ! nc -z "${DB_HOST:-db}" "${DB_PORT:-3306}"; do
   sleep 2
 done
 
-echo "Banco de dados pronto! Criando migrações..."
-python manage.py makemigrations
-
-echo "Banco de dados pronto! Iniciando as migrações..."
+echo "Banco de dados pronto! Aplicando migracoes..."
 python manage.py migrate
 
-echo "Criando superusuário se não existir..."
-python manage.py createsuperuser --noinput || true
+if [ "${CREATE_SUPERUSER:-False}" = "True" ]; then
+  echo "Criando superusuario se nao existir..."
+  python manage.py createsuperuser --noinput || true
+fi
 
-echo "Populando dados iniciais..."
-python seed.py
+if [ "${SEED_DATA:-False}" = "True" ]; then
+  echo "Populando dados iniciais..."
+  python seed.py
+fi
 
-echo "Iniciando o servidor da API..."
-python manage.py runserver 0.0.0.0:8000
+if [ "$#" -eq 0 ]; then
+  set -- gunicorn sige_api.wsgi:application \
+    --bind "0.0.0.0:${PORT:-8000}" \
+    --workers "${WEB_CONCURRENCY:-3}" \
+    --timeout "${GUNICORN_TIMEOUT:-120}"
+fi
+
+echo "Iniciando a API..."
+exec "$@"

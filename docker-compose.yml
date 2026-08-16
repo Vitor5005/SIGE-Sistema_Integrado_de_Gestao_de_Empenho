@@ -1,61 +1,54 @@
-version: '3.9'
-
 services:
   db:
     image: mysql:8
-    container_name: sige_db
-    restart: always
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: sige
-    ports:
-      - "3308:3306"
+      MYSQL_DATABASE: ${DB_NAME:-sige}
+      MYSQL_USER: ${DB_USER:-sige}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-sige}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   api:
-    build: 
+    build:
       context: ./sige-api
       dockerfile: Dockerfile
-    container_name: sige_api
-    entrypoint: ["/entrypoint.sh"]
-    volumes:
-      - ./sige-api:/app
-    ports:
-      - "8000:8000"
+    restart: unless-stopped
     environment:
-      DB_NAME: sige
-      DB_USER: root
-      DB_PASSWORD: root
+      DB_NAME: ${DB_NAME:-sige}
+      DB_USER: ${DB_USER:-sige}
+      DB_PASSWORD: ${DB_PASSWORD:-sige}
       DB_HOST: db
       DB_PORT: 3306
-      DJANGO_SUPERUSER_USERNAME: admin
-      DJANGO_SUPERUSER_EMAIL: admin@gmail.com
-      DJANGO_SUPERUSER_PASSWORD: admin
-      DEBUG: "True"
-      DJANGO_SECRET_KEY: chave_super_secreta_aqui
+      DEBUG: ${DEBUG:-False}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:-admin}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:-admin@example.com}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-}
+      CREATE_SUPERUSER: ${CREATE_SUPERUSER:-False}
+      SEED_DATA: ${SEED_DATA:-False}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
     depends_on:
-      - db
-    command: python manage.py runserver 0.0.0.0:8000
+      db:
+        condition: service_healthy
+
   app:
-    build: 
+    build:
       context: ./sige-app
       dockerfile: Dockerfile
-    container_name: sige_app
-    volumes:
-      - ./sige-app:/app
-      - /app/node_modules
-    ports:
-      - "4200:4200"
+    restart: unless-stopped
     depends_on:
       - api
-    command: npm start
-
 
 volumes:
   mysql_data:

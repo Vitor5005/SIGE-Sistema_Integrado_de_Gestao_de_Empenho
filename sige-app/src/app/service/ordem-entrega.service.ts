@@ -3,7 +3,7 @@ import { OrdemEntrega } from '../model/ordem_entrega';
 import { OrdemEntregaInsert } from '../model/ordem_entrega_insert';
 import { ICrudService } from './i-crud-service';
 import { map, Observable } from 'rxjs';
-import { environment } from '../environments/environment.development';
+import { environment } from '../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { ItemOrdem } from '../model/itemOrdem';
 import { normalizePaginatedResponse, PaginatedResponse } from '../model/pagination';
