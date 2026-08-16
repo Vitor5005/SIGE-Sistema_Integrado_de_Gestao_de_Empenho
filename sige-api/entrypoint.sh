@@ -1,14 +1,19 @@
 #!/bin/sh
 set -e
 
-echo "Aguardando banco de dados..."
+echo "Aguardando banco de dados e aplicando migracoes..."
 
-while ! nc -z "${DB_HOST:-db}" "${DB_PORT:-3306}"; do
+attempt=1
+until python manage.py migrate; do
+  if [ "$attempt" -ge 30 ]; then
+    echo "Nao foi possivel aplicar as migracoes apos $attempt tentativas."
+    exit 1
+  fi
+
+  echo "Banco indisponivel. Nova tentativa em 2 segundos ($attempt/30)..."
+  attempt=$((attempt + 1))
   sleep 2
 done
-
-echo "Banco de dados pronto! Aplicando migracoes..."
-python manage.py migrate
 
 if [ "${CREATE_SUPERUSER:-False}" = "True" ]; then
   echo "Criando superusuario se nao existir..."

@@ -6,7 +6,11 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build
+
+ARG API_URL=/api/v1
+ENV API_URL=${API_URL}
+
+RUN npm run build:render
 
 FROM nginx:1.27-alpine
 

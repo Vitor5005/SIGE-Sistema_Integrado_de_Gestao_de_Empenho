@@ -89,13 +89,13 @@ Em produção, o frontend é compilado e servido pelo Nginx na porta definida po
 
 O arquivo `render.yaml` cria os recursos necessários pelo Render Blueprint:
 
-- `sige-mysql`: MySQL privado com disco persistente de 10 GB;
-- `sige-api`: API Django/Gunicorn;
-- `sige-app`: frontend Angular servido pelo Nginx.
+- `sige-db`: PostgreSQL gratuito;
+- `sige-api`: API Django/Gunicorn no plano gratuito;
+- `sige-app`: frontend Angular como Static Site gratuito.
 
-Depois de enviar a branch `deploy` para o repositório remoto, acesse **New > Blueprint** no Render, conecte o repositório, selecione essa branch e aplique o Blueprint. As senhas do MySQL e a chave do Django são geradas automaticamente pelo Render.
+Depois de enviar a branch `deploy` para o repositório remoto, acesse **New > Blueprint** no Render, conecte o repositório, selecione essa branch e aplique o Blueprint. A senha do PostgreSQL e a chave do Django são geradas automaticamente pelo Render.
 
-> O MySQL privado e a API usam o plano `starter`. O frontend usa o plano `free` e pode entrar em suspensão quando ficar ocioso.
+> Todos os recursos usam planos gratuitos. A API pode entrar em suspensão quando ficar ociosa, e o PostgreSQL gratuito expira após 30 dias. Esta configuração é indicada para desenvolvimento e demonstração, não para armazenar dados permanentes.
 
 ### Fluxo automático da API no startup
 
@@ -122,7 +122,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-> O backend usa MySQL configurado por variáveis de ambiente em `sige_api/settings.py`.
+> Localmente, o backend usa MySQL pelas variáveis `DB_*`. Quando `DATABASE_URL` estiver definida, como no Render, ele usa PostgreSQL.
 
 ### Frontend (`sige-app`)
 

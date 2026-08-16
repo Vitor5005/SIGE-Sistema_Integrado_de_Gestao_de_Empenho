@@ -1,31 +1,18 @@
 # yaml-language-server: $schema=https://render.com/schema/render.yaml.json
 
-services:
-  - type: pserv
-    name: sige-mysql
-    runtime: image
-    plan: starter
+databases:
+  - name: sige-db
+    plan: free
     region: virginia
-    image:
-      url: docker.io/library/mysql:8
-    envVars:
-      - key: MYSQL_DATABASE
-        value: sige
-      - key: MYSQL_USER
-        value: sige
-      - key: MYSQL_PASSWORD
-        generateValue: true
-      - key: MYSQL_ROOT_PASSWORD
-        generateValue: true
-    disk:
-      name: sige-mysql-data
-      mountPath: /var/lib/mysql
-      sizeGB: 10
+    databaseName: sige
+    user: sige
+    ipAllowList: []
 
+services:
   - type: web
     name: sige-api
     runtime: docker
-    plan: starter
+    plan: free
     region: virginia
     branch: deploy
     rootDir: sige-api
@@ -33,66 +20,50 @@ services:
     dockerContext: .
     autoDeployTrigger: commit
     envVars:
-      - key: DB_NAME
-        value: sige
-      - key: DB_USER
-        value: sige
-      - key: DB_PASSWORD
-        fromService:
-          type: pserv
-          name: sige-mysql
-          envVarKey: MYSQL_PASSWORD
-      - key: DB_HOST
-        fromService:
-          type: pserv
-          name: sige-mysql
-          property: host
-      - key: DB_PORT
-        fromService:
-          type: pserv
-          name: sige-mysql
-          property: port
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sige-db
+          property: connectionString
       - key: DEBUG
         value: "False"
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: ALLOWED_HOSTS
+        value: localhost,127.0.0.1
+      - key: CORS_ALLOWED_ORIGINS
         fromService:
           type: web
-          name: sige-api
-          property: host
-      - key: CORS_ALLOWED_ORIGINS
-        value: ""
+          name: sige-app
+          envVarKey: RENDER_EXTERNAL_URL
       - key: CSRF_TRUSTED_ORIGINS
-        value: ""
+        fromService:
+          type: web
+          name: sige-app
+          envVarKey: RENDER_EXTERNAL_URL
       - key: CREATE_SUPERUSER
         value: "False"
       - key: SEED_DATA
         value: "False"
       - key: WEB_CONCURRENCY
-        value: "3"
+        value: "2"
       - key: GUNICORN_TIMEOUT
         value: "120"
 
   - type: web
     name: sige-app
-    runtime: docker
-    plan: free
-    region: virginia
+    runtime: static
     branch: deploy
     rootDir: sige-app
-    dockerfilePath: ./Dockerfile.prod
-    dockerContext: .
+    buildCommand: npm ci && npm run build:render
+    staticPublishPath: dist/sige-app/browser
     autoDeployTrigger: commit
-    healthCheckPath: /
     envVars:
-      - key: API_HOST
+      - key: API_URL
         fromService:
           type: web
           name: sige-api
-          property: host
-      - key: API_PORT
-        fromService:
-          type: web
-          name: sige-api
-          property: port
+          envVarKey: RENDER_EXTERNAL_URL
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

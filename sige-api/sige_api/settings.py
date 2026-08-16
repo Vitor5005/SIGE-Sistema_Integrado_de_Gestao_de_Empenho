@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os
 from django.core.exceptions import ImproperlyConfigured
+import dj_database_url
 from dotenv import load_dotenv
 from datetime import timedelta
 
@@ -120,16 +121,28 @@ CSRF_COOKIE_SECURE = not DEBUG
 
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'sige'),
-        'USER': os.getenv('DB_USER', 'sige'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'sige'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=not DEBUG,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('DB_NAME', 'sige'),
+            'USER': os.getenv('DB_USER', 'sige'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'sige'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '3306'),
+        }
+    }
 
 AUTH_USER_MODEL = 'usuario.Usuario'
 
