@@ -1,4 +1,3 @@
-import yagmail
 import tempfile
 import os
 from rest_framework.decorators import action
@@ -10,6 +9,7 @@ from rest_framework import viewsets
 from entrega.models import OrdemEntrega, ItemOrdem
 from entrega.serializers import OrdemEntregaInsertSerializer, OrdemEntregaSerializer, ItemOrdemSerializer, itemOrdemInsertSerializer
 from licitacao.views import BaseFiltroMixin
+from utils.mail import get_email_client
 from utils.permissions import IsAdmin, IsTecnico
 
 class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
@@ -79,9 +79,7 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
                 for chunk in anexo.chunks():
                     temp_file.write(chunk)
                 caminho_temporario_anexo = temp_file.name
-            email_usuario = "rusige6@gmail.com"
-            senha_usuario = "ocpc ptcw bwuw jixg"
-            servidor_email = yagmail.SMTP(user=email_usuario, password=senha_usuario) 
+            servidor_email = get_email_client()
             #conteudo_anexo = {anexo.name: anexo.read()}
             servidor_email.send(
                 to=fornecedor.email,

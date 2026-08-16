@@ -40,7 +40,7 @@ No ambiente Docker, o sistema sobe com 3 serviços:
 
 | Serviço | Stack | Porta (host) | Finalidade |
 |---|---|---:|---|
-| `db` | MySQL 8 | `3307` | Persistência de dados |
+| `db` | MySQL 8 | `3308` | Persistência de dados |
 | `api` | Django + DRF | `8000` | API REST + autenticação |
 | `app` | Angular | `4200` | Interface web |
 
@@ -71,7 +71,7 @@ docker compose up --build
 - Frontend: `http://localhost:4200`
 - API: `http://localhost:8000`
 - Django Admin: `http://localhost:8000/admin`
-- MySQL (host): `localhost:3307`
+- MySQL (host): `localhost:3308`
 
 ### Fluxo automático da API no startup
 
@@ -149,7 +149,12 @@ DJANGO_SUPERUSER_PASSWORD=admin
 
 DEBUG=True
 DJANGO_SECRET_KEY=chave_super_secreta_aqui
+
+EMAIL_HOST_USER=seu_email_google@gmail.com
+EMAIL_HOST_PASSWORD=sua_senha_de_app_google
 ```
+
+Para testar localmente, crie `sige-api/.env` com essas variáveis. O backend lê esse arquivo automaticamente via `python-dotenv`.
 
 ## 📁 Estrutura do repositório
 

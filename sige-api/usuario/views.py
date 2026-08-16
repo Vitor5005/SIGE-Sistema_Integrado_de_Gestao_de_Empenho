@@ -1,7 +1,6 @@
 # sige-api/usuario/views.py
 
 import random
-import yagmail
 from django.utils import timezone
 from django.core.signing import  TimestampSigner, BadSignature, SignatureExpired 
 from rest_framework import viewsets, status
@@ -13,6 +12,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from usuario.models import Usuario, CodigoRedefiniçãoSenha 
 from usuario.serializers import UsuarioSerializer, CustomTokenObtainPairSerializer
 from licitacao.views import BaseFiltroMixin
+from utils.mail import get_email_client
 from utils.permissions import IsAdmin
 signer = TimestampSigner()
 
@@ -49,10 +49,8 @@ class UsuarioViewSet(BaseFiltroMixin, viewsets.ModelViewSet):
         CodigoRedefiniçãoSenha.objects.create(usuario=user, codigo=code_value)
 
         try:
-            email_user = "rusige6@gmail.com"
-            email_password = "ocpc ptcw bwuw jixg"
-            yag = yagmail.SMTP(user=email_user, password=email_password)
-            yag.send(
+            email_client = get_email_client()
+            email_client.send(
                 to=user.email,
                 subject='Código de Redefinição de Senha',
                 contents=f'Olá, seu código para redefinir a senha é: {code_value}. \nEste código expira em 10 minutos.'
