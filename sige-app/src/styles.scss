@@ -1,45 +1,242 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-@import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css');
-@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css');
 
-* {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   font-family: "Inter", sans-serif;
 }
 
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--sige-text-primary);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
 p {
   margin: 0;
   margin-bottom: 0;
+  color: inherit;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-top: 0;
+  color: var(--sige-text-primary);
+  line-height: 1.2;
+}
 
-// cores padrão:
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 3px solid rgba(0, 103, 190, 0.42) !important;
+  outline-offset: 2px;
+}
+
+// Tokens visuais do SIGE. Os aliases legados abaixo preservam os estilos existentes.
 :root {
-  --azul-escuro: #003058;
+  --sige-color-primary: #0067be;
+  --sige-color-primary-hover: #00579f;
+  --sige-color-primary-strong: #003058;
+  --sige-color-white: #ffffff;
+
+  --sige-surface-page: #f4f7fb;
+  --sige-surface-card: #ffffff;
+  --sige-surface-muted: #eef3f8;
+  --sige-surface-subtle: #f8fafc;
+
+  --sige-text-primary: #1e293b;
+  --sige-text-secondary: #667085;
+  --sige-text-muted: #9e9e9e;
+
+  --sige-border: #dbe3ed;
+  --sige-border-strong: #c8d3df;
+
+  --sige-success: #28a745;
+  --sige-success-strong: #106825;
+  --sige-warning: #e5b223;
+  --sige-danger: #c71c1c;
+
+  --sige-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --sige-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.1);
+
+  --sige-radius-sm: 6px;
+  --sige-radius-md: 10px;
+  --sige-radius-lg: 16px;
+  --sige-radius-pill: 999px;
+
+  --sige-space-1: 0.25rem;
+  --sige-space-2: 0.5rem;
+  --sige-space-3: 0.75rem;
+  --sige-space-4: 1rem;
+  --sige-space-5: 1.5rem;
+  --sige-space-6: 2rem;
+  --sige-space-7: 3rem;
+  --sige-space-8: 4rem;
+
+  --sige-content-max-width: 1440px;
+  --sige-content-gutter: 1.5rem;
+
+  // Aliases legados
+  --azul-escuro: var(--sige-color-primary-strong);
   --font-cinza: #9e9e9e;
-  --font-cinza2: #7D7D7D;
-  --hr-color: #0067BE;
-  --azul-claro: #0067BE; //usado nas fontes e botoes
-  --branco: #ffffff;
-  --verde: #28a745;
-  --verde-escuro: #106825; //usado em botões de confirmação hover
-  --amarelo: #E5B223;
-  --box-shadow: 3px 1px 10px 2px rgba(0, 0, 0, 0.24); //esquema de sombreamento padrao para os componentes
-  --borda1: 1px solid #dbdbdb; //borda para botoes com fundo branco
-  --cabecalho: linear-gradient(90deg, rgba(0, 103, 190, 1) 0%, rgba(0, 48, 88, 0.95) 100%); //gradiente para o cabecalho
+  --font-cinza2: #7d7d7d;
+  --hr-color: var(--sige-color-primary);
+  --azul-claro: var(--sige-color-primary);
+  --branco: var(--sige-color-white);
+  --verde: var(--sige-success);
+  --verde-escuro: var(--sige-success-strong);
+  --amarelo: var(--sige-warning);
+  --box-shadow: var(--sige-shadow-md);
+  --borda1: 1px solid var(--sige-border);
+  --cabecalho: linear-gradient(90deg, rgba(0, 103, 190, 1) 0%, rgba(0, 48, 88, 0.95) 100%);
+}
+
+// Blocos reutilizáveis para as próximas telas administrativas.
+.sige-page-container {
+  width: min(
+    var(--sige-content-max-width),
+    calc(100% - var(--sige-content-gutter) - var(--sige-content-gutter))
+  );
+  margin-inline: auto;
+}
+
+.sige-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sige-space-5);
+  margin-bottom: var(--sige-space-5);
+  padding-bottom: var(--sige-space-4);
+  border-bottom: 1px solid var(--sige-border);
+}
+
+.sige-page-title {
+  margin: 0;
+  color: var(--sige-text-primary);
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-weight: 700;
+}
+
+.sige-page-description {
+  max-width: 72ch;
+  margin-top: var(--sige-space-2);
+  color: var(--sige-text-secondary);
+}
+
+.sige-toolbar,
+.sige-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sige-space-3);
+  flex-wrap: wrap;
+}
+
+.sige-toolbar {
+  justify-content: space-between;
+  margin-bottom: var(--sige-space-5);
+}
+
+.sige-actions {
+  justify-content: flex-end;
+}
+
+.sige-section,
+.sige-card {
+  padding: var(--sige-space-5);
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-lg);
+  box-shadow: var(--sige-shadow-sm);
+}
+
+.sige-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sige-space-2);
+  min-height: 2.5rem;
+  padding: var(--sige-space-2) var(--sige-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--sige-radius-md);
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.sige-button:hover {
+  transform: translateY(-1px);
+}
+
+.sige-button--primary {
+  background: var(--sige-color-primary);
+  color: var(--sige-color-white);
+}
+
+.sige-button--primary:hover {
+  background: var(--sige-color-primary-hover);
+  color: var(--sige-color-white);
+}
+
+.sige-button--secondary {
+  background: var(--sige-surface-card);
+  border-color: var(--sige-border-strong);
+  color: var(--sige-color-primary-strong);
+}
+
+.sige-button--secondary:hover {
+  background: var(--sige-surface-muted);
+  color: var(--sige-color-primary-strong);
+}
+
+.sige-button--danger {
+  background: var(--sige-danger);
+  color: var(--sige-color-white);
+}
+
+.sige-button--danger:hover {
+  background: #a91616;
+  color: var(--sige-color-white);
+}
+
+.sige-button:disabled,
+.sige-button[aria-disabled="true"] {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .listagem {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: var(--sige-space-5);
   align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding-inline: var(--sige-content-gutter);
 
   .container-titulo {
-    margin-top: 30px;
-    width: 80vw;
+    width: min(100%, var(--sige-content-max-width));
+    margin-top: var(--sige-space-6);
     display: flex;
     flex-direction: column;
 
@@ -51,10 +248,11 @@ p {
   .tabela {
     border-collapse: separate;
     border-spacing: 0;
-    border-radius: 10px 10px 0 0;
+    border-radius: var(--sige-radius-md) var(--sige-radius-md) 0 0;
     overflow: hidden;
     box-shadow: var(--box-shadow);
-    width: 83vw;
+    width: min(100%, var(--sige-content-max-width));
+    max-width: 100%;
     display: table;
     text-align: center;
     margin-bottom: 8px;
@@ -284,6 +482,7 @@ p {
 .modal-body {
   .listagem {
     gap: 15px;
+    padding-inline: 0;
 
     .container-titulo {
       margin-top: 10px;

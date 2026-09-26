@@ -1,41 +1,131 @@
 <header class="cabecalho">
-  <h1 class="logo">SIGE </h1>
+  <a class="logo" routerLink="/home" aria-label="SIGE — Início">SIGE</a>
 
-  <div class="d-flex gap-4 align-items-center">
-    <div class="nav-botoes">
-      <ul class="lista-botoes">
-        <li><a routerLink="/adicionar-licitacao" routerLinkActive="selecionado" class="botao">Adicionar licitação</a>
+  <nav class="navegacao-principal" aria-label="Navegação principal">
+    <a
+      class="nav-item"
+      routerLink="/home"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      Início
+    </a>
+
+    <div class="dropdown">
+      <button
+        class="nav-item nav-dropdown dropdown-toggle"
+        [class.is-active]="isGrupoAtivo(rotasAquisicoes)"
+        type="button"
+        id="menuAquisicoes"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        Aquisições
+      </button>
+      <ul class="dropdown-menu dropdown-menu--sige" aria-labelledby="menuAquisicoes">
+        <li>
+          <a class="dropdown-item" routerLink="/visualizar-licitacoes">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+            Licitações
+          </a>
         </li>
-        <li><a routerLink="/visualizar-licitacoes" routerLinkActive="selecionado"
-            [routerLinkActiveOptions]="{ exact: true }" class="botao">Licitacoes</a></li>
-        <li><a routerLink="/visualizar-atas" class="botao" routerLinkActive="selecionado">ARP´s</a></li>
-        <li><a routerLink="/visualizar-empenhos" routerLinkActive="selecionado" class="botao">Empenhos</a></li>
-        <li><a routerLink="/visualizar-entregas" class="botao" routerLinkActive="selecionado">Entregas</a></li>
-        <li><a routerLink="/visualizar-fornecedores" class="botao" routerLinkActive="selecionado">Fornecedores</a></li>
-        <li><a routerLink="/visualizar-gens-alimenticios" class="botao" routerLinkActive="selecionado">Gên.
-            Alimentícios</a></li>
-        @if(papel == "ADMIN"){
-        <div class="dropdown">
-          <button class="botao dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown"
-            aria-expanded="false">
-            Configurações
-          </button>
-          <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-
-            <li><a class="dropdown-item" routerLink="/visualizar-usuarios" routerLinkActive="selecionado">Usuarios</a>
-            </li>
-          </ul>
-        </div>
-        }
+        <li>
+          <a class="dropdown-item" routerLink="/visualizar-atas">
+            <i class="bi bi-journal-text" aria-hidden="true"></i>
+            ARPs
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" routerLink="/visualizar-empenhos">
+            <i class="bi bi-receipt" aria-hidden="true"></i>
+            Empenhos
+          </a>
+        </li>
       </ul>
     </div>
-    <div class="usuario">
-      <i class="bi bi-person-circle"></i>
-      <div class="usuario-dados">
-        <span class="usuario-nome"> Usuario: {{ usuario }}</span>
-        <span class="usuario-papel"> Papel: {{ verificarPapel(papel) }}</span>
-      </div>
+
+    <a
+      class="nav-item"
+      routerLink="/visualizar-entregas"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      Entregas
+    </a>
+
+    <div class="dropdown">
+      <button
+        class="nav-item nav-dropdown dropdown-toggle"
+        [class.is-active]="isGrupoAtivo(rotasCadastros)"
+        type="button"
+        id="menuCadastros"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        Cadastros
+      </button>
+      <ul class="dropdown-menu dropdown-menu--sige" aria-labelledby="menuCadastros">
+        <li>
+          <a class="dropdown-item" routerLink="/visualizar-fornecedores">
+            <i class="bi bi-shop-window" aria-hidden="true"></i>
+            Fornecedores
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" routerLink="/visualizar-gens-alimenticios">
+            <i class="bi bi-card-list" aria-hidden="true"></i>
+            Gêneros alimentícios
+          </a>
+        </li>
+      </ul>
     </div>
-    <button class="logout" (click)="realizarLogout()"><i class="bi bi-box-arrow-right logout"></i></button>
+  </nav>
+
+  <div class="cabecalho-acoes">
+    <a class="nova-licitacao" routerLink="/adicionar-licitacao">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <span>Nova licitação</span>
+    </a>
+
+    <div class="dropdown">
+      <button
+        class="usuario-menu dropdown-toggle"
+        type="button"
+        id="menuUsuario"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        <i class="bi bi-person-circle" aria-hidden="true"></i>
+        <span class="usuario-resumo">
+          <span class="usuario-nome">{{ usuario || 'Usuário' }}</span>
+          <span class="usuario-papel">{{ verificarPapel(papel) }}</span>
+        </span>
+      </button>
+
+      <ul class="dropdown-menu dropdown-menu-end dropdown-menu--sige usuario-dropdown" aria-labelledby="menuUsuario">
+        <li class="usuario-detalhes">
+          <span class="usuario-detalhes-nome">{{ usuario || 'Usuário' }}</span>
+          <span class="usuario-detalhes-papel">{{ verificarPapel(papel) }}</span>
+        </li>
+
+        @if (papel === 'ADMIN') {
+          <li><span class="dropdown-header">Administração</span></li>
+          <li>
+            <a class="dropdown-item" routerLink="/visualizar-usuarios">
+              <i class="bi bi-people" aria-hidden="true"></i>
+              Usuários
+            </a>
+          </li>
+        }
+
+        <li><hr class="dropdown-divider" /></li>
+        <li>
+          <button class="dropdown-item logout-action" type="button" (click)="realizarLogout()">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+            Sair
+          </button>
+        </li>
+      </ul>
+    </div>
   </div>
 </header>

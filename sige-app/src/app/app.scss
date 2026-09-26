@@ -1,0 +1,9 @@
+.sige-app-main {
+  display: block;
+  min-width: 0;
+}
+
+.sige-app-main--authenticated {
+  padding: var(--sige-space-5) 0 var(--sige-space-7);
+  background: var(--sige-surface-page);
+}

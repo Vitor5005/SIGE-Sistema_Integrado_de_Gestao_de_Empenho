@@ -1,5 +1,5 @@
 <app-cabecalho *ngIf="mostrarLayout"></app-cabecalho>
-<!-- <app-adicionar-licitacao></app-adicionar-licitacao> -->
-<router-outlet></router-outlet>
-
-
+<div class="sige-app-main" [class.sige-app-main--authenticated]="mostrarLayout"
+  [attr.role]="mostrarLayout ? 'main' : null">
+  <router-outlet></router-outlet>
+</div>

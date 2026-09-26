@@ -1,18 +1,41 @@
+:host {
+  display: block;
+  width: min(100%, var(--sige-content-max-width));
+  max-width: 100%;
+  min-width: 0;
+}
+
 .container-pesquisar {
   background-color: var(--branco);
-  width: 85vw;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   display: flex;
-  justify-self: center;
+  justify-content: flex-start;
   align-items: center;
-  height: 100px;
-  border-radius: 25px;
-  box-shadow: var(--box-shadow);
-  padding: 20px 30px;
+  gap: var(--sige-space-3);
+  flex-wrap: wrap;
+  min-height: 100px;
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-lg);
+  box-shadow: var(--sige-shadow-sm);
+  padding: var(--sige-space-5) var(--sige-space-6);
   font-size: 16px;
   font-weight: bold;
 
+  .pesquisarEfiltrar {
+    display: flex;
+    align-items: center;
+    gap: var(--sige-space-3);
+    flex: 1 1 22rem;
+    min-width: 0;
+  }
+
   input {
-    width: 350px;
+    width: 100%;
+    max-width: 350px;
+    min-width: 0;
+    flex: 1 1 12rem;
     height: 40px;
     border-radius: 20px;
     background-color: var(--branco);
@@ -21,8 +44,8 @@
   }
 
   .filtro {
-    margin-left: 30px;
-    width: 120px;
+    margin-left: 0;
+    min-width: 120px;
     height: 40px;
     border-radius: 20px;
     background-color: var(--branco);
@@ -65,20 +88,29 @@
 
 // Estilos específicos para quando estiver dentro do modal
 :host-context(.modal-body) .container-pesquisar {
-  width:  55vw;
-  height: 60px;
+  width: 100%;
+  max-width: 100%;
+  min-height: 60px;
   padding: 10px 15px;
   font-size: 13px;
+  flex-wrap: nowrap;
+  gap: var(--sige-space-2);
+
+  .pesquisarEfiltrar {
+    flex: 1 1 auto;
+    gap: var(--sige-space-2);
+  }
 
   input {
-    width: 200px;
+    width: 100%;
+    max-width: 200px;
     height: 35px;
     font-size: 13px;
   }
 
   .filtro {
-    margin-left: 15px;
-    width: 90px;
+    margin-left: 0;
+    min-width: 90px;
     height: 35px;
     font-size: 13px;
 
