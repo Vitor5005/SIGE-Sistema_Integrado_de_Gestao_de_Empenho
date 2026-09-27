@@ -22,7 +22,7 @@ import { EmpenhoService } from '../../service/empenho.service';
 @Component({
   selector: 'app-visualizar-licitacao',
   standalone: true,
-  imports: [CommonModule, BotaoVoltar, FormsModule, BarraPesquisa, Paginacao],
+  imports: [CommonModule, BotaoVoltar, FormsModule, BarraPesquisa, Paginacao, RouterLink],
   templateUrl: './visualizar-licitacao.html',
   styleUrl: './visualizar-licitacao.scss',
 })

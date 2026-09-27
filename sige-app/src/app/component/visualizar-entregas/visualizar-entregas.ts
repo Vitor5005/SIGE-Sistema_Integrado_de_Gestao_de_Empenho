@@ -2,7 +2,7 @@ import { FiltroConfig } from './../../model/filtro-config';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrdemEntregaService } from '../../service/ordem-entrega.service';
 import { OrdemEntrega } from '../../model/ordem_entrega';
 import { ItemOrdemService } from '../../service/item-ordem.service';
@@ -11,13 +11,14 @@ import { ItemOrdemInsert } from '../../model/itemOrdem_insert';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, Observable, of, switchMap } from 'rxjs';
 import { EmpenhoService } from '../../service/empenho.service';
+import { Empenho } from '../../model/empenho';
 import { ItemEmpenhoService } from '../../service/item-empenho.service';
 import { Paginacao } from '../utils/paginacao/paginacao';
 
 @Component({
   selector: 'app-visualizar-entregas',
   standalone: true,
-  imports: [BarraPesquisa, CommonModule, FormsModule, Paginacao],
+  imports: [BarraPesquisa, CommonModule, FormsModule, Paginacao, RouterLink],
   templateUrl: './visualizar-entregas.html',
   styleUrl: './visualizar-entregas.scss',
 })
@@ -40,7 +41,9 @@ export class VisualizarEntregas {
   }
 ];
 
-filtrosAtivos: any = {};
+  filtrosAtivos: any = {};
+  empenhoContextoId: number | null = null;
+  empenhoContexto: Empenho | null = null;
 
   confirmado: boolean = false;
   isLoadingEntregas: boolean = false;
@@ -60,6 +63,7 @@ filtrosAtivos: any = {};
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private ordemEntregaService: OrdemEntregaService,
     private itensOrdemService: ItemOrdemService,
     private empenhoService: EmpenhoService,
@@ -122,6 +126,25 @@ filtrosAtivos: any = {};
   }
 
   ngOnInit() {
+    const empenhoId = Number(this.route.snapshot.queryParamMap.get('empenho_id'));
+
+    if (Number.isInteger(empenhoId) && empenhoId > 0) {
+      this.empenhoContextoId = empenhoId;
+      this.filtrosAtivos = {
+        ...this.filtrosAtivos,
+        'empenho__id': empenhoId
+      };
+
+      this.empenhoService.getById(empenhoId).subscribe({
+        next: (empenho) => {
+          this.empenhoContexto = empenho;
+        },
+        error: () => {
+          this.empenhoContexto = null;
+        }
+      });
+    }
+
     this.getEntregas();
   }
 
@@ -397,8 +420,31 @@ filtrosAtivos: any = {};
   }
 
   aplicarFiltros(filtros: any) {
-    this.filtrosAtivos = filtros;
+    this.filtrosAtivos = {
+      ...filtros,
+      ...(this.empenhoContextoId
+        ? { 'empenho__id': this.empenhoContextoId }
+        : {})
+    };
     this.currentPage = 1;
+    this.getEntregas();
+  }
+
+  limparContextoEmpenho(): void {
+    this.empenhoContextoId = null;
+    this.empenhoContexto = null;
+
+    const filtrosSemContexto = { ...this.filtrosAtivos };
+    delete filtrosSemContexto['empenho__id'];
+    this.filtrosAtivos = filtrosSemContexto;
+    this.currentPage = 1;
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { empenho_id: null },
+      queryParamsHandling: 'merge'
+    });
+
     this.getEntregas();
   }
 }
