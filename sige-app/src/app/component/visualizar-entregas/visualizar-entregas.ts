@@ -17,6 +17,7 @@ import { Paginacao } from '../utils/paginacao/paginacao';
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
+import { EstadoListagemService } from '../../service/estado-listagem.service';
 
 @Component({
   selector: 'app-visualizar-entregas',
@@ -44,6 +45,11 @@ export class VisualizarEntregas {
   {
     campo: 'data_emissao',
     label: 'Data de emissão',
+    tipo: 'date-range'
+  },
+  {
+    campo: 'data_entrega_prevista',
+    label: 'Previsão de entrega',
     tipo: 'date-range'
   }
 ];
@@ -76,7 +82,8 @@ export class VisualizarEntregas {
     private itensOrdemService: ItemOrdemService,
     private empenhoService: EmpenhoService,
     private itemEmpenhoService: ItemEmpenhoService,
-    private feedback: FeedbackService
+    private feedback: FeedbackService,
+    private estadoListagem: EstadoListagemService
   ) { }
 
   entregas: OrdemEntrega[] = [];
@@ -167,6 +174,8 @@ export class VisualizarEntregas {
   }
 
   enviarPara(rota: string, id?: number) {
+    this.salvarEstadoListagem();
+
     if (id) {
       this.router.navigate([rota], { queryParams: { id } });
     }
@@ -180,6 +189,8 @@ export class VisualizarEntregas {
 
     if (Number.isInteger(empenhoId) && empenhoId > 0) {
       this.empenhoContextoId = empenhoId;
+
+      this.restaurarEstadoListagem();
       this.filtrosAtivos = {
         ...this.filtrosAtivos,
         'empenho__id': empenhoId
@@ -193,6 +204,8 @@ export class VisualizarEntregas {
           this.empenhoContexto = null;
         }
       });
+    } else {
+      this.restaurarEstadoListagem();
     }
 
     this.getEntregas();
@@ -233,6 +246,7 @@ export class VisualizarEntregas {
     if (termobusca !== undefined) {
       this.termoBuscaAtual = termobusca;
       this.currentPage = 1;
+      this.salvarEstadoListagem();
     }
 
     this.isLoadingEntregas = true;
@@ -260,6 +274,7 @@ export class VisualizarEntregas {
     }
 
     this.currentPage += 1;
+    this.salvarEstadoListagem();
     this.getEntregas();
   }
 
@@ -269,6 +284,7 @@ export class VisualizarEntregas {
     }
 
     this.currentPage -= 1;
+    this.salvarEstadoListagem();
     this.getEntregas();
   }
 
@@ -278,6 +294,7 @@ export class VisualizarEntregas {
     }
 
     this.currentPage = page;
+    this.salvarEstadoListagem();
     this.getEntregas();
   }
 
@@ -583,7 +600,36 @@ export class VisualizarEntregas {
         : {})
     };
     this.currentPage = 1;
+    this.salvarEstadoListagem();
     this.getEntregas();
+  }
+
+  private get chaveEstadoListagem(): string {
+    return this.empenhoContextoId
+      ? `entregas-empenho-${this.empenhoContextoId}`
+      : 'entregas';
+  }
+
+  salvarEstadoListagem(): void {
+    const filtrosVisuais = { ...this.filtrosAtivos };
+    delete filtrosVisuais['empenho__id'];
+
+    this.estadoListagem.salvar(this.chaveEstadoListagem, {
+      termoBuscaAtual: this.termoBuscaAtual,
+      filtrosAtivos: filtrosVisuais,
+      currentPage: this.currentPage
+    });
+  }
+
+  private restaurarEstadoListagem(): void {
+    const estado = this.estadoListagem.obter(this.chaveEstadoListagem);
+    if (!estado) {
+      return;
+    }
+
+    this.termoBuscaAtual = estado.termoBuscaAtual;
+    this.filtrosAtivos = { ...estado.filtrosAtivos };
+    this.currentPage = estado.currentPage;
   }
 
   limparContextoEmpenho(): void {
@@ -594,6 +640,7 @@ export class VisualizarEntregas {
     delete filtrosSemContexto['empenho__id'];
     this.filtrosAtivos = filtrosSemContexto;
     this.currentPage = 1;
+    this.salvarEstadoListagem();
 
     this.router.navigate([], {
       relativeTo: this.route,

@@ -12,7 +12,6 @@ import { VisualizarFornecedor } from './component/visualizar-fornecedor/visualiz
 import { VisualizarGensAlimenticios } from './component/visualizar-gens-alimenticios/visualizar-gens-alimenticios';
 import { Login } from './component/login/login';
 import { Cadastro } from './component/cadastro/cadastro';
-import { VisualizarGenAlimenticio } from './component/visualizar-gen-alimenticio/visualizar-gen-alimenticio';
 import { RecuperarSenha } from './component/recuperar-senha/recuperar-senha';
 import { authGuard } from './guard/auth.guard';
 import { Home } from './component/home/home';
@@ -110,12 +109,6 @@ export const routes: Routes = [
       {
         path: "visualizar-gens-alimenticios",
         component: VisualizarGensAlimenticios,
-        canActivate: [permissionGuard],
-        data: { permission: { recurso: Recurso.GENERO_ALIMENTICIO, acao: Acao.CONSULTAR } },
-      },
-      {
-        path: 'visualizar-gen-alimenticio',
-        component: VisualizarGenAlimenticio,
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.GENERO_ALIMENTICIO, acao: Acao.CONSULTAR } },
       },

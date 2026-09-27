@@ -8,17 +8,14 @@
 
   <div class="sige-list-toolbar">
     <div class="sige-list-toolbar__search">
-      <div class="filtros-estoque">
-        <input class="form-control" [(ngModel)]="busca" (keyup.enter)="carregar()" placeholder="Buscar por CATMAT, descrição, unidade ou categoria">
-        <select class="form-select" [(ngModel)]="categoria" (change)="carregar()">
-          <option value="">Todas as categorias</option>
-          <option value="tempS">Temperos Secos</option><option value="SM">Secos / Mercearia</option>
-          <option value="Lac">Lácteos e Derivados</option><option value="Oli">Óleos, Azeites e Vinagres</option>
-          <option value="MolCo">Molhos e Condimentos</option><option value="Fr">Frutas</option>
-          <option value="Le">Legumes</option><option value="Pr">Proteínas</option>
-        </select>
-        <button class="sige-button sige-button--primary" (click)="carregar()">Buscar</button>
-      </div>
+      <app-barra-pesquisa
+        [filtros]="filtros"
+        placeholder="Buscar por CATMAT, descrição, unidade ou categoria..."
+        [termoInicial]="termoBuscaAtual"
+        [valoresIniciais]="filtrosAtivos"
+        (pesquisar)="carregar($event)"
+        (filtrosAlterados)="aplicarFiltros($event)">
+      </app-barra-pesquisa>
       <div class="form-check mb-3">
         <input class="form-check-input" type="checkbox" id="agruparCategoria" [checked]="agruparPorCategoria" (change)="alternarAgrupamento()">
         <label class="form-check-label" for="agruparCategoria">Agrupar por categoria</label>
@@ -26,10 +23,10 @@
     </div>
     <div class="sige-list-toolbar__actions estoque-acoes">
       @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
-        <a class="sige-button sige-button--secondary" routerLink="/estoque/extrato">Extrato</a>
+        <a class="sige-button sige-button--secondary" routerLink="/estoque/extrato" (click)="salvarEstadoListagem()">Extrato</a>
       }
       @if (pode(Recurso.ESTOQUE, Acao.REGISTRAR_SAIDA)) {
-        <a class="sige-button sige-button--primary" routerLink="/estoque/movimentacao">Nova movimentação</a>
+        <a class="sige-button sige-button--primary" routerLink="/estoque/movimentacao" (click)="salvarEstadoListagem()">Nova movimentação</a>
       }
     </div>
   </div>

@@ -140,6 +140,18 @@
     }
   }
 
+  .filtro-select {
+    width: 100%;
+    min-width: 0;
+    height: 36px;
+    padding: 0 var(--sige-space-2);
+    border: var(--borda1);
+    border-radius: var(--sige-radius-sm);
+    background-color: var(--branco);
+    color: var(--sige-text-primary);
+    font-size: 0.85rem;
+  }
+
   .limpar {
     display: flex;
     align-items: center;
@@ -164,6 +176,59 @@
 
 
 // Estilos específicos para quando estiver dentro do modal
+.filtros-ativos {
+  display: flex;
+  align-items: center;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  gap: var(--sige-space-2);
+}
+
+.filtro-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sige-space-1);
+  max-width: 100%;
+  padding: var(--sige-space-1) var(--sige-space-2);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-lg);
+  background: var(--sige-surface-muted);
+  color: var(--sige-text-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.filtro-chip__remover {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--sige-text-secondary);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--branco);
+    color: var(--sige-text-primary);
+  }
+}
+
+.limpar-filtros-ativos {
+  padding: var(--sige-space-1) var(--sige-space-2);
+  border: 0;
+  background: transparent;
+  color: var(--sige-color-primary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 :host-context(.modal-body) .container-pesquisar {
   width: 100%;
   max-width: 100%;

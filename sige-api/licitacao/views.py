@@ -69,7 +69,13 @@ class AtaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
             return AtaUpdateSerializer
         return AtaSerializer
 
-    search_fields = ['numero_ata']
+    search_fields = [
+        'numero_ata',
+        'licitacao__numero_licitacao',
+        'fornecedor__razao_social',
+        'fornecedor__nome_fantasia',
+        'fornecedor__cnpj',
+    ]
     filterset_fields = {
         'licitacao__id': ['exact'],
         'fornecedor__id': ['exact'],

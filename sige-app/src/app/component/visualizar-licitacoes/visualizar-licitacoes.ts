@@ -7,6 +7,7 @@ import { Licitacao } from '../../model/licitacao';
 import { LicitacaoService } from '../../service/licitacao.service';
 import { CommonModule } from '@angular/common';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
+import { EstadoListagemService } from '../../service/estado-listagem.service';
 
 @Component({
   selector: 'app-licitacoes',
@@ -19,6 +20,7 @@ export class VisualizarLicitacoes {
   constructor(
     private router: Router,
     private licitacaoService: LicitacaoService,
+    private estadoListagemService: EstadoListagemService,
   ) {}
 
   registro: Licitacao[] = [];
@@ -50,14 +52,35 @@ export class VisualizarLicitacoes {
   filtrosAtivos: any = {};
 
   ngOnInit() {
+    this.restaurarEstadoListagem();
     this.get();
-    this.filtrosAtivos = {};
+  }
+
+  private restaurarEstadoListagem(): void {
+    const estado = this.estadoListagemService.obter('licitacoes');
+
+    if (!estado) {
+      return;
+    }
+
+    this.termoBuscaAtual = estado.termoBuscaAtual || '';
+    this.filtrosAtivos = estado.filtrosAtivos || {};
+    this.currentPage = estado.currentPage || 1;
+  }
+
+  private salvarEstadoListagem(): void {
+    this.estadoListagemService.salvar('licitacoes', {
+      termoBuscaAtual: this.termoBuscaAtual,
+      filtrosAtivos: this.filtrosAtivos,
+      currentPage: this.currentPage,
+    });
   }
 
   get(termobusca?: string): void {
   if (termobusca !== undefined) {
     this.termoBuscaAtual = termobusca;
     this.currentPage = 1;
+    this.salvarEstadoListagem();
   }
 
   this.isLoadingPage = true;
@@ -143,12 +166,14 @@ export class VisualizarLicitacoes {
   }
 
   enviarPara(rota: string, id: number): void {
+    this.salvarEstadoListagem();
     this.router.navigate([rota], { queryParams: { id } });
   }
 
   aplicarFiltros(filtrosAtivos: any) {
   this.filtrosAtivos = filtrosAtivos || {};
   this.currentPage = 1;
+  this.salvarEstadoListagem();
   this.get();
 }
 
@@ -158,6 +183,7 @@ export class VisualizarLicitacoes {
     }
 
     this.currentPage += 1;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -167,6 +193,7 @@ export class VisualizarLicitacoes {
     }
 
     this.currentPage -= 1;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -176,6 +203,7 @@ export class VisualizarLicitacoes {
     }
 
     this.currentPage = page;
+    this.salvarEstadoListagem();
     this.get();
   }
 

@@ -9,6 +9,8 @@ import { Paginacao } from '../utils/paginacao/paginacao';
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Papel } from '../../security/rbac';
+import { FiltroConfig } from '../../model/filtro-config';
+import { EstadoListagemService } from '../../service/estado-listagem.service';
 
 @Component({
   selector: 'app-visualizar-usuarios',
@@ -22,7 +24,8 @@ export class VisualizarUsuarios {
   constructor(
     private router: Router,
     private usuarioService: UsuarioService,
-    private feedback: FeedbackService
+    private feedback: FeedbackService,
+    private estadoListagemService: EstadoListagemService,
   ) { }
 
   @ViewChild('myModal') modal!: ElementRef;
@@ -44,6 +47,30 @@ export class VisualizarUsuarios {
   hasNext: boolean = false;
   hasPrev: boolean = false;
   termoBuscaAtual: string = '';
+  filtrosAtivos: Record<string, any> = {};
+  filtros: FiltroConfig[] = [
+    {
+      campo: 'papel',
+      label: 'Papel',
+      tipo: 'select',
+      opcoes: [
+        { valor: Papel.DIRETOR, label: 'Diretor' },
+        { valor: Papel.TECNICO_ADMINISTRATIVO, label: 'Técnico Administrativo' },
+        { valor: Papel.NUTRICIONISTA, label: 'Nutricionista' },
+        { valor: Papel.ESTOQUISTA, label: 'Estoquista' },
+      ],
+    },
+    {
+      campo: 'is_active',
+      label: 'Status',
+      tipo: 'radio',
+      opcoes: [
+        { valor: 'true', label: 'Ativo' },
+        { valor: 'false', label: 'Inativo' },
+      ],
+    },
+  ];
+  private readonly chaveEstadoListagem = 'usuarios';
   private permitirFecharModalSemConfirmacao: boolean = false;
   private usuarioAtualId: number | null = null;
   private estadoInicialModal: { username: string; email: string; first_name: string; last_name: string; papel: string; password: string } = {
@@ -122,7 +149,28 @@ export class VisualizarUsuarios {
 
   ngOnInit() {
     this.usuarioAtualId = this.obterUsuarioAtualId();
+    this.restaurarEstadoListagem();
     this.getUsuarios();
+  }
+
+  private restaurarEstadoListagem(): void {
+    const estado = this.estadoListagemService.obter(this.chaveEstadoListagem);
+
+    if (!estado) {
+      return;
+    }
+
+    this.termoBuscaAtual = estado.termoBuscaAtual || '';
+    this.filtrosAtivos = estado.filtrosAtivos || {};
+    this.currentPage = estado.currentPage || 1;
+  }
+
+  private salvarEstadoListagem(): void {
+    this.estadoListagemService.salvar(this.chaveEstadoListagem, {
+      termoBuscaAtual: this.termoBuscaAtual,
+      filtrosAtivos: this.filtrosAtivos,
+      currentPage: this.currentPage,
+    });
   }
 
   private obterUsuarioAtualId(): number | null {
@@ -180,8 +228,9 @@ export class VisualizarUsuarios {
 
     this.isLoadingUsuarios = true;
     this.errorMessagePage = '';
+    this.salvarEstadoListagem();
 
-    this.usuarioService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe(
+    this.usuarioService.get(this.termoBuscaAtual, this.currentPage, this.pageSize, this.filtrosAtivos).subscribe(
       {
         next: (registro) => {
           this.usuarios = registro.results;
@@ -222,6 +271,13 @@ export class VisualizarUsuarios {
     }
 
     this.currentPage = page;
+    this.getUsuarios();
+  }
+
+  aplicarFiltros(filtros: Record<string, any>): void {
+    this.filtrosAtivos = filtros;
+    this.currentPage = 1;
+    this.salvarEstadoListagem();
     this.getUsuarios();
   }
 

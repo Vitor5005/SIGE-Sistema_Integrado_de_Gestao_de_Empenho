@@ -9,6 +9,9 @@
   <section class="sige-list-toolbar" aria-label="Busca e filtros">
     <app-barra-pesquisa
       [filtros]="filtros"
+      [placeholder]="'Buscar por código, ARP, fornecedor, CNPJ ou licitação...'"
+      [termoInicial]="termoBuscaAtual"
+      [valoresIniciais]="filtrosAtivos"
       (pesquisar)="get($event)"
       (filtrosAlterados)="aplicarFiltros($event)">
     </app-barra-pesquisa>

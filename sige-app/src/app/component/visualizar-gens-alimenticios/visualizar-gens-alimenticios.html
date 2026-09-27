@@ -9,6 +9,9 @@
   <div class="sige-list-toolbar">
     <div class="sige-list-toolbar__search">
       <app-barra-pesquisa [filtros]="filtros"
+        placeholder="Buscar por CATMAT ou descrição..."
+        [termoInicial]="termoBuscaAtual"
+        [valoresIniciais]="filtrosAtivos"
         (pesquisar)="getItens($event)"
         (filtrosAlterados)="aplicarFiltros($event)"></app-barra-pesquisa>
     </div>

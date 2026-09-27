@@ -15,6 +15,7 @@
             <a
               [routerLink]="['/visualizar-licitacao']"
               [queryParams]="{ id: empenhoContexto.ata.licitacao.id }"
+              (click)="salvarEstadoListagem()"
             >
               Licitação {{ empenhoContexto.ata.licitacao.numero_licitacao }}
             </a>
@@ -22,6 +23,7 @@
             <a
               [routerLink]="['/visualizar-ata']"
               [queryParams]="{ id: empenhoContexto.ata.id }"
+              (click)="salvarEstadoListagem()"
             >
               ARP {{ empenhoContexto.ata.numero_ata }}
             </a>
@@ -29,6 +31,7 @@
             <a
               [routerLink]="['/visualizar-empenho']"
               [queryParams]="{ id: empenhoContexto.id }"
+              (click)="salvarEstadoListagem()"
             >
               Empenho {{ empenhoContexto.codigo }}
             </a>
@@ -47,6 +50,9 @@
       <div class="sige-list-toolbar__search">
         <app-barra-pesquisa
           [filtros]="filtros"
+          placeholder="Buscar por ordem, empenho, fornecedor, CNPJ ou ARP..."
+          [termoInicial]="termoBuscaAtual"
+          [valoresIniciais]="filtrosAtivos"
           (pesquisar)="getEntregas($event)"
           (filtrosAlterados)="aplicarFiltros($event)"
         ></app-barra-pesquisa>
@@ -94,6 +100,7 @@
                     class="link-licitacao"
                     [routerLink]="['/visualizar-licitacao']"
                     [queryParams]="{ id: item.empenho.ata.licitacao.id }"
+                    (click)="salvarEstadoListagem()"
                   >
                     Licitação {{ item.empenho.ata.licitacao.numero_licitacao }}
                   </a>
@@ -102,6 +109,7 @@
                     class="link-arp"
                     [routerLink]="['/visualizar-ata']"
                     [queryParams]="{ id: item.empenho.ata.id }"
+                    (click)="salvarEstadoListagem()"
                   >
                     ARP {{ item.empenho.ata.numero_ata }}
                   </a>
@@ -110,6 +118,7 @@
                     class="link-emp"
                     [routerLink]="['/visualizar-empenho']"
                     [queryParams]="{ id: item.empenho.id }"
+                    (click)="salvarEstadoListagem()"
                   >
                     Empenho {{ item.empenho.codigo }}
                   </a>

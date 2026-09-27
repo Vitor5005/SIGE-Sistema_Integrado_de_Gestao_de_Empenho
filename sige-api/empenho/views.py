@@ -17,7 +17,14 @@ class EmpenhoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     permission_classes = [RBACPermission]
     rbac_resource = Recurso.EMPENHO
     rbac_action_map = {'resumo_financeiro': Acao.CONSULTAR}
-    search_fields = ['codigo', 'ata__numero_ata', 'ata__fornecedor__nome_fantasia']
+    search_fields = [
+        'codigo',
+        'ata__numero_ata',
+        'ata__licitacao__numero_licitacao',
+        'ata__fornecedor__razao_social',
+        'ata__fornecedor__nome_fantasia',
+        'ata__fornecedor__cnpj',
+    ]
     filterset_fields = {
         'ata__id': ['exact'], 
         'ata__licitacao__id': ['exact'],

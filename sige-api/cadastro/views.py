@@ -26,10 +26,12 @@ class FornecedorViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSe
     
    
     search_fields = [
-        'cnpj', 
-        #'razao_social', 
+        'cnpj',
+        'razao_social',
         'nome_fantasia',
-        'endereco__estado'
+        'email',
+        'endereco__municipio',
+        'endereco__estado',
     ]
 
    
@@ -54,8 +56,8 @@ class ItemGenericoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelView
     ]
     filterset_fields = {
         'catmat': ['exact'],               
-        'unidade_medida': ['exact'],      
-        'categoria': ['exact'],            
+        'unidade_medida': ['exact', 'in'],      
+        'categoria': ['exact', 'in'],            
     }
 
     ordering_fields = ['catmat', 'descricao', 'categoria']

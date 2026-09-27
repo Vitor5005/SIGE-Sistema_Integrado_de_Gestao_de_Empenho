@@ -8,7 +8,14 @@
 
     <div class="sige-list-toolbar">
         <div class="sige-list-toolbar__search">
-            <app-barra-pesquisa (pesquisar)="getUsuarios($event)"></app-barra-pesquisa>
+            <app-barra-pesquisa
+                [filtros]="filtros"
+                [placeholder]="'Buscar por usuário, nome, sobrenome ou e-mail...'"
+                [termoInicial]="termoBuscaAtual"
+                [valoresIniciais]="filtrosAtivos"
+                (pesquisar)="getUsuarios($event)"
+                (filtrosAlterados)="aplicarFiltros($event)">
+            </app-barra-pesquisa>
         </div>
         <div class="sige-list-toolbar__actions">
             <button type="button" class="sige-button sige-button--primary" data-bs-toggle="modal" data-bs-target="#adicionarUsuario"

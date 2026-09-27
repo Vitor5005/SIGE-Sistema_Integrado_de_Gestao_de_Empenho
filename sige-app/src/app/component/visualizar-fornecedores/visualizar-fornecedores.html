@@ -7,7 +7,14 @@
   </header>
 
   <section class="sige-list-toolbar" aria-label="Busca">
-    <app-barra-pesquisa (pesquisar)="get($event)"></app-barra-pesquisa>
+    <app-barra-pesquisa
+      [filtros]="filtros"
+      [placeholder]="'Buscar por razão social, nome fantasia, CNPJ ou município...'"
+      [termoInicial]="termoBuscaAtual"
+      [valoresIniciais]="filtrosAtivos"
+      (pesquisar)="get($event)"
+      (filtrosAlterados)="aplicarFiltros($event)">
+    </app-barra-pesquisa>
   </section>
 
   @if (!isLoadingPage && !errorMessagePage) {
