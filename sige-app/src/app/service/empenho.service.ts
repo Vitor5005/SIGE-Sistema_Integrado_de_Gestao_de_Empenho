@@ -9,6 +9,12 @@ import { ItemEmpenho } from '../model/itemEmpenho';
 import { OperacaoItem } from '../model/operacao_item';
 import { normalizePaginatedResponse, PaginatedResponse } from '../model/pagination';
 
+export interface ResumoFinanceiroEmpenhos {
+  valor_empenhado: number | string;
+  valor_utilizado: number | string;
+  valor_disponivel: number | string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -44,6 +50,19 @@ export class EmpenhoService implements ICrudService<Empenho> {
   getById(id: number): Observable<Empenho> {
     let url = this.apiUrl + id + '/';
     return this.http.get<Empenho>(url);
+  }
+
+  getResumoFinanceiro(licitacaoId: number | null = null): Observable<ResumoFinanceiroEmpenhos> {
+    const params = new URLSearchParams();
+
+    if (licitacaoId !== null) {
+      params.set('ata__licitacao__id', String(licitacaoId));
+    }
+
+    const query = params.toString();
+    const url = `${this.apiUrl}resumo-financeiro/${query ? `?${query}` : ''}`;
+
+    return this.http.get<ResumoFinanceiroEmpenhos>(url);
   }
 
   save(item: EmpenhoInsert): Observable<EmpenhoInsert> {

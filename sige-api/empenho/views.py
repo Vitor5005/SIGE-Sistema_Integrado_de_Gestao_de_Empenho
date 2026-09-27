@@ -1,4 +1,9 @@
+from decimal import Decimal
+
+from django.db.models import Sum
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from empenho.models import Empenho, ItemEmpenho,  OperacaoItem
 from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer
 from licitacao.views import BaseFiltroMixin
@@ -10,9 +15,27 @@ class EmpenhoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     search_fields = ['codigo', 'ata__numero_ata', 'ata__fornecedor__nome_fantasia']
     filterset_fields = {
         'ata__id': ['exact'], 
+        'ata__licitacao__id': ['exact'],
         'valor_total': ['exact', 'gte', 'lte'],
         'saldo_utilizado': ['exact', 'gte', 'lte'],
     }
+
+    @action(detail=False, methods=['get'], url_path='resumo-financeiro')
+    def resumo_financeiro(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        totais = queryset.aggregate(
+            valor_empenhado=Sum('valor_total'),
+            valor_utilizado=Sum('saldo_utilizado'),
+        )
+        valor_empenhado = totais['valor_empenhado'] or Decimal('0.00')
+        valor_utilizado = totais['valor_utilizado'] or Decimal('0.00')
+        valor_disponivel = valor_empenhado - valor_utilizado
+
+        return Response({
+            'valor_empenhado': f'{valor_empenhado:.2f}',
+            'valor_utilizado': f'{valor_utilizado:.2f}',
+            'valor_disponivel': f'{valor_disponivel:.2f}',
+        })
     
     def get_serializer_class(self):
         
@@ -23,6 +46,7 @@ class EmpenhoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
    
     ordering_fields = ['valor_total', 'saldo_utilizado', 'codigo']
     ordering = ['-id']  
+
     
 class ItemDoEmpehoViewSet(viewsets.ModelViewSet):
     queryset = ItemEmpenho.objects.all()

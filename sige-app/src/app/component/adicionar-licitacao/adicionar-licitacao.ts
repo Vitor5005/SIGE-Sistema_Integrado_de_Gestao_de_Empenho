@@ -32,10 +32,14 @@ export class AdicionarLicitacao {
   
   lista: any[] = [];
 
-  licitacao: Licitacao = <Licitacao>{};
+  licitacao: Licitacao = <Licitacao>{ atual: false };
   formSubmitted: boolean = false;
   isSaving: boolean = false;
   errorMessage: string = '';
+  licitacaoAtual: Licitacao | null = null;
+  carregandoLicitacaoAtual: boolean = true;
+  erroAoCarregarLicitacaoAtual: boolean = false;
+  private usuarioAlterouOpcaoAtual: boolean = false;
 
   get todayDate(): string {
     return new Date().toISOString().split('T')[0];
@@ -99,6 +103,39 @@ export class AdicionarLicitacao {
     })
 
     this.licitacao.data_abertura = new Date().toISOString().split('T')[0];
+    this.licitacao.atual = false;
+    this.carregarLicitacaoAtual();
+  }
+
+  onAtualChange(): void {
+    this.usuarioAlterouOpcaoAtual = true;
+  }
+
+  private carregarLicitacaoAtual(): void {
+    this.carregandoLicitacaoAtual = true;
+    this.erroAoCarregarLicitacaoAtual = false;
+
+    this.licitacaoService.getAtual().subscribe({
+      next: (licitacaoAtual: Licitacao | null) => {
+        this.licitacaoAtual = licitacaoAtual;
+
+        if (!this.usuarioAlterouOpcaoAtual) {
+          this.licitacao.atual = licitacaoAtual === null;
+        }
+
+        this.carregandoLicitacaoAtual = false;
+      },
+      error: () => {
+        this.licitacaoAtual = null;
+        this.erroAoCarregarLicitacaoAtual = true;
+
+        if (!this.usuarioAlterouOpcaoAtual) {
+          this.licitacao.atual = false;
+        }
+
+        this.carregandoLicitacaoAtual = false;
+      }
+    });
   }
 
   normalizarCampos(): void {

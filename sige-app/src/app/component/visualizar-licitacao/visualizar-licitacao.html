@@ -3,12 +3,50 @@
 
   <div class="container1">
     <div class="container-numero">
-      <b>{{ licitacao.numero_licitacao }}</b>
+      <div class="d-flex align-items-center gap-2">
+        <b>{{ licitacao.numero_licitacao }}</b>
+        @if (licitacao.atual) {
+        <span class="badge text-bg-primary">Licitação atual</span>
+        } @else if (licitacao.id) {
+        <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="isDefinindoAtual"
+          (click)="iniciarDefinicaoComoAtual()">
+          Definir como atual
+        </button>
+        }
+      </div>
       <button #myInput data-bs-toggle="modal" data-bs-target="#adicionarAtaModal" [disabled]="isSaving" (click)="reiniciar_Modal()">
         <i class="bi bi-file-earmark-plus"></i>
         Adicionar Ata
       </button>
     </div>
+
+    @if (mostrarConfirmacaoAtual && !licitacao.atual) {
+    <div class="alert alert-warning mt-3 mb-0" role="alert">
+      <strong>Definir esta licitação como atual?</strong>
+      <p class="mb-2">Se houver outra licitação atual, ela deixará de ser a referência operacional.</p>
+
+      @if (errorMessageAtual) {
+      <p class="text-danger mb-2" role="alert">{{ errorMessageAtual }}</p>
+      }
+
+      <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="isDefinindoAtual"
+          (click)="cancelarDefinicaoComoAtual()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" [disabled]="isDefinindoAtual"
+          (click)="confirmarDefinicaoComoAtual()">
+          @if (isDefinindoAtual) {
+          <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+          Definindo...
+          } @else {
+          Confirmar
+          }
+        </button>
+      </div>
+    </div>
+    }
+
     <div class="container-infos">
       <div class="validade-card">
         <small>PERIODO DE VALIDADE</small>

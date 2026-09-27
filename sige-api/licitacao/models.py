@@ -1,11 +1,49 @@
-from django.db import models
+from contextlib import contextmanager
+
+from django.db import connections, models, router, transaction
 from cadastro.models import Fornecedor, ItemGenerico
+
+
+@contextmanager
+def _lock_licitacao_atual(using):
+    connection = connections[using]
+    nome_lock = f"sige:{connection.settings_dict.get('NAME', 'default')}:licitacao-atual"[:64]
+
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT GET_LOCK(%s, %s)", [nome_lock, 10])
+        adquirido = cursor.fetchone()[0]
+
+    if adquirido != 1:
+        raise RuntimeError("Não foi possível obter o lock da licitação atual.")
+
+    try:
+        yield
+    finally:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT RELEASE_LOCK(%s)", [nome_lock])
+
 
 class Licitacao(models.Model):
     numero_licitacao = models.CharField(max_length=50, unique=True, blank=False, null=False, verbose_name="Número da Licitação")
     validade = models.IntegerField(blank=False, null=False, verbose_name="Validade (em meses)")
     data_abertura = models.DateField(blank=False, null=False, verbose_name="Data de Abertura")
     descricao = models.TextField(blank=True, null=True, verbose_name="Descrição da Licitação")
+
+    atual = models.BooleanField(default=False, db_index=True, verbose_name="Licitação atual")
+
+    def save(self, *args, **kwargs):
+        if not self.atual:
+            return super().save(*args, **kwargs)
+
+        using = kwargs.get('using') or router.db_for_write(type(self), instance=self)
+        with _lock_licitacao_atual(using):
+            with transaction.atomic(using=using):
+                type(self).objects.using(using).filter(atual=True).exclude(pk=self.pk).update(atual=False)
+                return super().save(*args, **kwargs)
+
+    def definir_como_atual(self):
+        self.atual = True
+        self.save(update_fields=['atual'])
 
     def __str__(self):
         return f"Licitacao {self.numero_licitacao} \n Validade: {self.validade} meses \n Data de Abertura: {self.data_abertura}"

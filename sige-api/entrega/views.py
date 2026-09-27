@@ -29,7 +29,9 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     filterset_fields = {
         'status': ['exact'],                         
         'empenho__id': ['exact'],                    
+        'empenho__ata__licitacao__id': ['exact'],
         'data_emissao': ['exact', 'gte', 'lte'],     
+        'data_entrega_prevista': ['exact', 'gte', 'lte'],
         'data_entrega': ['exact', 'gte', 'lte', 'isnull'],  
         'valor_total_executado': ['exact', 'gte', 'lte']
     }

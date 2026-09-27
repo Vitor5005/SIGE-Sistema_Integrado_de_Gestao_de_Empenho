@@ -24,7 +24,12 @@
           <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
           <td>
             <div>
-              <p>LIC-{{item.numero_licitacao}}</p>
+              <p>
+                LIC-{{item.numero_licitacao}}
+                @if (item.atual) {
+                <span class="badge text-bg-primary ms-2">Atual</span>
+                }
+              </p>
               <small>cadastrada: {{item.data_abertura}}</small>
             </div>
           </td>

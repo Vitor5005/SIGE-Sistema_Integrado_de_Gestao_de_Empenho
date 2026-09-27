@@ -5,5 +5,6 @@ export type Licitacao = {
     validade: string;
     data_abertura: string;    
     descricao: string;
+    atual: boolean;
 
 }

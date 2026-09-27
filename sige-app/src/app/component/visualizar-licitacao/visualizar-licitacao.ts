@@ -69,6 +69,9 @@ export class VisualizarLicitacao {
   formSubmittedPage2: boolean = false;
   isSaving: boolean = false;
   errorMessageModal: string = '';
+  mostrarConfirmacaoAtual: boolean = false;
+  isDefinindoAtual: boolean = false;
+  errorMessageAtual: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
 
   private limparNumero(valor: string | undefined): string {
@@ -348,6 +351,45 @@ export class VisualizarLicitacao {
       },
       complete: () => {
         this.getAtas(this.licitacao.id);
+      }
+    });
+  }
+
+  iniciarDefinicaoComoAtual(): void {
+    if (this.licitacao.atual || this.isDefinindoAtual) {
+      return;
+    }
+
+    this.errorMessageAtual = '';
+    this.mostrarConfirmacaoAtual = true;
+  }
+
+  cancelarDefinicaoComoAtual(): void {
+    if (this.isDefinindoAtual) {
+      return;
+    }
+
+    this.errorMessageAtual = '';
+    this.mostrarConfirmacaoAtual = false;
+  }
+
+  confirmarDefinicaoComoAtual(): void {
+    if (!this.licitacao.id || this.isDefinindoAtual) {
+      return;
+    }
+
+    this.isDefinindoAtual = true;
+    this.errorMessageAtual = '';
+
+    this.licitacaoService.definirAtual(this.licitacao.id).subscribe({
+      next: (resposta: Licitacao) => {
+        this.licitacao = { ...this.licitacao, ...resposta, atual: true };
+        this.mostrarConfirmacaoAtual = false;
+        this.isDefinindoAtual = false;
+      },
+      error: () => {
+        this.errorMessageAtual = 'Não foi possível definir esta licitação como atual. Tente novamente.';
+        this.isDefinindoAtual = false;
       }
     });
   }

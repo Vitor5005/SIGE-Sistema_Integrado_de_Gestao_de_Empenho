@@ -4,6 +4,7 @@ from urllib import request
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import viewsets, filters
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from licitacao.models import Licitacao, Ata, ItemAta
 from licitacao.serializers import AtaInsertSerializer, ItemAtaInsertSerializer, LicitacaoSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
@@ -34,10 +35,17 @@ class LicitacaoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     search_fields = ['numero_licitacao','descricao']
     filterset_fields = {
         'data_abertura':['exact', 'gte', 'lte'],
-        'validade':['exact', 'gte', 'lte']
+        'validade':['exact', 'gte', 'lte'],
+        'atual': ['exact'],
     }
     ordering_fields = ['data_abertura','validade']
     ordering = ['-data_abertura']
+
+    @action(detail=True, methods=['post'], url_path='definir-atual')
+    def definir_atual(self, request, pk=None):
+        licitacao = self.get_object()
+        licitacao.definir_como_atual()
+        return Response(self.get_serializer(licitacao).data)
 
 class AtaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Ata.objects.all()
