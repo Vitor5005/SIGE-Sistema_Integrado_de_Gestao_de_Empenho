@@ -22,6 +22,7 @@ export enum Recurso {
   ESTOQUE = 'estoque',
   MOVIMENTACAO_ESTOQUE = 'movimentacao_estoque',
   INVENTARIO = 'inventario',
+  PENDENCIA_FORNECEDOR = 'pendencia_fornecedor',
 }
 
 export enum Acao {
@@ -75,9 +76,9 @@ export const MATRIZ_PERMISSOES: Matriz = {
     [Acao.EDITAR]: DIRETOR,
   },
   [Recurso.GENERO_ALIMENTICIO]: {
-    [Acao.CONSULTAR]: TODOS,
-    [Acao.CADASTRAR]: DIRETOR,
-    [Acao.EDITAR]: DIRETOR,
+    [Acao.CONSULTAR]: TODOS_COM_ESTOQUISTA,
+    [Acao.CADASTRAR]: DIRETOR_TECNICO_ESTOQUISTA,
+    [Acao.EDITAR]: DIRETOR_TECNICO_ESTOQUISTA,
   },
   [Recurso.LICITACAO]: {
     [Acao.CONSULTAR]: TODOS,
@@ -143,6 +144,10 @@ export const MATRIZ_PERMISSOES: Matriz = {
   [Recurso.INVENTARIO]: {
     [Acao.CONSULTAR]: ESTOQUISTA,
     [Acao.CADASTRAR]: ESTOQUISTA,
+  },
+  [Recurso.PENDENCIA_FORNECEDOR]: {
+    [Acao.CONSULTAR]: DIRETOR_TECNICO_ESTOQUISTA,
+    [Acao.ALTERAR_STATUS]: DIRETOR_TECNICO,
   },
 };
 

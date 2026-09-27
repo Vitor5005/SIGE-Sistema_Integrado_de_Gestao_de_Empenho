@@ -201,6 +201,14 @@ filtrosAtivos: any = {};
     }
   }
 
+  get modoCadastro(): boolean {
+    return !this.registroEditar.id;
+  }
+
+  novoRegistro(): void {
+    this.carregarRegistro(<ItemGenerico>{ catmat: '', descricao: '', unidade_medida: '', categoria: '' });
+  }
+
   carregarRegistro(registro: ItemGenerico) {
     this.formSubmitted = false;
     this.errorMessageModal = '';
@@ -287,9 +295,15 @@ filtrosAtivos: any = {};
       next: () => {
         window.location.reload();
       },
-      error: () => {
+      error: (erro) => {
         this.isSaving = false;
-        this.errorMessageModal = 'Não foi possível salvar as alterações. Verifique os dados e tente novamente.';
+        if (erro?.error?.catmat) {
+          this.errorMessageModal = 'Já existe um gênero alimentício cadastrado com este CATMAT.';
+          return;
+        }
+        this.errorMessageModal = this.modoCadastro
+          ? 'Não foi possível cadastrar o gênero alimentício. Verifique os dados e tente novamente.'
+          : 'Não foi possível salvar as alterações. Verifique os dados e tente novamente.';
       }
     });
   }

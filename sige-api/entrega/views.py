@@ -6,13 +6,16 @@ from rest_framework import status
 from rest_framework.parsers import JSONParser, MultiPartParser,FormParser
 from rest_framework import viewsets
 
-from entrega.models import OrdemEntrega, ItemOrdem
-from entrega.serializers import OrdemEntregaInsertSerializer, OrdemEntregaSerializer, ItemOrdemSerializer, itemOrdemInsertSerializer
+from django.db.models import Q
+from django.utils import timezone
+
+from entrega.models import OrdemEntrega, ItemOrdem, PendenciaFornecedor
+from entrega.serializers import OrdemEntregaInsertSerializer, OrdemEntregaSerializer, ItemOrdemSerializer, itemOrdemInsertSerializer, PendenciaFornecedorSerializer
 from licitacao.views import BaseFiltroMixin
 from utils.mail import get_email_client
 from utils.audit import AuditoriaRBACMixin
 from utils.permissions import RBACPermission
-from utils.rbac import Acao, Recurso
+from utils.rbac import Acao, Papel, Recurso
 
 class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = OrdemEntrega.objects.all()
@@ -26,9 +29,12 @@ class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
         
         if self.action in ['create', 'update']:
             return OrdemEntregaInsertSerializer
-        
+
         return OrdemEntregaSerializer
-    
+
+    def perform_create(self, serializer):
+        serializer.save(solicitante=self.request.user)
+
     search_fields = ['codigo', 'empenho__codigo']
     filterset_fields = {
         'status': ['exact'],                         
@@ -141,3 +147,53 @@ class ItemEntregaViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
 
     ordering_fields = ['quantidade_solicitada', 'quantidade_entregue']
     ordering = ['id']
+
+
+class PendenciaFornecedorViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    Pendências de fornecedores geradas em recebimentos parciais.
+    O Técnico vê as pendências das ordens que solicitou (ou sem solicitante
+    identificado); Diretor e Estoquista veem todas.
+    """
+    queryset = PendenciaFornecedor.objects.select_related(
+        'item_ordem__ordem_entrega__empenho__ata__fornecedor',
+        'item_ordem__item_empenho__item_ata__item_generico',
+        'registrada_por', 'destinatario', 'ciente_por',
+    )
+    serializer_class = PendenciaFornecedorSerializer
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.PENDENCIA_FORNECEDOR
+    rbac_action_map = {'ciente': Acao.ALTERAR_STATUS}
+
+    filterset_fields = {
+        'status': ['exact', 'in'],
+        'item_ordem__ordem_entrega__id': ['exact'],
+    }
+    search_fields = [
+        'item_ordem__ordem_entrega__codigo',
+        'item_ordem__ordem_entrega__empenho__ata__fornecedor__nome_fantasia',
+        'item_ordem__item_empenho__item_ata__item_generico__descricao',
+    ]
+    ordering_fields = ['data_registro', 'data_atualizacao', 'quantidade_pendente']
+    ordering = ['-data_atualizacao', '-id']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        usuario = self.request.user
+        if getattr(usuario, 'papel', None) == Papel.TECNICO_ADMINISTRATIVO:
+            queryset = queryset.filter(Q(destinatario=usuario) | Q(destinatario__isnull=True))
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def ciente(self, request, pk=None):
+        pendencia = self.get_object()
+        if pendencia.status != PendenciaFornecedor.Status.ABERTA:
+            return Response(
+                {'status': 'Somente pendências abertas podem ser marcadas como cientes.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        pendencia.status = PendenciaFornecedor.Status.CIENTE
+        pendencia.ciente_por = request.user
+        pendencia.data_ciencia = timezone.now()
+        pendencia.save(update_fields=['status', 'ciente_por', 'data_ciencia', 'data_atualizacao'])
+        return Response(self.get_serializer(pendencia).data)

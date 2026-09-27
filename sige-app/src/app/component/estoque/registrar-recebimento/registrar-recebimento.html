@@ -16,6 +16,18 @@
         <td><input class="form-control" type="number" min="0" [max]="item.quantidade_pendente" step="0.001" [(ngModel)]="item.quantidade_receber" [disabled]="item.quantidade_pendente <= 0"></td>
         <td>{{item.item_empenho.item_ata.valor_unitario|currency:'BRL'}}</td><td>{{total(item)|currency:'BRL'}}</td>
         <td><input class="form-control" maxlength="255" placeholder="Obrigatória se permanecer pendência" [(ngModel)]="item.observacao"></td></tr>}</tbody></table></div>
+    @if (ordem.status !== 'con' && itensQueFicaraoPendentes.length) {
+      <div class="alert alert-warning" role="status">
+        <strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Entrega incompleta.</strong>
+        Ao confirmar, será registrada uma pendência do fornecedor
+        <b>{{ordem.empenho.ata.fornecedor.nome_fantasia}}</b> e quem solicitou a ordem será alertado:
+        <ul class="mb-0 mt-2">
+          @for (pendente of itensQueFicaraoPendentes; track pendente.descricao) {
+            <li>{{pendente.faltante | number:'1.0-3'}} {{pendente.unidade}} de {{pendente.descricao}}</li>
+          }
+        </ul>
+      </div>
+    }
     <button class="btn btn-primary" [disabled]="processando||ordem.status==='con'" (click)="confirmar()">{{processando?'Registrando...':'Confirmar recebimento'}}</button>
   }
 </section>

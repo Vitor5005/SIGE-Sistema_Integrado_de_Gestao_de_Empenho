@@ -223,6 +223,102 @@
     border-color: var(--sige-border);
   }
 
+  .alertas-botao {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--sige-color-white);
+    background: rgba(0, 48, 88, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: var(--sige-radius-md);
+    font-size: 1.125rem;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(0, 48, 88, 0.38);
+    }
+  }
+
+  .alertas-contador {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+    min-width: 1.25rem;
+    padding: 0 0.3rem;
+    color: var(--sige-color-white);
+    background: var(--sige-danger);
+    border-radius: var(--sige-radius-pill);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.25rem;
+  }
+
+  .alertas-dropdown {
+    width: min(24rem, calc(100vw - 2rem));
+  }
+
+  .alertas-vazio {
+    padding: var(--sige-space-2) var(--sige-space-3);
+    color: var(--sige-text-secondary);
+    font-size: 0.8125rem;
+  }
+
+  .alertas-lista {
+    max-height: 22rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+  }
+
+  .alerta-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sige-space-1);
+    padding: var(--sige-space-3);
+    border-top: 1px solid var(--sige-border);
+    color: var(--sige-text-primary);
+    font-size: 0.8125rem;
+  }
+
+  .alerta-topo,
+  .alerta-rodape {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sige-space-2);
+
+    span {
+      color: var(--sige-text-secondary);
+      font-size: 0.75rem;
+    }
+  }
+
+  .alerta-motivo {
+    color: var(--sige-text-secondary);
+    font-style: italic;
+  }
+
+  .alerta-ciente {
+    flex: none;
+    padding: var(--sige-space-1) var(--sige-space-2);
+    color: var(--sige-color-primary);
+    background: transparent;
+    border: 1px solid var(--sige-color-primary);
+    border-radius: var(--sige-radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      color: var(--sige-color-white);
+      background: var(--sige-color-primary);
+    }
+  }
+
   .logout-action {
     color: var(--sige-danger);
 

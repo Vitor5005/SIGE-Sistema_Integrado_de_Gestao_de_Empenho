@@ -1,141 +1,147 @@
-<body>
+<main class="sige-detail-page">
 
     <app-botao-voltar></app-botao-voltar>
 
-    <div class="container-visualizar-ata">
+    <div class="sige-detail-layout">
+        @if (ata.id) {
+        <nav class="sige-detail-breadcrumb" aria-label="Navegação contextual">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a [routerLink]="['/visualizar-licitacoes']">Licitações</a></li>
+                <li class="breadcrumb-item"><a [routerLink]="['/visualizar-licitacao']"
+                        [queryParams]="{ id: ata.licitacao.id }">{{ ata.licitacao.numero_licitacao }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ ata.numero_ata }}</li>
+            </ol>
+        </nav>
+        }
 
-        <div class="cabecalho-arp">
-            <div>
-                <span>
-                    <i class="bi bi-file-earmark-text"></i> {{ ata.numero_ata }}
-                </span>
+        <section class="sige-detail-shell ata-resumo">
+            <header class="sige-detail-header">
+                <div class="sige-detail-heading">
+                    <h1 class="sige-detail-title">Ata de Registro de Preços</h1>
+                    <p class="sige-detail-subtitle ata-numero"><i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+                        {{ ata.numero_ata }}</p>
+                </div>
+                @if (pode(Recurso.ITEM_ATA, Acao.CADASTRAR)) {
+                <div class="sige-detail-actions">
+                    <button #myInput class="sige-button sige-button--primary" data-bs-toggle="modal"
+                        data-bs-target="#adicionarItemModal" [disabled]="isSaving" (click)="reiniciar_Modal()">
+                        <i class="bi bi-file-earmark-plus" aria-hidden="true"></i>
+                        Adicionar item
+                    </button>
+                </div>
+                }
+            </header>
+
+            <div class="sige-metric-grid ata-metric-grid">
+                <article class="sige-metric-card ata-metric-card card-licitacao"
+                    (click)="enviarPara('/visualizar-licitacao', ata.licitacao.id)">
+                    <span class="sige-metric-label">Licitação</span>
+                    <span class="sige-metric-value ata-link-value"><i class="bi bi-link-45deg" aria-hidden="true"></i>
+                        {{ ata.licitacao.numero_licitacao }}</span>
+                </article>
+
+                <article class="sige-metric-card ata-metric-card card-validade">
+                    <span class="sige-metric-label">Validade</span>
+                    <span class="sige-metric-value">{{ ata.licitacao.validade }} meses</span>
+                    <span class="ata-validade-badge"><span [class]="classValidade(ata)">{{ validade === 'Válido' ? 'Válida' : validade === 'Expirado' ? 'Expirada' : validade }}</span></span>
+                </article>
+
+                <article class="sige-metric-card ata-metric-card card-valor-total">
+                    <span class="sige-metric-label">Valor total</span>
+                    <span class="sige-metric-value">R$ {{ ata.ata_saldo_total }}</span>
+                </article>
+
+                <article class="sige-metric-card ata-metric-card card-utilizado">
+                    <span class="sige-metric-label">Utilizado</span>
+                    <span class="sige-metric-value">R$ {{ empenho.valor_total }}</span>
+                </article>
             </div>
-            @if (pode(Recurso.ITEM_ATA, Acao.CADASTRAR)) {
-            <button #myInput data-bs-toggle="modal" data-bs-target="#adicionarItemModal" [disabled]="isSaving" (click)="reiniciar_Modal()"><i
-                    class="bi bi-file-earmark-plus"></i>
-                Adiconar Item </button>
-            }
-        </div>
+        </section>
 
-        <hr>
+        <section class="sige-detail-section ata-fornecedor-section">
+            <header class="sige-detail-section-header">
+                <div>
+                    <h2 class="sige-detail-section-title">Informações do fornecedor</h2>
+                    <p class="sige-detail-subtitle">Dados cadastrais vinculados a esta ata.</p>
+                </div>
+            </header>
 
-        <div class="container-cards">
+            <div class="ata-fornecedor-layout">
+                <div class="sige-detail-info-grid">
+                    <div class="sige-detail-field">
+                        <span class="sige-detail-label">Razão social</span>
+                        <span class="sige-detail-value">{{ ata.fornecedor.razao_social }}</span>
+                    </div>
+                    <div class="sige-detail-field">
+                        <span class="sige-detail-label">Nome fantasia</span>
+                        <span class="sige-detail-value">{{ ata.fornecedor.nome_fantasia }}</span>
+                    </div>
+                    <div class="sige-detail-field">
+                        <span class="sige-detail-label">CNPJ</span>
+                        <span class="sige-detail-value">{{ ata.fornecedor.cnpj }}</span>
+                    </div>
+                    <div class="sige-detail-field">
+                        <span class="sige-detail-label">Telefone</span>
+                        <span class="sige-detail-value">{{ ata.fornecedor.telefone }}</span>
+                    </div>
+                </div>
 
-            <div class="card-licitacao cards" (click)="enviarPara('/visualizar-licitacao', ata.licitacao.id)">
-                <h5>Licitação</h5>
-                <span>
-                    <i class="bi bi-link-45deg"></i> {{ ata.licitacao.numero_licitacao }}
-                </span>
-            </div>
-
-            <div class="card-validade cards">
-                <h5>Validade</h5>
-                <span class="meses">{{ ata.licitacao.validade }} Meses</span>
-
-                <div [class]="classValidade(ata)">
-                    <span>{{ validade }}</span>
+                <div class="ata-empenho-contexto" (click)="enviarPara('/visualizar-empenho', empenho.id)">
+                    <span class="sige-detail-label">Empenho relacionado</span>
+                    <span class="ata-empenho-codigo"><i class="bi bi-link-45deg" aria-hidden="true"></i> {{ empenho.codigo }}</span>
+                    <span class="ata-empenho-acao">Ver detalhes <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
                 </div>
             </div>
+        </section>
 
-            <div class="card-valor-total cards">
-                <h5>Valor Total</h5>
-                <span>R$ {{ ata.ata_saldo_total }}</span>
+        <section class="sige-detail-section ata-itens-section">
+            <header class="sige-detail-section-header">
+                <div>
+                    <h2 class="sige-detail-section-title">Gêneros alimentícios</h2>
+                    <p class="sige-detail-subtitle">Itens cadastrados e valores vinculados a esta ata.</p>
+                </div>
+            </header>
 
+            <div class="sige-detail-table-wrap">
+                <table class="table sige-detail-table ata-tabela">
+                    <thead>
+                        <tr>
+                            <th scope="col">Item</th>
+                            <th scope="col">Quantidade licitada</th>
+                            <th scope="col">Quantidade em ata<br>(Disponível)</th>
+                            <th scope="col">Quantidade empenhada</th>
+                            <th scope="col">Valor unitário</th>
+                            <th scope="col">Valor empenhado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (itens.length !== 0) {
+                        @for (item of itens; track $index) {
+                        <tr>
+                            <td><span>{{ item.item_ata.item_generico.descricao }}</span></td>
+                            <td><span>{{ item.item_ata.quantidade_licitada }}
+                                    {{ item.item_ata.item_generico.unidade_medida}}</span></td>
+                            <td><span>{{ item.item_ata.quantidade_licitada - item.quantidade_atual | number:'1.2-2' }}
+                                    {{ item.item_ata.item_generico.unidade_medida }}</span></td>
+                            <td><span>{{ item.quantidade_atual }} {{ item.item_ata.item_generico.unidade_medida }}</span></td>
+                            <td><span>R$ {{ item.item_ata.valor_unitario }}</span></td>
+                            <td><span>R$ {{ item.quantidade_atual * item.item_ata.valor_unitario |
+                                    number:'1.2-2' }}</span></td>
+                        </tr>
+                        }
+                        }
+                        @if (itens.length === 0) {
+                        <tr class="linha-vazia-tabela">
+                            <td colspan="6" class="mensagem-tabela-vazia">
+                                Nenhum registro encontrado.
+                                <small>Clique no botão "Adicionar item" para cadastrar o primeiro item desta ata.</small>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
-
-            <div class="card-utilizado cards">
-                <h5>Utilizado</h5>
-                <span>
-
-                    R$ {{ empenho.valor_total }}
-                </span>
-            </div>
-        </div>
-
-        <hr>
-
-        <div class="informacoes">
-            <div>
-                <h5>INFORMAÇÕES DO FORNECEDOR</h5>
-                <p><b>Razão Social: {{ ata.fornecedor.razao_social }}</b></p>
-                <p><b>Nome Fantasia: {{ ata.fornecedor.nome_fantasia }}</b></p>
-                <p><b>CNPJ: {{ ata.fornecedor.cnpj }}</b></p>
-                <p><b>Telefone: {{ ata.fornecedor.telefone }}</b></p>
-            </div>
-
-            <div class="card-empenho" (click)="enviarPara('/visualizar-empenho', empenho.id)">
-                <h4>
-                    Empenho
-                </h4>
-                <span>
-                    <i class="bi bi-link-45deg"></i> {{ empenho.codigo }}
-                </span>
-            </div>
-        </div>
-
-        <div class="container-tabela">
-            <h4>Generos Alimenticios</h4>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th scope="col">Item</th>
-                        <th scope="col">Quantidade Licitada</th>
-
-                        <th scope="col">
-                            <div>
-                                <p style="margin: 0;">Quantidade em Ata</p>
-                                <span>(Disponivel)</span>
-
-                            </div>
-                        </th>
-
-                        <th>Quantidade Empenhada</th>
-
-                        <th scope="col">Valor Unitario</th>
-                        <th scope="col">Valor Empenhado</th>
-
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Exemplo 1 -->
-                    @if (itens.length !== 0) {
-                    @for (item of itens; track $index) {
-                    <tr>
-                        <td>
-                            <span>{{ item.item_ata.item_generico.descricao }}</span>
-                        </td>
-                        <td>
-                            <span>{{ item.item_ata.quantidade_licitada }} 
-                                {{ item.item_ata.item_generico.unidade_medida}}</span>
-                        </td>
-                        <td>
-                            <span>{{ item.item_ata.quantidade_licitada - item.quantidade_atual | number:'1.2-2' }} {{
-                                item.item_ata.item_generico.unidade_medida }}</span>
-                        </td>
-                        <td><span>{{ item.quantidade_atual }}</span> </td>
-                        <td>
-                            <span>R$ {{ item.item_ata.valor_unitario }}</span>
-                        </td>
-                        <td>
-                            <span>R$ {{ item.quantidade_atual * item.item_ata.valor_unitario |
-                                number:'1.2-2' }}</span>
-                        </td>
-
-                    </tr>
-                    }
-
-                    }
-                    @if (itens.length === 0) {
-                    <tr class="linha-vazia-tabela">
-                        <td colspan="6" class="mensagem-tabela-vazia">
-                            Nenhum registro encontrado.
-                            <small>Clique no botão "Adicionar Item" para cadastrar o primeiro item desta ata.</small>
-                        </td>
-                    </tr>
-                    }
-            </table>
-        </div>
-
+        </section>
     </div>
 
     <div #myModal class="modal fade" id="adicionarItemModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
@@ -433,4 +439,4 @@
         </div>
     </div>
 
-</body>
+</main>

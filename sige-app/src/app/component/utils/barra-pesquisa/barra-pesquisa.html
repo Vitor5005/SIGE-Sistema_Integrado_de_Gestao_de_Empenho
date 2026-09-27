@@ -5,84 +5,86 @@
   </div>
 
   <div class="dropdown">
-    <button class="filtro dropdown-toggle" data-bs-toggle="dropdown">
+    <button class="filtro dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside">
       <i class="bi bi-funnel"></i> filtros
     </button>
 
-    <ul class="dropdown-menu">
-      @for (filtro of filtros; track filtro.campo) {
-        <li class="dropdown-item">
-          <strong>{{ filtro.label }}</strong>
-        </li>
+    <div class="dropdown-menu menu-filtros">
+      <form #formFiltros class="filtros-form" (submit)="$event.preventDefault()">
+        @for (filtro of filtros; track filtro.campo) {
+          <fieldset class="filtro-grupo">
+            <legend class="filtro-titulo">{{ filtro.label }}</legend>
 
-        <!-- CHECKBOX -->
-        @if (filtro.tipo === 'checkbox') {
-          @for (op of filtro.opcoes; track op.id) {
-            <li class="dropdown-item">
-              <input type="checkbox" (change)="alterarFiltro(filtro.campo, op.id, $event)" />
+            <!-- CHECKBOX -->
+            @if (filtro.tipo === 'checkbox') {
+              @for (op of filtro.opcoes; track op.id) {
+                <label class="filtro-opcao">
+                  <input type="checkbox" (change)="alterarFiltro(filtro.campo, op.id, $event)" />
+                  <span>{{ op.nome || op.numero }}</span>
+                </label>
+              }
+            }
 
-              {{ op.nome || op.numero }}
-            </li>
-          }
+            <!-- RADIO -->
+            @if (filtro.tipo === 'radio') {
+              @for (op of filtro.opcoes; track op.valor) {
+                <label class="filtro-opcao">
+                  <input
+                    type="radio"
+                    name="{{ filtro.campo }}"
+                    (change)="alterarFiltro(filtro.campo, op.valor)"
+                  />
+                  <span>{{ op.label }}</span>
+                </label>
+              }
+            }
+
+            <!-- RANGE -->
+            @if (filtro.tipo === 'range') {
+              <div class="filtro-intervalo">
+                <label>
+                  <span>Mín.</span>
+                  <input
+                    type="number"
+                    (change)="alterarFiltro(filtro.campo + '__gte', $any($event.target).value)"
+                  />
+                </label>
+                <label>
+                  <span>Máx.</span>
+                  <input
+                    type="number"
+                    (change)="alterarFiltro(filtro.campo + '__lte', $any($event.target).value)"
+                  />
+                </label>
+              </div>
+            }
+
+            <!-- DATE RANGE -->
+            @if (filtro.tipo === 'date-range') {
+              <div class="filtro-intervalo">
+                <label>
+                  <span>De</span>
+                  <input
+                    type="date"
+                    (change)="alterarFiltro(filtro.campo + '__gte', $any($event.target).value)"
+                  />
+                </label>
+                <label>
+                  <span>Até</span>
+                  <input
+                    type="date"
+                    (change)="alterarFiltro(filtro.campo + '__lte', $any($event.target).value)"
+                  />
+                </label>
+              </div>
+            }
+          </fieldset>
         }
 
-        <!-- RADIO -->
-        @if (filtro.tipo === 'radio') {
-          @for (op of filtro.opcoes; track op.valor) {
-            <li class="dropdown-item">
-              <input
-                type="radio"
-                name="{{ filtro.campo }}"
-                (change)="alterarFiltro(filtro.campo, op.valor)"
-              />
-              {{ op.label }}
-            </li>
-          }
-        }
-
-        <!-- RANGE -->
-        @if (filtro.tipo === 'range') {
-          <li class="dropdown-item ">
-            <input
-              type="number"
-              placeholder="mín"
-              (change)="alterarFiltro(filtro.campo + '__gte', $any($event.target).value)"
-            />
-
-            <input
-              type="number"
-              placeholder="máx"
-              (change)="alterarFiltro(filtro.campo + '__lte', $any($event.target).value)"
-            />
-          </li>
-
-        }
-        @if (filtro.tipo === 'date-range') {
-          <li class="dropdown-item">
-            <div class="d-flex gap-2">
-              <label>De:</label>
-              <input
-                type="date"
-                (change)="alterarFiltro(filtro.campo + '__gte', $any($event.target).value)"
-              />
-
-              <label>Até:</label>
-              <input
-                type="date"
-                (change)="alterarFiltro(filtro.campo + '__lte', $any($event.target).value)"
-              />
-            </div>
-          </li>
-        }
-    }
-
-        <li><hr class="dropdown-divider" /></li>
-
-      <li>
-        <a class="dropdown-item limpar badge bg-danger" (click)="limparFiltros()">
-          limpar filtros
-        </a>
-      </li>
-    </ul>
+        <button type="button" class="limpar" (click)="formFiltros.reset(); limparFiltros()">
+          <i class="bi bi-x-circle"></i> Limpar filtros
+        </button>
+      </form>
+    </div>
   </div>
 </div>

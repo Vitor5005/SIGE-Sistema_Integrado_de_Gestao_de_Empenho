@@ -1,83 +1,127 @@
-<body>
+<main class="sige-detail-page">
   <app-botao-voltar></app-botao-voltar>
 
-  <div class="container-empenho">
-    <div class="cabecalho">
-      <div>
-        <span class="nome-fornecedor">{{ empenho.ata.fornecedor.nome_fantasia }}</span><br>
-        <span class="numero-empenho">{{ empenho.codigo }}</span>
+  <div class="sige-detail-layout">
+  @if (empenho.id) {
+  <nav class="sige-detail-breadcrumb" aria-label="Navegação contextual">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a routerLink="/visualizar-licitacoes">Licitações</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a [routerLink]="['/visualizar-licitacao']" [queryParams]="{ id: empenho.ata.licitacao.id }">
+          {{ empenho.ata.licitacao.numero_licitacao }}
+        </a>
+      </li>
+      <li class="breadcrumb-item">
+        <a [routerLink]="['/visualizar-ata']" [queryParams]="{ id: empenho.ata.id }">
+          {{ empenho.ata.numero_ata }}
+        </a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Empenho {{ empenho.codigo }}</li>
+    </ol>
+  </nav>
+  }
+
+  <div class="sige-detail-shell container-empenho">
+    <header class="sige-detail-header">
+      <div class="sige-detail-heading">
+        <h1 class="sige-detail-title">Empenho {{ empenho.codigo }}</h1>
+        <p class="sige-detail-subtitle">{{ empenho.ata.fornecedor.nome_fantasia }}</p>
       </div>
 
-      <span (click)="enviarPara('/visualizar-ata', empenho.ata.id)" class="span-arp"><b>{{ empenho.ata.numero_ata
-          }}</b></span>
+      <div class="sige-detail-actions">
+        <button type="button" (click)="enviarPara('/visualizar-ata', empenho.ata.id)" class="span-arp"
+          aria-label="Abrir ata de registro de preços">
+          <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+          <b>{{ empenho.ata.numero_ata }}</b>
+        </button>
+      </div>
+    </header>
+
+    <section class="fornecedor-empenho" aria-labelledby="fornecedor-empenho-title">
+      <div class="sige-detail-section-header">
+        <h2 id="fornecedor-empenho-title" class="sige-detail-section-title">Fornecedor</h2>
+      </div>
+      <div class="sige-detail-info-grid">
+        <div class="sige-detail-field">
+          <span class="sige-detail-label">Razão social</span>
+          <span class="sige-detail-value">{{ empenho.ata.fornecedor.razao_social }}</span>
+        </div>
+        <div class="sige-detail-field">
+          <span class="sige-detail-label">CNPJ</span>
+          <span class="sige-detail-value">{{ empenho.ata.fornecedor.cnpj }}</span>
+        </div>
+        <div class="sige-detail-field">
+          <span class="sige-detail-label">Telefone</span>
+          <span class="sige-detail-value">{{ empenho.ata.fornecedor.telefone }}</span>
+        </div>
+        <div class="sige-detail-field">
+          <span class="sige-detail-label">E-mail</span>
+          <span class="sige-detail-value">{{ empenho.ata.fornecedor.email }}</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="sige-metric-grid cards-valor">
+      <div class="sige-metric-card valor-empenhado">
+        <span class="sige-metric-label">Valor empenhado</span>
+        <strong class="sige-metric-value">R$ {{ empenho.valor_total }}</strong>
+      </div>
+      <div class="sige-metric-card valor-utilizado">
+        <span class="sige-metric-label">Valor utilizado</span>
+        <strong class="sige-metric-value">R$ {{ empenho.saldo_utilizado }}</strong>
+      </div>
     </div>
+  </div>
 
-    <div class="info-fornecedor">
-      <div>
-        <h5><b>Razão Social:</b> {{ empenho.ata.fornecedor.razao_social }}</h5>
-        <h5><b>CNPJ:</b> {{ empenho.ata.fornecedor.cnpj }}</h5>
-        <div class="d-flex gap-1">
-          <h5><b>Telefone: {{ empenho.ata.fornecedor.telefone }}</b></h5>
-          |
-          <h5><b>Email: {{ empenho.ata.fornecedor.email }}</b></h5>
-        </div>
-      </div>
-
-      <div class="d-flex gap-5 cards-valor">
-        <div class="valor-utilizado">
-          <h4>Valor Utilizado</h4>
-          <p>R$ {{ empenho.saldo_utilizado }}</p>
-        </div>
-
-        <div class="valor-empenhado">
-          <h4>Valor Empenhado</h4>
-          <p>R$ {{ empenho.valor_total }}</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="container-tabela-alimentos">
-      <div class="d-flex justify-content-between align-items-start">
-        <h3>Tabela de Itens</h3>
-        @if (pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
+    <section class="sige-detail-section container-tabela-alimentos" aria-labelledby="itens-empenho-title">
+      <div class="sige-detail-section-header">
+        <h2 id="itens-empenho-title" class="sige-detail-section-title">Itens do empenho</h2>
         <div class="solicitacao-acoes">
-          <button #myInput [attr.data-bs-toggle]="isSolicitandoEntrega ? null : 'modal'" class="btn-solicitar-entregas" data-bs-target="#entregaModal"
+          @if (pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
+          <button #myInput [attr.data-bs-toggle]="isSolicitandoEntrega ? null : 'modal'" class="sige-button sige-button--primary btn-solicitar-entregas" data-bs-target="#entregaModal"
             [disabled]="!possuiItensSelecionados || isSolicitandoEntrega" [class.btn-solicitar-entregas-desabilitado]="!possuiItensSelecionados || isSolicitandoEntrega"
             (click)="reiniciarModalSolicitacao()">
             <i class="bi bi-truck"></i> SOLICITAR ENTREGA
           </button>
+          }
 
-          @if(!possuiItensSelecionados) {
+          <button type="button" class="sige-button sige-button--secondary" (click)="verEntregasDoEmpenho()">
+            <i class="bi bi-truck"></i> Ver entregas deste empenho
+          </button>
+
+          @if(!possuiItensSelecionados && pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
           <small class="alerta-selecao-item">
             <i class="bi bi-exclamation-triangle-fill"></i>
             Selecione ao menos um item do empenho para solicitar a entrega.
           </small>
           }
         </div>
-        }
       </div>
 
-      <table class="table">
+      <div class="sige-detail-table-wrap tabela-empenho-wrap">
+      <table class="table sige-detail-table">
         <thead>
           <tr>
             <th scope="col">Sel.</th>
             <th scope="col">Item</th>
 
-            <th scope="col">Valor Unitario</th>
+            <th scope="col">Valor unitário</th>
             <th scope="col">
               <div>
-                <p class="m-0">Quantidade em Ata</p>
-                <span class="unidade-item-suave">(Disponivel)</span>
+                <p class="m-0">Quantidade em ata</p>
+                <span class="unidade-item-suave">(Disponível)</span>
               </div>
             </th>
 
             <th scope="col">
               <div>
-                <p class="m-0">Quantidade Empenhada</p>
+                <p class="m-0">Quantidade empenhada</p>
               </div>
             </th>
 
-            <th scope="col">Quantidade Solicitada</th>
+            <th scope="col">Quantidade solicitada</th>
 
             <th scope="col">Categoria</th>
 
@@ -155,8 +199,9 @@
 
         </tbody>
       </table>
-    </div>
-    <section class="historico-operacoes">
+      </div>
+    </section>
+    <section class="sige-detail-section historico-operacoes">
       <div class="historico-operacoes-cabecalho">
         <button class="btn-toggle-historico" type="button" data-bs-toggle="collapse"
           data-bs-target="#historicoOperacoesCollapse" aria-expanded="false" aria-controls="historicoOperacoesCollapse">
@@ -166,11 +211,11 @@
       </div>
 
       <div class="collapse mt-3" id="historicoOperacoesCollapse">
-        <div class="paitabela historico-tabela-wrap">
-          <table class="tabela tabela-historico">
+        <div class="sige-detail-table-wrap historico-tabela-wrap">
+          <table class="tabela tabela-historico sige-detail-table">
             <thead>
               <tr>
-                <th scope="col">Data/Hora</th>
+                <th scope="col">Data/hora</th>
                 <th scope="col">Item</th>
                 <th scope="col">Tipo</th>
                 <th scope="col" class="coluna-direita">Quantidade</th>
@@ -363,4 +408,4 @@
     </div>
   </div>
 
-</body>
+</main>

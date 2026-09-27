@@ -54,6 +54,17 @@ export class RegistrarRecebimento {
     });
   }
 
+  /** Itens que continuarão com saldo a entregar e gerarão alerta para quem solicitou a ordem. */
+  get itensQueFicaraoPendentes(): Array<{ descricao: string; unidade: string; faltante: number }> {
+    return this.itens
+      .map(item => ({
+        descricao: item.item_empenho.item_ata.item_generico.descricao,
+        unidade: item.item_empenho.item_ata.item_generico.unidade_medida,
+        faltante: Number(item.quantidade_pendente) - Number(item.quantidade_receber || 0),
+      }))
+      .filter(item => item.faltante > 0);
+  }
+
   total(item: ItemOrdem & { quantidade_receber: number }): number {
     return Number(item.quantidade_receber || 0) * Number(item.item_empenho.item_ata.valor_unitario);
   }

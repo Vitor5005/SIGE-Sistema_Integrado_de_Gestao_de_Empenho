@@ -1,6 +1,6 @@
 import { BotaoVoltar } from './../utils/botao-voltar/botao-voltar';
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AtaService } from '../../service/ata.service';
 import { Ata } from '../../model/ata';
 import { DecimalPipe, KeyValuePipe } from '@angular/common';
@@ -24,7 +24,7 @@ import { Acao, pode, Recurso } from '../../security/rbac';
 @Component({
   selector: 'app-visualizar-ata',
   standalone: true,
-  imports: [DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe, Paginacao],
+  imports: [DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe, Paginacao, RouterLink],
   templateUrl: './visualizar-ata.html',
   styleUrl: './visualizar-ata.scss',
 })

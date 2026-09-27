@@ -45,6 +45,12 @@ class MatrizPermissoesTests(SimpleTestCase):
             (Papel.TECNICO_ADMINISTRATIVO, Recurso.ITEM_ORDEM, Acao.REGISTRAR_RECEBIMENTO, False),
             (Papel.DIRETOR, Recurso.OPERACAO_EMPENHO, Acao.REFORCAR_EMPENHO, True),
             (Papel.TECNICO_ADMINISTRATIVO, Recurso.OPERACAO_EMPENHO, Acao.REFORCAR_EMPENHO, False),
+            (Papel.ESTOQUISTA, Recurso.GENERO_ALIMENTICIO, Acao.CADASTRAR, True),
+            (Papel.TECNICO_ADMINISTRATIVO, Recurso.GENERO_ALIMENTICIO, Acao.CADASTRAR, True),
+            (Papel.NUTRICIONISTA, Recurso.GENERO_ALIMENTICIO, Acao.CADASTRAR, False),
+            (Papel.ESTOQUISTA, Recurso.EMPENHO, Acao.CONSULTAR, False),
+            (Papel.ESTOQUISTA, Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS, False),
+            (Papel.TECNICO_ADMINISTRATIVO, Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS, True),
         )
         for papel, recurso, acao, esperado in casos:
             with self.subTest(papel=papel, recurso=recurso, acao=acao):

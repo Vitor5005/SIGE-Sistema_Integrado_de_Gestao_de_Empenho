@@ -22,6 +22,26 @@ describe('matriz RBAC', () => {
     expect(temPermissao(Papel.ESTOQUISTA, Recurso.ESTOQUE, Acao.REGISTRAR_RECEBIMENTO)).toBe(true);
   });
 
+  it('permite a Diretor, Técnico e Estoquista cadastrar gêneros alimentícios', () => {
+    expect(temPermissao(Papel.DIRETOR, Recurso.GENERO_ALIMENTICIO, Acao.CADASTRAR)).toBe(true);
+    expect(temPermissao(Papel.TECNICO_ADMINISTRATIVO, Recurso.GENERO_ALIMENTICIO, Acao.CADASTRAR)).toBe(true);
+    expect(temPermissao(Papel.ESTOQUISTA, Recurso.GENERO_ALIMENTICIO, Acao.CADASTRAR)).toBe(true);
+    expect(temPermissao(Papel.NUTRICIONISTA, Recurso.GENERO_ALIMENTICIO, Acao.CADASTRAR)).toBe(false);
+  });
+
+  it('não dá ao Estoquista acesso a licitações, ARPs e empenhos', () => {
+    expect(temPermissao(Papel.ESTOQUISTA, Recurso.LICITACAO, Acao.CONSULTAR)).toBe(false);
+    expect(temPermissao(Papel.ESTOQUISTA, Recurso.ATA, Acao.CONSULTAR)).toBe(false);
+    expect(temPermissao(Papel.ESTOQUISTA, Recurso.EMPENHO, Acao.CONSULTAR)).toBe(false);
+  });
+
+  it('alerta somente Diretor e Técnico sobre pendências de fornecedores', () => {
+    expect(temPermissao(Papel.DIRETOR, Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)).toBe(true);
+    expect(temPermissao(Papel.TECNICO_ADMINISTRATIVO, Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)).toBe(true);
+    expect(temPermissao(Papel.ESTOQUISTA, Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)).toBe(false);
+    expect(temPermissao(Papel.NUTRICIONISTA, Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)).toBe(false);
+  });
+
   it('aplica as permissões de consulta do estoque', () => {
     expect(temPermissao(Papel.NUTRICIONISTA, Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)).toBe(true);
     expect(temPermissao(Papel.TECNICO_ADMINISTRATIVO, Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)).toBe(false);

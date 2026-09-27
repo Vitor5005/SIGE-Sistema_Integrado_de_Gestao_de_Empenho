@@ -1,5 +1,5 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink, TitleStrategy } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 import { CommonModule } from '@angular/common';
 import { EmpenhoService } from '../../service/empenho.service';
@@ -22,7 +22,7 @@ import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-empenho',
-  imports: [BotaoVoltar, CommonModule, FormsModule],
+  imports: [BotaoVoltar, CommonModule, FormsModule, RouterLink],
   templateUrl: './visualizar-empenho.html',
   styleUrl: './visualizar-empenho.scss',
 })
@@ -157,6 +157,17 @@ export class VisualizarEmpenho {
       this.router.navigate([rota]);
     }
   }
+
+  verEntregasDoEmpenho(): void {
+    if (!this.empenho.id) {
+      return;
+    }
+
+    this.router.navigate(['/visualizar-entregas'], {
+      queryParams: { empenho_id: this.empenho.id }
+    });
+  }
+
   prepararOperacao(tipoOperacao: 'reforco' | 'anulacao') {
     this.tipo = tipoOperacao;
   }

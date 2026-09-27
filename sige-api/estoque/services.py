@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 
 from empenho.models import Empenho, ItemEmpenho
 from entrega.models import ItemOrdem, OrdemEntrega
+from entrega.pendencias import sincronizar_pendencias
 from estoque.models import Estoque, Inventario, ItemInventario, MovimentacaoEstoque
 
 
@@ -261,5 +262,11 @@ def registrar_recebimento(*, ordem_id, itens_recebidos, usuario, data_entrada=No
         for item in itens_atualizados
     ).quantize(Decimal('0.01'))
     ordem.save(update_fields=['status', 'data_entrega', 'valor_total_executado'])
+    sincronizar_pendencias(
+        ordem=ordem,
+        itens_ordem=itens_atualizados,
+        recebidos_por_id=por_id,
+        usuario=usuario,
+    )
     return ordem, movimentos
 

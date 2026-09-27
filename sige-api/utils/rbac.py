@@ -29,6 +29,7 @@ class Recurso:
     ESTOQUE = 'estoque'
     MOVIMENTACAO_ESTOQUE = 'movimentacao_estoque'
     INVENTARIO = 'inventario'
+    PENDENCIA_FORNECEDOR = 'pendencia_fornecedor'
 
 
 class Acao:
@@ -85,9 +86,9 @@ MATRIZ_PERMISSOES = {
         Acao.EDITAR: DIRETOR,
     },
     Recurso.GENERO_ALIMENTICIO: {
-        Acao.CONSULTAR: TODOS,
-        Acao.CADASTRAR: DIRETOR,
-        Acao.EDITAR: DIRETOR,
+        Acao.CONSULTAR: TODOS_COM_ESTOQUISTA,
+        Acao.CADASTRAR: DIRETOR_TECNICO_ESTOQUISTA,
+        Acao.EDITAR: DIRETOR_TECNICO_ESTOQUISTA,
     },
     Recurso.LICITACAO: {
         Acao.CONSULTAR: TODOS,
@@ -157,6 +158,12 @@ MATRIZ_PERMISSOES = {
     Recurso.INVENTARIO: {
         Acao.CONSULTAR: ESTOQUISTA,
         Acao.CADASTRAR: ESTOQUISTA,
+    },
+    # Pendências são geradas pelo recebimento parcial (Estoquista) e
+    # tratadas por quem administra as ordens de entrega.
+    Recurso.PENDENCIA_FORNECEDOR: {
+        Acao.CONSULTAR: DIRETOR_TECNICO_ESTOQUISTA,
+        Acao.ALTERAR_STATUS: DIRETOR_TECNICO,
     },
 }
 

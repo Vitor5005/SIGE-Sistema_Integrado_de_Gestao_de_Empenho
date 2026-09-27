@@ -391,3 +391,14 @@
 .texto-total-registros {
     color: #64748b;
 }
+.titulo-com-acao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sige-space-3);
+
+  h3 {
+    margin: 0;
+  }
+}

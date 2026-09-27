@@ -5,6 +5,42 @@
       <hr />
     </div>
 
+    @if (empenhoContextoId) {
+      <div class="contexto-entregas">
+        @if (empenhoContexto) {
+          <div class="contexto-cadeia">
+            <span>Exibindo entregas de:</span>
+            <a
+              [routerLink]="['/visualizar-licitacao']"
+              [queryParams]="{ id: empenhoContexto.ata.licitacao.id }"
+            >
+              Licitação {{ empenhoContexto.ata.licitacao.numero_licitacao }}
+            </a>
+            <span class="contexto-separador" aria-hidden="true">&gt;</span>
+            <a
+              [routerLink]="['/visualizar-ata']"
+              [queryParams]="{ id: empenhoContexto.ata.id }"
+            >
+              ARP {{ empenhoContexto.ata.numero_ata }}
+            </a>
+            <span class="contexto-separador" aria-hidden="true">&gt;</span>
+            <a
+              [routerLink]="['/visualizar-empenho']"
+              [queryParams]="{ id: empenhoContexto.id }"
+            >
+              Empenho {{ empenhoContexto.codigo }}
+            </a>
+          </div>
+        } @else {
+          <small>Exibindo entregas do empenho selecionado.</small>
+        }
+
+        <button type="button" class="btn btn-outline-primary btn-sm" (click)="limparContextoEmpenho()">
+          Ver todas as entregas
+        </button>
+      </div>
+    }
+
     <app-barra-pesquisa
       [filtros]="filtros"
       (pesquisar)="getEntregas($event)"
@@ -45,19 +81,29 @@
                 </span>
 
                 <div class="links-entrega">
-                  <span
-                    class="link-emp"
-                    (click)="enviarPara('/visualizar-empenho', item.empenho.id)"
+                  <a
+                    class="link-licitacao"
+                    [routerLink]="['/visualizar-licitacao']"
+                    [queryParams]="{ id: item.empenho.ata.licitacao.id }"
                   >
-                    {{ item.empenho.codigo }}
-                  </span>
-
-                  <span
+                    Licitação {{ item.empenho.ata.licitacao.numero_licitacao }}
+                  </a>
+                  <span class="contexto-separador" aria-hidden="true">&gt;</span>
+                  <a
                     class="link-arp"
-                    (click)="enviarPara('/visualizar-ata', item.empenho.ata.id)"
+                    [routerLink]="['/visualizar-ata']"
+                    [queryParams]="{ id: item.empenho.ata.id }"
                   >
-                    {{ item.empenho.ata.numero_ata }}
-                  </span>
+                    ARP {{ item.empenho.ata.numero_ata }}
+                  </a>
+                  <span class="contexto-separador" aria-hidden="true">&gt;</span>
+                  <a
+                    class="link-emp"
+                    [routerLink]="['/visualizar-empenho']"
+                    [queryParams]="{ id: item.empenho.id }"
+                  >
+                    Empenho {{ item.empenho.codigo }}
+                  </a>
                 </div>
               </div>
 
