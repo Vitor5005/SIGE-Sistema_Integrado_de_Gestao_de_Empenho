@@ -14,12 +14,14 @@ import { EmpenhoService } from '../../service/empenho.service';
 import { Empenho } from '../../model/empenho';
 import { ItemEmpenhoService } from '../../service/item-empenho.service';
 import { Paginacao } from '../utils/paginacao/paginacao';
+import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-entregas',
   standalone: true,
-  imports: [BarraPesquisa, CommonModule, FormsModule, Paginacao, RouterLink],
+  imports: [BarraPesquisa, CommonModule, FormsModule, Paginacao, RouterLink, EstadoConteudo],
   templateUrl: './visualizar-entregas.html',
   styleUrl: './visualizar-entregas.scss',
 })
@@ -54,6 +56,7 @@ export class VisualizarEntregas {
   isLoadingEntregas: boolean = false;
   isLoadingPedidos: boolean = false;
   isConfirmandoEntrega: boolean = false;
+  etapaConfirmacao: 1 | 2 = 1;
   formSubmittedConfirmacao: boolean = false;
   errorMessagePage: string = '';
   errorMessageModal: string = '';
@@ -72,7 +75,8 @@ export class VisualizarEntregas {
     private ordemEntregaService: OrdemEntregaService,
     private itensOrdemService: ItemOrdemService,
     private empenhoService: EmpenhoService,
-    private itemEmpenhoService: ItemEmpenhoService
+    private itemEmpenhoService: ItemEmpenhoService,
+    private feedback: FeedbackService
   ) { }
 
   entregas: OrdemEntrega[] = [];
@@ -101,6 +105,47 @@ export class VisualizarEntregas {
     }
 
     return !this.possuiQuantidadeInvalida && !this.possuiEntregaParcialSemObservacao && this.possuiQuantidadeEntregueInformada;
+  }
+
+  get ordemSelecionadaAtual(): OrdemEntrega | null {
+    return this.entregas[this.ordemSelecionada] || null;
+  }
+
+  get valorSolicitadoConfirmacao(): number {
+    return this.pedidosDaOrdem.reduce((acumulador, item) => {
+      const quantidadeSolicitada = Number(item.quantidade_solicitada) || 0;
+      const valorUnitario = Number(item.item_empenho?.item_ata?.valor_unitario) || 0;
+      const valorItem = Number((quantidadeSolicitada * valorUnitario).toFixed(2));
+
+      return Number((acumulador + valorItem).toFixed(2));
+    }, 0);
+  }
+
+  get valorRecebidoConfirmacao(): number {
+    return this.calcularSomaValorEntregue(this.pedidosDaOrdem);
+  }
+
+  get valorPendenteConfirmacao(): number {
+    return Number(Math.max(this.valorSolicitadoConfirmacao - this.valorRecebidoConfirmacao, 0).toFixed(2));
+  }
+
+  get itensRecebidosIntegralmente(): number {
+    return this.pedidosDaOrdem.filter((item) =>
+      Number(item.quantidade_entregue) === Number(item.quantidade_solicitada)
+    ).length;
+  }
+
+  get itensRecebidosParcialmente(): number {
+    return this.pedidosDaOrdem.filter((item) => {
+      const quantidadeEntregue = Number(item.quantidade_entregue);
+      const quantidadeSolicitada = Number(item.quantidade_solicitada);
+
+      return quantidadeEntregue > 0 && quantidadeEntregue < quantidadeSolicitada;
+    }).length;
+  }
+
+  get itensSemRecebimento(): number {
+    return this.pedidosDaOrdem.filter((item) => Number(item.quantidade_entregue) === 0).length;
   }
 
   get possuiDadosModalPreenchidos(): boolean {
@@ -177,10 +222,8 @@ export class VisualizarEntregas {
       }
 
       if (this.possuiDadosModalPreenchidos) {
-        const desejaSair = confirm('Você já preencheu dados da confirmação de entrega. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModalConfirmacao();
       }
     });
 
@@ -201,12 +244,11 @@ export class VisualizarEntregas {
         this.total = resposta.count;
         this.hasNext = Boolean(resposta.next);
         this.hasPrev = Boolean(resposta.previous);
+        this.isLoadingEntregas = false;
       },
       error: () => {
-        this.errorMessagePage = 'Não foi possível carregar as entregas no momento.';
-      },
-      complete: () => {
         this.isLoadingEntregas = false;
+        this.errorMessagePage = 'Não foi possível carregar as entregas no momento.';
       }
     });
 
@@ -241,6 +283,7 @@ export class VisualizarEntregas {
 
   getItensOrdem(id: number, index: number) {
     this.ordemSelecionada = index;
+    this.etapaConfirmacao = 1;
     this.formSubmittedConfirmacao = false;
     this.errorMessageModal = '';
     this.isLoadingPedidos = true;
@@ -333,18 +376,114 @@ export class VisualizarEntregas {
     return this.quantidadeEntregueValida(item) && this.observacaoValida(item);
   }
 
+  marcarTodosComoRecebidos(): void {
+    if (this.isConfirmandoEntrega) {
+      return;
+    }
+
+    this.pedidosDaOrdem.forEach((item) => {
+      item.quantidade_entregue = Number(item.quantidade_solicitada) || 0;
+    });
+  }
+
+  irParaRevisaoConfirmacao(): void {
+    this.formSubmittedConfirmacao = true;
+    this.errorMessageModal = '';
+
+    if (!this.podeConfirmarEntrega) {
+      this.errorMessageModal = 'Revise as quantidades e observações antes de continuar.';
+      return;
+    }
+
+    this.etapaConfirmacao = 2;
+  }
+
+  voltarParaRegistroConfirmacao(): void {
+    if (this.isConfirmandoEntrega) {
+      return;
+    }
+
+    this.etapaConfirmacao = 1;
+  }
+
+  classeRecebimentoItem(item: ItemOrdem): 'integral' | 'parcial' | 'pendente' {
+    const quantidadeEntregue = Number(item.quantidade_entregue) || 0;
+    const quantidadeSolicitada = Number(item.quantidade_solicitada) || 0;
+
+    if (quantidadeEntregue === quantidadeSolicitada) {
+      return 'integral';
+    }
+
+    return quantidadeEntregue > 0 ? 'parcial' : 'pendente';
+  }
+
+  textoRecebimentoItem(item: ItemOrdem): string {
+    const estado = this.classeRecebimentoItem(item);
+
+    if (estado === 'integral') {
+      return 'Recebido integralmente';
+    }
+
+    if (estado === 'parcial') {
+      return 'Recebimento parcial';
+    }
+
+    return 'Não recebido';
+  }
+
+  calcularValorRecebidoItem(item: ItemOrdem): number {
+    const valorUnitario = Number(item.item_empenho?.item_ata?.valor_unitario) || 0;
+    const quantidadeEntregue = Number(item.quantidade_entregue) || 0;
+
+    return Number((valorUnitario * quantidadeEntregue).toFixed(2));
+  }
+
+  calcularValorPendenteItem(item: ItemOrdem): number {
+    const valorUnitario = Number(item.item_empenho?.item_ata?.valor_unitario) || 0;
+    const quantidadePendente = Math.max(
+      (Number(item.quantidade_solicitada) || 0) - (Number(item.quantidade_entregue) || 0),
+      0
+    );
+
+    return Number((valorUnitario * quantidadePendente).toFixed(2));
+  }
+
+  calcularQuantidadePendenteItem(item: ItemOrdem): number {
+    return Math.max(
+      (Number(item.quantidade_solicitada) || 0) -
+      (Number(item.quantidade_entregue) || 0),
+      0
+    );
+  }
+
   tentarFecharModalConfirmacao(): void {
     if (this.isConfirmandoEntrega) {
       return;
     }
 
     if (this.possuiDadosModalPreenchidos) {
-      const desejaSair = confirm('Você já preencheu dados da confirmação de entrega. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModalConfirmacao();
+      return;
     }
 
+    this.fecharModalConfirmacaoSemConfirmacao();
+  }
+
+  private confirmarDescarteModalConfirmacao(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você já preencheu dados da confirmação de entrega. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalConfirmacaoSemConfirmacao();
+      }
+    });
+  }
+
+  private fecharModalConfirmacaoSemConfirmacao(): void {
     if (this.fecharConfirmacaoInternoBtn?.nativeElement) {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharConfirmacaoInternoBtn.nativeElement.click();
@@ -377,7 +516,12 @@ export class VisualizarEntregas {
       switchMap(() => this.atualizarOrdemComoConcluida(ordem.id)),
       switchMap(() => this.atualizarSaldoEmpenho(ordem.empenho.id, ordem.empenho.saldo_utilizado, somaValorEntregue))
     ).subscribe({
-      complete: () => window.location.reload(),
+      complete: () => {
+        this.isConfirmandoEntrega = false;
+        this.fecharModalConfirmacaoSemConfirmacao();
+        this.feedback.sucesso('Entrega confirmada com sucesso.');
+        this.getEntregas();
+      },
       error: (err) => {
         console.error('Erro ao confirmar entrega', err);
         this.errorMessageModal = 'Não foi possível confirmar a entrega. Tente novamente.';

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { UsuarioService } from '../../service/usuario.service';
 import { Usuario } from '../../model/usuario';
+import { FeedbackService } from '../../service/feedback.service';
 
 @Component({
   selector: 'app-cadastro',
@@ -15,7 +16,8 @@ export class Cadastro {
 
   constructor(
     private routerLink: Router,
-    private usuarioService: UsuarioService
+    private usuarioService: UsuarioService,
+    private feedback: FeedbackService
   ) {}
 
   mostrarSenha = false;
@@ -32,13 +34,13 @@ export class Cadastro {
 
   cadastrarUsuario(){
     this.usuarioService.save(this.registro).subscribe({
-      next: (response) => {
-        alert('Usuário cadastrado com sucesso!');
+      next: () => {
+        this.feedback.sucesso('Usuário cadastrado com sucesso.');
         this.routerLink.navigate(['/login']);
       },
       error: (error) => {
         console.error('Erro ao cadastrar usuário:', error);
-        alert('Ocorreu um erro ao cadastrar o usuário. Por favor, tente novamente.');
+        this.feedback.erro('Ocorreu um erro ao cadastrar o usuário. Por favor, tente novamente.');
       }
     });
   }

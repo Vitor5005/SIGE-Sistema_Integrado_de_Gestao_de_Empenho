@@ -18,7 +18,7 @@ import { OrdemEntregaService } from '../../../service/ordem-entrega.service';
 export class RegistrarRecebimento {
   ordem?: OrdemEntrega;
   itens: Array<ItemOrdem & { quantidade_pendente: number; quantidade_receber: number }> = [];
-  dataEntrada = new Date().toISOString().slice(0, 16);
+  dataEntrada = this.agoraLocalParaInput();
   processando = false;
   erro = '';
 
@@ -103,6 +103,17 @@ export class RegistrarRecebimento {
         this.processando = false;
       },
     });
+  }
+
+  private agoraLocalParaInput(): string {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const dia = String(agora.getDate()).padStart(2, '0');
+    const hora = String(agora.getHours()).padStart(2, '0');
+    const minuto = String(agora.getMinutes()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}T${hora}:${minuto}`;
   }
 }
 

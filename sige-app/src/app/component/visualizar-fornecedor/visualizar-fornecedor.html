@@ -2,6 +2,12 @@
   <app-botao-voltar></app-botao-voltar>
 
   <div class="sige-detail-layout fornecedor-layout">
+    @if (isLoadingPage) {
+    <app-estado-conteudo tipo="loading" mensagem="Carregando informações..."></app-estado-conteudo>
+    } @else if (errorMessagePage) {
+    <app-estado-conteudo tipo="error" titulo="Não foi possível carregar o fornecedor" [mensagem]="errorMessagePage"
+      [mostrarAcao]="idPagina !== null" (acao)="recarregarPagina()"></app-estado-conteudo>
+    } @else {
     <section class="sige-detail-shell fornecedor-shell">
       <header class="sige-detail-header fornecedor-header">
         <div class="sige-detail-heading">
@@ -74,6 +80,7 @@
         </div>
       </section>
     </section>
+    }
   </div>
 
   <div #myModal class="modal fade" id="fornecedorModal" tabindex="-1" aria-hidden="true">

@@ -4,6 +4,7 @@ import { Router, RouterLink } from "@angular/router";
 import { Auth } from '../../service/auth';
 import { FormsModule } from '@angular/forms';
 import { Token } from '../../model/token';
+import { FeedbackService } from '../../service/feedback.service';
 
 @Component({
   selector: 'app-recuperar-senha',
@@ -16,7 +17,8 @@ export class RecuperarSenha {
 
   constructor(
     private authService: Auth,
-    private router: Router
+    private router: Router,
+    private feedback: FeedbackService
   ) { }
 
   mostrarSenha = false;
@@ -74,7 +76,7 @@ export class RecuperarSenha {
   enviarNovaSenha() {
     this.authService.passwordResetPassword(this.token.reset_token, this.password).subscribe({
       complete: () => {
-        alert("Senha alterada com sucesso!");
+        this.feedback.sucesso('Senha alterada com sucesso.');
         this.router.navigate(['/login']);
       }
     });

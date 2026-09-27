@@ -18,42 +18,72 @@
       </tr>
     </thead>
     <tbody>
-
-      @for (item of registro; track item.id) {
-        <tr (click)="enviarPara('/visualizar-licitacao', item.id)" style="cursor: pointer;">
-          <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-          <td>
-            <div>
-              <p>
-                LIC-{{item.numero_licitacao}}
-                @if (item.atual) {
-                <span class="badge text-bg-primary ms-2">Atual</span>
-                }
-              </p>
-              <small>cadastrada: {{item.data_abertura}}</small>
-            </div>
+      @if (isLoadingPage) {
+        <tr class="linha-vazia-tabela">
+          <td [attr.colspan]="4">
+            <app-estado-conteudo
+              tipo="loading"
+              mensagem="Carregando registros..."
+              [compacto]="true">
+            </app-estado-conteudo>
           </td>
-          <td ><span [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span></td>
-          <td><i class="bi bi-clock"></i> {{item.validade}} Meses </td>
-          <td>{{item.descricao}}</td>
         </tr>
-      }
+      } @else if (errorMessagePage) {
+        <tr class="linha-vazia-tabela">
+          <td [attr.colspan]="4">
+            <app-estado-conteudo
+              tipo="error"
+              titulo="Não foi possível carregar os dados"
+              [mensagem]="errorMessagePage"
+              [compacto]="true"
+              [mostrarAcao]="true"
+              (acao)="get()">
+            </app-estado-conteudo>
+          </td>
+        </tr>
+      } @else {
+        @for (item of registro; track item.id) {
+          <tr (click)="enviarPara('/visualizar-licitacao', item.id)" style="cursor: pointer;">
+            <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
+            <td>
+              <div>
+                <p>
+                  LIC-{{item.numero_licitacao}}
+                  @if (item.atual) {
+                  <span class="badge text-bg-primary ms-2">Atual</span>
+                  }
+                </p>
+                <small>cadastrada: {{item.data_abertura}}</small>
+              </div>
+            </td>
+            <td ><span [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span></td>
+            <td><i class="bi bi-clock"></i> {{item.validade}} Meses </td>
+            <td>{{item.descricao}}</td>
+          </tr>
+        }
 
-      @if(registro.length === 0) {
-      <tr class="linha-vazia-tabela">
-        <td colspan="4" class="mensagem-tabela-vazia">
-          Nenhum registro encontrado.
-          <small>Ajuste os filtros ou cadastre uma nova licitação para continuar.</small>
-        </td>
-      </tr>
+        @if (registro.length === 0) {
+          <tr class="linha-vazia-tabela">
+            <td [attr.colspan]="4">
+              <app-estado-conteudo
+                tipo="empty"
+                titulo="Nenhuma licitação encontrada"
+                mensagem="Ajuste a busca ou os filtros, ou cadastre uma nova licitação."
+                [compacto]="true">
+              </app-estado-conteudo>
+            </td>
+          </tr>
+        }
       }
 
     </tbody>
 
   </table>
 
-  <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-    totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+  @if (!isLoadingPage && !errorMessagePage && total > 0) {
+    <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
+      totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+  }
 
 
 </body>

@@ -18,13 +18,14 @@ import { ItemAtaInsert } from '../../model/itemAta_insert';
 import { ItemEmpenhoInsert } from '../../model/itemEmpenho_insert';
 import { OperacaoItemService } from '../../service/operacao-item.service';
 import { OperacaoItemInsert } from '../../model/operacao_item_insert';
-import { EmpenhoService } from '../../service/empenho.service';
+import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-ata',
   standalone: true,
-  imports: [DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe, Paginacao, RouterLink],
+  imports: [DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe, Paginacao, RouterLink, EstadoConteudo],
   templateUrl: './visualizar-ata.html',
   styleUrl: './visualizar-ata.scss',
 })
@@ -41,7 +42,7 @@ export class VisualizarAta {
     private itemAtaService: ItemAtaService,
     private itemEmpenhoService: ItemEmpenhoService,
     private operacaService: OperacaoItemService,
-    private empenhoService: EmpenhoService
+    private feedback: FeedbackService
   ) { }
 
   @ViewChild('myModal') modal!: ElementRef;
@@ -51,6 +52,13 @@ export class VisualizarAta {
   ata: Ata = <Ata>{};
   empenho: Empenho = <Empenho>{};
   itens: Array<ItemEmpenho> = [];
+  isLoadingPage: boolean = true;
+  errorMessagePage: string = '';
+  idPagina: number | null = null;
+  isLoadingEmpenho: boolean = false;
+  errorMessageEmpenho: string = '';
+  isLoadingItens: boolean = false;
+  errorMessageItens: string = '';
   validade: string = '';
   itemGenerico: Array<ItemGenerico> = [];
   itemGenericoCadastrados: Array<number> = [];
@@ -159,6 +167,10 @@ export class VisualizarAta {
     return this.itemGenerico.length;
   }
 
+  get possuiEmpenhoRelacionado(): boolean {
+    return Boolean(this.empenho?.id);
+  }
+
   get possuiDadosModalPreenchidos(): boolean {
     return Boolean(
       this.itemGenerico_insercao.catmat ||
@@ -200,13 +212,18 @@ export class VisualizarAta {
   }
 
   ngOnInit() {
-    const id = this.route.snapshot.queryParamMap.get('id');
+    const id = Number(this.route.snapshot.queryParamMap.get('id'));
 
-    if (id) {
-      this.get(Number(id));
-      this.getEmpenho(Number(id));
-      this.getItens(Number(id));
+    if (!Number.isInteger(id) || id <= 0) {
+      this.isLoadingPage = false;
+      this.errorMessagePage = 'Não foi possível identificar o registro solicitado.';
+      return;
     }
+
+    this.idPagina = id;
+    this.get(id, true);
+    this.getEmpenho(id);
+    this.getItens(id);
   }
 
   ngAfterViewInit() {
@@ -228,10 +245,8 @@ export class VisualizarAta {
       }
 
       if (this.possuiDadosModalPreenchidos) {
-        const desejaSair = confirm('Você já preencheu dados do item. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModal();
       }
     });
   }
@@ -244,24 +259,59 @@ export class VisualizarAta {
     }
   }
 
-  get(id: number) {
+  get(id: number, controlarEstadoPagina: boolean = false): void {
+    if (controlarEstadoPagina) {
+      this.isLoadingPage = true;
+      this.errorMessagePage = '';
+    }
+
     this.ataService.getById(id).subscribe({
       next: (resposta: Ata) => {
         this.ata = resposta;
         this.verificarValidade(this.ata);
+        if (controlarEstadoPagina) {
+          this.isLoadingPage = false;
+        }
+      },
+      error: () => {
+        if (controlarEstadoPagina) {
+          this.isLoadingPage = false;
+          this.errorMessagePage = 'Não foi possível carregar esta ata de registro de preços no momento.';
+        }
       }
     });
   }
 
+  recarregarPagina(): void {
+    if (this.idPagina === null) {
+      return;
+    }
+
+    this.get(this.idPagina, true);
+    this.getEmpenho(this.idPagina);
+    this.getItens(this.idPagina);
+  }
+
   getEmpenho(ataId: number): void {
+    this.isLoadingEmpenho = true;
+    this.errorMessageEmpenho = '';
+
     this.ataService.getEmpenho(ataId).subscribe({
       next: (resposta: Empenho) => {
         this.empenho = resposta;
+        this.isLoadingEmpenho = false;
       },
+      error: () => {
+        this.isLoadingEmpenho = false;
+        this.errorMessageEmpenho = 'Não foi possível carregar o empenho vinculado.';
+      }
     });
   }
 
   getItens(ataId: number): void {
+    this.isLoadingItens = true;
+    this.errorMessageItens = '';
+
     this.ataService.getItens(ataId).subscribe({
       next: (resposta: ItemEmpenho[]) => {
         this.itens = resposta;
@@ -270,7 +320,12 @@ export class VisualizarAta {
           this.itemGenericoCadastrados.push(item.item_ata.item_generico.id);
         });
         this.getItemGenerico();
+        this.isLoadingItens = false;
       },
+      error: () => {
+        this.isLoadingItens = false;
+        this.errorMessageItens = 'Não foi possível carregar os itens desta ARP.';
+      }
     });
   }
 
@@ -494,45 +549,16 @@ export class VisualizarAta {
 
     this.operacaService.save(this.operacaoInsercao).subscribe({
       next: () => {
-        alert('Item cadastrado com sucesso!');
-        window.location.reload();
+        this.isSaving = false;
+        this.fecharModalSemConfirmacao();
+        this.feedback.sucesso('Item adicionado à ARP com sucesso.');
+        this.get(this.ata.id);
+        this.getEmpenho(this.ata.id);
+        this.getItens(this.ata.id);
       },
       error: () => {
         this.isSaving = false;
         this.errorMessageModal = 'Não foi possível registrar a operação de inclusão. Tente novamente.';
-      }
-    });
-  }
-
-  atualizarEmpenho(): void {
-    const valorInclusaoInicial = Number(this.itemAta_insercao.valor_unitario) || 0;
-    const valorEmpenhadoAtual = Number(this.empenho.valor_total) || 0;
-    const novoValorEmpenhado = this.arredondarDuasCasas(valorEmpenhadoAtual + valorInclusaoInicial);
-
-    this.empenhoService.patch(this.empenho.id, { valor_total: novoValorEmpenhado }).subscribe({
-      complete: () => {
-        this.atualizarAta();
-      },
-      error: () => {
-        this.isSaving = false;
-        this.errorMessageModal = 'Item salvo, mas houve erro ao atualizar o valor empenhado.';
-      }
-    });
-  }
-
-  atualizarAta(): void {
-    const valorTotal = Number(this.itemAta_insercao.valor_unitario) * Number(this.itemAta_insercao.quantidade_licitada);
-    const saldoAtual = Number(this.ata.ata_saldo_total) || 0;
-    this.ata.ata_saldo_total = Number((saldoAtual + valorTotal).toFixed(2));
-
-    this.ataService.patch(this.ata.id, { ata_saldo_total: this.ata.ata_saldo_total }).subscribe({
-      complete: () => {
-        alert('Item cadastrado com sucesso!');
-        window.location.reload();
-      },
-      error: () => {
-        this.isSaving = false;
-        this.errorMessageModal = 'Item salvo, mas houve erro ao atualizar saldo da ata.';
       }
     });
   }
@@ -543,12 +569,28 @@ export class VisualizarAta {
     }
 
     if (this.possuiDadosModalPreenchidos) {
-      const desejaSair = confirm('Você já preencheu dados do item. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModal();
+      return;
     }
 
+    this.fecharModalSemConfirmacao();
+  }
+
+  private confirmarDescarteModal(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você já preencheu dados do item. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalSemConfirmacao();
+      }
+    });
+  }
+
+  private fecharModalSemConfirmacao(): void {
     if (this.fecharModalInternoBtn?.nativeElement) {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();

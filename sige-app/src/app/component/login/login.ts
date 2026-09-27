@@ -4,6 +4,7 @@ import { Router, RouterLink } from "@angular/router";
 import { Auth } from '../../service/auth';
 import { FormsModule } from '@angular/forms';
 import { Token } from '../../model/token';
+import { FeedbackService } from '../../service/feedback.service';
 
 @Component({
   selector: 'app-login',
@@ -15,7 +16,8 @@ export class Login {
 
   constructor(
     private router: Router,
-    private auth: Auth
+    private auth: Auth,
+    private feedback: FeedbackService
   ){}
 
   mostrarSenha = false;
@@ -33,8 +35,8 @@ export class Login {
         this.auth.salvarToken(resposta.access, resposta.refresh);
         this.router.navigate(['/home']);
       },
-      error: (erro) => {
-        alert("Erro ao realizar login. Verifique suas credenciais.");
+      error: () => {
+        this.feedback.erro('Verifique o usuário e a senha informados.', 'Não foi possível entrar');
       }
     });
   }

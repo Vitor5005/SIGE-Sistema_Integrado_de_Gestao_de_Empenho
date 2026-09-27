@@ -2,6 +2,12 @@
   <app-botao-voltar></app-botao-voltar>
 
   <div class="sige-detail-layout">
+  @if (isLoadingPage) {
+  <app-estado-conteudo tipo="loading" mensagem="Carregando informações..."></app-estado-conteudo>
+  } @else if (errorMessagePage) {
+  <app-estado-conteudo tipo="error" titulo="Não foi possível carregar o empenho" [mensagem]="errorMessagePage"
+    [mostrarAcao]="idPagina !== null" (acao)="recarregarPagina()"></app-estado-conteudo>
+  } @else {
   @if (empenho.id) {
   <nav class="sige-detail-breadcrumb" aria-label="Navegação contextual">
     <ol class="breadcrumb">
@@ -63,126 +69,171 @@
       </div>
     </section>
 
-    <div class="sige-metric-grid cards-valor">
-      <div class="sige-metric-card valor-empenhado">
-        <span class="sige-metric-label">Valor empenhado</span>
-        <strong class="sige-metric-value">R$ {{ empenho.valor_total }}</strong>
+    <section class="resumo-financeiro" aria-labelledby="resumo-financeiro-title">
+      <div class="sige-detail-section-header">
+        <h2 id="resumo-financeiro-title" class="sige-detail-section-title">Resumo financeiro</h2>
       </div>
-      <div class="sige-metric-card valor-utilizado">
-        <span class="sige-metric-label">Valor utilizado</span>
-        <strong class="sige-metric-value">R$ {{ empenho.saldo_utilizado }}</strong>
+
+      <div class="sige-metric-grid cards-valor">
+        <div class="sige-metric-card valor-empenhado">
+          <span class="sige-metric-label">Valor empenhado</span>
+          <strong class="sige-metric-value">R$ {{ empenho.valor_total | number:'1.2-2' }}</strong>
+        </div>
+        <div class="sige-metric-card valor-utilizado">
+          <span class="sige-metric-label">Valor utilizado</span>
+          <strong class="sige-metric-value">R$ {{ empenho.saldo_utilizado | number:'1.2-2' }}</strong>
+        </div>
+        <div class="sige-metric-card valor-nao-utilizado">
+          <span class="sige-metric-label">Saldo não utilizado</span>
+          <strong class="sige-metric-value">R$ {{ saldoNaoUtilizado | number:'1.2-2' }}</strong>
+        </div>
       </div>
-    </div>
+
+      <div class="financeiro-utilizacao" aria-label="Utilização do empenho">
+        <div class="financeiro-utilizacao-cabecalho">
+          <span>Utilização do empenho</span>
+          <strong class="financeiro-utilizacao-texto">{{ percentualUtilizado | number:'1.0-0' }}% utilizado</strong>
+        </div>
+        <div class="financeiro-utilizacao-barra" role="progressbar" aria-label="Percentual utilizado do empenho"
+          aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="percentualUtilizado">
+          <span class="financeiro-utilizacao-progresso" [style.width.%]="percentualUtilizado" aria-hidden="true"></span>
+        </div>
+      </div>
+    </section>
   </div>
 
     <section class="sige-detail-section container-tabela-alimentos" aria-labelledby="itens-empenho-title">
       <div class="sige-detail-section-header">
-        <h2 id="itens-empenho-title" class="sige-detail-section-title">Itens do empenho</h2>
-        <div class="solicitacao-acoes">
-          @if (pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
-          <button #myInput [attr.data-bs-toggle]="isSolicitandoEntrega ? null : 'modal'" class="sige-button sige-button--primary btn-solicitar-entregas" data-bs-target="#entregaModal"
-            [disabled]="!possuiItensSelecionados || isSolicitandoEntrega" [class.btn-solicitar-entregas-desabilitado]="!possuiItensSelecionados || isSolicitandoEntrega"
-            (click)="reiniciarModalSolicitacao()">
-            <i class="bi bi-truck"></i> SOLICITAR ENTREGA
-          </button>
-          }
-
-          <button type="button" class="sige-button sige-button--secondary" (click)="verEntregasDoEmpenho()">
-            <i class="bi bi-truck"></i> Ver entregas deste empenho
-          </button>
-
-          @if(!possuiItensSelecionados && pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
-          <small class="alerta-selecao-item">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            Selecione ao menos um item do empenho para solicitar a entrega.
-          </small>
-          }
+        <div>
+          <h2 id="itens-empenho-title" class="sige-detail-section-title">Itens do empenho</h2>
+          <p class="sige-detail-section-subtitle">Selecione os itens que deseja incluir na solicitação de entrega.</p>
         </div>
+        <button type="button" class="sige-button sige-button--secondary" (click)="verEntregasDoEmpenho()">
+          <i class="bi bi-truck" aria-hidden="true"></i>
+          Ver entregas deste empenho
+        </button>
       </div>
 
+      @if (!isLoadingItens && !errorMessageItens && pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
+      <div class="selecao-itens-barra" aria-live="polite">
+        <p class="selecao-itens-status">
+          @if (itensSelecionadosCount === 0) {
+            Nenhum item selecionado.
+          } @else if (itensSelecionadosCount === 1) {
+            1 item selecionado.
+          } @else {
+            {{ itensSelecionadosCount }} itens selecionados.
+          }
+        </p>
+
+        <div class="selecao-itens-acoes">
+          <button type="button" class="sige-button sige-button--secondary" (click)="limparSelecao()"
+            [disabled]="!possuiItensSelecionados || isSolicitandoEntrega">
+            Limpar seleção
+          </button>
+          <button #myInput [attr.data-bs-toggle]="isSolicitandoEntrega ? null : 'modal'"
+            class="sige-button sige-button--primary btn-solicitar-entregas" data-bs-target="#entregaModal"
+            [disabled]="!possuiItensSelecionados || isSolicitandoEntrega"
+            [class.btn-solicitar-entregas-desabilitado]="!possuiItensSelecionados || isSolicitandoEntrega"
+            (click)="reiniciarModalSolicitacao()">
+            <i class="bi bi-truck" aria-hidden="true"></i>
+            Solicitar entrega
+          </button>
+        </div>
+      </div>
+      }
+
       <div class="sige-detail-table-wrap tabela-empenho-wrap">
-      <table class="table sige-detail-table">
-        <thead>
-          <tr>
-            <th scope="col">Sel.</th>
-            <th scope="col">Item</th>
-
-            <th scope="col">Valor unitário</th>
-            <th scope="col">
-              <div>
-                <p class="m-0">Quantidade em ata</p>
-                <span class="unidade-item-suave">(Disponível)</span>
-              </div>
-            </th>
-
-            <th scope="col">
-              <div>
-                <p class="m-0">Quantidade empenhada</p>
-              </div>
-            </th>
-
-            <th scope="col">Quantidade solicitada</th>
-
-            <th scope="col">Categoria</th>
-
-            <th scope="col">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-
-          @for (item of itensEmpenho; track $index) {
-          <tr>
-            <td>
-              @if (pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
-              <input type="checkbox" name="itemEmpenhoSelecionado{{ $index }}" [(ngModel)]="itensSelecionados[$index]">
-              }
-            </td>
-            <td>
-              <span>{{ item.item_ata.item_generico.descricao }} </span>
-              <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
-            </td>
-
-            <td>
-              <span>R$ {{ item.item_ata.valor_unitario }}</span>
-            </td>
-
-            <td>
-              <span>
-                {{
-                (
-                (+item.item_ata.quantidade_licitada || 0) -
-                ((+item.quantidade_atual || 0) + (+item.quantidade_entrege || 0))
-                ) | number:'1.2-2'
-                }}
-              </span>
-              <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
-            </td>
-
-            <td>
-              <span> {{ item.quantidade_atual | number:'1.2-2' }} </span>
-              <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
-            </td>
-
-            <td>
-              <span> {{ item.quantidade_entrege | number:'1.2-2' }} </span>
-              <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
-            </td>
-
-            <td> {{ getCategoria(item) }} </td>
-
-            <td>
-              @if (pode(Recurso.OPERACAO_EMPENHO, Acao.REFORCAR_EMPENHO)) {
-              <div class="botoes-acoes">
-                <button (click)="prepararOperacao('reforco')" data-bs-toggle="modal" data-bs-target="#modalSaldo"
-                  (click)="carregarItemEmpenho(item); trocarOperacao('ref');">
-                  <i class="bi bi-plus-circle reforcar"></i>
-                </button>
-                <button (click)="prepararOperacao('anulacao')" data-bs-toggle="modal" data-bs-target="#modalSaldo"
-                  (click)="carregarItemEmpenho(item); trocarOperacao('anl');">
-                  <i class="bi bi-x-circle anular"></i>
-                </button>
-              </div>
-              }
+        <table class="table sige-detail-table">
+          <thead>
+            <tr>
+              <th scope="col">
+                @if (pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
+                <input type="checkbox" [checked]="todosItensDisponiveisSelecionados"
+                  (change)="alternarTodosItensDisponiveis($event)" aria-label="Selecionar todos os itens disponíveis para entrega">
+                <span class="visually-hidden">Selecionar todos</span>
+                }
+              </th>
+              <th scope="col">Item</th>
+              <th scope="col">Valor unitário</th>
+              <th scope="col">Disponível na ARP</th>
+              <th scope="col">Disponível no empenho</th>
+              <th scope="col">Quantidade solicitada</th>
+              <th scope="col">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (isLoadingItens) {
+            <tr class="linha-vazia-tabela">
+              <td [attr.colspan]="7">
+                <app-estado-conteudo tipo="loading" mensagem="Carregando registros..." [compacto]="true"></app-estado-conteudo>
+              </td>
+            </tr>
+            } @else if (errorMessageItens) {
+            <tr class="linha-vazia-tabela">
+              <td [attr.colspan]="7">
+                <app-estado-conteudo tipo="error" titulo="Não foi possível carregar os dados" [mensagem]="errorMessageItens"
+                  [compacto]="true" [mostrarAcao]="true" (acao)="getItensEmpenho(empenho.id)"></app-estado-conteudo>
+              </td>
+            </tr>
+            } @else {
+            @for (item of itensEmpenho; track $index) {
+            <tr>
+              <td>
+                @if (pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
+                <input type="checkbox" name="itemEmpenhoSelecionado{{ $index }}" [(ngModel)]="itensSelecionados[$index]"
+                  [disabled]="(+item.quantidade_atual || 0) <= 0"
+                  [attr.aria-label]="'Selecionar ' + item.item_ata.item_generico.descricao">
+                }
+              </td>
+              <td>
+                <div class="item-empenho-descricao">
+                  <strong class="item-empenho-nome">{{ item.item_ata.item_generico.descricao }}</strong>
+                  <span class="item-empenho-meta">{{ item.item_ata.item_generico.unidade_medida }} • {{ getCategoria(item) }}</span>
+                  @if ((+item.quantidade_atual || 0) > 0) {
+                    <span class="item-status item-status-disponivel">Disponível para entrega</span>
+                  } @else {
+                    <span class="item-status item-status-sem-saldo">Sem saldo disponível</span>
+                  }
+                </div>
+              </td>
+              <td>R$ {{ item.item_ata.valor_unitario | number:'1.2-2' }}</td>
+              <td>
+                {{ getQuantidadeDisponivelAta(item) | number:'1.2-2' }}
+                <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
+              </td>
+              <td>
+                {{ item.quantidade_atual | number:'1.2-2' }}
+                <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
+              </td>
+              <td>
+                {{ item.quantidade_entrege | number:'1.2-2' }}
+                <span class="unidade-item-suave">({{ item.item_ata.item_generico.unidade_medida }})</span>
+              </td>
+              <td>
+                @if (
+                  pode(Recurso.OPERACAO_EMPENHO, Acao.REFORCAR_EMPENHO) ||
+                  pode(Recurso.OPERACAO_EMPENHO, Acao.ANULAR_EMPENHO)
+                ) {
+                <div class="botoes-acoes">
+                  @if (pode(Recurso.OPERACAO_EMPENHO, Acao.REFORCAR_EMPENHO)) {
+                  <button type="button" class="sige-button acao-reforcar" data-bs-toggle="modal" data-bs-target="#modalSaldo"
+                    aria-label="Reforçar saldo do item {{ item.item_ata.item_generico.descricao }}"
+                    (click)="abrirOperacao(item, 'reforco')">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                    Reforçar
+                  </button>
+                  }
+                  @if (pode(Recurso.OPERACAO_EMPENHO, Acao.ANULAR_EMPENHO)) {
+                  <button type="button" class="sige-button acao-anular" data-bs-toggle="modal" data-bs-target="#modalSaldo"
+                    aria-label="Anular saldo do item {{ item.item_ata.item_generico.descricao }}"
+                    (click)="abrirOperacao(item, 'anulacao')">
+                    <i class="bi bi-dash-lg" aria-hidden="true"></i>
+                    Anular
+                  </button>
+                  }
+                </div>
+                }
               @if (pode(Recurso.SOLICITACAO_REFORCO, Acao.CADASTRAR)) {
               <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" data-bs-toggle="modal"
                 data-bs-target="#modalSolicitarReforco" (click)="abrirSolicitacaoReforco(item)"
@@ -190,21 +241,21 @@
                 <i class="bi bi-plus-circle" aria-hidden="true"></i> Solicitar reforço
               </button>
               }
-            </td>
+              </td>
+             </tr>
+             }
 
-          </tr>
-          }
-
-          @if(itensEmpenho.length === 0) {
-          <tr class="linha-vazia-tabela">
-            <td colspan="8" class="mensagem-tabela-vazia">
-              Nenhum registro encontrado.
-              <small>Nenhum item foi registrado para este empenho até o momento.</small>
-            </td>
-          </tr>
-          }
-
-        </tbody>
+            @if (itensEmpenho.length === 0) {
+            <tr class="linha-vazia-tabela">
+              <td [attr.colspan]="7">
+                <app-estado-conteudo tipo="empty" titulo="Nenhum item no empenho"
+                  mensagem="Nenhum item foi registrado para este empenho até o momento."
+                  [compacto]="true"></app-estado-conteudo>
+              </td>
+            </tr>
+            }
+            }
+          </tbody>
       </table>
       </div>
     </section>
@@ -280,6 +331,7 @@
     </section>
     }
 
+    @if (pode(Recurso.OPERACAO_EMPENHO, Acao.CONSULTAR)) {
     <section class="sige-detail-section historico-operacoes">
       <div class="historico-operacoes-cabecalho">
         <button class="btn-toggle-historico" type="button" data-bs-toggle="collapse"
@@ -302,15 +354,28 @@
               </tr>
             </thead>
             <tbody>
-              @if(operacoesEmpenho.length === 0) {
+              @if (isLoadingOperacoes) {
               <tr class="linha-vazia-tabela">
-                <td colspan="5" class="historico-vazio mensagem-tabela-vazia">
-                  Nenhum registro encontrado.
-                  <small>Nenhuma operação foi registrada para este empenho.</small>
+                <td [attr.colspan]="5">
+                  <app-estado-conteudo tipo="loading" mensagem="Carregando registros..." [compacto]="true"></app-estado-conteudo>
+                </td>
+              </tr>
+              } @else if (errorMessageOperacoes) {
+              <tr class="linha-vazia-tabela">
+                <td [attr.colspan]="5">
+                  <app-estado-conteudo tipo="error" titulo="Não foi possível carregar os dados" [mensagem]="errorMessageOperacoes"
+                    [compacto]="true" [mostrarAcao]="true" (acao)="getOperacoesEmpenho(empenho.id)"></app-estado-conteudo>
+                </td>
+              </tr>
+              } @else {
+              @if (operacoesEmpenho.length === 0) {
+              <tr class="linha-vazia-tabela">
+                <td [attr.colspan]="5">
+                  <app-estado-conteudo tipo="empty" titulo="Nenhuma operação registrada"
+                    mensagem="Ainda não existem operações neste empenho." [compacto]="true"></app-estado-conteudo>
                 </td>
               </tr>
               }
-
               @for (operacao of operacoesEmpenho; track operacao.id) {
               <tr>
                 <td class="coluna-data">{{ operacao.data | date:'dd/MM/yyyy | HH:mm' }}</td>
@@ -330,11 +395,14 @@
                 <td class="coluna-direita coluna-valor">R$ {{ operacao.item_empenho.item_ata.valor_unitario * operacao.valor | number:'1.2-2' }}</td>
               </tr>
               }
+              }
             </tbody>
           </table>
         </div>
       </div>
     </section>
+    }
+  }
   </div>
 
   <!-- Modal -->
@@ -344,139 +412,301 @@
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl entrega-modal-dialog">
       <div class="modal-content entrega-modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="entregaModalLabel">
-            <i class="bi bi-truck"></i> SOLICITAR ENTREGA
-          </h1>
+        <div class="modal-header entrega-modal-header">
+          <div>
+            <h1 class="modal-title fs-5" id="entregaModalLabel">
+              <i class="bi bi-truck"></i> Solicitar entrega
+            </h1>
+            <p class="entrega-modal-subtitle">Revise os dados, os itens e a solicitação antes do envio.</p>
+          </div>
           <button type="button" class="btn-close btn-close-white" [disabled]="isSolicitandoEntrega"
-            (click)="tentarFecharModalSolicitacao()" aria-label="Close"></button>
+            (click)="tentarFecharModalSolicitacao()" aria-label="Fechar"></button>
           <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
         </div>
 
+        <div class="entrega-fluxo-etapas" aria-label="Etapas da solicitação de entrega">
+          <span class="entrega-fluxo-etapa" [class.entrega-fluxo-etapa--ativa]="etapaSolicitacao === 1"
+            [class.entrega-fluxo-etapa--concluida]="etapaSolicitacao > 1">
+            <span class="entrega-fluxo-numero">1</span>
+            <span>Dados</span>
+          </span>
+          <span class="entrega-fluxo-separador" aria-hidden="true"></span>
+          <span class="entrega-fluxo-etapa" [class.entrega-fluxo-etapa--ativa]="etapaSolicitacao === 2"
+            [class.entrega-fluxo-etapa--concluida]="etapaSolicitacao > 2">
+            <span class="entrega-fluxo-numero">2</span>
+            <span>Itens</span>
+          </span>
+          <span class="entrega-fluxo-separador" aria-hidden="true"></span>
+          <span class="entrega-fluxo-etapa" [class.entrega-fluxo-etapa--ativa]="etapaSolicitacao === 3">
+            <span class="entrega-fluxo-numero">3</span>
+            <span>Revisão</span>
+          </span>
+        </div>
+
         <div class="modal-body entrega-modal-body">
-          <form action="" class="entrega-form">
-            <div class="secao-formulario secao-formulario-dados">
-              <h6>Dados da solicitação</h6>
+          <form class="entrega-form" novalidate>
+            @if (etapaSolicitacao === 1) {
+            <section class="secao-formulario secao-formulario-dados entrega-etapa" aria-labelledby="dados-solicitacao-title">
+              <div class="entrega-etapa-cabecalho">
+                <h6 id="dados-solicitacao-title">Dados da solicitação</h6>
+                <small>Informe os dados que serão enviados ao fornecedor.</small>
+              </div>
+
+              <div class="entrega-contexto-solicitacao">
+                <div>
+                  <span>Fornecedor</span>
+                  <strong>{{ empenho?.ata?.fornecedor?.nome_fantasia || 'Não informado' }}</strong>
+                </div>
+                <div>
+                  <span>E-mail</span>
+                  <strong>{{ empenho?.ata?.fornecedor?.email || 'Não informado' }}</strong>
+                </div>
+                <div>
+                  <span>Empenho</span>
+                  <strong>{{ empenho?.codigo || 'Não informado' }}</strong>
+                </div>
+              </div>
+
+              @if (!fornecedorPodeReceberPedido) {
+              <div class="aviso-fornecedor-sem-email" role="alert">
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                <span>O fornecedor não possui e-mail cadastrado. Atualize o cadastro antes de continuar.</span>
+              </div>
+              }
 
               <div class="campos-dados-grid">
                 <div class="d-flex flex-column mb-3 campo-form campo-data-previsao">
-                  <label for="dataPrevisaoEntrega">Data de previsão de entrega</label>
+                  <label for="dataPrevisaoEntrega">Data prevista de entrega *</label>
                   <input id="dataPrevisaoEntrega" name="dataPrevisaoEntrega" type="date" class="form-control"
                     [min]="todayDate" [disabled]="isSolicitandoEntrega"
                     [(ngModel)]="ordemEntregaInsert.data_entrega_prevista" />
                 </div>
 
                 <div class="d-flex flex-column mb-3 campo-form campo-arquivo">
-                  <label for="arquivoSolicitacao">Adicionar arquivo</label>
+                  <label for="arquivoSolicitacao">Arquivo da solicitação *</label>
                   <input #arquivoSolicitacaoInput id="arquivoSolicitacao" name="arquivoSolicitacao" type="file"
                     class="form-control" [disabled]="isSolicitandoEntrega" (change)="onArquivoSelecionado($event)" />
                 </div>
 
                 <div class="d-flex flex-column mb-3 campo-form campo-mensagem">
-                  <label for="mensagemSolicitacao">Mensagem</label>
-                  <textarea id="mensagemSolicitacao" name="mensagemSolicitacao" rows="3" class="form-control"
-                    [disabled]="isSolicitandoEntrega"
-                    [placeholder]="placeholderMensagemSolicitacao"
+                  <label for="mensagemSolicitacao">Mensagem ao fornecedor <span>(opcional)</span></label>
+                  <textarea id="mensagemSolicitacao" name="mensagemSolicitacao" rows="4" class="form-control"
+                    [disabled]="isSolicitandoEntrega" [placeholder]="placeholderMensagemSolicitacao"
                     [(ngModel)]="mensagemSolicitacao"></textarea>
-                  <small class="texto-apoio-campo">Se não preencher, será enviada a mensagem padrão do sistema.</small>
+                  <small class="texto-apoio-campo">Caso não seja preenchida, será enviada a mensagem padrão do sistema.</small>
                 </div>
               </div>
-            </div>
+            </section>
+            }
 
-            <div class="secao-formulario secao-formulario-itens">
-              <h6>Itens selecionados</h6>
-              <div class="cabecalho-itens-solicitados">
-                <small>Itens selecionados: <b>{{ itensSelecionadosCount }}</b></small>
-                <small>Preencha as quantidades para cada item abaixo.</small>
+            @if (etapaSolicitacao === 2) {
+            <section class="secao-formulario secao-formulario-itens entrega-etapa" aria-labelledby="itens-solicitacao-title">
+              <div class="entrega-etapa-cabecalho">
+                <h6 id="itens-solicitacao-title">Itens selecionados</h6>
+                <small>{{ itensSelecionadosCount }} item(ns) selecionado(s). Informe a quantidade a solicitar.</small>
               </div>
 
               <div class="itens-solicitados-lista">
-                @for(item of itensEmpenho; track $index) {
-                @if(itensSelecionados[$index]) {
-                <div class="item-solicitacao" [class.item-solicitacao-invalido]="!ehQuantidadeSolicitadaValida($index, item)">
-                  <label [for]="'alimento' + $index" class="titulo-item-solicitacao">
-                    <span> {{ item.item_ata.item_generico.descricao }} </span>
-                    <span class="unidade-item-solicitacao">({{ item.item_ata.item_generico.unidade_medida }})</span>
-                  </label>
-                  <small>Quantidade empenhada: {{ item.quantidade_atual | number:'1.2-2' }} ({{
-                    item.item_ata.item_generico.unidade_medida }})</small>
-                  <small>Preço unitário: R$ {{ item.item_ata.valor_unitario | number:'1.2-2' }}</small>
-                  <label [for]="'alimento' + $index" class="label-quantidade-solicitada">Quantidade a solicitar *</label>
-                  <input type="number" [id]="'alimento' + $index" [name]="'alimento' + $index" min="0"
+                @for (item of itensEmpenho; track item.id; let index = $index) {
+                @if (itensSelecionados[index]) {
+                <div class="item-solicitacao" [class.item-solicitacao-invalido]="!ehQuantidadeSolicitadaValida(index, item)">
+                  <div class="item-solicitacao-cabecalho">
+                    <strong>{{ item.item_ata.item_generico.descricao }}</strong>
+                    <span>{{ item.item_ata.item_generico.unidade_medida }}</span>
+                  </div>
+                  <div class="item-solicitacao-resumo">
+                    <span>Disponível no empenho: <b>{{ item.quantidade_atual | number:'1.2-2' }}</b></span>
+                    <span>Preço unitário: <b>R$ {{ item.item_ata.valor_unitario | number:'1.2-2' }}</b></span>
+                  </div>
+                  <label [for]="'alimento' + index" class="label-quantidade-solicitada">Quantidade a solicitar *</label>
+                  <input type="number" [id]="'alimento' + index" [name]="'alimento' + index" min="0"
                     [max]="getQuantidadeEmpenhadaMax(item)" step="0.01" class="form-control"
                     [disabled]="isSolicitandoEntrega"
                     [placeholder]="'Ex.: 10,50 ' + item.item_ata.item_generico.unidade_medida"
-                    [(ngModel)]="itensOrdemInsert[$index].quantidade_solicitada"
-                    (change)="validarQuantidadeSolicitada($index, item)" />
-                  <small class="texto-apoio-campo">Informe um valor maior que 0 e até a quantidade empenhada.</small>
-                  @if(!ehQuantidadeSolicitadaValida($index, item)) {
-                  <small class="mensagem-campo-invalido">Preencha a quantidade solicitada deste item para continuar.</small>
+                    [(ngModel)]="itensOrdemInsert[index].quantidade_solicitada"
+                    (change)="validarQuantidadeSolicitada(index, item)" />
+                  <small class="texto-apoio-campo">Informe um valor maior que 0 e até a quantidade disponível.</small>
+                  @if (!ehQuantidadeSolicitadaValida(index, item)) {
+                  <small class="mensagem-campo-invalido">Preencha uma quantidade válida para este item.</small>
                   }
-                  <small class="valor-item-solicitado">Valor total solicitado: R$ {{
-                    calcularValorTotalItemSolicitado(item, $index) | number:'1.2-2' }}</small>
+                  <small class="valor-item-solicitado">Subtotal: R$ {{
+                    calcularValorTotalItemSolicitado(item, index) | number:'1.2-2' }}</small>
                 </div>
                 }
                 }
               </div>
-            </div>
+              <div class="valor-total-solicitacao">Total da solicitação: R$ {{ calcularSomaTotalItensSolicitados() | number:'1.2-2' }}</div>
+            </section>
+            }
+
+            @if (etapaSolicitacao === 3) {
+            <section class="secao-formulario entrega-etapa entrega-etapa-revisao" aria-labelledby="revisao-solicitacao-title">
+              <div class="entrega-etapa-cabecalho">
+                <h6 id="revisao-solicitacao-title">Revisão da solicitação</h6>
+                <small>Confira as informações antes de enviar o pedido ao fornecedor.</small>
+              </div>
+
+              <div class="entrega-revisao-dados">
+                <div><span>Fornecedor</span><strong>{{ empenho?.ata?.fornecedor?.nome_fantasia }}</strong></div>
+                <div><span>E-mail</span><strong>{{ empenho?.ata?.fornecedor?.email }}</strong></div>
+                <div><span>Data prevista</span><strong>{{ ordemEntregaInsert.data_entrega_prevista | date:'dd/MM/yyyy' }}</strong></div>
+                <div><span>Arquivo</span><strong>{{ nomeArquivoSolicitacao }}</strong></div>
+              </div>
+
+              <div class="entrega-revisao-mensagem">
+                <span>Mensagem ao fornecedor</span>
+                @if (mensagemSolicitacao?.trim()) {
+                <p>{{ mensagemSolicitacao }}</p>
+                } @else {
+                <p>Será utilizada a mensagem padrão do sistema.</p>
+                }
+              </div>
+
+              <div class="entrega-revisao-itens">
+                <span>Itens da solicitação</span>
+                @for (item of itensEmpenho; track item.id; let index = $index) {
+                @if (itensSelecionados[index]) {
+                <div class="entrega-revisao-item">
+                  <div>
+                    <strong>{{ item.item_ata.item_generico.descricao }}</strong>
+                    <small>Quantidade: {{ itensOrdemInsert[index].quantidade_solicitada | number:'1.2-2' }} {{ item.item_ata.item_generico.unidade_medida }}</small>
+                    <small>Valor unitário: R$ {{ item.item_ata.valor_unitario | number:'1.2-2' }}</small>
+                  </div>
+                  <strong>Subtotal: R$ {{ calcularValorTotalItemSolicitado(item, index) | number:'1.2-2' }}</strong>
+                </div>
+                }
+                }
+              </div>
+              <div class="valor-total-solicitacao">Total da solicitação: R$ {{ calcularSomaTotalItensSolicitados() | number:'1.2-2' }}</div>
+            </section>
+            }
           </form>
         </div>
 
         <div class="modal-footer entrega-modal-footer">
-          <div class="requisitos-solicitacao" [class.requisitos-ok]="podeSolicitarEntrega">
-            <small><b>Campos obrigatórios para solicitar:</b> data de previsão, arquivo e quantidade válida para todos os itens selecionados.</small>
-          </div>
-          @if(isSolicitandoEntrega) {
+          @if (isSolicitandoEntrega) {
           <div class="status-processamento-entrega">
             <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
             <small>Solicitação em andamento. Aguarde a finalização para fechar o modal ou iniciar outra operação.</small>
           </div>
           }
-          <div class="valor-total-solicitacao">Valor Total: R$ {{ calcularSomaTotalItensSolicitados() | number:'1.2-2'
-            }}</div>
-          <button type="button" [disabled]="!podeSolicitarEntrega" [class.btn-confirmar-desabilitado]="!podeSolicitarEntrega"
-            (click)="solicitarEntrega()"><i class="bi bi-check-lg"></i> Confirmar Pedido</button>
+
+          @if (!isSolicitandoEntrega && etapaSolicitacao === 1) {
+          <div class="requisitos-solicitacao" [class.requisitos-ok]="podeAvancarDadosSolicitacao">
+            <small><b>Para continuar:</b> informe uma data válida, anexe o arquivo e confirme o e-mail do fornecedor.</small>
+          </div>
+          <div class="entrega-modal-acoes">
+            <button type="button" class="entrega-acao-secundaria" (click)="tentarFecharModalSolicitacao()">Cancelar</button>
+            <button type="button" class="entrega-acao-primaria" [disabled]="!podeAvancarDadosSolicitacao"
+              (click)="irParaItensSolicitacao()">Continuar <i class="bi bi-arrow-right"></i></button>
+          </div>
+          }
+
+          @if (!isSolicitandoEntrega && etapaSolicitacao === 2) {
+          <div class="requisitos-solicitacao" [class.requisitos-ok]="podeAvancarItensSolicitacao">
+            <small><b>Para revisar:</b> todos os itens selecionados precisam ter uma quantidade válida.</small>
+          </div>
+          <div class="entrega-modal-acoes">
+            <button type="button" class="entrega-acao-secundaria" (click)="voltarEtapaSolicitacao()"><i class="bi bi-arrow-left"></i> Voltar</button>
+            <button type="button" class="entrega-acao-primaria" [disabled]="!podeAvancarItensSolicitacao"
+              (click)="irParaRevisaoSolicitacao()">Revisar solicitação <i class="bi bi-arrow-right"></i></button>
+          </div>
+          }
+
+          @if (!isSolicitandoEntrega && etapaSolicitacao === 3) {
+          <div class="valor-total-solicitacao">Total da solicitação: R$ {{ calcularSomaTotalItensSolicitados() | number:'1.2-2' }}</div>
+          <div class="entrega-modal-acoes">
+            <button type="button" class="entrega-acao-secundaria" (click)="voltarEtapaSolicitacao()"><i class="bi bi-arrow-left"></i> Voltar e editar</button>
+            <button type="button" class="entrega-acao-primaria" [disabled]="!podeSolicitarEntrega"
+              (click)="solicitarEntrega()"><i class="bi bi-check-lg"></i> Confirmar solicitação</button>
+          </div>
+          }
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="modalSaldo" tabindex="-1">
+  <div class="modal fade modal-operacao" id="modalSaldo" tabindex="-1" aria-labelledby="modalSaldoTitle"
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header text-white" [ngClass]="tipo === 'anulacao' ? 'bg-danger' : 'bg-primary'">
-          <h5 class="modal-title">
-            {{ tipo === 'anulacao' ? 'ANULAÇÃO DE SALDO' : 'REFORÇO DE SALDO' }}
+          <h5 id="modalSaldoTitle" class="modal-title">
+            {{ tipo === 'anulacao' ? 'Anulação de saldo' : 'Reforço de saldo' }}
           </h5>
-          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          <button #fecharOperacaoInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
         </div>
 
         <div class="modal-body">
-          <label class="text-muted small">ITEM SELECIONADO</label>
-          <div class="bg-light p-2 rounded mb-3"> {{ itemEmpenhoModal.item_ata.item_generico.descricao }}
-            ({{ itemEmpenhoModal.item_ata.item_generico.unidade_medida }}) </div>
-
-          <label class="text-muted small">TIPO DA OPERAÇÃO</label>
-          <div class="btn-group w-100 mb-3">
-            <button class="btn" [ngClass]="tipo === 'reforco' ? 'btn-primary' : 'btn-outline-secondary'"
-              (click)="tipo='reforco'; trocarOperacao('ref')">
-              Reforço
-            </button>
-            <button class="btn" [ngClass]="tipo === 'anulacao' ? 'btn-danger' : 'btn-outline-secondary'"
-              (click)="tipo='anulacao'; trocarOperacao('anl')">
-              Anulação
-            </button>
+          @if (itemEmpenhoModal?.id && itemEmpenhoModal?.item_ata?.item_generico) {
+          <div class="operacao-item">
+            <span class="sige-detail-label operacao-item-label">Item</span>
+            <strong class="operacao-item-valor">{{ itemEmpenhoModal.item_ata.item_generico.descricao }}</strong>
+            <span>{{ itemEmpenhoModal.item_ata.item_generico.unidade_medida }}</span>
           </div>
 
-          <label>Quantidade ( {{ itemEmpenhoModal.item_ata.item_generico.unidade_medida }} )</label>
-          <input type="number" class="form-control"
-            [placeholder]="tipo === 'anulacao' ? 'Qtd. para Anular' : 'Qtd. para Reforço'"
-            [(ngModel)]="operacaoItem_insercao.valor">
+          <div class="operacao-dados">
+            <div class="operacao-dado">
+              <span class="operacao-dado-label">Quantidade disponível atualmente</span>
+              <strong class="operacao-dado-valor">{{ itemEmpenhoModal.quantidade_atual | number:'1.2-2' }}
+                {{ itemEmpenhoModal.item_ata.item_generico.unidade_medida }}</strong>
+            </div>
+            <div class="operacao-dado operacao-limite">
+              <span class="operacao-dado-label">Limite desta operação</span>
+              <strong class="operacao-dado-valor">{{ limiteOperacaoAtual | number:'1.2-2' }}
+                {{ itemEmpenhoModal.item_ata.item_generico.unidade_medida }}</strong>
+            </div>
+          </div>
+
+          <div class="operacao-formulario">
+            <span class="sige-detail-label">Tipo da operação</span>
+            <div class="btn-group w-100">
+              @if (pode(Recurso.OPERACAO_EMPENHO, Acao.REFORCAR_EMPENHO)) {
+              <button type="button" class="btn" [ngClass]="tipo === 'reforco' ? 'btn-primary' : 'btn-outline-secondary'"
+                (click)="prepararOperacao('reforco'); trocarOperacao('ref')">
+              Reforço
+              </button>
+              }
+              @if (pode(Recurso.OPERACAO_EMPENHO, Acao.ANULAR_EMPENHO)) {
+              <button type="button" class="btn" [ngClass]="tipo === 'anulacao' ? 'btn-danger' : 'btn-outline-secondary'"
+                (click)="prepararOperacao('anulacao'); trocarOperacao('anl')">
+              Anulação
+              </button>
+              }
+            </div>
+
+            <label for="quantidadeOperacao">Quantidade ({{ itemEmpenhoModal.item_ata.item_generico.unidade_medida }})</label>
+            <input id="quantidadeOperacao" name="quantidadeOperacao" type="number" class="form-control" min="1"
+              step="0.01" [max]="limiteOperacaoAtual"
+              [placeholder]="tipo === 'anulacao' ? 'Qtd. para anular' : 'Qtd. para reforçar'"
+              [(ngModel)]="operacaoItem_insercao.valor">
+            <small>Informe uma quantidade mínima de 1,00 e até o limite desta operação.</small>
+            @if (limiteOperacaoAtual < 1) {
+            <small>Não há saldo suficiente para realizar uma operação mínima de 1,00.</small>
+            }
+          </div>
+
+          @if (operacaoValida) {
+          <div class="operacao-preview" aria-live="polite">
+            <span class="operacao-preview-titulo">Prévia da operação</span>
+            <div class="operacao-preview-linha">
+              <span>Após a operação</span>
+              <strong>{{ itemEmpenhoModal.quantidade_atual | number:'1.2-2' }} →
+                {{ quantidadeAposOperacao | number:'1.2-2' }}</strong>
+            </div>
+            <div class="operacao-preview-linha operacao-impacto">
+              <span>Impacto financeiro</span>
+              <strong>{{ tipo === 'reforco' ? '+' : '−' }} R$ {{ impactoFinanceiroOperacao | number:'1.2-2' }}</strong>
+            </div>
+          </div>
+          }
+          }
         </div>
 
-        <div class="modal-footer">
-          <button class="btn w-100 mt-3 text-white" [ngClass]="tipo === 'anulacao' ? 'bg-danger' : 'bg-primary'"
-            (click)="salvarOperacaoItem()">
+        <div class="modal-footer operacao-acoes">
+          <button type="button" class="btn w-100 text-white" [ngClass]="tipo === 'anulacao' ? 'bg-danger' : 'bg-primary'"
+            [disabled]="!operacaoValida" (click)="salvarOperacaoItem()">
             <i class="bi bi-check-lg"></i>
             {{
             tipo === 'reforco' ? 'Confirmar Reforço' : 'Confirmar Anulação'

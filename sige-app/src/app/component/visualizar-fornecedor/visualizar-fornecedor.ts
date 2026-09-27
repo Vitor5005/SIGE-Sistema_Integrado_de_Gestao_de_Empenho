@@ -9,11 +9,13 @@ import { EnderecoService } from '../../service/endereco.service';
 
 import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 import { FornecedorInsert } from '../../model/fornecedor_insert';
+import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
-  imports: [BotaoVoltar, FormsModule],
+  imports: [BotaoVoltar, FormsModule, EstadoConteudo],
   templateUrl: './visualizar-fornecedor.html',
   styleUrl: './visualizar-fornecedor.scss',
 })
@@ -30,7 +32,8 @@ export class VisualizarFornecedor {
     private fornecedorService: FornecedorService,
     private enderecoService: EnderecoService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private feedback: FeedbackService
   ) { }
 
 
@@ -40,6 +43,9 @@ export class VisualizarFornecedor {
   formSubmitted: boolean = false;
   isSaving: boolean = false;
   errorMessageModal: string = '';
+  isLoadingPage: boolean = true;
+  errorMessagePage: string = '';
+  idPagina: number | null = null;
   private permitirFecharModalSemConfirmacao: boolean = false;
 
   private limparNumero(valor: string | undefined): string {
@@ -210,11 +216,16 @@ export class VisualizarFornecedor {
 
 
   ngOnInit() {
-    const id = this.route.snapshot.queryParamMap.get('id');
+    const id = Number(this.route.snapshot.queryParamMap.get('id'));
 
-    if (id) {
-      this.get(Number(id))
+    if (!Number.isInteger(id) || id <= 0) {
+      this.isLoadingPage = false;
+      this.errorMessagePage = 'Não foi possível identificar o registro solicitado.';
+      return;
     }
+
+    this.idPagina = id;
+    this.get(id, true);
   }
 
   ngAfterViewInit() {
@@ -237,10 +248,8 @@ export class VisualizarFornecedor {
       }
 
       if (this.possuiDadosModalPreenchidos) {
-        const desejaSair = confirm('Você já preencheu dados do fornecedor. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModal();
       }
     });
 
@@ -265,22 +274,44 @@ export class VisualizarFornecedor {
     this.endereco_editar.cep = this.fornecedor.endereco.cep;
   }
 
-  get(id: number): void {
+  get(id: number, controlarEstadoPagina: boolean = false): void {
+    if (controlarEstadoPagina) {
+      this.isLoadingPage = true;
+      this.errorMessagePage = '';
+    }
+
     this.fornecedorService.getById(id).subscribe(
       {
         next: (reposta: Fornecedor) => {
-          this.fornecedor = reposta
+          this.fornecedor = reposta;
+          if (controlarEstadoPagina) {
+            this.isLoadingPage = false;
+          }
+        },
+        error: () => {
+          if (controlarEstadoPagina) {
+            this.isLoadingPage = false;
+            this.errorMessagePage = 'Não foi possível carregar este fornecedor no momento.';
+          }
         }
       }
     )
+  }
+
+  recarregarPagina(): void {
+    if (this.idPagina !== null) {
+      this.get(this.idPagina, true);
+    }
   }
 
   saveFornecedo(): void {
     this.fornecedorService.save(this.fornecedor_editar).subscribe(
       {
         complete: () => {
-          alert('Fornecedor editado com sucesso!');
-          window.location.reload();
+          this.isSaving = false;
+          this.fecharModalSemConfirmacao();
+          this.feedback.sucesso('Fornecedor atualizado com sucesso.');
+          this.get(this.fornecedor.id);
         },
         error: () => {
           this.isSaving = false;
@@ -319,12 +350,28 @@ export class VisualizarFornecedor {
     }
 
     if (this.possuiDadosModalPreenchidos) {
-      const desejaSair = confirm('Você já preencheu dados do fornecedor. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModal();
+      return;
     }
 
+    this.fecharModalSemConfirmacao();
+  }
+
+  private confirmarDescarteModal(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você já preencheu dados do fornecedor. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalSemConfirmacao();
+      }
+    });
+  }
+
+  private fecharModalSemConfirmacao(): void {
     if (this.fecharModalInternoBtn?.nativeElement) {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();

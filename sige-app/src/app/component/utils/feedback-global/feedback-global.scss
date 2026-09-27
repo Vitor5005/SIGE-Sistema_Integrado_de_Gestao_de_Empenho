@@ -1,0 +1,184 @@
+:host {
+  pointer-events: none;
+}
+
+.feedback-global {
+  position: fixed;
+  z-index: 2100;
+  top: var(--sige-space-4, 1rem);
+  right: var(--sige-space-4, 1rem);
+  display: grid;
+  width: min(25rem, calc(100vw - 2rem));
+  gap: var(--sige-space-2, 0.5rem);
+}
+
+.feedback-toast {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--sige-space-3, 0.75rem);
+  padding: var(--sige-space-3, 0.75rem);
+  border: 1px solid var(--sige-border, #d7dee9);
+  border-left: 4px solid currentColor;
+  border-radius: var(--sige-radius-md, 0.75rem);
+  background: var(--sige-surface-card, #ffffff);
+  box-shadow: 0 0.75rem 2rem rgba(20, 37, 63, 0.18);
+  color: var(--sige-text-primary, #1e2f4d);
+  pointer-events: auto;
+}
+
+.feedback-toast > i {
+  margin-top: 0.125rem;
+  font-size: 1.125rem;
+}
+
+.feedback-toast--success {
+  background: var(--sige-surface-success, #edf9f0);
+  color: var(--sige-success-strong, #197a43);
+}
+
+.feedback-toast--error {
+  background: var(--sige-surface-danger, #fff1f1);
+  color: var(--sige-danger, #b42318);
+}
+
+.feedback-toast--warning {
+  background: var(--sige-surface-warning, #fff8e6);
+  color: var(--sige-text-warning, #a56500);
+}
+
+.feedback-toast--info {
+  background: var(--sige-surface-info, #eaf4ff);
+  color: var(--sige-color-primary, #2056a3);
+}
+
+.feedback-toast__content {
+  min-width: 0;
+}
+
+.feedback-toast__content strong {
+  display: block;
+  color: var(--sige-text-primary, #1e2f4d);
+  font-size: 0.9rem;
+}
+
+.feedback-toast__content p {
+  margin: 0.125rem 0 0;
+  color: var(--sige-text-secondary, #52657f);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.feedback-toast__close {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--sige-text-secondary, #52657f);
+}
+
+.feedback-toast__close:hover,
+.feedback-toast__close:focus-visible {
+  background: var(--sige-surface-muted, #eef3f9);
+  color: var(--sige-text-primary, #1e2f4d);
+}
+
+.feedback-confirmacao {
+  z-index: 2200;
+  width: min(31rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 0;
+  border-radius: var(--sige-radius-lg, 1rem);
+  box-shadow: 0 1rem 3rem rgba(20, 37, 63, 0.3);
+  color: var(--sige-text-primary, #1e2f4d);
+  pointer-events: auto;
+}
+
+.feedback-confirmacao::backdrop {
+  background: rgba(15, 32, 57, 0.52);
+}
+
+.feedback-confirmacao__content {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--sige-space-3, 0.75rem);
+  padding: var(--sige-space-5, 1.5rem);
+}
+
+.feedback-confirmacao__icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--sige-surface-info, #eaf4ff);
+  color: var(--sige-color-primary, #2056a3);
+  font-size: 1.25rem;
+}
+
+.feedback-confirmacao__icon--destrutiva {
+  background: var(--sige-surface-danger, #fff1f1);
+  color: var(--sige-danger, #b42318);
+}
+
+.feedback-confirmacao h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.feedback-confirmacao p {
+  margin: var(--sige-space-2, 0.5rem) 0 0;
+  color: var(--sige-text-secondary, #52657f);
+  line-height: 1.5;
+}
+
+.feedback-confirmacao__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sige-space-2, 0.5rem);
+  padding: var(--sige-space-3, 0.75rem) var(--sige-space-5, 1.5rem) var(--sige-space-5, 1.5rem);
+}
+
+.feedback-confirmacao__actions button {
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--sige-radius-sm, 0.5rem);
+  font-weight: 600;
+}
+
+.feedback-confirmacao__cancelar {
+  border: 1px solid var(--sige-border, #d7dee9);
+  background: var(--sige-surface-card, #ffffff);
+  color: var(--sige-text-primary, #1e2f4d);
+}
+
+.feedback-confirmacao__confirmar {
+  border: 1px solid var(--sige-color-primary, #2056a3);
+  background: var(--sige-color-primary, #2056a3);
+  color: #ffffff;
+}
+
+.feedback-confirmacao__confirmar--destrutiva {
+  border-color: var(--sige-danger, #b42318);
+  background: var(--sige-danger, #b42318);
+}
+
+@media (max-width: 35rem) {
+  .feedback-global {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: calc(100vw - 1.5rem);
+  }
+
+  .feedback-confirmacao__content {
+    padding: 1.25rem;
+  }
+
+  .feedback-confirmacao__actions {
+    padding: 0.75rem 1.25rem 1.25rem;
+  }
+}

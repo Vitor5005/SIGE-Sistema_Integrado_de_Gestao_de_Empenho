@@ -14,6 +14,12 @@ from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from licitacao.models import Licitacao, Ata, ItemAta
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
 from entrega.models import OrdemEntrega, ItemOrdem
+from estoque.models import (
+    Estoque,
+    Inventario,
+    ItemInventario,
+    MovimentacaoEstoque,
+)
 from usuario.models import Usuario
 from utils.rbac import Papel
 def create_usuarios(num=10):
@@ -713,8 +719,42 @@ def recalcular_todos_valores():
         empenho.save(update_fields=["saldo_utilizado"])
 
 
+def banco_possui_dados_de_dominio():
+    """Indica se o banco ja possui dados que nao devem ser substituidos pelo seed."""
+    modelos = (
+        Endereco,
+        Fornecedor,
+        ItemGenerico,
+        Licitacao,
+        Ata,
+        ItemAta,
+        Empenho,
+        ItemEmpenho,
+        OperacaoItem,
+        OrdemEntrega,
+        ItemOrdem,
+        Estoque,
+        Inventario,
+        ItemInventario,
+        MovimentacaoEstoque,
+    )
+    return any(model.objects.exists() for model in modelos)
+
+
 def clean_database():
-    """Limpa todas as tabelas na ordem correta (respeitando foreign keys)"""
+    """Limpa dados de demonstracao somente quando nao ha historico de estoque."""
+    if (
+        MovimentacaoEstoque.objects.exists()
+        or ItemInventario.objects.exists()
+        or Inventario.objects.exists()
+        or Estoque.objects.exclude(saldo_atual=0).exists()
+    ):
+        raise RuntimeError(
+            'Reset recusado: existem dados ou histórico de estoque protegidos. '
+            'Para recriar completamente o ambiente de demonstração, '
+            'utilize um banco/volume novo.'
+        )
+
     print("Limpando o banco...")
     ItemOrdem.objects.all().delete()
     OrdemEntrega.objects.all().delete()
@@ -725,6 +765,7 @@ def clean_database():
     Ata.objects.all().delete()
     Licitacao.objects.all().delete()
     Fornecedor.objects.all().delete()
+    Estoque.objects.all().delete()
     ItemGenerico.objects.all().delete()
     Endereco.objects.all().delete()
     print("✓ Banco limpo com sucesso!")
@@ -732,7 +773,12 @@ def clean_database():
 def seed_all():
     """Executa todas as funções de seed na ordem correta"""
     garantir_coluna_quantidade_entrege()
-    clean_database()
+    if banco_possui_dados_de_dominio():
+        print(
+            'Banco já possui dados de domínio. '
+            'Carga inicial ignorada para preservar os dados existentes.'
+        )
+        return
     
     print("Populando banco de dados...")
     print("  → Criando usuarios...")
