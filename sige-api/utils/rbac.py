@@ -30,6 +30,7 @@ class Recurso:
     MOVIMENTACAO_ESTOQUE = 'movimentacao_estoque'
     INVENTARIO = 'inventario'
     PENDENCIA_FORNECEDOR = 'pendencia_fornecedor'
+    SOLICITACAO_REFORCO = 'solicitacao_reforco'
 
 
 class Acao:
@@ -164,6 +165,13 @@ MATRIZ_PERMISSOES = {
     Recurso.PENDENCIA_FORNECEDOR: {
         Acao.CONSULTAR: DIRETOR_TECNICO_ESTOQUISTA,
         Acao.ALTERAR_STATUS: DIRETOR_TECNICO,
+    },
+    # O Nutricionista pede o reforço; somente o Diretor o executa ou recusa.
+    Recurso.SOLICITACAO_REFORCO: {
+        Acao.CONSULTAR: frozenset({Papel.DIRETOR, Papel.NUTRICIONISTA}),
+        Acao.CADASTRAR: frozenset({Papel.NUTRICIONISTA}),
+        Acao.REFORCAR_EMPENHO: DIRETOR,
+        Acao.ALTERAR_STATUS: DIRETOR,
     },
 }
 

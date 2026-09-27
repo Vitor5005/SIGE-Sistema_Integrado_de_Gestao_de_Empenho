@@ -1,16 +1,23 @@
 from decimal import Decimal
 
 from django.db.models import Sum
-from rest_framework import viewsets
+from django.shortcuts import get_object_or_404
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from empenho.models import Empenho, ItemEmpenho,  OperacaoItem
-from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer
-from empenho.services import registrar_operacao_item
+from empenho.models import Empenho, ItemEmpenho,  OperacaoItem, SolicitacaoReforco
+from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer, SolicitacaoReforcoSerializer
+from empenho.services import (
+    atender_solicitacao_reforco,
+    recusar_solicitacao_reforco,
+    registrar_operacao_item,
+    saldo_disponivel_ata,
+    solicitar_reforco,
+)
 from licitacao.views import BaseFiltroMixin
 from utils.audit import AuditoriaRBACMixin
 from utils.permissions import RBACPermission
-from utils.rbac import Acao, Recurso
+from utils.rbac import Acao, Papel, Recurso
 class EmpenhoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Empenho.objects.all()
     serializer_class = EmpenhoSerializer
@@ -124,3 +131,94 @@ class OperacaoItemViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
 
     ordering_fields = ['data', 'valor']
     ordering = ['-data']
+
+
+
+class SolicitacaoReforcoViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    Pedidos de reforço feitos pelo Nutricionista ao Diretor.
+    O Nutricionista vê apenas os próprios pedidos; o Diretor vê todos.
+    """
+    queryset = SolicitacaoReforco.objects.select_related(
+        'item_empenho__empenho', 'item_empenho__item_ata__item_generico',
+        'solicitante', 'respondida_por',
+    )
+    serializer_class = SolicitacaoReforcoSerializer
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.SOLICITACAO_REFORCO
+    rbac_action_map = {
+        'create': Acao.CADASTRAR,
+        'saldo': Acao.CADASTRAR,
+        'atender': Acao.REFORCAR_EMPENHO,
+        'recusar': Acao.ALTERAR_STATUS,
+        'marcar_vista': Acao.CONSULTAR,
+    }
+    filterset_fields = {
+        'status': ['exact', 'in'],
+        'item_empenho__empenho__id': ['exact'],
+        'vista_pelo_solicitante': ['exact'],
+    }
+    ordering_fields = ['data_solicitacao', 'data_resposta']
+    ordering = ['-data_solicitacao', '-id']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        usuario = self.request.user
+        if getattr(usuario, 'papel', None) == Papel.NUTRICIONISTA:
+            queryset = queryset.filter(solicitante=usuario)
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        solicitacao = solicitar_reforco(
+            item_empenho_id=serializer.validated_data['item_empenho'].pk,
+            quantidade=serializer.validated_data['quantidade'],
+            justificativa=serializer.validated_data['justificativa'],
+            usuario=request.user,
+        )
+        return Response(self.get_serializer(solicitacao).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'])
+    def saldo(self, request):
+        """Saldo disponível na ARP para o item do empenho informado (?item_empenho=ID)."""
+        item_empenho = get_object_or_404(
+            ItemEmpenho.objects.select_related('item_ata'),
+            pk=request.query_params.get('item_empenho'),
+        )
+        return Response({
+            'item_empenho': item_empenho.pk,
+            'saldo_disponivel': f'{saldo_disponivel_ata(item_empenho.item_ata):.2f}',
+        })
+
+    @action(detail=True, methods=['post'])
+    def atender(self, request, pk=None):
+        solicitacao = atender_solicitacao_reforco(
+            solicitacao_id=self.get_object().pk,
+            usuario=request.user,
+            resposta=request.data.get('resposta', ''),
+        )
+        return Response(self.get_serializer(solicitacao).data)
+
+    @action(detail=True, methods=['post'])
+    def recusar(self, request, pk=None):
+        solicitacao = recusar_solicitacao_reforco(
+            solicitacao_id=self.get_object().pk,
+            usuario=request.user,
+            resposta=request.data.get('resposta', ''),
+        )
+        return Response(self.get_serializer(solicitacao).data)
+
+    @action(detail=True, methods=['post'], url_path='marcar-vista')
+    def marcar_vista(self, request, pk=None):
+        """O solicitante confirma que viu a resposta do Diretor (remove o aviso do sino)."""
+        solicitacao = self.get_object()
+        if solicitacao.solicitante_id != request.user.pk:
+            return Response(
+                {'detail': 'Somente quem fez a solicitação pode marcá-la como vista.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if not solicitacao.vista_pelo_solicitante:
+            solicitacao.vista_pelo_solicitante = True
+            solicitacao.save(update_fields=['vista_pelo_solicitante'])
+        return Response(self.get_serializer(solicitacao).data)

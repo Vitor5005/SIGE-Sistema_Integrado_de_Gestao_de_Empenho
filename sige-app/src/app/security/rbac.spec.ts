@@ -42,6 +42,14 @@ describe('matriz RBAC', () => {
     expect(temPermissao(Papel.NUTRICIONISTA, Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)).toBe(false);
   });
 
+  it('permite ao Nutricionista pedir reforço e somente ao Diretor atendê-lo', () => {
+    expect(temPermissao(Papel.NUTRICIONISTA, Recurso.SOLICITACAO_REFORCO, Acao.CADASTRAR)).toBe(true);
+    expect(temPermissao(Papel.DIRETOR, Recurso.SOLICITACAO_REFORCO, Acao.CADASTRAR)).toBe(false);
+    expect(temPermissao(Papel.DIRETOR, Recurso.SOLICITACAO_REFORCO, Acao.REFORCAR_EMPENHO)).toBe(true);
+    expect(temPermissao(Papel.NUTRICIONISTA, Recurso.SOLICITACAO_REFORCO, Acao.REFORCAR_EMPENHO)).toBe(false);
+    expect(temPermissao(Papel.TECNICO_ADMINISTRATIVO, Recurso.SOLICITACAO_REFORCO, Acao.CONSULTAR)).toBe(false);
+  });
+
   it('aplica as permissões de consulta do estoque', () => {
     expect(temPermissao(Papel.NUTRICIONISTA, Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)).toBe(true);
     expect(temPermissao(Papel.TECNICO_ADMINISTRATIVO, Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)).toBe(false);

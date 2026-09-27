@@ -2,9 +2,10 @@ from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
 from django.db.models import Case, DecimalField, F, Sum, Value, When
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from empenho.models import Empenho, ItemEmpenho, OperacaoItem
+from empenho.models import Empenho, ItemEmpenho, OperacaoItem, SolicitacaoReforco
 from licitacao.models import Ata, ItemAta
 
 
@@ -31,6 +32,12 @@ def _total_operacoes(queryset):
     )['total'] or Decimal('0.00')
 
 
+def saldo_disponivel_ata(item_ata):
+    """Quantidade do item ainda disponível na ARP para inclusões e reforços."""
+    comprometido = _total_operacoes(OperacaoItem.objects.filter(item_empenho__item_ata=item_ata))
+    return item_ata.quantidade_licitada - comprometido
+
+
 @transaction.atomic
 def registrar_operacao_item(*, item_empenho_id, tipo, valor, data):
     if tipo not in {'inc', 'ref', 'anl'}:
@@ -49,9 +56,7 @@ def registrar_operacao_item(*, item_empenho_id, tipo, valor, data):
     empenho = Empenho.objects.select_for_update().get(pk=item_empenho.empenho_id)
     ata = Ata.objects.select_for_update().get(pk=item_ata.ata_id)
 
-    operacoes_ata = OperacaoItem.objects.filter(item_empenho__item_ata=item_ata)
-    comprometido_ata = _total_operacoes(operacoes_ata)
-    saldo_ata = item_ata.quantidade_licitada - comprometido_ata
+    saldo_ata = saldo_disponivel_ata(item_ata)
 
     if tipo in {'inc', 'ref'}:
         if tipo == 'inc' and OperacaoItem.objects.filter(
@@ -102,3 +107,69 @@ def registrar_operacao_item(*, item_empenho_id, tipo, valor, data):
     ata.ata_saldo_total = saldo_financeiro_ata.quantize(Decimal('0.01'))
     ata.save(update_fields=['ata_saldo_total'])
     return operacao
+
+
+@transaction.atomic
+def solicitar_reforco(*, item_empenho_id, quantidade, justificativa, usuario):
+    quantidade = _decimal(quantidade)
+    if quantidade < MINIMO:
+        raise ValidationError({'quantidade': 'A quantidade minima por reforco e 1,00.'})
+    justificativa = str(justificativa or '').strip()
+    if not justificativa:
+        raise ValidationError({'justificativa': 'Informe a justificativa do reforco.'})
+
+    item_empenho = ItemEmpenho.objects.select_related('item_ata').get(pk=item_empenho_id)
+    saldo_ata = saldo_disponivel_ata(item_empenho.item_ata)
+    if quantidade > saldo_ata:
+        raise ValidationError({
+            'quantidade': f'Saldo insuficiente na ARP. Disponivel: {saldo_ata:.2f}.'
+        })
+
+    return SolicitacaoReforco.objects.create(
+        item_empenho=item_empenho,
+        quantidade=quantidade,
+        justificativa=justificativa,
+        solicitante=usuario,
+    )
+
+
+def _solicitacao_pendente(solicitacao_id):
+    solicitacao = SolicitacaoReforco.objects.select_for_update().get(pk=solicitacao_id)
+    if solicitacao.status != SolicitacaoReforco.Status.PENDENTE:
+        raise ValidationError({'status': 'Esta solicitacao ja foi respondida.'})
+    return solicitacao
+
+
+@transaction.atomic
+def atender_solicitacao_reforco(*, solicitacao_id, usuario, resposta=''):
+    """Executa o reforco pedido; o saldo da ARP e validado novamente no registro da operacao."""
+    solicitacao = _solicitacao_pendente(solicitacao_id)
+    operacao = registrar_operacao_item(
+        item_empenho_id=solicitacao.item_empenho_id,
+        tipo='ref',
+        valor=solicitacao.quantidade,
+        data=timezone.now(),
+    )
+    solicitacao.status = SolicitacaoReforco.Status.ATENDIDA
+    solicitacao.operacao = operacao
+    solicitacao.respondida_por = usuario
+    solicitacao.resposta = str(resposta or '').strip()
+    solicitacao.data_resposta = timezone.now()
+    solicitacao.vista_pelo_solicitante = False
+    solicitacao.save()
+    return solicitacao
+
+
+@transaction.atomic
+def recusar_solicitacao_reforco(*, solicitacao_id, usuario, resposta):
+    resposta = str(resposta or '').strip()
+    if not resposta:
+        raise ValidationError({'resposta': 'Informe o motivo da recusa.'})
+    solicitacao = _solicitacao_pendente(solicitacao_id)
+    solicitacao.status = SolicitacaoReforco.Status.RECUSADA
+    solicitacao.respondida_por = usuario
+    solicitacao.resposta = resposta
+    solicitacao.data_resposta = timezone.now()
+    solicitacao.vista_pelo_solicitante = False
+    solicitacao.save()
+    return solicitacao

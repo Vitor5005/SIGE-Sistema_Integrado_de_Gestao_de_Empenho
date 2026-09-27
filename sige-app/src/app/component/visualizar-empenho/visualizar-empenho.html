@@ -183,6 +183,13 @@
                 </button>
               </div>
               }
+              @if (pode(Recurso.SOLICITACAO_REFORCO, Acao.CADASTRAR)) {
+              <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" data-bs-toggle="modal"
+                data-bs-target="#modalSolicitarReforco" (click)="abrirSolicitacaoReforco(item)"
+                title="Pedir ao Diretor um reforço deste item">
+                <i class="bi bi-plus-circle" aria-hidden="true"></i> Solicitar reforço
+              </button>
+              }
             </td>
 
           </tr>
@@ -201,6 +208,78 @@
       </table>
       </div>
     </section>
+
+    @if (pode(Recurso.SOLICITACAO_REFORCO, Acao.CONSULTAR) && solicitacoesReforco.length) {
+    <section class="sige-detail-section" aria-labelledby="solicitacoes-reforco-title">
+      <div class="sige-detail-section-header">
+        <h2 id="solicitacoes-reforco-title" class="sige-detail-section-title">Solicitações de reforço</h2>
+      </div>
+
+      @if (erroRespostaReforco) {
+      <div class="alert alert-danger py-2" role="alert">{{ erroRespostaReforco }}</div>
+      }
+
+      <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+        @for (solicitacao of solicitacoesReforco; track solicitacao.id) {
+        <li class="border rounded p-3">
+          <div class="d-flex flex-wrap justify-content-between gap-2">
+            <div>
+              <strong>{{ solicitacao.quantidade | number:'1.2-2' }} {{ solicitacao.unidade_medida }}</strong>
+              de {{ solicitacao.genero }}
+              <div class="small text-muted">
+                Pedido por {{ solicitacao.solicitante_nome }} em {{ solicitacao.data_solicitacao | date:'dd/MM/yyyy HH:mm' }}
+              </div>
+            </div>
+            <span class="badge align-self-start"
+              [ngClass]="{
+                'text-bg-warning': solicitacao.status === 'PENDENTE',
+                'text-bg-success': solicitacao.status === 'ATENDIDA',
+                'text-bg-secondary': solicitacao.status === 'RECUSADA'
+              }">
+              {{ textoStatusReforco(solicitacao.status) }}
+            </span>
+          </div>
+
+          <p class="mb-1 mt-2 fst-italic">"{{ solicitacao.justificativa }}"</p>
+
+          @if (solicitacao.status !== 'PENDENTE') {
+          <p class="small text-muted mb-0">
+            {{ solicitacao.status === 'ATENDIDA' ? 'Reforço executado' : 'Recusada' }}
+            por {{ solicitacao.respondida_por_nome }} em {{ solicitacao.data_resposta | date:'dd/MM/yyyy HH:mm' }}
+            @if (solicitacao.resposta) { — {{ solicitacao.resposta }} }
+          </p>
+          } @else if (pode(Recurso.SOLICITACAO_REFORCO, Acao.REFORCAR_EMPENHO)) {
+            @if (recusandoReforcoId === solicitacao.id) {
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              <input class="form-control form-control-sm flex-grow-1 w-auto" maxlength="500"
+                placeholder="Motivo da recusa (obrigatório)" [(ngModel)]="motivoRecusaReforco"
+                [disabled]="respondendoReforcoId === solicitacao.id">
+              <button type="button" class="btn btn-sm btn-danger"
+                [disabled]="!motivoRecusaReforco.trim() || respondendoReforcoId === solicitacao.id"
+                (click)="recusarReforco(solicitacao)">Confirmar recusa</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                [disabled]="respondendoReforcoId === solicitacao.id"
+                (click)="recusandoReforcoId = null">Cancelar</button>
+            </div>
+            } @else {
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              <button type="button" class="btn btn-sm btn-primary" [disabled]="respondendoReforcoId === solicitacao.id"
+                (click)="atenderReforco(solicitacao)">
+                <i class="bi bi-check-lg" aria-hidden="true"></i> Atender (executar reforço)
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger" [disabled]="respondendoReforcoId === solicitacao.id"
+                (click)="recusandoReforcoId = solicitacao.id; motivoRecusaReforco = ''">
+                Recusar
+              </button>
+            </div>
+            }
+          }
+        </li>
+        }
+      </ul>
+    </section>
+    }
+
     <section class="sige-detail-section historico-operacoes">
       <div class="historico-operacoes-cabecalho">
         <button class="btn-toggle-historico" type="button" data-bs-toggle="collapse"
@@ -404,6 +483,68 @@
             }}
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalSolicitarReforco" tabindex="-1" aria-labelledby="modalSolicitarReforcoLabel">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="modalSolicitarReforcoLabel">SOLICITAR REFORÇO AO DIRETOR</h5>
+          <button #fecharSolicitacaoReforcoBtn type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+            aria-label="Fechar" [disabled]="enviandoReforco"></button>
+        </div>
+
+        @if (itemReforco) {
+        <form (submit)="enviarSolicitacaoReforco(); $event.preventDefault()">
+          <div class="modal-body">
+            <label class="text-muted small">ITEM</label>
+            <div class="bg-light p-2 rounded mb-3">
+              {{ itemReforco.item_ata.item_generico.descricao }} ({{ itemReforco.item_ata.item_generico.unidade_medida }})
+              <div class="small text-muted">Quantidade empenhada: {{ itemReforco.quantidade_atual | number:'1.2-2' }}</div>
+            </div>
+
+            <p class="small mb-3">
+              Saldo disponível na ARP:
+              @if (saldoReforco === null) {
+              <span class="text-muted">carregando...</span>
+              } @else {
+              <b>{{ saldoReforco | number:'1.2-2' }} {{ itemReforco.item_ata.item_generico.unidade_medida }}</b>
+              }
+            </p>
+
+            @if (saldoReforco !== null && saldoReforco < 1) {
+            <div class="alert alert-warning py-2">Não há saldo na ARP para reforçar este item.</div>
+            }
+
+            <label for="quantidadeReforco" class="form-label">Quantidade desejada ({{ itemReforco.item_ata.item_generico.unidade_medida }})</label>
+            <input id="quantidadeReforco" name="quantidadeReforco" type="number" class="form-control mb-1" min="1"
+              [max]="saldoReforco ?? null" step="0.01" [(ngModel)]="quantidadeReforco" [disabled]="enviandoReforco">
+            @if (quantidadeReforco && saldoReforco !== null && quantidadeReforco > saldoReforco) {
+            <small class="text-danger d-block mb-2">A quantidade excede o saldo disponível na ARP.</small>
+            }
+
+            <label for="justificativaReforco" class="form-label mt-2">Justificativa</label>
+            <textarea id="justificativaReforco" name="justificativaReforco" class="form-control" rows="3" maxlength="500"
+              placeholder="Ex.: cardápio das próximas semanas exige mais carne bovina."
+              [(ngModel)]="justificativaReforco" [disabled]="enviandoReforco"></textarea>
+
+            @if (erroSolicitacaoReforco) {
+            <div class="alert alert-danger py-2 mt-3 mb-0">{{ erroSolicitacaoReforco }}</div>
+            }
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary w-100" [disabled]="!podeEnviarSolicitacaoReforco">
+              @if (enviandoReforco) {
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+              }
+              <i class="bi bi-send" aria-hidden="true"></i> Enviar ao Diretor
+            </button>
+          </div>
+        </form>
+        }
       </div>
     </div>
   </div>

@@ -103,7 +103,7 @@
     </a>
     }
 
-    @if (pode(Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)) {
+    @if (podeVerPendencias || podeVerReforcos || podeVerRespostasReforco) {
     <div class="dropdown">
       <button
         class="alertas-botao"
@@ -112,16 +112,90 @@
         data-bs-toggle="dropdown"
         data-bs-auto-close="outside"
         aria-expanded="false"
-        [attr.aria-label]="pendencias.length ? pendencias.length + ' pendências de fornecedores' : 'Pendências de fornecedores'"
-        (click)="carregarPendencias()"
+        [attr.aria-label]="totalAlertas ? totalAlertas + ' notificações' : 'Notificações'"
+        (click)="carregarAlertas()"
       >
         <i class="bi bi-bell" aria-hidden="true"></i>
-        @if (pendencias.length) {
-        <span class="alertas-contador">{{ totalPendencias > 9 ? '9+' : totalPendencias }}</span>
+        @if (totalAlertas) {
+        <span class="alertas-contador">{{ totalAlertas > 9 ? '9+' : totalAlertas }}</span>
         }
       </button>
 
       <div class="dropdown-menu dropdown-menu-end dropdown-menu--sige alertas-dropdown" aria-labelledby="menuAlertas">
+        @if (podeVerRespostasReforco) {
+        <span class="dropdown-header">Respostas aos seus pedidos de reforço</span>
+
+        @if (erroRespostasReforco) {
+        <p class="alertas-vazio">Não foi possível carregar as respostas.</p>
+        } @else if (!respostasReforco.length) {
+        <p class="alertas-vazio">Nenhuma resposta nova.</p>
+        } @else {
+        <ul class="alertas-lista">
+          @for (resposta of respostasReforco; track resposta.id) {
+          <li class="alerta-item">
+            <div class="alerta-topo">
+              <strong>{{ resposta.status === 'ATENDIDA' ? 'Reforço realizado' : 'Reforço recusado' }}</strong>
+              <span>{{ resposta.data_resposta | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <p class="alerta-resumo">
+              <b>{{ resposta.quantidade | number: '1.0-2' }} {{ resposta.unidade_medida }}</b> de {{ resposta.genero }}
+              — {{ resposta.status === 'ATENDIDA' ? 'atendido' : 'recusado' }} por {{ resposta.respondida_por_nome }}
+            </p>
+            @if (resposta.resposta) {
+            <p class="alerta-motivo">"{{ resposta.resposta }}"</p>
+            }
+            <div class="alerta-rodape">
+              <a [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: resposta.empenho_id }"
+                (click)="marcarRespostaVista(resposta)">Empenho {{ resposta.empenho_codigo }}</a>
+              <button type="button" class="alerta-ciente" [disabled]="marcandoVistaId === resposta.id"
+                (click)="marcarRespostaVista(resposta)">
+                <i class="bi bi-check2" aria-hidden="true"></i> Ok
+              </button>
+            </div>
+          </li>
+          }
+        </ul>
+        @if (totalRespostasReforco > respostasReforco.length) {
+        <p class="alertas-vazio">E mais {{ totalRespostasReforco - respostasReforco.length }} resposta(s).</p>
+        }
+        }
+        }
+
+        @if (podeVerReforcos) {
+        <span class="dropdown-header">Pedidos de reforço</span>
+
+        @if (erroReforcos) {
+        <p class="alertas-vazio">Não foi possível carregar os pedidos de reforço.</p>
+        } @else if (!reforcos.length) {
+        <p class="alertas-vazio">Nenhum pedido de reforço aguardando.</p>
+        } @else {
+        <ul class="alertas-lista">
+          @for (reforco of reforcos; track reforco.id) {
+          <li class="alerta-item">
+            <div class="alerta-topo">
+              <strong>{{ reforco.solicitante_nome }} pede reforço</strong>
+              <span>{{ reforco.data_solicitacao | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <p class="alerta-resumo">
+              <b>{{ reforco.quantidade | number: '1.0-2' }} {{ reforco.unidade_medida }}</b> de {{ reforco.genero }}
+            </p>
+            <p class="alerta-motivo">"{{ reforco.justificativa }}"</p>
+            <div class="alerta-rodape">
+              <span>Empenho {{ reforco.empenho_codigo }}</span>
+              <a class="alerta-ciente" [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: reforco.empenho_id }">
+                Analisar <i class="bi bi-arrow-right" aria-hidden="true"></i>
+              </a>
+            </div>
+          </li>
+          }
+        </ul>
+        @if (totalReforcos > reforcos.length) {
+        <p class="alertas-vazio">E mais {{ totalReforcos - reforcos.length }} pedido(s).</p>
+        }
+        }
+        }
+
+        @if (podeVerPendencias) {
         <span class="dropdown-header">Pendências de fornecedores</span>
 
         @if (erroPendencias) {
@@ -155,6 +229,7 @@
         </ul>
         @if (totalPendencias > pendencias.length) {
         <p class="alertas-vazio">E mais {{ totalPendencias - pendencias.length }} pendência(s).</p>
+        }
         }
         }
       </div>

@@ -1,9 +1,13 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from "@angular/router";
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from "@angular/router";
+import { filter } from 'rxjs';
 import { PendenciaFornecedor } from '../../../model/pendencia_fornecedor';
 import { Auth } from '../../../service/auth';
 import { PendenciaFornecedorService } from '../../../service/pendencia-fornecedor.service';
+import { SolicitacaoReforco } from '../../../model/solicitacao_reforco';
+import { SolicitacaoReforcoService } from '../../../service/solicitacao-reforco.service';
 import { Acao, Papel, pode, Recurso } from '../../../security/rbac';
 
 type TokenPayload = {
@@ -26,7 +30,90 @@ export class Cabecalho {
     private router: Router,
     private auth: Auth,
     private pendenciaService: PendenciaFornecedorService,
+    private solicitacaoReforcoService: SolicitacaoReforcoService,
   ) { }
+
+  reforcos: SolicitacaoReforco[] = [];
+  totalReforcos = 0;
+  erroReforcos = false;
+
+  get podeVerPendencias(): boolean {
+    return pode(Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS);
+  }
+
+  get podeVerReforcos(): boolean {
+    return pode(Recurso.SOLICITACAO_REFORCO, Acao.REFORCAR_EMPENHO);
+  }
+
+  respostasReforco: SolicitacaoReforco[] = [];
+  totalRespostasReforco = 0;
+  erroRespostasReforco = false;
+  marcandoVistaId: number | null = null;
+
+  /** Quem pede reforço (Nutricionista) é avisado quando o Diretor responde. */
+  get podeVerRespostasReforco(): boolean {
+    return pode(Recurso.SOLICITACAO_REFORCO, Acao.CADASTRAR);
+  }
+
+  get totalAlertas(): number {
+    return (this.podeVerPendencias ? this.totalPendencias : 0)
+      + (this.podeVerReforcos ? this.totalReforcos : 0)
+      + (this.podeVerRespostasReforco ? this.totalRespostasReforco : 0);
+  }
+
+  carregarAlertas(): void {
+    this.carregarPendencias();
+    this.carregarReforcos();
+    this.carregarRespostasReforco();
+  }
+
+  carregarRespostasReforco(): void {
+    if (!this.podeVerRespostasReforco) {
+      return;
+    }
+
+    this.solicitacaoReforcoService.listar({ naoVistas: true }, 1, 5).subscribe({
+      next: (resposta) => {
+        this.respostasReforco = resposta.results;
+        this.totalRespostasReforco = resposta.count;
+        this.erroRespostasReforco = false;
+      },
+      error: () => {
+        this.erroRespostasReforco = true;
+      },
+    });
+  }
+
+  marcarRespostaVista(resposta: SolicitacaoReforco): void {
+    this.marcandoVistaId = resposta.id;
+    this.solicitacaoReforcoService.marcarVista(resposta.id).subscribe({
+      next: () => {
+        this.marcandoVistaId = null;
+        this.carregarRespostasReforco();
+      },
+      error: () => {
+        this.marcandoVistaId = null;
+        this.erroRespostasReforco = true;
+      },
+    });
+  }
+
+  carregarReforcos(): void {
+    if (!this.podeVerReforcos) {
+      return;
+    }
+
+    this.solicitacaoReforcoService.listar({ status: 'PENDENTE' }, 1, 5).subscribe({
+      next: (resposta) => {
+        this.reforcos = resposta.results;
+        this.totalReforcos = resposta.count;
+        this.erroReforcos = false;
+      },
+      error: () => {
+        this.erroReforcos = true;
+      },
+    });
+  }
 
   papel: string = "";
   usuario: string = "";
@@ -80,11 +167,18 @@ export class Cabecalho {
   ngOnInit() {
     this.getPapel();
     this.getUser();
-    this.carregarPendencias();
+    this.carregarAlertas();
+
+    // O cabeçalho vive durante toda a sessão: atualiza as notificações a cada troca de tela.
+    this.router.events
+      .pipe(filter(evento => evento instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.carregarAlertas());
   }
 
+  private readonly destroyRef = inject(DestroyRef);
+
   carregarPendencias(): void {
-    if (!pode(Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)) {
+    if (!this.podeVerPendencias) {
       return;
     }
 
