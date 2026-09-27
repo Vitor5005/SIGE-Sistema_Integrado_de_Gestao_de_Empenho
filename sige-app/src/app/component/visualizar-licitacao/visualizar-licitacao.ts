@@ -48,6 +48,7 @@ export class VisualizarLicitacao {
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild("myInput") input!: ElementRef;
   @ViewChild('fecharModalInternoBtn') fecharModalInternoBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('fecharEdicaoLicitacaoBtn') fecharEdicaoLicitacaoBtn!: ElementRef<HTMLButtonElement>;
 
   licitacao: Licitacao = <Licitacao>{};
   atas: Array<Ata> = Array<Ata>();
@@ -84,7 +85,58 @@ export class VisualizarLicitacao {
   mostrarConfirmacaoAtual: boolean = false;
   isDefinindoAtual: boolean = false;
   errorMessageAtual: string = '';
+  licitacaoEdicao = {
+    numero_licitacao: '',
+    validade: 0,
+    data_abertura: '',
+    descricao: ''
+  };
+  formSubmittedEdicao: boolean = false;
+  isSavingEdicao: boolean = false;
+  errorMessageEdicao: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
+
+  get todayDate(): string {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  get numeroLicitacaoEdicaoValido(): boolean {
+    return Boolean(this.licitacaoEdicao.numero_licitacao.trim());
+  }
+
+  get validadeEdicaoValida(): boolean {
+    const validade = Number(this.licitacaoEdicao.validade);
+    return Number.isInteger(validade) && validade >= 1 && validade <= 120;
+  }
+
+  get dataAberturaEdicaoValida(): boolean {
+    return Boolean(
+      this.licitacaoEdicao.data_abertura &&
+      this.licitacaoEdicao.data_abertura <= this.todayDate
+    );
+  }
+
+  get formularioEdicaoValido(): boolean {
+    return this.numeroLicitacaoEdicaoValido &&
+      this.validadeEdicaoValida &&
+      this.dataAberturaEdicaoValida;
+  }
+
+  get licitacaoEdicaoAlterada(): boolean {
+    const dataAberturaAtual = this.licitacao.data_abertura
+      ? String(this.licitacao.data_abertura).slice(0, 10)
+      : '';
+
+    return this.licitacaoEdicao.numero_licitacao.trim() !== (this.licitacao.numero_licitacao || '').trim() ||
+      Number(this.licitacaoEdicao.validade) !== Number(this.licitacao.validade) ||
+      this.licitacaoEdicao.data_abertura !== dataAberturaAtual ||
+      this.licitacaoEdicao.descricao.trim() !== (this.licitacao.descricao || '').trim();
+  }
 
   private limparNumero(valor: string | undefined): string {
     return (valor || '').replace(/\D/g, '');
@@ -392,6 +444,85 @@ export class VisualizarLicitacao {
     if (this.idPagina !== null) {
       this.get(this.idPagina, true);
     }
+  }
+
+  abrirEdicaoLicitacao(): void {
+    this.licitacaoEdicao = {
+      numero_licitacao: this.licitacao.numero_licitacao || '',
+      validade: Number(this.licitacao.validade) || 0,
+      data_abertura: this.licitacao.data_abertura
+        ? String(this.licitacao.data_abertura).slice(0, 10)
+        : '',
+      descricao: this.licitacao.descricao || ''
+    };
+    this.formSubmittedEdicao = false;
+    this.isSavingEdicao = false;
+    this.errorMessageEdicao = '';
+  }
+
+  salvarEdicaoLicitacao(): void {
+    this.formSubmittedEdicao = true;
+    this.errorMessageEdicao = '';
+
+    if (
+      this.isSavingEdicao ||
+      !this.licitacao.id ||
+      !this.formularioEdicaoValido ||
+      !this.licitacaoEdicaoAlterada
+    ) {
+      return;
+    }
+
+    this.isSavingEdicao = true;
+
+    const dadosAtualizados: Partial<Licitacao> = {
+      numero_licitacao: this.licitacaoEdicao.numero_licitacao.trim().toUpperCase(),
+      validade: String(Number(this.licitacaoEdicao.validade)),
+      data_abertura: this.licitacaoEdicao.data_abertura,
+      descricao: this.licitacaoEdicao.descricao.trim()
+    };
+
+    this.licitacaoService.patch(this.licitacao.id, dadosAtualizados).subscribe({
+      next: (resposta: Licitacao) => {
+        this.licitacao = { ...this.licitacao, ...resposta };
+        this.isSavingEdicao = false;
+        this.fecharEdicaoLicitacao();
+        this.feedback.sucesso('Licitação atualizada com sucesso.');
+      },
+      error: (erro) => {
+        this.isSavingEdicao = false;
+        this.errorMessageEdicao = erro?.error?.numero_licitacao
+          ? 'Já existe uma licitação cadastrada com este número.'
+          : 'Não foi possível salvar as alterações. Revise os campos e tente novamente.';
+      }
+    });
+  }
+
+  tentarFecharEdicaoLicitacao(): void {
+    if (this.isSavingEdicao) {
+      return;
+    }
+
+    if (!this.licitacaoEdicaoAlterada) {
+      this.fecharEdicaoLicitacao();
+      return;
+    }
+
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'As alterações feitas na licitação serão perdidas.',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((descartar) => {
+      if (descartar) {
+        this.fecharEdicaoLicitacao();
+      }
+    });
+  }
+
+  private fecharEdicaoLicitacao(): void {
+    this.fecharEdicaoLicitacaoBtn?.nativeElement?.click();
   }
 
   iniciarDefinicaoComoAtual(): void {

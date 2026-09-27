@@ -25,6 +25,14 @@
         </div>
 
         <div class="sige-detail-actions">
+          @if (pode(Recurso.LICITACAO, Acao.EDITAR)) {
+          <button type="button" class="sige-button sige-button--secondary" data-bs-toggle="modal"
+            data-bs-target="#editarLicitacaoModal" [disabled]="isSavingEdicao" (click)="abrirEdicaoLicitacao()">
+            <i class="bi bi-pencil-square" aria-hidden="true"></i>
+            Editar
+          </button>
+          }
+
           @if (licitacao.atual) {
           <span class="licitacao-status">Licitação atual</span>
           } @else if (licitacao.id && pode(Recurso.LICITACAO, Acao.DEFINIR_ATUAL)) {
@@ -446,6 +454,93 @@
           }
 
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="editarLicitacaoModal" tabindex="-1" data-bs-backdrop="static"
+    data-bs-keyboard="false" aria-labelledby="editarLicitacaoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content modal-custom">
+        <div class="modal-header-azul">
+          <h2 class="modal-titulo" id="editarLicitacaoModalLabel">Editar licitação</h2>
+          <button type="button" class="btn-close btn-close-white" [disabled]="isSavingEdicao"
+            (click)="tentarFecharEdicaoLicitacao()" aria-label="Fechar"></button>
+          <button #fecharEdicaoLicitacaoBtn type="button" class="d-none" data-bs-dismiss="modal"
+            aria-hidden="true"></button>
+        </div>
+
+        <form (ngSubmit)="salvarEdicaoLicitacao()" novalidate>
+          <div class="modal-body modal-body-ata">
+            @if (errorMessageEdicao) {
+            <div class="mensagem-erro-modal" role="alert">
+              <small>{{ errorMessageEdicao }}</small>
+            </div>
+            }
+
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="numeroLicitacaoEdicao">Número da licitação *</label>
+                <input id="numeroLicitacaoEdicao" type="text" [(ngModel)]="licitacaoEdicao.numero_licitacao"
+                  name="numeroLicitacaoEdicao" maxlength="50" [disabled]="isSavingEdicao"
+                  [class.campo-invalido]="formSubmittedEdicao && !numeroLicitacaoEdicaoValido">
+                @if (formSubmittedEdicao && !numeroLicitacaoEdicaoValido) {
+                <small class="mensagem-campo-invalido">Informe o número da licitação.</small>
+                }
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="validadeLicitacaoEdicao">Validade (meses) *</label>
+                <input id="validadeLicitacaoEdicao" type="number" [(ngModel)]="licitacaoEdicao.validade"
+                  name="validadeLicitacaoEdicao" min="1" max="120" step="1" [disabled]="isSavingEdicao"
+                  [class.campo-invalido]="formSubmittedEdicao && !validadeEdicaoValida">
+                @if (formSubmittedEdicao && !validadeEdicaoValida) {
+                <small class="mensagem-campo-invalido">Informe uma validade inteira entre 1 e 120 meses.</small>
+                }
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="dataAberturaLicitacaoEdicao">Data de abertura *</label>
+                <input id="dataAberturaLicitacaoEdicao" type="date" [(ngModel)]="licitacaoEdicao.data_abertura"
+                  name="dataAberturaLicitacaoEdicao" [max]="todayDate" [disabled]="isSavingEdicao"
+                  [class.campo-invalido]="formSubmittedEdicao && !dataAberturaEdicaoValida">
+                @if (formSubmittedEdicao && !dataAberturaEdicaoValida) {
+                <small class="mensagem-campo-invalido">Informe uma data de abertura válida, que não seja futura.</small>
+                }
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="descricaoLicitacaoEdicao">Descrição</label>
+                <textarea id="descricaoLicitacaoEdicao" [(ngModel)]="licitacaoEdicao.descricao"
+                  name="descricaoLicitacaoEdicao" maxlength="500" rows="4" [disabled]="isSavingEdicao"></textarea>
+              </div>
+            </div>
+
+            <p class="texto-orientacao-modal mb-0">
+              A definição de “Licitação atual” é controlada separadamente pela ação “Definir como atual”.
+            </p>
+          </div>
+
+          <div class="form-footer">
+            <button type="button" class="sige-button sige-button--secondary" [disabled]="isSavingEdicao"
+              (click)="tentarFecharEdicaoLicitacao()">
+              Cancelar
+            </button>
+            <button type="submit" class="sige-button sige-button--primary"
+              [disabled]="isSavingEdicao || !formularioEdicaoValido || !licitacaoEdicaoAlterada">
+              @if (isSavingEdicao) {
+              <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+              Salvando...
+              } @else {
+              Salvar alterações
+              }
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

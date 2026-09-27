@@ -1,95 +1,123 @@
-<body class="listagem">
-  <div class="container-titulo">
-    <h3><i class="bi bi-clipboard2"></i> ATAS DE REGISTRO DE PREÇOS</h3>
-    <hr />
-  </div>
+<main class="sige-list-page">
+  <header class="sige-list-header">
+    <div>
+      <h1 class="sige-list-title">Atas de Registro de Preços</h1>
+      <p class="sige-list-description">Consulte as ARPs, seus fornecedores, vigência e valores registrados.</p>
+    </div>
+  </header>
 
-  <app-barra-pesquisa [filtros]="filtros"
-  (pesquisar)="get($event)"
-  (filtrosAlterados)="aplicarFiltros($event)">
-  </app-barra-pesquisa>
+  <section class="sige-list-toolbar" aria-label="Busca e filtros">
+    <app-barra-pesquisa
+      [filtros]="filtros"
+      (pesquisar)="get($event)"
+      (filtrosAlterados)="aplicarFiltros($event)">
+    </app-barra-pesquisa>
+  </section>
 
-  <table class="tabela">
-    <thead>
-      <tr>
-        <th>Identificação</th>
-        <th>Fornecedor</th>
-        <th>Status</th>
-        <th>Validade</th>
-        <th>Valor Total</th>
-      </tr>
-    </thead>
+  @if (!isLoadingPage && !errorMessagePage) {
+    <p class="sige-list-meta" aria-live="polite">
+      {{ total }} {{ total === 1 ? 'registro encontrado' : 'registros encontrados' }}
+    </p>
+  }
 
-    <tbody>
-      @if (isLoadingPage) {
-        <tr class="linha-vazia-tabela">
-          <td [attr.colspan]="5">
-            <app-estado-conteudo
-              tipo="loading"
-              mensagem="Carregando registros..."
-              [compacto]="true">
-            </app-estado-conteudo>
-          </td>
+  <div class="sige-list-table-wrap">
+    <table class="sige-list-table">
+      <thead>
+        <tr>
+          <th scope="col">Identificação</th>
+          <th scope="col">Fornecedor</th>
+          <th scope="col" class="sige-cell--status">Status</th>
+          <th scope="col" class="sige-cell--number">Validade</th>
+          <th scope="col" class="sige-cell--number">Valor total</th>
+          <th scope="col" class="sige-cell--actions">Ações</th>
         </tr>
-      } @else if (errorMessagePage) {
-        <tr class="linha-vazia-tabela">
-          <td [attr.colspan]="5">
-            <app-estado-conteudo
-              tipo="error"
-              titulo="Não foi possível carregar os dados"
-              [mensagem]="errorMessagePage"
-              [compacto]="true"
-              [mostrarAcao]="true"
-              (acao)="get()">
-            </app-estado-conteudo>
-          </td>
-        </tr>
-      } @else {
-        @for (item of atas; track item.id) {
-          <tr style="cursor: pointer" (click)="enviarPara('/visualizar-ata', item.id)">
-            <td>
-              <p>{{ item.numero_ata }}</p>
-              <small>cadastrado: {{ item.licitacao.data_abertura }}</small>
-            </td>
-
-            <td>
-              <p>{{ item.fornecedor.nome_fantasia }}</p>
-              <small>{{ item.fornecedor.cnpj }}</small>
-            </td>
-
-            <td>
-              <span [ngClass]="classValidade(item)">
-                {{ verificarValidade(item) }}
-              </span>
-            </td>
-
-            <td>
-              <i class="bi bi-clock"></i>
-              {{ item.licitacao.validade }} meses
-            </td>
-
-            <td>R$ {{ item.ata_saldo_total }}</td>
-          </tr>
-        }
-
-        @if (atas.length === 0) {
+      </thead>
+      <tbody>
+        @if (isLoadingPage) {
           <tr class="linha-vazia-tabela">
-            <td [attr.colspan]="5">
+            <td [attr.colspan]="6">
               <app-estado-conteudo
-                tipo="empty"
-                titulo="Nenhuma ata de registro de preços encontrada"
-                mensagem="Ajuste a busca ou os filtros para localizar uma ARP."
+                tipo="loading"
+                mensagem="Carregando registros..."
                 [compacto]="true">
               </app-estado-conteudo>
             </td>
           </tr>
+        } @else if (errorMessagePage) {
+          <tr class="linha-vazia-tabela">
+            <td [attr.colspan]="6">
+              <app-estado-conteudo
+                tipo="error"
+                titulo="Não foi possível carregar os dados"
+                [mensagem]="errorMessagePage"
+                [compacto]="true"
+                [mostrarAcao]="true"
+                (acao)="get()">
+              </app-estado-conteudo>
+            </td>
+          </tr>
+        } @else {
+          @for (item of atas; track item.id) {
+            <tr class="sige-list-row--clickable" (click)="enviarPara('/visualizar-ata', item.id)">
+              <td>
+                <p>{{ item.numero_ata }}</p>
+                <small>cadastrado: {{ item.licitacao.data_abertura }}</small>
+              </td>
+              <td>
+                <p>
+                  <span class="sige-cell--truncate" [title]="item.fornecedor.nome_fantasia">
+                    {{ item.fornecedor.nome_fantasia }}
+                  </span>
+                </p>
+                <small>{{ item.fornecedor.cnpj }}</small>
+              </td>
+              <td class="sige-cell--status">
+                <span [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span>
+              </td>
+              <td class="sige-cell--number">
+                <i class="bi bi-clock"></i>
+                {{ item.licitacao.validade }} meses
+              </td>
+              <td class="sige-cell--number">R$ {{ item.ata_saldo_total }}</td>
+              <td class="sige-cell--actions">
+                <div class="sige-table-actions">
+                  <button
+                    type="button"
+                    class="sige-button sige-button--secondary sige-button--sm"
+                    (click)="$event.stopPropagation(); enviarPara('/visualizar-ata', item.id)">
+                    Abrir
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+
+          @if (atas.length === 0) {
+            <tr class="linha-vazia-tabela">
+              <td [attr.colspan]="6">
+                <app-estado-conteudo
+                  tipo="empty"
+                  titulo="Nenhuma ata de registro de preços encontrada"
+                  mensagem="Ajuste a busca ou os filtros para localizar uma ARP."
+                  [compacto]="true">
+                </app-estado-conteudo>
+              </td>
+            </tr>
+          }
         }
-      }
-    </tbody>
-  </table>
+      </tbody>
+    </table>
+  </div>
 
   @if (!isLoadingPage && !errorMessagePage && total > 0) {
-    <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-      totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+    <app-paginacao
+      class="paginacao-lista"
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalItems]="total"
+      totalLabel="Total de registros"
+      [showTotal]="false"
+      (pageChange)="irParaPagina($event)">
+    </app-paginacao>
   }
-</body>
+</main>

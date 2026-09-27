@@ -1,20 +1,32 @@
-<body class="listagem">
-    <div class="container-titulo">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-            <h3><i class="bi bi-person-fill"></i> USUARIOS</h3>
-            <button class="adicionarUsuario" data-bs-toggle="modal" data-bs-target="#adicionarUsuario"
-                (click)="reiniciarRegistro()">
-                <i class="bi bi-person-plus-fill"></i>
-                Adicionar Usuario </button>
+<main class="sige-list-page">
+    <header class="sige-list-header">
+        <div>
+            <h1 class="sige-list-title"><i class="bi bi-person-fill" aria-hidden="true"></i> Usuários</h1>
+            <p class="sige-list-description">Gerencie usuários, papéis de acesso e situação das contas.</p>
         </div>
-        <hr>
+    </header>
 
+    <div class="sige-list-toolbar">
+        <div class="sige-list-toolbar__search">
+            <app-barra-pesquisa (pesquisar)="getUsuarios($event)"></app-barra-pesquisa>
+        </div>
+        <div class="sige-list-toolbar__actions">
+            <button type="button" class="sige-button sige-button--primary" data-bs-toggle="modal" data-bs-target="#adicionarUsuario"
+                (click)="reiniciarRegistro()">
+                <i class="bi bi-person-plus-fill" aria-hidden="true"></i>
+                Adicionar usuário
+            </button>
+        </div>
     </div>
-    <!-- Tabela da licitações cadastradas no sistema -->
 
-    <app-barra-pesquisa (pesquisar)="getUsuarios($event)"></app-barra-pesquisa>
+    @if (!isLoadingUsuarios && !errorMessagePage) {
+    <div class="sige-list-meta" aria-live="polite">
+        <strong>{{ total }}</strong> {{ total === 1 ? 'resultado' : 'resultados' }}
+    </div>
+    }
 
-    <table class="tabela">
+    <div class="sige-list-table-wrap">
+    <table class="sige-list-table">
         <thead>
             <tr>
                 <th scope="col"> Username </th>
@@ -22,8 +34,8 @@
                 <th scope="col"> Nome </th>
                 <th scope="col"> Sobrenome </th>
                 <th scope="col"> Email </th>
-                <th scope="col"> status </th>
-                <th scope="col"> Ações </th>
+                <th scope="col" class="sige-cell--status"> status </th>
+                <th scope="col" class="sige-cell--actions"> Ações </th>
             </tr>
         </thead>
         <tbody>
@@ -57,31 +69,31 @@
                 <td> {{ verificarPapel(usuario.papel) }} </td>
                 <td> {{usuario.first_name}} </td>
                 <td> {{usuario.last_name}} </td>
-                <td> {{usuario.email}} </td>
-                <td>
+                <td class="sige-cell--truncate" [attr.title]="usuario.email"> {{usuario.email}} </td>
+                <td class="sige-cell--status">
                     <span [ngClass]="classStatus(usuario.is_active)">{{ verificarStatus(usuario.is_active) }}</span>
                 </td>
-                <td style="display: flex; gap: 10px; justify-content: center;">
-                    <button class="btn btn-primary" title="Editar usuário" data-bs-toggle="modal"
+                <td class="sige-cell--actions">
+                    <button type="button" class="sige-button sige-button--secondary sige-button--sm" title="Editar usuário" data-bs-toggle="modal"
                         data-bs-target="#adicionarUsuario" (click)="carregarRegistro(usuario)">
-                        <i class="bi bi-pencil"></i>
+                        <i class="bi bi-pencil" aria-hidden="true"></i> Editar
                     </button>
 
                     @if(usuario.is_active && !isUsuarioAtual(usuario)){
-                    <button class="btn btn-danger" title="Desativar usuário" (click)="desativarAtivarUsuario(usuario)">
-                        <i class="bi bi-x-circle"></i>
+                    <button type="button" class="sige-button sige-button--danger sige-button--sm" title="Desativar usuário" (click)="desativarAtivarUsuario(usuario)">
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> Desativar
                     </button>
                     }
 
                     @if(usuario.is_active && isUsuarioAtual(usuario)){
-                    <button class="btn btn-secondary" title="Você não pode desativar a própria conta" disabled>
-                        <i class="bi bi-shield-lock"></i>
+                    <button type="button" class="sige-button sige-button--secondary sige-button--sm" title="Você não pode desativar a própria conta" disabled>
+                        <i class="bi bi-shield-lock" aria-hidden="true"></i> Conta atual
                     </button>
                     }
 
                     @if(!usuario.is_active){
-                    <button class="btn btn-success" title="Ativar usuário" (click)="desativarAtivarUsuario(usuario)">
-                        <i class="bi bi-check-circle"></i>
+                    <button type="button" class="sige-button sige-button--primary sige-button--sm" title="Ativar usuário" (click)="desativarAtivarUsuario(usuario)">
+                        <i class="bi bi-check-circle" aria-hidden="true"></i> Ativar
                     </button>
                     }
                 </td>
@@ -103,10 +115,11 @@
             }
         </tbody>
     </table>
+    </div>
 
     @if (!isLoadingUsuarios && !errorMessagePage && total > 0) {
     <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-        totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+        [showTotal]="false" totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
     }
 
     <div #myModal class="modal fade" id="adicionarUsuario" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
@@ -260,4 +273,4 @@
         </div>
     </div>
 
-</body>
+</main>

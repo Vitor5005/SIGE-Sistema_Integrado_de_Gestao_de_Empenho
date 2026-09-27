@@ -7,7 +7,7 @@ from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from licitacao.models import Licitacao, Ata, ItemAta
-from licitacao.serializers import AtaInsertSerializer, ItemAtaInsertSerializer, LicitacaoSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
+from licitacao.serializers import AtaInsertSerializer, AtaUpdateSerializer, ItemAtaInsertSerializer, LicitacaoSerializer, LicitacaoUpdateSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
 from empenho.serializers import ValorEmpenhoSerializer
 from empenho.models import Empenho, ItemEmpenho
 from utils.audit import AuditoriaRBACMixin
@@ -45,6 +45,11 @@ class LicitacaoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet
     ordering_fields = ['data_abertura','validade']
     ordering = ['-data_abertura']
 
+    def get_serializer_class(self):
+        if self.action in ['update', 'partial_update']:
+            return LicitacaoUpdateSerializer
+        return LicitacaoSerializer
+
     @action(detail=True, methods=['post'], url_path='definir-atual')
     def definir_atual(self, request, pk=None):
         licitacao = self.get_object()
@@ -58,10 +63,10 @@ class AtaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     rbac_resource = Recurso.ATA
 
     def get_serializer_class(self):
-        
-        if self.action in ['create', 'update']:
+        if self.action == 'create':
             return AtaInsertSerializer
-        
+        if self.action in ['update', 'partial_update']:
+            return AtaUpdateSerializer
         return AtaSerializer
 
     search_fields = ['numero_ata']

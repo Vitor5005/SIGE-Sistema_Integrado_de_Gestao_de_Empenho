@@ -37,6 +37,13 @@
       </div>
 
       <div class="sige-detail-actions">
+        @if (pode(Recurso.EMPENHO, Acao.EDITAR)) {
+        <button type="button" class="sige-button sige-button--secondary" data-bs-toggle="modal"
+          data-bs-target="#editarEmpenhoModal" (click)="abrirEdicaoEmpenho()">
+          <i class="bi bi-pencil-square" aria-hidden="true"></i>
+          Editar empenho
+        </button>
+        }
         <button type="button" (click)="enviarPara('/visualizar-ata', empenho.ata.id)" class="span-arp"
           aria-label="Abrir ata de registro de preços">
           <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
@@ -324,6 +331,56 @@
     </section>
     }
   }
+  </div>
+
+  <div class="modal fade" id="editarEmpenhoModal" tabindex="-1" aria-labelledby="editarEmpenhoModalLabel"
+    data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-custom">
+        <div class="modal-header modal-header-azul">
+          <h2 class="modal-title modal-titulo" id="editarEmpenhoModalLabel">Editar empenho</h2>
+          <button type="button" class="btn-close" [disabled]="isSavingEdicaoEmpenho"
+            (click)="tentarFecharEdicaoEmpenho()" aria-label="Fechar"></button>
+          <button #fecharEdicaoEmpenhoBtn type="button" class="d-none" data-bs-dismiss="modal"
+            aria-hidden="true"></button>
+        </div>
+
+        <form (ngSubmit)="salvarEdicaoEmpenho()" novalidate>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="codigoEmpenhoEdicao" class="form-label">Código do empenho *</label>
+              <input id="codigoEmpenhoEdicao" name="codigoEmpenhoEdicao" type="text" class="form-control"
+                maxlength="50" [disabled]="isSavingEdicaoEmpenho" [(ngModel)]="empenhoEdicao.codigo"
+                [class.is-invalid]="formSubmittedEdicaoEmpenho && !codigoEmpenhoEdicaoValido" />
+              @if (formSubmittedEdicaoEmpenho && !codigoEmpenhoEdicaoValido) {
+              <div class="invalid-feedback">Informe o código do empenho.</div>
+              }
+            </div>
+
+            <p class="alert alert-secondary mb-0">
+              ARP, valores, saldos e quantidades não podem ser alterados por esta edição.
+            </p>
+
+            @if (errorMessageEdicaoEmpenho) {
+            <div class="alert alert-danger mt-3 mb-0" role="alert">{{ errorMessageEdicaoEmpenho }}</div>
+            }
+          </div>
+
+          <div class="modal-footer d-flex justify-content-end gap-2">
+            <button type="button" class="sige-button sige-button--secondary" [disabled]="isSavingEdicaoEmpenho"
+              (click)="tentarFecharEdicaoEmpenho()">Cancelar</button>
+            <button type="submit" class="sige-button sige-button--primary"
+              [disabled]="isSavingEdicaoEmpenho || !empenhoEdicaoValida || !empenhoEdicaoAlterada">
+              @if (isSavingEdicaoEmpenho) {
+              Salvando...
+              } @else {
+              Salvar alterações
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <!-- Modal -->

@@ -37,6 +37,7 @@ services:
       DJANGO_SUPERUSER_PASSWORD: admin
       DEBUG: "True"
       DJANGO_SECRET_KEY: chave_super_secreta_aqui
+      SIGE_SEED_MODE: "${SIGE_SEED_MODE:-if_empty}"
     depends_on:
       - db
     command: python manage.py runserver 0.0.0.0:8000

@@ -18,6 +18,25 @@ class EmpenhoInsertSerializer(serializers.ModelSerializer):
         model = Empenho
         fields = '__all__'
 
+
+class EmpenhoUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Empenho
+        fields = ['codigo']
+
+    def to_internal_value(self, data):
+        campos_permitidos = {'codigo'}
+        campos_invalidos = sorted(set(data.keys()) - campos_permitidos)
+        if campos_invalidos:
+            raise serializers.ValidationError({
+                campo: 'Este campo não pode ser alterado nesta edição.'
+                for campo in campos_invalidos
+            })
+        return super().to_internal_value(data)
+
+    def validate_codigo(self, value):
+        return value.strip().upper()
+
 class ItemEmpenhoInsertSerializer(serializers.ModelSerializer):
     class Meta:
         model = ItemEmpenho

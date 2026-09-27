@@ -40,6 +40,12 @@ export class VisualizarEmpenho {
   errorMessageItens: string = '';
   isLoadingOperacoes: boolean = false;
   errorMessageOperacoes: string = '';
+  empenhoEdicao = {
+    codigo: ''
+  };
+  formSubmittedEdicaoEmpenho: boolean = false;
+  isSavingEdicaoEmpenho: boolean = false;
+  errorMessageEdicaoEmpenho: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
   constructor(
     private router: Router,
@@ -213,6 +219,7 @@ export class VisualizarEmpenho {
   @ViewChild('arquivoSolicitacaoInput') arquivoSolicitacaoInput!: ElementRef<HTMLInputElement>;
   @ViewChild('fecharModalInternoBtn') fecharModalInternoBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('fecharOperacaoInternoBtn') fecharOperacaoInternoBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('fecharEdicaoEmpenhoBtn') fecharEdicaoEmpenhoBtn!: ElementRef<HTMLButtonElement>;
 
   enviarPara(rota: string, id?: number) {
     if (id) {
@@ -231,6 +238,91 @@ export class VisualizarEmpenho {
     this.router.navigate(['/visualizar-entregas'], {
       queryParams: { empenho_id: this.empenho.id }
     });
+  }
+
+  get codigoEmpenhoEdicaoValido(): boolean {
+    return Boolean(this.empenhoEdicao.codigo?.trim());
+  }
+
+  get empenhoEdicaoValida(): boolean {
+    return this.codigoEmpenhoEdicaoValido;
+  }
+
+  get empenhoEdicaoAlterada(): boolean {
+    const codigoAtual = String(this.empenho?.codigo || '').trim().toUpperCase();
+    const codigoEdicao = String(this.empenhoEdicao.codigo || '').trim().toUpperCase();
+    return codigoEdicao !== codigoAtual;
+  }
+
+  abrirEdicaoEmpenho(): void {
+    this.empenhoEdicao = {
+      codigo: this.empenho?.codigo || ''
+    };
+    this.formSubmittedEdicaoEmpenho = false;
+    this.isSavingEdicaoEmpenho = false;
+    this.errorMessageEdicaoEmpenho = '';
+  }
+
+  salvarEdicaoEmpenho(): void {
+    this.formSubmittedEdicaoEmpenho = true;
+
+    if (
+      this.isSavingEdicaoEmpenho ||
+      !this.empenhoEdicaoValida ||
+      !this.empenhoEdicaoAlterada ||
+      !this.empenho.id
+    ) {
+      return;
+    }
+
+    const codigo = this.empenhoEdicao.codigo.trim().toUpperCase();
+    this.isSavingEdicaoEmpenho = true;
+    this.errorMessageEdicaoEmpenho = '';
+
+    this.empenhoService.patch(this.empenho.id, { codigo }).subscribe({
+      next: (resposta: Empenho) => {
+        this.empenho = {
+          ...this.empenho,
+          ...resposta
+        };
+        this.isSavingEdicaoEmpenho = false;
+        this.fecharEdicaoEmpenho();
+        this.feedback.sucesso('Empenho atualizado com sucesso.');
+      },
+      error: (erro) => {
+        this.isSavingEdicaoEmpenho = false;
+        this.errorMessageEdicaoEmpenho = erro?.error?.codigo
+          ? 'Já existe um empenho cadastrado com este código.'
+          : 'Não foi possível salvar as alterações do empenho.';
+      }
+    });
+  }
+
+  tentarFecharEdicaoEmpenho(): void {
+    if (this.isSavingEdicaoEmpenho) {
+      return;
+    }
+
+    if (!this.empenhoEdicaoAlterada) {
+      this.fecharEdicaoEmpenho();
+      return;
+    }
+
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'As alterações feitas no empenho serão perdidas.',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((confirmado) => {
+      if (confirmado) {
+        this.fecharEdicaoEmpenho();
+      }
+    });
+  }
+
+  private fecharEdicaoEmpenho(): void {
+    this.fecharEdicaoEmpenhoBtn?.nativeElement.click();
   }
 
   prepararOperacao(tipoOperacao: 'reforco' | 'anulacao'): void {

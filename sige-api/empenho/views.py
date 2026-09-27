@@ -5,7 +5,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from empenho.models import Empenho, ItemEmpenho,  OperacaoItem
-from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer
+from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, EmpenhoUpdateSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer
 from empenho.services import registrar_operacao_item
 from licitacao.views import BaseFiltroMixin
 from utils.audit import AuditoriaRBACMixin
@@ -43,10 +43,10 @@ class EmpenhoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
         })
     
     def get_serializer_class(self):
-        
-        if self.action in ['create', 'update']:
+        if self.action == 'create':
             return EmpenhoInsertSerializer
-        
+        if self.action in ['update', 'partial_update']:
+            return EmpenhoUpdateSerializer
         return EmpenhoSerializer
    
     ordering_fields = ['valor_total', 'saldo_utilizado', 'codigo']

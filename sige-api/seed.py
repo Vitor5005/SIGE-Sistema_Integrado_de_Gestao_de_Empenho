@@ -1,726 +1,560 @@
 import os
 import random
-from datetime import datetime, timedelta
+import sys
+from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
-from django.db import connection
-from django.utils import timezone
-import random
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sige_api.settings')
+
 import django
+
 django.setup()
 
+from django.db import transaction
+from django.utils import timezone
+
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
-from licitacao.models import Licitacao, Ata, ItemAta
+from entrega.models import ItemOrdem, OrdemEntrega, PendenciaFornecedor
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
-from entrega.models import OrdemEntrega, ItemOrdem
-from estoque.models import (
-    Estoque,
-    Inventario,
-    ItemInventario,
-    MovimentacaoEstoque,
-)
+from empenho.services import registrar_operacao_item
+from estoque.models import Estoque, Inventario, ItemInventario, MovimentacaoEstoque
+from estoque.services import registrar_recebimento
+from licitacao.models import Ata, ItemAta, Licitacao
 from usuario.models import Usuario
 from utils.rbac import Papel
-def create_usuarios(num=10):
-    print(f"Creating {num} usuarios...")
-    usuarios = []
-    # --- INÍCIO DA MODIFICAÇÃO ---
 
-    # 1. Criar o usuário admin padrão
-    print("Creating admin user...")
-    admin_user, created = Usuario.objects.get_or_create(
-        username='admin',
-        defaults={
-            'first_name': 'Administrador',
-            'last_name': 'do Sistema',
-            'email': 'admin@example.com',
-            'papel': Papel.DIRETOR,
-            'is_staff': True,
-            'is_superuser': True
-        }
-    )
 
-    if created:
-        admin_user.set_password('admin')
-        admin_user.save()
-    else:
-        # Garante que o administrador padrão continue apto a acessar o sistema.
-        admin_user.papel = Papel.DIRETOR
-        admin_user.is_staff = True
-        admin_user.is_superuser = True
-        admin_user.is_active = True
-        admin_user.save(update_fields=['papel', 'is_staff', 'is_superuser', 'is_active'])
-    
-    usuarios.append(admin_user)
-
-    # 2. Criar outros usuários aleatórios (se necessário)
-    for i in range(num - 1): # num - 1 para compensar o admin já criado
-        username = f"user{i}"
-        papel = Papel.NUTRICIONISTA if i == 1 else Papel.TECNICO_ADMINISTRATIVO
-        usuario, created = Usuario.objects.get_or_create(
-            username=username,
-            defaults={
-                'first_name': f"Nome {i}",
-                'last_name': f"Sobrenome {i}",
-                'email': f"user{i}@example.com",
-                'papel': papel,
-            },
-        )
-        usuario.papel = papel
-        usuario.is_active = True
-        if created:
-            usuario.set_password("password123")
-        usuario.save()
-        usuarios.append(usuario)
-    
-    # --- FIM DA MODIFICAÇÃO ---
-    
-    return usuarios
-MAX_VALOR_MONETARIO = Decimal("1000000.00")
+SEED_RANDOM = 20260927
+ANO_REFERENCIA = timezone.localdate().year
+MAX_VALOR_MONETARIO = Decimal('1000000.00')
 QTD_LICITADA_MIN = 20
 QTD_LICITADA_MAX = 120
 PCT_EMPENHO_MIN = 5
 PCT_EMPENHO_MAX = 30
-PCT_ENTREGA_CONCLUIDA_MIN = 85
-PCT_ENTREGA_CONCLUIDA_MAX = 100
-PCT_ENTREGA_ESPERA_MIN = 0
-PCT_ENTREGA_ESPERA_MAX = 60
-TIPOS_LICITACAO = ["PE", "TP", "CC", "DL", "IN"]
+TIPOS_LICITACAO = ['PE', 'TP', 'CC', 'DL', 'IN']
+UNIDADES_DECIMAIS = {'KG', 'L', 'G', 'mL'}
 
-# Unidades que permitem valores decimais (KG, L)
-# Outras unidades: duzia, cento, un, etc devem ser inteiras
-UNIDADES_DECIMAIS = {"KG", "L", "G", "mL"}
+
+NOMES_FORNECEDORES = [
+    {'razao': 'ALIMENTOS NATURAIS LTDA', 'fantasia': 'Alimentos Naturais'},
+    {'razao': 'DISTRIBUIDORA DE ALIMENTOS JB', 'fantasia': 'Dist. JB'},
+    {'razao': 'FORNECEDORA DE CARNES PREMIUM', 'fantasia': 'Carnes Premium'},
+    {'razao': 'FRUTAS E VERDURAS DO ACRE', 'fantasia': 'Frutas & Verduras'},
+    {'razao': 'LATICÍNIOS DO BRASIL LTDA', 'fantasia': 'Laticínios Brasil'},
+    {'razao': 'PRODUTOS SECOS E MERCEARIA', 'fantasia': 'Mercearia Central'},
+    {'razao': 'DISTRIBUIDORA DE CONGELADOS', 'fantasia': 'Congelados Ltda'},
+    {'razao': 'FORNECEDORA DE BEBIDAS SA', 'fantasia': 'Bebidas Select'},
+]
+
+ENDERECOS = [
+    {'logradouro': 'Rua do Comércio', 'numero': '123', 'bairro': 'Centro', 'municipio': 'Rio Branco', 'estado': 'AC', 'cep': '69900000'},
+    {'logradouro': 'Avenida Getúlio Vargas', 'numero': '456', 'bairro': 'Bosque', 'municipio': 'Rio Branco', 'estado': 'AC', 'cep': '69900100'},
+    {'logradouro': 'Rua 6 de Agosto', 'numero': '789', 'bairro': 'Centro', 'municipio': 'Rio Branco', 'estado': 'AC', 'cep': '69900200'},
+    {'logradouro': 'Avenida Brasil', 'numero': '321', 'bairro': 'Distrito Industrial', 'municipio': 'Rio Branco', 'estado': 'AC', 'cep': '69920000'},
+    {'logradouro': 'Rua Rui Barbosa', 'numero': '654', 'bairro': 'Taquari', 'municipio': 'Rio Branco', 'estado': 'AC', 'cep': '69903000'},
+]
+
+ITENS_ALIMENTOS = [
+    {'catmat': '100001', 'descricao': 'Arroz Integral', 'categoria': 'SM', 'unidade': 'KG', 'conteudo_embalagem': Decimal('5.00'), 'unidade_embalagem': 'kg'},
+    {'catmat': '100002', 'descricao': 'Feijão Carioca', 'categoria': 'SM', 'unidade': 'KG', 'conteudo_embalagem': Decimal('1.00'), 'unidade_embalagem': 'kg'},
+    {'catmat': '100003', 'descricao': 'Macarrão Integral', 'categoria': 'SM', 'unidade': 'G', 'conteudo_embalagem': Decimal('500.00'), 'unidade_embalagem': 'g'},
+    {'catmat': '100004', 'descricao': 'Açúcar Cristal', 'categoria': 'SM', 'unidade': 'KG', 'conteudo_embalagem': Decimal('1.00'), 'unidade_embalagem': 'kg'},
+    {'catmat': '100005', 'descricao': 'Sal Refinado', 'categoria': 'SM', 'unidade': 'KG', 'conteudo_embalagem': Decimal('1.00'), 'unidade_embalagem': 'kg'},
+    {'catmat': '200001', 'descricao': 'Leite Integral', 'categoria': 'Lac', 'unidade': 'L', 'conteudo_embalagem': Decimal('1.00'), 'unidade_embalagem': 'L'},
+    {'catmat': '200002', 'descricao': 'Queijo Meia Cura', 'categoria': 'Lac', 'unidade': 'G', 'conteudo_embalagem': Decimal('500.00'), 'unidade_embalagem': 'g'},
+    {'catmat': '200003', 'descricao': 'Iogurte Natural', 'categoria': 'Lac', 'unidade': 'mL', 'conteudo_embalagem': Decimal('170.00'), 'unidade_embalagem': 'ml'},
+    {'catmat': '200004', 'descricao': 'Manteiga', 'categoria': 'Lac', 'unidade': 'G', 'conteudo_embalagem': Decimal('200.00'), 'unidade_embalagem': 'g'},
+    {'catmat': '300001', 'descricao': 'Óleo de Soja', 'categoria': 'Oli', 'unidade': 'mL', 'conteudo_embalagem': Decimal('900.00'), 'unidade_embalagem': 'ml'},
+    {'catmat': '300002', 'descricao': 'Azeite Extra Virgem', 'categoria': 'Oli', 'unidade': 'mL', 'conteudo_embalagem': Decimal('500.00'), 'unidade_embalagem': 'ml'},
+    {'catmat': '300003', 'descricao': 'Vinagre Branco', 'categoria': 'Oli', 'unidade': 'mL', 'conteudo_embalagem': Decimal('750.00'), 'unidade_embalagem': 'ml'},
+    {'catmat': '400001', 'descricao': 'Banana Prata', 'categoria': 'Fr', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None},
+    {'catmat': '400002', 'descricao': 'Maçã Gala', 'categoria': 'Fr', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None},
+    {'catmat': '400003', 'descricao': 'Laranja Pera', 'categoria': 'Fr', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None},
+    {'catmat': '500001', 'descricao': 'Alface Crespa', 'categoria': 'Le', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None},
+    {'catmat': '500002', 'descricao': 'Tomate', 'categoria': 'Le', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None},
+    {'catmat': '500003', 'descricao': 'Cebola', 'categoria': 'Le', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None},
+    {'catmat': '500004', 'descricao': 'Batata Doce', 'categoria': 'Le', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None},
+    {'catmat': '600001', 'descricao': 'Frango Congelado', 'categoria': 'Pr', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None},
+    {'catmat': '600002', 'descricao': 'Carne Bovina', 'categoria': 'Pr', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None},
+    {'catmat': '600003', 'descricao': 'Ovos Caipira', 'categoria': 'Pr', 'unidade': 'duzia', 'conteudo_embalagem': None, 'unidade_embalagem': None},
+]
+
+FAIXAS_PRECO_UNITARIO = {
+    '100001': (Decimal('5.50'), Decimal('9.50')),
+    '100002': (Decimal('6.50'), Decimal('11.50')),
+    '100003': (Decimal('0.02'), Decimal('0.08')),
+    '100004': (Decimal('3.80'), Decimal('6.50')),
+    '100005': (Decimal('1.80'), Decimal('4.20')),
+    '200001': (Decimal('3.80'), Decimal('6.90')),
+    '200002': (Decimal('0.05'), Decimal('0.16')),
+    '200003': (Decimal('0.01'), Decimal('0.04')),
+    '200004': (Decimal('0.03'), Decimal('0.12')),
+    '300001': (Decimal('0.01'), Decimal('0.03')),
+    '300002': (Decimal('0.02'), Decimal('0.08')),
+    '300003': (Decimal('0.01'), Decimal('0.03')),
+    '400001': (Decimal('3.20'), Decimal('7.50')),
+    '400002': (Decimal('4.90'), Decimal('10.90')),
+    '400003': (Decimal('2.80'), Decimal('6.90')),
+    '500001': (Decimal('2.50'), Decimal('5.80')),
+    '500002': (Decimal('4.00'), Decimal('8.90')),
+    '500003': (Decimal('2.90'), Decimal('6.20')),
+    '500004': (Decimal('2.20'), Decimal('5.10')),
+    '600001': (Decimal('9.50'), Decimal('16.90')),
+    '600002': (Decimal('24.90'), Decimal('44.90')),
+    '600003': (Decimal('10.00'), Decimal('22.00')),
+}
+
+
+def validar_catalogo_seed():
+    unidades_validas = {valor for valor, _ in ItemGenerico.unidades_de_medida}
+    categorias_validas = {valor for valor, _ in ItemGenerico.categorias_de_alimento}
+    embalagens_validas = {valor for valor, _ in ItemGenerico.unidades_embalagem}
+
+    for item in ITENS_ALIMENTOS:
+        catmat = item.get('catmat')
+        descricao = item.get('descricao')
+        unidade = item.get('unidade')
+        categoria = item.get('categoria')
+        conteudo_embalagem = item.get('conteudo_embalagem')
+        unidade_embalagem = item.get('unidade_embalagem')
+
+        if not catmat:
+            raise RuntimeError('CATMAT ausente no catálogo da seed.')
+        if not descricao:
+            raise RuntimeError(f'CATMAT {catmat}: descrição ausente.')
+        if unidade not in unidades_validas:
+            raise RuntimeError(f'CATMAT {catmat}: unidade inválida: {unidade!r}.')
+        if categoria not in categorias_validas:
+            raise RuntimeError(f'CATMAT {catmat}: categoria inválida: {categoria!r}.')
+
+        if conteudo_embalagem is None and unidade_embalagem is None:
+            continue
+        if conteudo_embalagem is None or unidade_embalagem is None:
+            raise RuntimeError(
+                f'CATMAT {catmat}: conteúdo e unidade de embalagem devem ser informados juntos.'
+            )
+        if conteudo_embalagem <= 0:
+            raise RuntimeError(f'CATMAT {catmat}: conteúdo de embalagem inválido: {conteudo_embalagem!r}.')
+        if unidade_embalagem not in embalagens_validas:
+            raise RuntimeError(
+                f'CATMAT {catmat}: unidade de embalagem inválida: {unidade_embalagem!r}.'
+            )
 
 
 def formatar_codigo_licitacao(tipo: str, numero: int, ano: int) -> str:
-    return f"{tipo} {numero:03d}/{ano}"
+    return f'{tipo} {numero:03d}/{ano}'
 
 
 def formatar_codigo_ata(numero: int, ano: int) -> str:
-    return f"ARP {numero:03d}/{ano}"
+    return f'ARP {numero:03d}/{ano}'
 
 
 def formatar_codigo_empenho(numero: int, ano: int) -> str:
-    return f"{ano}NE{numero:06d}"
-
-
-def garantir_coluna_quantidade_entrege():
-    """
-    Garante a existência da coluna quantidade_entrege em empenho_itemempenho.
-    Útil em ambientes onde o banco já existe, mas a migração ainda não foi aplicada.
-    """
-    tabela = "empenho_itemempenho"
-    coluna = "quantidade_entrege"
-
-    existe = False
-    with connection.cursor() as cursor:
-        if connection.vendor == "mysql":
-            cursor.execute(
-                """
-                SELECT COUNT(*)
-                FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = %s
-                  AND COLUMN_NAME = %s
-                """,
-                [tabela, coluna],
-            )
-            existe = cursor.fetchone()[0] > 0
-        elif connection.vendor == "sqlite":
-            cursor.execute(f"PRAGMA table_info({tabela})")
-            colunas = [linha[1] for linha in cursor.fetchall()]
-            existe = coluna in colunas
-
-        if not existe:
-            cursor.execute(
-                f"ALTER TABLE {tabela} ADD COLUMN {coluna} DECIMAL(10,2) NOT NULL DEFAULT 0.00"
-            )
-            print(f"✓ Coluna '{coluna}' adicionada automaticamente em '{tabela}'")
+    return f'{ano}NE{numero:06d}'
 
 
 def limitar_valor_monetario(valor: Decimal) -> Decimal:
-    return min(valor.quantize(Decimal("0.01")), MAX_VALOR_MONETARIO)
+    return min(valor.quantize(Decimal('0.01')), MAX_VALOR_MONETARIO)
 
 
 def arredondar_quantidade_por_unidade(valor: Decimal, unidade: str, permitir_zero: bool = True) -> Decimal:
-    """
-    Arredonda quantidade baseado na unidade de medida:
-    - KG, L, G, mL: permite 2 casas decimais
-    - Outras (duzia, cento, un): apenas inteiros
-    """
     if unidade in UNIDADES_DECIMAIS:
-        quantidade = valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        if not permitir_zero and quantidade == Decimal("0.00") and valor > Decimal("0"):
-            return Decimal("0.01")
+        quantidade = valor.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        if not permitir_zero and quantidade == Decimal('0.00') and valor > Decimal('0'):
+            return Decimal('0.01')
         return quantidade
-
     quantidade = valor.to_integral_value(rounding=ROUND_HALF_UP)
-    if not permitir_zero and quantidade == Decimal("0") and valor > Decimal("0"):
-        return Decimal("1")
+    if not permitir_zero and quantidade == Decimal('0') and valor > Decimal('0'):
+        return Decimal('1')
     return quantidade
 
 
 def gerar_quantidade_licitada_por_unidade(unidade: str) -> Decimal:
-    """
-    Gera quantidade licitada baseada na unidade:
-    - KG, L, G, mL: valores decimais (ex: 25.50 KG)
-    - Outras (duzia, cento, un): apenas inteiros (ex: 30 dúzias)
-    """
     if unidade in UNIDADES_DECIMAIS:
         return Decimal(random.randint(QTD_LICITADA_MIN * 100, QTD_LICITADA_MAX * 100)) / Decimal(100)
     return Decimal(random.randint(QTD_LICITADA_MIN, QTD_LICITADA_MAX))
 
-# Dados realistas para o contexto de um restaurante universitário
-NOMES_FORNECEDORES = [
-    {"razao": "ALIMENTOS NATURAIS LTDA", "fantasia": "Alimentos Naturais"},
-    {"razao": "DISTRIBUIDORA DE ALIMENTOS JB", "fantasia": "Dist. JB"},
-    {"razao": "FORNECEDORA DE CARNES PREMIUM", "fantasia": "Carnes Premium"},
-    {"razao": "FRUTAS E VERDURAS DO ACRE", "fantasia": "Frutas & Verduras"},
-    {"razao": "LATICÍNIOS DO BRASIL LTDA", "fantasia": "Laticínios Brasil"},
-    {"razao": "PRODUTOS SECOS E MERCEARIA", "fantasia": "Mercearia Central"},
-    {"razao": "DISTRIBUIDORA DE CONGELADOS", "fantasia": "Congelados Ltda"},
-    {"razao": "FORNECEDORA DE BEBIDAS SA", "fantasia": "Bebidas Select"},
-]
-
-ENDERECOS = [
-    {"logradouro": "Rua do Comércio", "numero": "123", "bairro": "Centro", "municipio": "Rio Branco", "estado": "AC", "cep": "69900000"},
-    {"logradouro": "Avenida Getúlio Vargas", "numero": "456", "bairro": "Bosque", "municipio": "Rio Branco", "estado": "AC", "cep": "69900100"},
-    {"logradouro": "Rua 6 de Agosto", "numero": "789", "bairro": "Centro", "municipio": "Rio Branco", "estado": "AC", "cep": "69900200"},
-    {"logradouro": "Avenida Brasil", "numero": "321", "bairro": "Distrito Industrial", "municipio": "Rio Branco", "estado": "AC", "cep": "69920000"},
-    {"logradouro": "Rua Rui Barbosa", "numero": "654", "bairro": "Taquari", "municipio": "Rio Branco", "estado": "AC", "cep": "69903000"},
-]
-
-ITENS_ALIMENTOS = [
-    # Secos / Mercearia (SM)
-    {"catmat": "100001", "descricao": "Arroz Integral", "categoria": "SM", "unidade": "KG"},
-    {"catmat": "100002", "descricao": "Feijão Carioca", "categoria": "SM", "unidade": "KG"},
-    {"catmat": "100003", "descricao": "Macarrão Integral", "categoria": "SM", "unidade": "G"},
-    {"catmat": "100004", "descricao": "Açúcar Cristal", "categoria": "SM", "unidade": "KG"},
-    {"catmat": "100005", "descricao": "Sal Refinado", "categoria": "SM", "unidade": "KG"},
-    # Lácteos (Lac)
-    {"catmat": "200001", "descricao": "Leite Integral", "categoria": "Lac", "unidade": "L"},
-    {"catmat": "200002", "descricao": "Queijo Meia Cura", "categoria": "Lac", "unidade": "G"},
-    {"catmat": "200003", "descricao": "Iogurte Natural", "categoria": "Lac", "unidade": "mL"},
-    {"catmat": "200004", "descricao": "Manteiga", "categoria": "Lac", "unidade": "G"},
-    # Óleos e Azeites (Oli)
-    {"catmat": "300001", "descricao": "Óleo de Soja", "categoria": "Oli", "unidade": "mL"},
-    {"catmat": "300002", "descricao": "Azeite Extra Virgem", "categoria": "Oli", "unidade": "mL"},
-    {"catmat": "300003", "descricao": "Vinagre Branco", "categoria": "Oli", "unidade": "mL"},
-    # Frutas (Fr)
-    {"catmat": "400001", "descricao": "Banana Prata", "categoria": "Fr", "unidade": "KG"},
-    {"catmat": "400002", "descricao": "Maçã Gala", "categoria": "Fr", "unidade": "KG"},
-    {"catmat": "400003", "descricao": "Laranja Pera", "categoria": "Fr", "unidade": "KG"},
-    # Legumes (Le)
-    {"catmat": "500001", "descricao": "Alface Crespa", "categoria": "Le", "unidade": "KG"},
-    {"catmat": "500002", "descricao": "Tomate", "categoria": "Le", "unidade": "KG"},
-    {"catmat": "500003", "descricao": "Cebola", "categoria": "Le", "unidade": "KG"},
-    {"catmat": "500004", "descricao": "Batata Doce", "categoria": "Le", "unidade": "KG"},
-    # Proteínas (Pr)
-    {"catmat": "600001", "descricao": "Frango Congelado", "categoria": "Pr", "unidade": "KG"},
-    {"catmat": "600002", "descricao": "Carne Bovina", "categoria": "Pr", "unidade": "KG"},
-    {"catmat": "600003", "descricao": "Ovos Caipira", "categoria": "Pr", "unidade": "duzia"},
-]
-
-# Faixas de preço unitário (R$) por item para gerar valores coerentes
-# Formato: catmat -> (preço_mínimo, preço_máximo)
-FAIXAS_PRECO_UNITARIO = {
-    "100001": (Decimal("5.50"), Decimal("9.50")),    # Arroz Integral
-    "100002": (Decimal("6.50"), Decimal("11.50")),   # Feijão Carioca
-    "100003": (Decimal("0.02"), Decimal("0.08")),    # Macarrão Integral (G)
-    "100004": (Decimal("3.80"), Decimal("6.50")),    # Açúcar Cristal
-    "100005": (Decimal("1.80"), Decimal("4.20")),    # Sal Refinado
-    "200001": (Decimal("3.80"), Decimal("6.90")),    # Leite Integral
-    "200002": (Decimal("0.05"), Decimal("0.16")),    # Queijo Meia Cura (G)
-    "200003": (Decimal("0.01"), Decimal("0.04")),    # Iogurte Natural (mL)
-    "200004": (Decimal("0.03"), Decimal("0.12")),    # Manteiga (G)
-    "300001": (Decimal("0.01"), Decimal("0.03")),    # Óleo de Soja (mL)
-    "300002": (Decimal("0.02"), Decimal("0.08")),    # Azeite Extra Virgem (mL)
-    "300003": (Decimal("0.01"), Decimal("0.03")),    # Vinagre Branco (mL)
-    "400001": (Decimal("3.20"), Decimal("7.50")),    # Banana Prata
-    "400002": (Decimal("4.90"), Decimal("10.90")),   # Maçã Gala
-    "400003": (Decimal("2.80"), Decimal("6.90")),    # Laranja Pera
-    "500001": (Decimal("2.50"), Decimal("5.80")),    # Alface Crespa
-    "500002": (Decimal("4.00"), Decimal("8.90")),    # Tomate
-    "500003": (Decimal("2.90"), Decimal("6.20")),    # Cebola
-    "500004": (Decimal("2.20"), Decimal("5.10")),    # Batata Doce
-    "600001": (Decimal("9.50"), Decimal("16.90")),   # Frango Congelado
-    "600002": (Decimal("24.90"), Decimal("44.90")),  # Carne Bovina
-    "600003": (Decimal("10.00"), Decimal("22.00")),  # Ovos Caipira (dúzia)
-}
-
 
 def gerar_valor_unitario_item(catmat: str) -> Decimal:
-    faixa = FAIXAS_PRECO_UNITARIO.get(catmat)
-    if not faixa:
-        return Decimal(random.randint(10, 100)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-
-    minimo, maximo = faixa
+    minimo, maximo = FAIXAS_PRECO_UNITARIO[catmat]
     minimo_centavos = int((minimo * 100).to_integral_value(rounding=ROUND_HALF_UP))
     maximo_centavos = int((maximo * 100).to_integral_value(rounding=ROUND_HALF_UP))
+    return (Decimal(random.randint(minimo_centavos, maximo_centavos)) / Decimal(100)).quantize(
+        Decimal('0.01'), rounding=ROUND_HALF_UP
+    )
 
-    if maximo_centavos < minimo_centavos:
-        minimo_centavos, maximo_centavos = maximo_centavos, minimo_centavos
 
-    valor_centavos = random.randint(minimo_centavos, maximo_centavos)
-    return (Decimal(valor_centavos) / Decimal(100)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+def create_usuarios():
+    """Garante os quatro perfis ativos usados pela demonstração."""
+    perfis = (
+        ('admin', Papel.DIRETOR, 'Administrador', 'do Sistema', 'admin@example.com', 'admin'),
+        ('user0', Papel.TECNICO_ADMINISTRATIVO, 'Técnico', 'Administrativo', 'user0@example.com', 'password123'),
+        ('user1', Papel.NUTRICIONISTA, 'Nutricionista', 'SIGE', 'user1@example.com', 'password123'),
+        ('user2', Papel.ESTOQUISTA, 'Estoquista', 'SIGE', 'user2@example.com', 'password123'),
+    )
+    usuarios = {}
+    for username, papel, first_name, last_name, email, senha in perfis:
+        usuario, _ = Usuario.objects.get_or_create(
+            username=username,
+            defaults={
+                'first_name': first_name,
+                'last_name': last_name,
+                'email': email,
+                'papel': papel,
+                'is_staff': username == 'admin',
+                'is_superuser': username == 'admin',
+                'is_active': True,
+            },
+        )
+        usuario.first_name = first_name
+        usuario.last_name = last_name
+        usuario.email = email
+        usuario.papel = papel
+        usuario.is_active = True
+        if username == 'admin':
+            usuario.is_staff = True
+            usuario.is_superuser = True
+        usuario.set_password(senha)
+        usuario.save()
+        usuarios[papel] = usuario
+    return usuarios
+
 
 def seed_enderecos():
-    """Cria endereços com dados realistas"""
-    enderecos = []
-    for endereco_data in ENDERECOS:
-        cep = ''.join(char for char in endereco_data["cep"] if char.isdigit())[:8]
-        endereco = Endereco.objects.create(
-            lagradouro=endereco_data["logradouro"],
-            numero=endereco_data["numero"],
-            bairro=endereco_data["bairro"],
-            cep=cep,
-            municipio=endereco_data["municipio"],
-            estado=endereco_data["estado"]
+    return [
+        Endereco.objects.create(
+            lagradouro=dados['logradouro'],
+            numero=dados['numero'],
+            bairro=dados['bairro'],
+            cep=''.join(caractere for caractere in dados['cep'] if caractere.isdigit())[:8],
+            municipio=dados['municipio'],
+            estado=dados['estado'],
         )
-        enderecos.append(endereco)
-    return enderecos
+        for dados in ENDERECOS
+    ]
 
-def seed_fornecedores(enderecos=None):
-    """Cria fornecedores com dados realistas"""
+
+def seed_fornecedores(enderecos):
     fornecedores = []
-    for i, fornecedor_data in enumerate(NOMES_FORNECEDORES):
-        fornecedor = Fornecedor.objects.create(
-            razao_social=fornecedor_data["razao"],
-            nome_fantasia=fornecedor_data["fantasia"],
-            cnpj=f"{random.randint(10,99)}.{random.randint(100,999)}.{random.randint(100,999)}/0001-{random.randint(10,99)}",
-            telefone=f"({random.randint(61,99)}) {random.randint(98000,99999)}-{random.randint(1000,9999)}",
-            email=f"contato{i}@{fornecedor_data['fantasia'].lower().replace(' ', '')}.com.br",
-            endereco=random.choice(enderecos)
+    for indice, dados in enumerate(NOMES_FORNECEDORES):
+        fornecedores.append(
+            Fornecedor.objects.create(
+                razao_social=dados['razao'],
+                nome_fantasia=dados['fantasia'],
+                cnpj=(
+                    f'{random.randint(10, 99)}.{random.randint(100, 999)}.'
+                    f'{random.randint(100, 999)}/0001-{random.randint(10, 99)}'
+                ),
+                telefone=f'({random.randint(61, 99)}) {random.randint(98000, 99999)}-{random.randint(1000, 9999)}',
+                email=f"contato{indice}@{dados['fantasia'].lower().replace(' ', '')}.com.br",
+                endereco=enderecos[indice % len(enderecos)],
+            )
         )
-        fornecedores.append(fornecedor)
     return fornecedores
 
+
 def seed_itens_genericos():
-    """Cria itens genéricos com dados realistas"""
     itens = []
-    for item_data in ITENS_ALIMENTOS:
-        item = ItemGenerico.objects.create(
-            catmat=item_data["catmat"],
-            descricao=item_data["descricao"],
-            unidade_medida=item_data["unidade"],
-            categoria=item_data["categoria"]
+    for dados in ITENS_ALIMENTOS:
+        itens.append(
+            ItemGenerico.objects.create(
+                catmat=dados['catmat'],
+                descricao=dados['descricao'],
+                unidade_medida=dados['unidade'],
+                categoria=dados['categoria'],
+                conteudo_embalagem=dados['conteudo_embalagem'],
+                unidade_embalagem=dados['unidade_embalagem'],
+            )
         )
-        itens.append(item)
     return itens
 
 
 def seed_licitacoes(n=3):
-    """Cria licitações com datas realistas"""
+    hoje = timezone.localdate()
     licitacoes = []
-    for i in range(n):
-        data_abertura = datetime.now().date() - timedelta(days=random.randint(30, 180))
-        tipo = random.choice(TIPOS_LICITACAO)
-        licitacao = Licitacao.objects.create(
-            numero_licitacao=formatar_codigo_licitacao(tipo=tipo, numero=i + 1, ano=data_abertura.year),
-            validade=random.randint(12, 24),  # Entre 12 e 24 meses
-            data_abertura=data_abertura,
-            descricao=f"Licicitação para aquisição de produtos alimentícios lote {i+1}"
+    for indice in range(n):
+        data_abertura = hoje - timedelta(days=random.randint(30, 180))
+        licitacoes.append(
+            Licitacao.objects.create(
+                numero_licitacao=formatar_codigo_licitacao(
+                    tipo=random.choice(TIPOS_LICITACAO),
+                    numero=indice + 1,
+                    ano=data_abertura.year,
+                ),
+                validade=random.randint(12, 24),
+                data_abertura=data_abertura,
+                descricao=f'Licitação válida para aquisição de produtos alimentícios — lote {indice + 1}',
+                atual=False,
+            )
         )
-        licitacoes.append(licitacao)
     return licitacoes
+
 
 def seed_licitacoes_expiradas(n=3):
-    """Cria licitações antigas com validade já expirada"""
+    hoje = timezone.localdate()
     licitacoes = []
-    for i in range(n):
-        # Data de abertura entre 18-30 meses atrás (bem antiga)
-        dias_atras = random.randint(540, 900)  # ~18-30 meses
-        data_abertura = datetime.now().date() - timedelta(days=dias_atras)
-        tipo = random.choice(TIPOS_LICITACAO)
-        
-        # Validade entre 3-8 meses (já expirou)
-        validade = random.randint(3, 8)
-        
-        licitacao = Licitacao.objects.create(
-            numero_licitacao=formatar_codigo_licitacao(tipo=tipo, numero=(n + i + 1), ano=data_abertura.year),
-            validade=validade,
-            data_abertura=data_abertura,
-            descricao=f"Licitação expirada - aquisição de produtos alimentícios lote {i+1}"
+    for indice in range(n):
+        data_abertura = hoje - timedelta(days=random.randint(540, 900))
+        licitacoes.append(
+            Licitacao.objects.create(
+                numero_licitacao=formatar_codigo_licitacao(
+                    tipo=random.choice(TIPOS_LICITACAO),
+                    numero=n + indice + 1,
+                    ano=data_abertura.year,
+                ),
+                validade=random.randint(3, 8),
+                data_abertura=data_abertura,
+                descricao=f'Licitação expirada para aquisição de produtos alimentícios — lote {indice + 1}',
+                atual=False,
+            )
         )
-        licitacoes.append(licitacao)
     return licitacoes
 
-def seed_atas(licitacoes=None, fornecedores=None):
+
+def seed_atas(licitacoes, fornecedores):
     atas = []
-    contador_ata = 1
+    contador = 1
     for licitacao in licitacoes:
-        fornecedores_sorteados = random.sample(fornecedores, k=min(2, len(fornecedores)))
-        for fornecedor in fornecedores_sorteados:
-            ata = Ata.objects.create(
-                numero_ata=formatar_codigo_ata(numero=contador_ata, ano=licitacao.data_abertura.year),
-                ata_saldo_total=Decimal("0.00"), # Começa zerado
-                licitacao=licitacao,
-                fornecedor=fornecedor
+        for fornecedor in random.sample(fornecedores, k=min(2, len(fornecedores))):
+            atas.append(
+                Ata.objects.create(
+                    numero_ata=formatar_codigo_ata(contador, licitacao.data_abertura.year),
+                    ata_saldo_total=Decimal('0.00'),
+                    licitacao=licitacao,
+                    fornecedor=fornecedor,
+                )
             )
-            atas.append(ata)
-            contador_ata += 1
+            contador += 1
     return atas
 
-def seed_itens_ata(atas=None, itens_genericos=None):
-    """
-    Cria ItemAta respeitando unidades de medida e atualiza Ata.ata_saldo_total
-    CRUCIAL: ata_saldo_total = Σ(quantidade_licitada × valor_unitario) de todos ItemAta
-    """
-    marcas = ["Premium", "Padrão", "Integral", "Orgânico"]
-    itens_ata_criados = []
-    for ata in atas:
-        total_acumulado = Decimal("0.00")
-        num_itens = random.randint(3, 8)
-        itens_sorteados = random.sample(itens_genericos, k=min(num_itens, len(itens_genericos)))
-        
-        for item_generico in itens_sorteados:
-            # CORRETO: usar função que respeita unidades decimais (KG, L) vs inteiras (duzia, cento, un)
-            qtd = gerar_quantidade_licitada_por_unidade(item_generico.unidade_medida)
-            valor_uni = gerar_valor_unitario_item(item_generico.catmat)
-            
+
+def _itens_obrigatorios_para_ata(indice_ata, itens_genericos):
+    grupos = {
+        0: itens_genericos[0:8],
+        1: itens_genericos[8:16],
+        3: itens_genericos[16:],
+    }
+    return grupos.get(indice_ata, [])
+
+
+def seed_itens_ata(atas, itens_genericos):
+    marcas = ['Premium', 'Padrão', 'Integral', 'Orgânico']
+    itens_ata = []
+    for indice_ata, ata in enumerate(atas):
+        obrigatorios = _itens_obrigatorios_para_ata(indice_ata, itens_genericos)
+        quantidade = max(len(obrigatorios), random.randint(3, 8))
+        extras_disponiveis = [item for item in itens_genericos if item not in obrigatorios]
+        selecionados = obrigatorios + random.sample(
+            extras_disponiveis,
+            k=min(quantidade - len(obrigatorios), len(extras_disponiveis)),
+        )
+        total_ata = Decimal('0.00')
+        for item_generico in selecionados:
+            quantidade_licitada = gerar_quantidade_licitada_por_unidade(item_generico.unidade_medida)
+            valor_unitario = gerar_valor_unitario_item(item_generico.catmat)
             item_ata = ItemAta.objects.create(
                 ata=ata,
                 item_generico=item_generico,
                 marca=random.choice(marcas),
-                quantidade_licitada=qtd,
-                valor_unitario=valor_uni
+                quantidade_licitada=quantidade_licitada,
+                valor_unitario=valor_unitario,
             )
-            itens_ata_criados.append(item_ata)
-            # Cascata para cima: ItemAta.valor × qtd → Ata.ata_saldo_total
-            total_acumulado += (qtd * valor_uni)
-        
-        # ATUALIZAÇÃO CRUCIAL: ata_saldo_total = Σ(quantidade_licitada × valor_unitario)
-        ata.ata_saldo_total = limitar_valor_monetario(total_acumulado)
-        ata.save()
-
-    return itens_ata_criados
+            itens_ata.append(item_ata)
+            total_ata += quantidade_licitada * valor_unitario
+        ata.ata_saldo_total = limitar_valor_monetario(total_ata)
+        ata.save(update_fields=['ata_saldo_total'])
+    return itens_ata
 
 
-def seed_empenhos(atas=None):
-    empenhos = []
-    for i, ata in enumerate(atas):
-        empenho = Empenho.objects.create(
-            codigo=formatar_codigo_empenho(numero=i + 1, ano=timezone.now().year),
+def seed_empenhos(atas):
+    return [
+        Empenho.objects.create(
+            codigo=formatar_codigo_empenho(numero=indice + 1, ano=ANO_REFERENCIA),
             ata=ata,
-            valor_total=Decimal("0.00"), # Será calculado pelos itens
-            saldo_utilizado=Decimal("0.00")
+            valor_total=Decimal('0.00'),
+            saldo_utilizado=Decimal('0.00'),
         )
-        empenhos.append(empenho)
-    return empenhos
+        for indice, ata in enumerate(atas)
+    ]
 
-def seed_itens_empenho(empenhos=None, itens_ata=None):
-    """
-    Cria ItemEmpenho respeitando:
-    - quantidade_atual <= quantidade_licitada (do ItemAta)
-    - Empenho.valor_total = Σ(quantidade_atual × valor_unitario)
-    - saldo_utilizado inicializado em 0 (será recalculado pelas entregas reais)
-    """
-    itens_empenho_criados = []
 
+def _quantidade_inicial(item_ata):
+    percentual = Decimal(random.randint(PCT_EMPENHO_MIN, PCT_EMPENHO_MAX)) / Decimal('100')
+    quantidade = arredondar_quantidade_por_unidade(
+        item_ata.quantidade_licitada * percentual,
+        item_ata.item_generico.unidade_medida,
+        permitir_zero=False,
+    )
+    return min(max(quantidade, Decimal('2.00')), item_ata.quantidade_licitada)
+
+
+def seed_itens_empenho(empenhos):
+    itens_empenho = []
     for empenho in empenhos:
-        itens_da_ata = ItemAta.objects.filter(ata=empenho.ata)
-        if not itens_da_ata.exists():
-            continue
-
-        valor_empenhado_total = Decimal("0.00")
-        
-        # Empenhamos alguns itens daquela Ata
-        for item_ata in random.sample(list(itens_da_ata), k=random.randint(1, len(itens_da_ata))):
-            # Percentual do que foi licitado
-            qtd_empenhada_bruta = item_ata.quantidade_licitada * Decimal(random.randint(PCT_EMPENHO_MIN, PCT_EMPENHO_MAX)) / Decimal(100)
-            # Arredondar por unidade
-            qtd_empenhada = arredondar_quantidade_por_unidade(
-                qtd_empenhada_bruta,
-                item_ata.item_generico.unidade_medida,
-                permitir_zero=False
-            )
-            # VALIDAÇÃO: quantidade_atual NUNCA pode ser > quantidade_licitada
-            qtd_empenhada = min(qtd_empenhada, item_ata.quantidade_licitada)
-            
-            item_empenho = ItemEmpenho.objects.create(
-                empenho=empenho,
-                item_ata=item_ata,
-                quantidade_atual=qtd_empenhada,
-                quantidade_entrege=Decimal("0.00")
-            )
-            itens_empenho_criados.append(item_empenho)
-            # Cascata para cima: ItemEmpenho → Empenho.valor_total
-            valor_empenhado_total += (qtd_empenhada * item_ata.valor_unitario)
-            
-        # CRUCIAL: Empenho.valor_total = Σ(quantidade_atual × valor_unitario) de todos ItemEmpenho
-        empenho.valor_total = limitar_valor_monetario(valor_empenhado_total)
-        
-        # saldo_utilizado começa em 0 e será recalculado pelas entregas reais (ItemOrdem)
-        # na função recalcular_todos_valores() ao final
-        empenho.saldo_utilizado = Decimal("0.00")
-        empenho.save()
-
-    return itens_empenho_criados
-
-def seed_operacoes_item(itens_empenho=None):
-    """
-    Cria operações de empenho com:
-    - Regra obrigatória: todo ItemEmpenho recebe imediatamente uma operação
-      de inclusão (inc) com valor = 1 unidade.
-    - Operações extras opcionais: ref (reforço) e anl (anulação).
-    - Valores coerentes para operações extras.
-    """
-    operacoes = []
-    
-    for item_empenho in itens_empenho:
-        # Operação obrigatória e imediata de inclusão
-        operacao_inclusao = OperacaoItem.objects.create(
-            item_empenho=item_empenho,
-            tipo='inc',
-            valor=limitar_valor_monetario(Decimal("1.00")),
-            data=timezone.now() - timedelta(
-                days=random.randint(0, 60),
-                hours=random.randint(0, 23),
-                minutes=random.randint(0, 59)
-            )
-        )
-        operacoes.append(operacao_inclusao)
-
-        # Operações extras (0 a 2) para manter realismo sem quebrar regra obrigatória
-        tipos_operacao_extras = ['ref', 'anl']
-        num_operacoes_extras = random.randint(0, 2)
-
-        for _ in range(num_operacoes_extras):
-            tipo = random.choice(tipos_operacao_extras)
-            valor_max = float(item_empenho.item_ata.valor_unitario) * 20
-            valor = Decimal(random.randint(10, int(valor_max) if valor_max > 10 else 50))
-
-            operacao = OperacaoItem.objects.create(
-                item_empenho=item_empenho,
-                tipo=tipo,
-                valor=limitar_valor_monetario(valor),
-                data=timezone.now() - timedelta(
-                    days=random.randint(0, 60),
-                    hours=random.randint(0, 23),
-                    minutes=random.randint(0, 59)
+        for item_ata in ItemAta.objects.filter(ata=empenho.ata).select_related('item_generico'):
+            itens_empenho.append(
+                ItemEmpenho.objects.create(
+                    empenho=empenho,
+                    item_ata=item_ata,
+                    quantidade_atual=Decimal('0.00'),
+                    quantidade_entrege=Decimal('0.00'),
                 )
             )
-            operacoes.append(operacao)
+    return itens_empenho
+
+
+def seed_operacoes_item(itens_empenho):
+    operacoes = []
+    agora = timezone.now()
+    for indice, item_empenho in enumerate(itens_empenho):
+        item_ata = item_empenho.item_ata
+        quantidade_inicial = _quantidade_inicial(item_ata)
+        operacoes.append(
+            registrar_operacao_item(
+                item_empenho_id=item_empenho.id,
+                tipo='inc',
+                valor=quantidade_inicial,
+                data=agora - timedelta(days=30 + indice % 15),
+            )
+        )
+        item_empenho.refresh_from_db()
+        if indice % 2 == 0:
+            disponivel = item_ata.quantidade_licitada - item_empenho.quantidade_atual
+            reforco = arredondar_quantidade_por_unidade(
+                item_empenho.quantidade_atual * Decimal('0.10'),
+                item_ata.item_generico.unidade_medida,
+                permitir_zero=False,
+            )
+            reforco = min(reforco, disponivel)
+            if reforco >= Decimal('1.00'):
+                operacoes.append(
+                    registrar_operacao_item(
+                        item_empenho_id=item_empenho.id,
+                        tipo='ref',
+                        valor=reforco,
+                        data=agora - timedelta(days=15 + indice % 10),
+                    )
+                )
+                operacoes.append(
+                    registrar_operacao_item(
+                        item_empenho_id=item_empenho.id,
+                        tipo='anl',
+                        valor=reforco,
+                        data=agora - timedelta(days=7 + indice % 5),
+                    )
+                )
+                item_empenho.refresh_from_db()
     return operacoes
 
 
-def seed_ordens_entrega(empenhos=None):
-    """
-        Cria ordens de entrega com:
-        - Uma a duas ordens por empenho
-        - Status realista
-        - Datas e horários coerentes:
-            emissão <= previsão
-            emissão <= entrega (quando houver)
-        - Parte das ordens concluídas com atraso (entrega > previsão)
-        - Ordens em espera sem data de entrega
-    """
+def seed_ordens_entrega(empenhos, solicitante):
     ordens = []
-    
-    for i, empenho in enumerate(empenhos):
-        # 1 a 2 ordens por empenho
-        num_ordens = random.randint(1, 2)
-        
-        for j in range(num_ordens):
-            status = random.choice(['esp', 'con'])
-
-            # Emissão sempre no passado recente
-            data_emissao = timezone.now() - timedelta(
-                days=random.randint(1, 30),
-                hours=random.randint(0, 23),
-                minutes=random.randint(0, 59)
-            )
-
-            # Previsão sempre após emissão
-            data_entrega_prevista = data_emissao + timedelta(
-                days=random.randint(2, 12),
-                hours=random.randint(0, 23),
-                minutes=random.randint(0, 59)
-            )
-            
-            # Data de entrega só existe se status é 'con'
-            data_entrega = None
-            if status == 'con':
-                # ~30% de chance de entrega atrasada (após a previsão)
-                houve_atraso = random.random() < 0.30
-
-                if houve_atraso:
-                    data_entrega = data_entrega_prevista + timedelta(
-                        days=random.randint(1, 5),
-                        hours=random.randint(0, 23),
-                        minutes=random.randint(0, 59)
-                    )
-                else:
-                    # Entrega no prazo: entre emissão e previsão
-                    intervalo_segundos = max(int((data_entrega_prevista - data_emissao).total_seconds()), 1)
-                    segundos_apos_emissao = random.randint(1, intervalo_segundos)
-                    data_entrega = data_emissao + timedelta(seconds=segundos_apos_emissao)
-            else:
-                # Regra explícita: ordens em espera não possuem data de entrega
-                data_entrega = None
-            
-            ordem = OrdemEntrega.objects.create(
-                empenho=empenho,
-                codigo=f"OE-2026-{10000 + i*2 + j}",
-                status=status,
-                data_entrega_prevista=data_entrega_prevista,
-                data_entrega=data_entrega,
-                valor_total_executado=Decimal("0.00")  # Será recalculado pelos ItemOrdem
-            )
-
-            # O campo data_emissao usa auto_now_add; por isso ajustamos após criar
-            ordem.data_emissao = data_emissao
-            ordem.save(update_fields=["data_emissao"])
-
-            ordens.append(ordem)
+    agora = timezone.now()
+    for indice, empenho in enumerate(empenhos):
+        data_emissao = agora - timedelta(days=30 - (indice % 12), hours=indice % 8)
+        ordem = OrdemEntrega.objects.create(
+            empenho=empenho,
+            codigo=f'OE-{ANO_REFERENCIA}-{10000 + indice}',
+            status='esp',
+            data_entrega_prevista=data_emissao + timedelta(days=7 + indice % 5),
+            data_entrega=None,
+            valor_total_executado=Decimal('0.00'),
+            solicitante=solicitante,
+        )
+        ordem.data_emissao = data_emissao
+        ordem.save(update_fields=['data_emissao'])
+        ordens.append(ordem)
     return ordens
 
-def seed_itens_ordem(ordens=None, itens_empenho=None):
-    """
-    Cria ItemOrdem com validações de cascata:
-    - quantidade_solicitada = quantidade_atual do ItemEmpenho (o que foi empenhado)
-    - VALIDAÇÃO: quantidade_entregue <= quantidade_solicitada (NUNCA entregar mais que solicitou/empenhou)
-    - Se status='con' (concluída): entregou pelo menos 85%
-    - Se status='esp' (espera): quantidade_entregue deve ser sempre 0
-    
-    Cascata para CIMA:
-    - ItemOrdem.quantidade_entregue afeta Empenho.saldo_utilizado (na recalcular_todos_valores)
-    - ItemOrdem também afeta OrdemEntrega.valor_total_executado
-    """
-    itens_ordem = []
-    
-    for ordem in ordens:
-        # 1 a 3 itens por ordem
-        num_itens = min(random.randint(1, 3), len(itens_empenho))
-        itens_sorteados = random.sample(itens_empenho, k=num_itens)
-        
-        for item_empenho in itens_sorteados:
-            # CASCATA: quantidade_solicitada = quantidade_atual (do que foi empenhado)
-            quantidade_solicitada = item_empenho.quantidade_atual
-            unidade = item_empenho.item_ata.item_generico.unidade_medida
-            
-            # Se ordem está concluída, deve ter entregado pelo menos 85%
-            if ordem.status == 'con':
-                taxa_entrega = Decimal(random.randint(PCT_ENTREGA_CONCLUIDA_MIN, PCT_ENTREGA_CONCLUIDA_MAX)) / Decimal(100)
-                quantidade_entregue_bruta = quantidade_solicitada * taxa_entrega
-                quantidade_entregue = arredondar_quantidade_por_unidade(
-                    quantidade_entregue_bruta,
-                    unidade,
-                    permitir_zero=False
-                )
-                # CASCATA: quantidade_entregue NUNCA pode ser > quantidade_solicitada
-                quantidade_entregue = min(quantidade_entregue, quantidade_solicitada)
 
-                # Força pelo menos 0.01/1 para ordens concluídas
-                if quantidade_entregue <= Decimal("0"):
-                    quantidade_entregue = Decimal("0.01") if unidade in UNIDADES_DECIMAIS else Decimal("1")
-                    quantidade_entregue = min(quantidade_entregue, quantidade_solicitada)
-            else:
-                quantidade_entregue = Decimal("0.00")
-            
-            observacao = None
-            # Observação apenas para entrega parcial real (houve entrega, mas não total)
-            if quantidade_entregue > Decimal("0") and quantidade_entregue < quantidade_solicitada:
-                observacao = "Entrega parcial pendente"
-            
+def _quantidade_solicitada(item_empenho):
+    unidade = item_empenho.item_ata.item_generico.unidade_medida
+    metade = arredondar_quantidade_por_unidade(
+        item_empenho.quantidade_atual / Decimal('2'),
+        unidade,
+        permitir_zero=False,
+    )
+    return min(max(metade, Decimal('2.00')), item_empenho.quantidade_atual)
+
+
+def seed_itens_ordem(ordens):
+    itens_ordem = []
+    for ordem in ordens:
+        itens_empenho = list(
+            ItemEmpenho.objects.filter(empenho=ordem.empenho)
+            .select_related('item_ata__item_generico')
+            .order_by('id')
+        )
+        for item_empenho in itens_empenho:
+            quantidade_solicitada = _quantidade_solicitada(item_empenho)
+            if quantidade_solicitada <= Decimal('0.00'):
+                continue
             item_ordem = ItemOrdem.objects.create(
                 ordem_entrega=ordem,
                 item_empenho=item_empenho,
-                quantidade_solicitada=quantidade_solicitada,  # = quantidade_atual do ItemEmpenho
-                quantidade_entregue=quantidade_entregue,      # <= quantidade_solicitada
-                observacao=observacao
+                quantidade_solicitada=quantidade_solicitada,
+                quantidade_entregue=Decimal('0.00'),
             )
-            # cascata subindo: ItemOrdem → OrdemEntrega.valor_total_executado e Empenho.saldo_utilizado
+            item_empenho.quantidade_atual -= quantidade_solicitada
+            item_empenho.quantidade_entrege += quantidade_solicitada
+            if item_empenho.quantidade_atual < Decimal('0.00'):
+                raise RuntimeError('A reserva da ordem deixaria o item de empenho negativo.')
+            item_empenho.save(update_fields=['quantidade_atual', 'quantidade_entrege'])
             itens_ordem.append(item_ordem)
     return itens_ordem
 
 
-def recalcular_todos_valores():
-    """
-    Recalcula TODOS os valores garantindo total consistência:
-    
-    1. Ata.ata_saldo_total = Σ(quantidade_licitada × valor_unitario) de todos ItemAta
-    2. Empenho.valor_total = Σ(quantidade_atual × valor_unitario) de todos ItemEmpenho
-    3. OrdemEntrega.valor_total_executado = Σ(quantidade_entregue × valor_unitario) dos ItemOrdem daquela ordem
-    4. Empenho.saldo_utilizado = Σ(quantidade_entregue × valor_unitario) de todos ItemOrdem relacionados
-    
-    CASCATA COMPLETA:
-    ItemAta → Ata.ata_saldo_total
-    ItemEmpenho → Empenho.valor_total
-    ItemOrdem → OrdemEntrega.valor_total_executado
-    ItemOrdem → Empenho.saldo_utilizado
-    """
-    print("  → Recalculando todos os valores (garantindo correlação total)...")
-    
-    # 1. Recalcular Ata.ata_saldo_total baseado nos ItemAta
-    print("    ✓ Recalculando ATA saldos (ItemAta → Ata)...")
-    atas = Ata.objects.all()
-    for ata in atas:
-        total_ata = Decimal("0.00")
-        for item_ata in ata.itemata_set.all():
-            # ata_saldo_total = Σ(quantidade_licitada × valor_unitario)
-            valor_item = item_ata.quantidade_licitada * item_ata.valor_unitario
-            total_ata += valor_item
-        
-        ata.ata_saldo_total = limitar_valor_monetario(total_ata)
-        ata.save(update_fields=["ata_saldo_total"])
-    
-    # 2. Recalcular Empenho.valor_total baseado nos ItemEmpenho
-    print("    ✓ Recalculando EMPENHO valores totais (ItemEmpenho → Empenho)...")
-    empenhos = Empenho.objects.all()
-    for empenho in empenhos:
-        total_empenhado = Decimal("0.00")
-        for item_empenho in empenho.itemempenho_set.all():
-            # Empenho.valor_total = Σ(quantidade_atual × valor_unitario do ItemAta)
-            valor_empenhado = item_empenho.quantidade_atual * item_empenho.item_ata.valor_unitario
-            total_empenhado += valor_empenhado
-        
-        empenho.valor_total = limitar_valor_monetario(total_empenhado)
-        empenho.save(update_fields=["valor_total"])
-    
-    # 3. Recalcular OrdemEntrega.valor_total_executado baseado nos ItemOrdem
-    print("    ✓ Recalculando ORDEM valor executado (ItemOrdem → OrdemEntrega)...")
-    ordens = OrdemEntrega.objects.all()
-    for ordem in ordens:
-        total_executado = Decimal("0.00")
-        for item_ordem in ordem.itemordem_set.all():
-            # valor_total_executado = Σ(quantidade_entregue × valor_unitario)
-            valor_item = item_ordem.quantidade_entregue * item_ordem.item_empenho.item_ata.valor_unitario
-            total_executado += valor_item
-        
-        ordem.valor_total_executado = limitar_valor_monetario(total_executado)
-        ordem.save(update_fields=["valor_total_executado"])
-    
-    # 4. Recalcular Empenho.saldo_utilizado baseado nas entregas reais (ItemOrdem)
-    print("    ✓ Recalculando SALDO UTILIZADO (ItemOrdem → Empenho)...")
-    for empenho in empenhos:
-        total_entregue = Decimal("0.00")
-        
-        # Para cada ItemEmpenho deste Empenho, somar o que foi entregue (ItemOrdem)
-        for item_empenho in empenho.itemempenho_set.all():
-            itens_ordem = ItemOrdem.objects.filter(item_empenho=item_empenho)
-            quantidade_entregue_item = Decimal("0.00")
-            for item_ordem in itens_ordem:
-                # saldo_utilizado = Σ(quantidade_entregue × valor_unitario do ItemAta)
-                total_entregue += (item_ordem.quantidade_entregue * item_empenho.item_ata.valor_unitario)
-                quantidade_entregue_item += item_ordem.quantidade_entregue
+def _quantidade_parcial(item_ordem):
+    unidade = item_ordem.item_empenho.item_ata.item_generico.unidade_medida
+    quantidade = arredondar_quantidade_por_unidade(
+        item_ordem.quantidade_solicitada / Decimal('2'),
+        unidade,
+        permitir_zero=False,
+    )
+    if quantidade >= item_ordem.quantidade_solicitada:
+        quantidade = item_ordem.quantidade_solicitada - Decimal('1.00')
+    if quantidade <= Decimal('0.00'):
+        raise RuntimeError('Não foi possível gerar um recebimento parcial válido.')
+    return quantidade
 
-            # NOVO CAMPO: quantidade_entrege deve refletir o total entregue real,
-            # sem ultrapassar a quantidade empenhada (quantidade_atual)
-            item_empenho.quantidade_entrege = min(quantidade_entregue_item, item_empenho.quantidade_atual)
-            item_empenho.save(update_fields=["quantidade_entrege"])
-        
-        # Saldo utilizado nunca pode ultrapassar o valor_total do empenho
-        empenho.saldo_utilizado = min(
-            limitar_valor_monetario(total_entregue),
-            empenho.valor_total
+
+def seed_recebimentos(ordens, estoquista):
+    """Registra recebimentos reais para produzir cenários esp, par e con."""
+    for indice, ordem in enumerate(ordens):
+        cenario = ('con', 'par', 'esp')[indice % 3]
+        if cenario == 'esp':
+            continue
+        itens_recebidos = []
+        for item_ordem in ItemOrdem.objects.filter(ordem_entrega=ordem).select_related(
+            'item_empenho__item_ata__item_generico'
+        ):
+            if cenario == 'con':
+                quantidade = item_ordem.quantidade_solicitada
+                observacao = ''
+            else:
+                quantidade = _quantidade_parcial(item_ordem)
+                observacao = (
+                    'Recebimento parcial de demonstração; fornecedor deverá complementar '
+                    'a quantidade pendente.'
+                )
+            itens_recebidos.append(
+                {
+                    'item_ordem_id': item_ordem.id,
+                    'quantidade_recebida': quantidade,
+                    'observacao': observacao,
+                }
+            )
+        if not itens_recebidos:
+            raise RuntimeError('A ordem de demonstração não possui itens para receber.')
+        registrar_recebimento(
+            ordem_id=ordem.id,
+            itens_recebidos=itens_recebidos,
+            usuario=estoquista,
+            data_entrada=ordem.data_emissao + timedelta(days=3 + indice % 4),
         )
-        empenho.save(update_fields=["saldo_utilizado"])
 
 
 def banco_possui_dados_de_dominio():
-    """Indica se o banco ja possui dados que nao devem ser substituidos pelo seed."""
     modelos = (
         Endereco,
         Fornecedor,
@@ -738,24 +572,21 @@ def banco_possui_dados_de_dominio():
         ItemInventario,
         MovimentacaoEstoque,
     )
-    return any(model.objects.exists() for model in modelos)
+    return any(modelo.objects.exists() for modelo in modelos)
 
 
 def clean_database():
-    """Limpa dados de demonstracao somente quando nao ha historico de estoque."""
+    """Limpa apenas uma base descartável sem histórico protegido de estoque."""
     if (
         MovimentacaoEstoque.objects.exists()
-        or ItemInventario.objects.exists()
         or Inventario.objects.exists()
+        or ItemInventario.objects.exists()
         or Estoque.objects.exclude(saldo_atual=0).exists()
     ):
         raise RuntimeError(
-            'Reset recusado: existem dados ou histórico de estoque protegidos. '
-            'Para recriar completamente o ambiente de demonstração, '
-            'utilize um banco/volume novo.'
+            'Reset recusado: existe histórico de estoque protegido. Para recriar a demonstração, '
+            'remova o volume MySQL somente em ambiente descartável ou use um banco novo.'
         )
-
-    print("Limpando o banco...")
     ItemOrdem.objects.all().delete()
     OrdemEntrega.objects.all().delete()
     OperacaoItem.objects.all().delete()
@@ -768,73 +599,126 @@ def clean_database():
     Estoque.objects.all().delete()
     ItemGenerico.objects.all().delete()
     Endereco.objects.all().delete()
-    print("✓ Banco limpo com sucesso!")
+
+
+def validar_seed():
+    papeis_esperados = {
+        'admin': Papel.DIRETOR,
+        'user0': Papel.TECNICO_ADMINISTRATIVO,
+        'user1': Papel.NUTRICIONISTA,
+        'user2': Papel.ESTOQUISTA,
+    }
+    for username, papel in papeis_esperados.items():
+        if not Usuario.objects.filter(username=username, papel=papel, is_active=True).exists():
+            raise RuntimeError(f'Perfil obrigatório ausente ou inativo: {username}.')
+    if Licitacao.objects.filter(atual=True).count() != 1:
+        raise RuntimeError('A demonstração deve possuir exatamente uma licitação atual.')
+    for item_generico in ItemGenerico.objects.all():
+        if Estoque.objects.filter(item_generico=item_generico).count() != 1:
+            raise RuntimeError(f'O item {item_generico.catmat} não possui exatamente um estoque.')
+    for item_ordem in ItemOrdem.objects.select_related('ordem_entrega__empenho', 'item_empenho__empenho'):
+        if item_ordem.ordem_entrega.empenho_id != item_ordem.item_empenho.empenho_id:
+            raise RuntimeError('Item de ordem associado a empenho diferente do empenho da ordem.')
+        if not Decimal('0.00') <= item_ordem.quantidade_entregue <= item_ordem.quantidade_solicitada:
+            raise RuntimeError('Quantidade entregue fora do intervalo solicitado.')
+    status_presentes = set(OrdemEntrega.objects.values_list('status', flat=True))
+    if not {'esp', 'par', 'con'}.issubset(status_presentes):
+        raise RuntimeError('A demonstração deve possuir ordens esp, par e con.')
+    if not MovimentacaoEstoque.objects.exists() or not Estoque.objects.filter(saldo_atual__gt=0).exists():
+        raise RuntimeError('A demonstração deve possuir movimentação e saldo positivo em estoque.')
+    if not PendenciaFornecedor.objects.filter(status=PendenciaFornecedor.Status.ABERTA).exists():
+        raise RuntimeError('A demonstração deve possuir ao menos uma pendência aberta de fornecedor.')
+    tolerancia = Decimal('0.01')
+    for item_empenho in ItemEmpenho.objects.all():
+        saldo_operacional = sum(
+            (
+                operacao.valor
+                if operacao.tipo in {'inc', 'ref'}
+                else -operacao.valor
+            )
+            for operacao in OperacaoItem.objects.filter(item_empenho=item_empenho)
+        )
+        saldo_item = item_empenho.quantidade_atual + item_empenho.quantidade_entrege
+        if abs(saldo_item - saldo_operacional) > tolerancia:
+            raise RuntimeError('A equação financeira do item de empenho está inconsistente.')
+    for empenho in Empenho.objects.all():
+        if not Decimal('0.00') <= empenho.saldo_utilizado <= empenho.valor_total:
+            raise RuntimeError('O saldo utilizado do empenho está inconsistente.')
+    if Estoque.objects.filter(saldo_atual__lt=0).exists():
+        raise RuntimeError('A demonstração não pode possuir saldo negativo em estoque.')
+
+
+def imprimir_resumo():
+    por_status = {
+        status: OrdemEntrega.objects.filter(status=status).count()
+        for status in ('esp', 'par', 'con')
+    }
+    print('\n✓ Seed concluído com sucesso!')
+    print(f'  - Usuários: {Usuario.objects.count()}')
+    print(f'  - Estoques: {Estoque.objects.count()}')
+    print(f'  - Movimentações: {MovimentacaoEstoque.objects.count()}')
+    print(f"  - Ordens esp/par/con: {por_status['esp']}/{por_status['par']}/{por_status['con']}")
+    print(
+        '  - Pendências abertas: '
+        f'{PendenciaFornecedor.objects.filter(status=PendenciaFornecedor.Status.ABERTA).count()}'
+    )
+
 
 def seed_all():
-    """Executa todas as funções de seed na ordem correta"""
-    garantir_coluna_quantidade_entrege()
-    if banco_possui_dados_de_dominio():
+    modo = os.environ.get('SIGE_SEED_MODE', 'if_empty').strip().lower()
+    if modo not in {'skip', 'if_empty', 'refresh_demo'}:
+        raise RuntimeError('SIGE_SEED_MODE inválido. Use skip, if_empty ou refresh_demo.')
+    if modo == 'skip':
+        print('Seed ignorada: SIGE_SEED_MODE=skip.')
+        return
+    validar_catalogo_seed()
+    if modo == 'if_empty' and banco_possui_dados_de_dominio():
         print(
-            'Banco já possui dados de domínio. '
-            'Carga inicial ignorada para preservar os dados existentes.'
+            'Banco já possui dados de domínio. A carga de demonstração não será reaplicada. '
+            'Para recriar dados de desenvolvimento use SIGE_SEED_MODE=refresh_demo em um banco '
+            'descartável ou recrie o volume MySQL.'
         )
         return
-    
-    print("Populando banco de dados...")
-    print("  → Criando usuarios...")
-    create_usuarios()
-    print("  → Criando endereços...")
-    enderecos = seed_enderecos()
-    
-    print("  → Criando fornecedores...")
-    fornecedores = seed_fornecedores(enderecos=enderecos)
-    
-    print("  → Criando itens genéricos...")
-    itens_genericos = seed_itens_genericos()
-    
-    print("  → Criando licitações...")
-    licitacoes = seed_licitacoes()
-    
-    print("  → Criando licitações expiradas...")
-    licitacoes_expiradas = seed_licitacoes_expiradas(n=3)
-    licitacoes.extend(licitacoes_expiradas)  # Combina as duas listas
-    
-    print("  → Criando atas...")
-    atas = seed_atas(licitacoes=licitacoes, fornecedores=fornecedores)
-    
-    print("  → Criando itens de ata...")
-    itens_ata = seed_itens_ata(atas=atas, itens_genericos=itens_genericos)
-    
-    print("  → Criando empenhos...")
-    empenhos = seed_empenhos(atas=atas)
-    
-    print("  → Criando itens de empenho...")
-    itens_empenho = seed_itens_empenho(empenhos=empenhos, itens_ata=itens_ata)
-    
-    print("  → Criando operações de item...")
-    operacoes = seed_operacoes_item(itens_empenho=itens_empenho)
-    
-    print("  → Criando ordens de entrega...")
-    ordens = seed_ordens_entrega(empenhos=empenhos)
-    
-    print("  → Criando itens de ordem...")
-    itens_ordem = seed_itens_ordem(ordens=ordens, itens_empenho=itens_empenho)
-    
-    # CRUCIAL: Recalcular todos os valores para garantir total correlação
-    recalcular_todos_valores()
-    
-    print("\n✓ Seed concluído com sucesso!")
-    print(f"  - {len(enderecos)} endereços criados")
-    print(f"  - {len(fornecedores)} fornecedores criados")
-    print(f"  - {len(itens_genericos)} itens genéricos criados")
-    print(f"  - {len(licitacoes)} licitações criadas (incluindo {len(licitacoes_expiradas)} expiradas)")
-    print(f"  - {len(atas)} atas criadas")
-    print(f"  - {len(itens_ata)} itens de ata criados")
-    print(f"  - {len(empenhos)} empenhos criados")
-    print(f"  - {len(itens_empenho)} itens de empenho criados")
-    print(f"  - {len(operacoes)} operações de item criadas")
-    print(f"  - {len(ordens)} ordens de entrega criadas")
-    print(f"  - {len(itens_ordem)} itens de ordem criados")
+    with transaction.atomic():
+        if modo == 'refresh_demo' and banco_possui_dados_de_dominio():
+            clean_database()
+        random.seed(SEED_RANDOM)
+        print(f'Populando banco de dados com seed determinística {SEED_RANDOM}...')
+        usuarios = create_usuarios()
+        enderecos = seed_enderecos()
+        fornecedores = seed_fornecedores(enderecos)
+        itens_genericos = seed_itens_genericos()
+        licitacoes_validas = seed_licitacoes()
+        licitacoes_validas[0].definir_como_atual()
+        licitacoes_expiradas = seed_licitacoes_expiradas()
+        atas = seed_atas(licitacoes_validas + licitacoes_expiradas, fornecedores)
+        itens_ata = seed_itens_ata(atas, itens_genericos)
+        empenhos = seed_empenhos(atas)
+        itens_empenho = seed_itens_empenho(empenhos)
+        operacoes = seed_operacoes_item(itens_empenho)
+        ordens = seed_ordens_entrega(empenhos, usuarios[Papel.TECNICO_ADMINISTRATIVO])
+        itens_ordem = seed_itens_ordem(ordens)
+        seed_recebimentos(ordens, usuarios[Papel.ESTOQUISTA])
+        validar_seed()
+    imprimir_resumo()
+    return {
+        'enderecos': len(enderecos),
+        'fornecedores': len(fornecedores),
+        'itens_genericos': len(itens_genericos),
+        'licitacoes': len(licitacoes_validas) + len(licitacoes_expiradas),
+        'atas': len(atas),
+        'itens_ata': len(itens_ata),
+        'empenhos': len(empenhos),
+        'itens_empenho': len(itens_empenho),
+        'operacoes': len(operacoes),
+        'ordens': len(ordens),
+        'itens_ordem': len(itens_ordem),
+    }
 
-if __name__ == "__main__":
-    seed_all()
+
+if __name__ == '__main__':
+    if '--validate-catalog' in sys.argv:
+        validar_catalogo_seed()
+        print('Catálogo da seed válido.')
+    else:
+        seed_all()

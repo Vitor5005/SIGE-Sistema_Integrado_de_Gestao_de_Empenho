@@ -1,40 +1,50 @@
-<section class="estoque-pagina">
-  <div class="estoque-topo">
+<main class="sige-list-page estoque-pagina">
+  <header class="sige-list-header">
     <div>
-      <h3><i class="bi bi-box-seam"></i> ESTOQUE</h3>
-      <p>Acompanhe os saldos físicos dos gêneros alimentícios.</p>
+      <h1 class="sige-list-title"><i class="bi bi-box-seam" aria-hidden="true"></i> Estoque</h1>
+      <p class="sige-list-description">Acompanhe os saldos físicos dos gêneros alimentícios.</p>
     </div>
-    <div class="estoque-acoes">
+  </header>
+
+  <div class="sige-list-toolbar">
+    <div class="sige-list-toolbar__search">
+      <div class="filtros-estoque">
+        <input class="form-control" [(ngModel)]="busca" (keyup.enter)="carregar()" placeholder="Buscar por CATMAT, descrição, unidade ou categoria">
+        <select class="form-select" [(ngModel)]="categoria" (change)="carregar()">
+          <option value="">Todas as categorias</option>
+          <option value="tempS">Temperos Secos</option><option value="SM">Secos / Mercearia</option>
+          <option value="Lac">Lácteos e Derivados</option><option value="Oli">Óleos, Azeites e Vinagres</option>
+          <option value="MolCo">Molhos e Condimentos</option><option value="Fr">Frutas</option>
+          <option value="Le">Legumes</option><option value="Pr">Proteínas</option>
+        </select>
+        <button class="sige-button sige-button--primary" (click)="carregar()">Buscar</button>
+      </div>
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="agruparCategoria" [checked]="agruparPorCategoria" (change)="alternarAgrupamento()">
+        <label class="form-check-label" for="agruparCategoria">Agrupar por categoria</label>
+      </div>
+    </div>
+    <div class="sige-list-toolbar__actions estoque-acoes">
       @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
-        <a class="btn btn-outline-primary" routerLink="/estoque/extrato">Extrato</a>
+        <a class="sige-button sige-button--secondary" routerLink="/estoque/extrato">Extrato</a>
       }
       @if (pode(Recurso.ESTOQUE, Acao.REGISTRAR_SAIDA)) {
-        <a class="btn btn-primary" routerLink="/estoque/movimentacao">Nova movimentação</a>
+        <a class="sige-button sige-button--primary" routerLink="/estoque/movimentacao">Nova movimentação</a>
       }
     </div>
   </div>
 
-  <div class="filtros-estoque">
-    <input class="form-control" [(ngModel)]="busca" (keyup.enter)="carregar()" placeholder="Buscar por CATMAT, descrição, unidade ou categoria">
-    <select class="form-select" [(ngModel)]="categoria" (change)="carregar()">
-      <option value="">Todas as categorias</option>
-      <option value="tempS">Temperos Secos</option><option value="SM">Secos / Mercearia</option>
-      <option value="Lac">Lácteos e Derivados</option><option value="Oli">Óleos, Azeites e Vinagres</option>
-      <option value="MolCo">Molhos e Condimentos</option><option value="Fr">Frutas</option>
-      <option value="Le">Legumes</option><option value="Pr">Proteínas</option>
-    </select>
-    <button class="btn btn-primary" (click)="carregar()">Buscar</button>
+  @if (!carregando && !erro) {
+  <div class="sige-list-meta" aria-live="polite">
+    <strong>{{ itens.length }}</strong> {{ itens.length === 1 ? 'item exibido' : 'itens exibidos' }}
   </div>
-  <div class="form-check mb-3">
-    <input class="form-check-input" type="checkbox" id="agruparCategoria" [checked]="agruparPorCategoria" (change)="alternarAgrupamento()">
-    <label class="form-check-label" for="agruparCategoria">Agrupar por categoria</label>
-  </div>
+  }
 
   @if (erro) { <div class="alert alert-danger">{{ erro }}</div> }
   @if (carregando) { <div class="estado">Carregando estoque...</div> }
 
-  <div class="table-responsive">
-    <table class="table tabela-estoque">
+  <div class="sige-list-table-wrap">
+    <table class="sige-list-table">
       <thead><tr><th>CATMAT</th><th>Descrição</th><th>Unidade</th><th>Categoria</th><th>Saldo no estoque</th></tr></thead>
       <tbody>
         @for (item of itens; track item.id; let indice = $index) {
@@ -42,9 +52,9 @@
             <tr class="grupo-categoria"><td colspan="5">{{ item.categoria_descricao }}</td></tr>
           }
           <tr>
-            <td>{{ item.catmat }}</td><td>{{ item.descricao }}</td>
+            <td>{{ item.catmat }}</td><td class="sige-cell--truncate" [attr.title]="item.descricao">{{ item.descricao }}</td>
             <td>{{ item.unidade_medida }} @if(item.conteudo_embalagem){({{ item.conteudo_embalagem }} {{ item.unidade_embalagem }})}</td>
-            <td>{{ item.categoria_descricao }}</td><td><strong>{{ item.saldo_atual | number:'1.0-3' }}</strong></td>
+            <td>{{ item.categoria_descricao }}</td><td class="sige-cell--number"><strong>{{ item.saldo_atual | number:'1.0-3' }}</strong></td>
           </tr>
         } @empty {
           <tr><td colspan="5" class="estado">Nenhum saldo encontrado.</td></tr>
@@ -55,18 +65,18 @@
 
   @if (pode(Recurso.ESTOQUE, Acao.CONSULTAR_CONSOLIDADO)) {
     <h5 class="subtitulo">VISÃO CONSOLIDADA</h5>
-    <div class="table-responsive">
-      <table class="table tabela-estoque">
+    <div class="sige-list-table-wrap">
+      <table class="sige-list-table">
         <thead><tr><th>Empenho</th><th>Código - Item - Unidade</th><th>Saldo em ATA/Contrato</th><th>Saldo do Empenho</th><th>Saldo no Estoque</th></tr></thead>
         <tbody>
           @for (item of consolidado; track $index) {
-            <tr><td>{{ item.empenho }}</td><td>{{ item.catmat }} - {{ item.descricao }} - {{ item.unidade_medida }}</td>
-              <td>{{ item.saldo_ata | number:'1.0-3' }}</td><td>{{ item.saldo_empenho | number:'1.0-3' }}</td>
-              <td>{{ item.saldo_estoque | number:'1.0-3' }}</td></tr>
+            <tr><td>{{ item.empenho }}</td><td class="sige-cell--truncate" [attr.title]="item.catmat + ' - ' + item.descricao + ' - ' + item.unidade_medida">{{ item.catmat }} - {{ item.descricao }} - {{ item.unidade_medida }}</td>
+              <td class="sige-cell--number">{{ item.saldo_ata | number:'1.0-3' }}</td><td class="sige-cell--number">{{ item.saldo_empenho | number:'1.0-3' }}</td>
+              <td class="sige-cell--number">{{ item.saldo_estoque | number:'1.0-3' }}</td></tr>
           } @empty { <tr><td colspan="5" class="estado">Nenhum empenho encontrado.</td></tr> }
         </tbody>
       </table>
     </div>
   }
-</section>
+</main>
 

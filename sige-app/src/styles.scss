@@ -230,6 +230,167 @@ textarea {
   pointer-events: none;
 }
 
+// Base reutilizável para as listagens administrativas.
+.sige-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sige-space-5);
+  width: min(
+    var(--sige-content-max-width),
+    calc(100% - var(--sige-content-gutter) - var(--sige-content-gutter))
+  );
+  min-width: 0;
+  margin-inline: auto;
+  padding-block: var(--sige-space-6) var(--sige-space-7);
+}
+
+.sige-list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sige-space-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--sige-space-4);
+  border-bottom: 1px solid var(--sige-border);
+}
+
+.sige-list-title {
+  margin: 0;
+  color: var(--sige-text-primary);
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-weight: 700;
+}
+
+.sige-list-description {
+  max-width: 72ch;
+  margin-top: var(--sige-space-2);
+  color: var(--sige-text-secondary);
+}
+
+.sige-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sige-space-3);
+  flex-wrap: wrap;
+}
+
+.sige-list-toolbar__search {
+  flex: 1 1 22rem;
+  min-width: min(100%, 18rem);
+}
+
+.sige-list-toolbar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sige-space-3);
+  flex-wrap: wrap;
+}
+
+.sige-list-meta {
+  color: var(--sige-text-secondary);
+  font-size: 0.875rem;
+}
+
+.sige-list-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+  box-shadow: var(--sige-shadow-sm);
+}
+
+.sige-list-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  --bs-table-bg: var(--sige-surface-card);
+  --bs-table-color: var(--sige-text-primary);
+  --bs-table-border-color: var(--sige-border);
+}
+
+.sige-list-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--sige-space-3) var(--sige-space-4);
+  color: var(--sige-color-white);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  background: var(--sige-color-primary-strong);
+  border-bottom: 1px solid var(--sige-border);
+}
+
+.sige-list-table th,
+.sige-list-table td {
+  padding: var(--sige-space-3) var(--sige-space-4);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--sige-border);
+}
+
+.sige-list-table tbody td {
+  color: var(--sige-text-primary);
+  background: var(--sige-surface-card);
+}
+
+.sige-list-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.sige-list-row--clickable {
+  cursor: pointer;
+}
+
+.sige-list-table tbody .sige-list-row--clickable:hover td {
+  background: var(--sige-surface-subtle);
+}
+
+.sige-cell--number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sige-cell--status {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.sige-cell--actions {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sige-cell--truncate {
+  max-width: 20rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sige-table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sige-space-2);
+  white-space: nowrap;
+}
+
+.sige-button--sm {
+  min-height: 2rem;
+  padding: var(--sige-space-1) var(--sige-space-3);
+  font-size: 0.8125rem;
+}
+
 .listagem {
   display: flex;
   flex-direction: column;
@@ -746,6 +907,35 @@ textarea {
 }
 
 @media (max-width: 767px) {
+  .sige-list-page {
+    gap: var(--sige-space-4);
+    padding-block: var(--sige-space-4) var(--sige-space-6);
+  }
+
+  .sige-list-header {
+    gap: var(--sige-space-3);
+  }
+
+  .sige-list-toolbar__search,
+  .sige-list-toolbar__actions {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .sige-list-toolbar__actions {
+    justify-content: flex-start;
+  }
+
+  .sige-list-table thead th,
+  .sige-list-table th,
+  .sige-list-table td {
+    padding: var(--sige-space-2) var(--sige-space-3);
+  }
+
+  .sige-cell--truncate {
+    max-width: 14rem;
+  }
+
   .sige-detail-page {
     gap: var(--sige-space-3);
     padding-block: var(--sige-space-3) var(--sige-space-6);

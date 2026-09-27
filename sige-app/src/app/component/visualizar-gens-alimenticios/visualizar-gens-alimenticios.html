@@ -1,7 +1,18 @@
-<body class="listagem">
-  <div class="container-titulo">
-    <div class="titulo-com-acao">
-      <h3><i class="bi bi-card-list"></i> GÊNEROS ALIMENTÍCIOS</h3>
+<main class="sige-list-page">
+  <header class="sige-list-header">
+    <div>
+      <h1 class="sige-list-title"><i class="bi bi-card-list" aria-hidden="true"></i> Gêneros alimentícios</h1>
+      <p class="sige-list-description">Consulte e mantenha o catálogo de gêneros alimentícios do SIGE.</p>
+    </div>
+  </header>
+
+  <div class="sige-list-toolbar">
+    <div class="sige-list-toolbar__search">
+      <app-barra-pesquisa [filtros]="filtros"
+        (pesquisar)="getItens($event)"
+        (filtrosAlterados)="aplicarFiltros($event)"></app-barra-pesquisa>
+    </div>
+    <div class="sige-list-toolbar__actions">
       @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.CADASTRAR)) {
       <button type="button" class="sige-button sige-button--primary" data-bs-toggle="modal"
         data-bs-target="#editarItemGenerico" (click)="novoRegistro()">
@@ -9,20 +20,23 @@
       </button>
       }
     </div>
-    <hr>
   </div>
-  <app-barra-pesquisa [filtros]="filtros"
-  (pesquisar)="getItens($event)"
-  (filtrosAlterados)="aplicarFiltros($event)"></app-barra-pesquisa>
 
-  <table class="tabela">
+  @if (!isLoadingPage && !errorMessagePage) {
+  <div class="sige-list-meta" aria-live="polite">
+    <strong>{{ total }}</strong> {{ total === 1 ? 'resultado' : 'resultados' }}
+  </div>
+  }
+
+  <div class="sige-list-table-wrap">
+  <table class="sige-list-table">
     <thead>
       <tr>
-        <th scope="col">CATMAT</th>
+        <th>CATMAT</th>
         <th scope="col">Categoria</th>
         <th scope="col">Unidades de Medida</th>
         <th scope="col">Descrição</th>
-        <th scope="col">Ações</th>
+        <th scope="col" class="sige-cell--actions">Ações</th>
       </tr>
     </thead>
     <tbody>
@@ -54,11 +68,7 @@
 
       <tr>
 
-        <td>
-          <div class="teste">
-            <p>{{ item.catmat }}</p>
-          </div>
-        </td>
+        <td>{{ item.catmat }}</td>
         <td>
           <p>{{ getCategoria(item) }}</p>
         </td>
@@ -66,13 +76,13 @@
           <p>{{ getUnidadeMedida(item) }}</p>
         </td>
         <td>
-          <p class="descricao">{{ item.descricao }}</p>
+          <span class="sige-cell--truncate" [attr.title]="item.descricao">{{ item.descricao }}</span>
         </td>
-        <td>
+        <td class="sige-cell--actions">
           @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.EDITAR)) {
-          <button class="btn btn-primary" title="Editar usuário" data-bs-toggle="modal"
+          <button type="button" class="sige-button sige-button--secondary sige-button--sm" title="Editar gênero alimentício" data-bs-toggle="modal"
             data-bs-target="#editarItemGenerico" (click)="carregarRegistro(item)">
-            <i class="bi bi-pencil"></i>
+            <i class="bi bi-pencil" aria-hidden="true"></i> Editar
           </button>
           }
 
@@ -96,10 +106,11 @@
       }
     </tbody>
   </table>
+  </div>
 
   @if (!isLoadingPage && !errorMessagePage && total > 0) {
   <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-    totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+    [showTotal]="false" totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
   }
 
 
@@ -214,4 +225,4 @@
     </div>
   </div>
 
-</body>
+</main>

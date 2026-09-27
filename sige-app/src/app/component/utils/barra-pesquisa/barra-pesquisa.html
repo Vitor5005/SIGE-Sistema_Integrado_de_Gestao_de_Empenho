@@ -4,6 +4,7 @@
     <input type="text" (input)="onPesquisar($event)" />
   </div>
 
+  @if (filtros.length > 0) {
   <div class="dropdown">
     <button class="filtro dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside">
       <i class="bi bi-funnel"></i> filtros
@@ -87,4 +88,5 @@
       </form>
     </div>
   </div>
+  }
 </div>

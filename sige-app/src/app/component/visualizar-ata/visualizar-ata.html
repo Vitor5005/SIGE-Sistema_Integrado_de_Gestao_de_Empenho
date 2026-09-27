@@ -27,13 +27,22 @@
                     <p class="sige-detail-subtitle ata-numero"><i class="bi bi-file-earmark-text" aria-hidden="true"></i>
                         {{ ata.numero_ata }}</p>
                 </div>
-                @if (pode(Recurso.ITEM_ATA, Acao.CADASTRAR)) {
+                @if (pode(Recurso.ATA, Acao.EDITAR) || pode(Recurso.ITEM_ATA, Acao.CADASTRAR)) {
                 <div class="sige-detail-actions">
+                    @if (pode(Recurso.ATA, Acao.EDITAR)) {
+                    <button class="sige-button sige-button--secondary" data-bs-toggle="modal"
+                        data-bs-target="#editarAtaModal" [disabled]="isSavingEdicaoAta" (click)="abrirEdicaoAta()">
+                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                        Editar ARP
+                    </button>
+                    }
+                    @if (pode(Recurso.ITEM_ATA, Acao.CADASTRAR)) {
                     <button #myInput class="sige-button sige-button--primary" data-bs-toggle="modal"
                         data-bs-target="#adicionarItemModal" [disabled]="isSaving" (click)="reiniciar_Modal()">
                         <i class="bi bi-file-earmark-plus" aria-hidden="true"></i>
                         Adicionar item
                     </button>
+                    }
                 </div>
                 }
             </header>
@@ -464,6 +473,56 @@
                     </form>
                     }
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editarAtaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-custom">
+                <div class="modal-header-azul">
+                    <h2 class="modal-titulo">EDITAR ARP</h2>
+                    <button type="button" class="btn-close btn-close-white" [disabled]="isSavingEdicaoAta"
+                        (click)="tentarFecharEdicaoAta()" aria-label="Fechar"></button>
+                    <button #fecharModalEdicaoAtaBtn type="button" class="d-none" data-bs-dismiss="modal"
+                        aria-hidden="true"></button>
+                </div>
+                <form (ngSubmit)="salvarEdicaoAta()">
+                    <div class="modal-body">
+                        @if (errorMessageEdicaoAta) {
+                        <div class="mensagem-erro-modal">
+                            <small>{{ errorMessageEdicaoAta }}</small>
+                        </div>
+                        }
+
+                        <div class="form-group">
+                            <label for="numeroAtaEdicao">NÚMERO DA ARP *</label>
+                            <input id="numeroAtaEdicao" type="text" name="numeroAtaEdicao" maxlength="50"
+                                [(ngModel)]="ataEdicao.numero_ata" [disabled]="isSavingEdicaoAta"
+                                [class.campo-invalido]="formSubmittedEdicaoAta && !ataEdicaoValida">
+                            @if (formSubmittedEdicaoAta && !ataEdicaoValida) {
+                            <small class="mensagem-campo-invalido">Informe o número da ARP.</small>
+                            }
+                        </div>
+
+                        <div class="requisitos-modal">
+                            <small>Licitação, fornecedor e saldo da ARP não podem ser alterados por esta edição.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="sige-button sige-button--secondary" [disabled]="isSavingEdicaoAta"
+                            (click)="tentarFecharEdicaoAta()">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="sige-button sige-button--primary"
+                            [disabled]="isSavingEdicaoAta || !ataEdicaoValida || !ataEdicaoAlterada">
+                            @if (isSavingEdicaoAta) {
+                            <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                            }
+                            Salvar alterações
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
