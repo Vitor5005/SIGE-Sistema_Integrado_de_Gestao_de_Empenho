@@ -1,70 +1,80 @@
-<body class="fornecedor-container">
+<main class="sige-detail-page fornecedor-page">
   <app-botao-voltar></app-botao-voltar>
 
-  <section class="card-fornecedor">
-    <div class="card-header-main">
-      <h1 class="fornecedor-nome">{{ fornecedor.razao_social }}</h1>
-    </div>
+  <div class="sige-detail-layout fornecedor-layout">
+    <section class="sige-detail-shell fornecedor-shell">
+      <header class="sige-detail-header fornecedor-header">
+        <div class="sige-detail-heading">
+          <p class="fornecedor-tipo">Fornecedor</p>
+          <h1 class="sige-detail-title">{{ fornecedor.razao_social }}</h1>
+          <p class="sige-detail-subtitle">{{ fornecedor.nome_fantasia || fornecedor.cnpj }}</p>
+        </div>
 
-    <div class="info-bloco">
-      <div class="faixa-titulo">
-        <h2 class="titulo-secao">INFORMAÇÕES GERAIS</h2>
-      </div>
-      <div class="info-grid">
-        <div class="info-item">
-          <label>NOME FANTASIA</label>
-          <span class="dado-valor">{{ fornecedor.nome_fantasia }}</span>
+        @if (pode(Recurso.FORNECEDOR, Acao.EDITAR)) {
+        <div class="sige-detail-actions fornecedor-actions">
+          <button class="sige-button sige-button--primary fornecedor-editar" data-bs-toggle="modal"
+            data-bs-target="#fornecedorModal" (click)="carregar_Fornecedor()">
+            <i class="bi bi-pencil-square"></i> Editar informações
+          </button>
         </div>
-        <div class="info-item">
-          <label>CNPJ</label>
-          <span class="dado-valor">{{ fornecedor.cnpj }}</span>
-        </div>
-        <div class="info-item">
-          <label>TELEFONE</label>
-          <span class="dado-valor">{{ fornecedor.telefone }}</span>
-        </div>
-        <div class="info-item">
-          <label>E-MAIL</label>
-          <span class="dado-valor">{{ fornecedor.email }}</span>
-        </div>
-      </div>
-    </div>
+        }
+      </header>
 
-    <div class="info-bloco">
-      <div class="faixa-titulo">
-        <h2 class="titulo-secao">ENDEREÇO E LOCALIZAÇÃO</h2>
-      </div>
-      <div class="info-grid">
-        <div class="info-item">
-          <label>CEP</label>
-          <span class="dado-valor">{{ fornecedor.endereco.cep }}</span>
-        </div>
-        <div class="info-item">
-          <label>RUA</label>
-          <span class="dado-valor">{{ fornecedor.endereco.lagradouro }}, {{ fornecedor.endereco.numero }}</span>
-        </div>
-        <div class="info-item">
-          <label>BAIRRO</label>
-          <span class="dado-valor">{{ fornecedor.endereco.bairro }}</span>
-        </div>
-        <div class="info-item">
-          <label>MUNICÍPIO</label>
-          <span class="dado-valor">{{ fornecedor.endereco.municipio }}</span>
-        </div>
-        <div class="info-item">
-          <label>ESTADO</label>
-          <span class="dado-valor">{{ fornecedor.endereco.estado }}</span>
-        </div>
-      </div>
-    </div>
+      <section class="sige-detail-section sige-detail-section--flat fornecedor-section" aria-labelledby="informacoes-gerais-title">
+        <header class="sige-detail-section-header">
+          <h2 id="informacoes-gerais-title" class="sige-detail-section-title">Informações gerais</h2>
+        </header>
 
-    <div class="footer-acoes">
-      <button class="btn-editar" data-bs-toggle="modal" data-bs-target="#fornecedorModal"
-        (click)="carregar_Fornecedor()">
-        <i class="bi bi-pencil-square"></i> EDITAR INFORMAÇÕES
-      </button>
-    </div>
-  </section>
+        <div class="sige-detail-info-grid fornecedor-info-grid">
+          <div class="sige-detail-field">
+            <span class="sige-detail-label">Nome fantasia</span>
+            <span class="sige-detail-value">{{ fornecedor.nome_fantasia }}</span>
+          </div>
+          <div class="sige-detail-field">
+            <span class="sige-detail-label">CNPJ</span>
+            <span class="sige-detail-value">{{ fornecedor.cnpj }}</span>
+          </div>
+          <div class="sige-detail-field">
+            <span class="sige-detail-label">Telefone</span>
+            <span class="sige-detail-value">{{ fornecedor.telefone }}</span>
+          </div>
+          <div class="sige-detail-field">
+            <span class="sige-detail-label">E-mail</span>
+            <span class="sige-detail-value">{{ fornecedor.email }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="sige-detail-section sige-detail-section--flat fornecedor-section" aria-labelledby="endereco-localizacao-title">
+        <header class="sige-detail-section-header">
+          <h2 id="endereco-localizacao-title" class="sige-detail-section-title">Endereço e localização</h2>
+        </header>
+
+        <div class="sige-detail-info-grid fornecedor-info-grid fornecedor-endereco-grid">
+          <div class="sige-detail-field">
+            <span class="sige-detail-label">CEP</span>
+            <span class="sige-detail-value">{{ fornecedor.endereco.cep }}</span>
+          </div>
+          <div class="sige-detail-field fornecedor-campo-amplo">
+            <span class="sige-detail-label">Rua</span>
+            <span class="sige-detail-value">{{ fornecedor.endereco.lagradouro }}, {{ fornecedor.endereco.numero }}</span>
+          </div>
+          <div class="sige-detail-field">
+            <span class="sige-detail-label">Bairro</span>
+            <span class="sige-detail-value">{{ fornecedor.endereco.bairro }}</span>
+          </div>
+          <div class="sige-detail-field">
+            <span class="sige-detail-label">Município</span>
+            <span class="sige-detail-value">{{ fornecedor.endereco.municipio }}</span>
+          </div>
+          <div class="sige-detail-field">
+            <span class="sige-detail-label">Estado</span>
+            <span class="sige-detail-value">{{ fornecedor.endereco.estado }}</span>
+          </div>
+        </div>
+      </section>
+    </section>
+  </div>
 
   <div #myModal class="modal fade" id="fornecedorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -236,4 +246,4 @@
       </div>
     </div>
   </div>
-</body>
+</main>

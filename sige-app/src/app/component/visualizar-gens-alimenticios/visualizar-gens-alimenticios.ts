@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { ItemGenericoService } from '../../service/item-generico.service';
 import { ItemGenerico } from '../../model/item_generico';
 import { FormsModule } from '@angular/forms';
+import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-gens-alimenticios',
@@ -15,6 +16,9 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './visualizar-gens-alimenticios.scss',
 })
 export class VisualizarGensAlimenticios {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
 
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild('myInput') input!: ElementRef;
@@ -197,6 +201,14 @@ filtrosAtivos: any = {};
     }
   }
 
+  get modoCadastro(): boolean {
+    return !this.registroEditar.id;
+  }
+
+  novoRegistro(): void {
+    this.carregarRegistro(<ItemGenerico>{ catmat: '', descricao: '', unidade_medida: '', categoria: '' });
+  }
+
   carregarRegistro(registro: ItemGenerico) {
     this.formSubmitted = false;
     this.errorMessageModal = '';
@@ -283,9 +295,15 @@ filtrosAtivos: any = {};
       next: () => {
         window.location.reload();
       },
-      error: () => {
+      error: (erro) => {
         this.isSaving = false;
-        this.errorMessageModal = 'Não foi possível salvar as alterações. Verifique os dados e tente novamente.';
+        if (erro?.error?.catmat) {
+          this.errorMessageModal = 'Já existe um gênero alimentício cadastrado com este CATMAT.';
+          return;
+        }
+        this.errorMessageModal = this.modoCadastro
+          ? 'Não foi possível cadastrar o gênero alimentício. Verifique os dados e tente novamente.'
+          : 'Não foi possível salvar as alterações. Verifique os dados e tente novamente.';
       }
     });
   }

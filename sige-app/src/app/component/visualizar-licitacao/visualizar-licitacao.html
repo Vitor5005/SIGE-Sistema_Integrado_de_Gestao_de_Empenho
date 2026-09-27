@@ -1,68 +1,117 @@
-<body>
+<main class="sige-detail-page">
   <app-botao-voltar></app-botao-voltar>
 
-  <div class="container1">
-    <div class="container-numero">
-      <b>{{ licitacao.numero_licitacao }}</b>
-      <button #myInput data-bs-toggle="modal" data-bs-target="#adicionarAtaModal" [disabled]="isSaving" (click)="reiniciar_Modal()">
-        <i class="bi bi-file-earmark-plus"></i>
-        Adicionar Ata
-      </button>
-    </div>
-    <div class="container-infos">
-      <div class="validade-card">
-        <small>PERIODO DE VALIDADE</small>
-        <p>
-          <b>{{ licitacao.validade }} MESES</b>
-        </p>
+  <div class="sige-detail-layout">
+    @if (licitacao.id) {
+    <nav class="sige-detail-breadcrumb" aria-label="Navegação contextual">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a [routerLink]="['/visualizar-licitacoes']">Licitações</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ licitacao.numero_licitacao }}</li>
+      </ol>
+    </nav>
+    }
+
+    <section class="sige-detail-shell licitacao-resumo">
+      <header class="sige-detail-header">
+        <div class="sige-detail-heading">
+          <h1 class="sige-detail-title">Licitação {{ licitacao.numero_licitacao }}</h1>
+          <p class="sige-detail-subtitle">Informações gerais e atas de registro de preços vinculadas.</p>
+        </div>
+
+        <div class="sige-detail-actions">
+          @if (licitacao.atual) {
+          <span class="licitacao-status">Licitação atual</span>
+          } @else if (licitacao.id && pode(Recurso.LICITACAO, Acao.DEFINIR_ATUAL)) {
+          <button type="button" class="sige-button sige-button--secondary" [disabled]="isDefinindoAtual"
+            (click)="iniciarDefinicaoComoAtual()">
+            Definir como atual
+          </button>
+          }
+
+          @if (pode(Recurso.ATA, Acao.CADASTRAR)) {
+          <button #myInput type="button" class="sige-button sige-button--primary" data-bs-toggle="modal"
+            data-bs-target="#adicionarAtaModal" [disabled]="isSaving" (click)="reiniciar_Modal()">
+            <i class="bi bi-file-earmark-plus" aria-hidden="true"></i>
+            Adicionar ARP
+          </button>
+          }
+        </div>
+      </header>
+
+      @if (mostrarConfirmacaoAtual && !licitacao.atual) {
+      <div class="licitacao-confirmacao" role="alert">
+        <strong>Definir esta licitação como atual?</strong>
+        <p>Se houver outra licitação atual, ela deixará de ser a referência operacional.</p>
+
+        @if (errorMessageAtual) {
+        <p class="licitacao-confirmacao__erro" role="alert">{{ errorMessageAtual }}</p>
+        }
+
+        <div class="licitacao-confirmacao__acoes">
+          <button type="button" class="sige-button sige-button--secondary" [disabled]="isDefinindoAtual"
+            (click)="cancelarDefinicaoComoAtual()">
+            Cancelar
+          </button>
+          <button type="button" class="sige-button sige-button--primary" [disabled]="isDefinindoAtual"
+            (click)="confirmarDefinicaoComoAtual()">
+            @if (isDefinindoAtual) {
+            <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+            Definindo...
+            } @else {
+            Confirmar
+            }
+          </button>
+        </div>
       </div>
+      }
 
-      <div class="descricao-card">
-        <small>DESCRIÇÃO DA LICITAÇÃO</small>
-        <p>
-          {{ licitacao.descricao }}
-        </p>
+      <div class="sige-detail-info-grid">
+        <div class="sige-detail-field">
+          <span class="sige-detail-label">Período de validade</span>
+          <strong class="sige-detail-value">{{ licitacao.validade }} meses</strong>
+        </div>
+
+        <div class="sige-detail-field licitacao-descricao">
+          <span class="sige-detail-label">Descrição</span>
+          <p class="sige-detail-value">{{ licitacao.descricao }}</p>
+        </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <hr />
+    <section class="sige-detail-section licitacao-atas" aria-labelledby="atas-title">
+      <header class="sige-detail-section-header">
+        <h2 id="atas-title" class="sige-detail-section-title">Atas de Registro de Preços</h2>
+      </header>
 
-  <div class="ARP-s">
-
-    <p>Atas de Registro de Preço (ARP's)</p>
-
-    <div class="container-atas" *ngIf="atas.length > 0">
-      <div *ngFor="let item of atas" class="ata" (click)="enviarPara('visualizar-ata', item.id)">
-        <div class="container-ata">
-          <div class="icone-ata">
-            <i class="bi bi-file-earmark-text"></i>
-          </div>
-          <div class="column">
-            <div class="line">
-              <h5>{{ item.numero_ata }}</h5>
-              <small>| {{ item.fornecedor.cnpj }}</small>
+      <div class="container-atas" *ngIf="atas.length > 0">
+        <div *ngFor="let item of atas" class="ata" (click)="enviarPara('visualizar-ata', item.id)">
+          <div class="ata-identificacao">
+            <div class="icone-ata" aria-hidden="true">
+              <i class="bi bi-file-earmark-text"></i>
             </div>
-            <small>{{ item.fornecedor.nome_fantasia }}</small>
+            <div>
+              <h3>{{ item.numero_ata }}</h3>
+              <p>{{ item.fornecedor.nome_fantasia }} <span aria-hidden="true">·</span> {{ item.fornecedor.cnpj }}</p>
+            </div>
           </div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <div>
-            <small>SALDO TOTAL</small>
-            <h5>R$ {{ item.ata_saldo_total }}</h5>
+          <div class="ata-saldo">
+            <div>
+              <span class="sige-detail-label">Saldo total</span>
+              <strong>R$ {{ item.ata_saldo_total }}</strong>
+            </div>
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
           </div>
-          <i class="bi bi-chevron-compact-right fs-5"></i>
         </div>
       </div>
-    </div>
 
-    <app-paginacao class="paginacao-lista" *ngIf="totalAtas > 0" [currentPage]="currentPageAtas" [pageSize]="pageSizeAtas"
-      [totalItems]="totalAtas" totalLabel="Total de atas" (pageChange)="irParaPaginaAtas($event)"></app-paginacao>
-  </div>
+      <app-paginacao class="paginacao-lista" *ngIf="totalAtas > 0" [currentPage]="currentPageAtas" [pageSize]="pageSizeAtas"
+        [totalItems]="totalAtas" totalLabel="Total de atas" (pageChange)="irParaPaginaAtas($event)"></app-paginacao>
 
-  <div class="container-atas vazia" *ngIf="atas.length === 0">
-    <h5>Nenhuma ata de registro de preço foi adicionada para esta licitação.</h5>
-    <h5>Clique no botão "Adicionar Ata" para adicionar uma nova ata.</h5>
+      <div class="sige-detail-empty" *ngIf="atas.length === 0">
+        <p>Nenhuma ata de registro de preços foi adicionada para esta licitação.</p>
+        <p>Clique no botão “Adicionar ARP” para incluir uma nova ata.</p>
+      </div>
+    </section>
   </div>
 
   <div #myModal class="modal fade" id="adicionarAtaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
@@ -387,4 +436,4 @@
     </div>
   </div>
 
-</body>
+</main>

@@ -15,11 +15,10 @@ from licitacao.models import Licitacao, Ata, ItemAta
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
 from entrega.models import OrdemEntrega, ItemOrdem
 from usuario.models import Usuario
+from utils.rbac import Papel
 def create_usuarios(num=10):
     print(f"Creating {num} usuarios...")
     usuarios = []
-    papeis = ['ADMIN', 'TECNI']
-
     # --- INÍCIO DA MODIFICAÇÃO ---
 
     # 1. Criar o usuário admin padrão
@@ -30,7 +29,7 @@ def create_usuarios(num=10):
             'first_name': 'Administrador',
             'last_name': 'do Sistema',
             'email': 'admin@example.com',
-            'papel': 'ADMIN',
+            'papel': Papel.DIRETOR,
             'is_staff': True,
             'is_superuser': True
         }
@@ -40,29 +39,33 @@ def create_usuarios(num=10):
         admin_user.set_password('admin')
         admin_user.save()
     else:
-        # Corrige papel e permissoes se ja existir
-        admin_user.papel = 'ADMIN'
+        # Garante que o administrador padrão continue apto a acessar o sistema.
+        admin_user.papel = Papel.DIRETOR
         admin_user.is_staff = True
         admin_user.is_superuser = True
-        admin_user.save(update_fields=['papel', 'is_staff', 'is_superuser'])
+        admin_user.is_active = True
+        admin_user.save(update_fields=['papel', 'is_staff', 'is_superuser', 'is_active'])
     
     usuarios.append(admin_user)
 
     # 2. Criar outros usuários aleatórios (se necessário)
     for i in range(num - 1): # num - 1 para compensar o admin já criado
         username = f"user{i}"
-        if Usuario.objects.filter(username=username).exists():
-            continue # Pula se o usuário já existir
-
-        # Usar create_user para criptografar a senha
-        usuario = Usuario.objects.create_user(
+        papel = Papel.NUTRICIONISTA if i == 1 else Papel.TECNICO_ADMINISTRATIVO
+        usuario, created = Usuario.objects.get_or_create(
             username=username,
-            password="password123",
-            first_name=f"Nome {i}",
-            last_name=f"Sobrenome {i}",
-            email=f"user{i}@example.com",
-            papel=random.choice(papeis)
+            defaults={
+                'first_name': f"Nome {i}",
+                'last_name': f"Sobrenome {i}",
+                'email': f"user{i}@example.com",
+                'papel': papel,
+            },
         )
+        usuario.papel = papel
+        usuario.is_active = True
+        if created:
+            usuario.set_password("password123")
+        usuario.save()
         usuarios.append(usuario)
     
     # --- FIM DA MODIFICAÇÃO ---

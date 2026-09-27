@@ -1,6 +1,14 @@
 <body class="listagem">
   <div class="container-titulo">
-    <h3><i class="bi bi-card-list"></i> GÊNEROS ALIMENTÍCIOS</h3>
+    <div class="titulo-com-acao">
+      <h3><i class="bi bi-card-list"></i> GÊNEROS ALIMENTÍCIOS</h3>
+      @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.CADASTRAR)) {
+      <button type="button" class="sige-button sige-button--primary" data-bs-toggle="modal"
+        data-bs-target="#editarItemGenerico" (click)="novoRegistro()">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Novo gênero
+      </button>
+      }
+    </div>
     <hr>
   </div>
   <app-barra-pesquisa [filtros]="filtros"
@@ -37,10 +45,12 @@
           <p class="descricao">{{ item.descricao }}</p>
         </td>
         <td>
+          @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.EDITAR)) {
           <button class="btn btn-primary" title="Editar usuário" data-bs-toggle="modal"
             data-bs-target="#editarItemGenerico" (click)="carregarRegistro(item)">
             <i class="bi bi-pencil"></i>
           </button>
+          }
 
         </td>
 
@@ -67,7 +77,7 @@
       <div class="modal-content modal-custom">
 
         <div class="modal-header-azul">
-          <h2 class="modal-titulo" id="editarItemGenericoLabel">EDITAR GÊNERO ALIMENTÍCIO</h2>
+          <h2 class="modal-titulo" id="editarItemGenericoLabel">{{ modoCadastro ? 'NOVO' : 'EDITAR' }} GÊNERO ALIMENTÍCIO</h2>
           <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()"
             aria-label="Close"></button>
           <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
@@ -77,11 +87,13 @@
           <form class="form-fornecedor" (submit)="salvarRegistro(); $event.preventDefault()">
 
             <div class="subtitulo subtitulo-modal">
-              <h5>ADICIONAR NOVO ITEM</h5>
+              <h5>{{ modoCadastro ? 'ADICIONAR NOVO ITEM' : 'ALTERAR ITEM' }}</h5>
               <hr>
             </div>
 
-            <p class="texto-orientacao-modal">Preencha os dados do item genérico para cadastro.</p>
+            <p class="texto-orientacao-modal">
+              {{ modoCadastro ? 'Preencha os dados do item genérico para cadastro.' : 'Altere os dados do item genérico.' }}
+            </p>
 
             @if(isSaving) {
             <div class="status-processamento-modal">
@@ -159,7 +171,7 @@
                 @if(isSaving) {
                 <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
                 }
-                <i class="bi bi-check-lg"></i> SALVAR
+                <i class="bi bi-check-lg"></i> {{ modoCadastro ? 'CADASTRAR' : 'SALVAR' }}
               </button>
             </div>
 

@@ -1,6 +1,16 @@
+:host {
+    display: block;
+    width: min(
+      var(--sige-content-max-width),
+      calc(100% - var(--sige-content-gutter) - var(--sige-content-gutter))
+    );
+    margin-inline: auto;
+    min-width: 0;
+}
+
 .container-btnVoltar{
-    margin-top: 30px;
-    width: 80vw;
+    margin-top: var(--sige-space-5);
+    width: 100%;
     background-color: transparent;
     .btn-voltar{
       display: flex;

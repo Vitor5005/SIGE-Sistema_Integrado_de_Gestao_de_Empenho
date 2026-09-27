@@ -53,6 +53,26 @@
           <label>Descrição (opcional)</label>
           <textarea rows="5" [(ngModel)]="licitacao.descricao" name="descricao" [disabled]="isSaving"></textarea>
         </div>
+
+        <div class="form-check mt-3">
+          <input class="form-check-input" type="checkbox" id="definir-como-atual" name="atual"
+            [(ngModel)]="licitacao.atual" (ngModelChange)="onAtualChange()" [disabled]="isSaving">
+          <label class="form-check-label" for="definir-como-atual">
+            Definir como licitação atual
+          </label>
+
+          @if (carregandoLicitacaoAtual) {
+          <small class="d-block texto-apoio-campo">Verificando a licitação atual...</small>
+          } @else if (erroAoCarregarLicitacaoAtual) {
+          <small class="d-block texto-apoio-campo">Não foi possível identificar a licitação atual. Você ainda pode decidir esta opção.</small>
+          } @else if (licitacaoAtual) {
+          <small class="d-block texto-apoio-campo">Licitação atual: {{ licitacaoAtual.numero_licitacao }}. Marque esta opção para substituí-la.</small>
+          } @else if (licitacao.atual) {
+          <small class="d-block texto-apoio-campo">Nenhuma licitação atual foi definida. Esta licitação será definida como atual.</small>
+          } @else {
+          <small class="d-block texto-apoio-campo">Nenhuma licitação atual foi definida. Marque esta opção para defini-la como atual.</small>
+          }
+        </div>
       </div>
     </section>
 

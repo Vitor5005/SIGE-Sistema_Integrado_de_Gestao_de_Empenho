@@ -1,52 +1,97 @@
-<body>
+<main class="sige-detail-page">
   <app-botao-voltar></app-botao-voltar>
 
-  <div class="container-empenho">
-    <div class="cabecalho">
-      <div>
-        <span class="nome-fornecedor">{{ empenho.ata.fornecedor.nome_fantasia }}</span><br>
-        <span class="numero-empenho">{{ empenho.codigo }}</span>
+  <div class="sige-detail-layout">
+  @if (empenho.id) {
+  <nav class="sige-detail-breadcrumb" aria-label="Navegação contextual">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a routerLink="/visualizar-licitacoes">Licitações</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a [routerLink]="['/visualizar-licitacao']" [queryParams]="{ id: empenho.ata.licitacao.id }">
+          {{ empenho.ata.licitacao.numero_licitacao }}
+        </a>
+      </li>
+      <li class="breadcrumb-item">
+        <a [routerLink]="['/visualizar-ata']" [queryParams]="{ id: empenho.ata.id }">
+          {{ empenho.ata.numero_ata }}
+        </a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Empenho {{ empenho.codigo }}</li>
+    </ol>
+  </nav>
+  }
+
+  <div class="sige-detail-shell container-empenho">
+    <header class="sige-detail-header">
+      <div class="sige-detail-heading">
+        <h1 class="sige-detail-title">Empenho {{ empenho.codigo }}</h1>
+        <p class="sige-detail-subtitle">{{ empenho.ata.fornecedor.nome_fantasia }}</p>
       </div>
 
-      <span (click)="enviarPara('/visualizar-ata', empenho.ata.id)" class="span-arp"><b>{{ empenho.ata.numero_ata
-          }}</b></span>
+      <div class="sige-detail-actions">
+        <button type="button" (click)="enviarPara('/visualizar-ata', empenho.ata.id)" class="span-arp"
+          aria-label="Abrir ata de registro de preços">
+          <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+          <b>{{ empenho.ata.numero_ata }}</b>
+        </button>
+      </div>
+    </header>
+
+    <section class="fornecedor-empenho" aria-labelledby="fornecedor-empenho-title">
+      <div class="sige-detail-section-header">
+        <h2 id="fornecedor-empenho-title" class="sige-detail-section-title">Fornecedor</h2>
+      </div>
+      <div class="sige-detail-info-grid">
+        <div class="sige-detail-field">
+          <span class="sige-detail-label">Razão social</span>
+          <span class="sige-detail-value">{{ empenho.ata.fornecedor.razao_social }}</span>
+        </div>
+        <div class="sige-detail-field">
+          <span class="sige-detail-label">CNPJ</span>
+          <span class="sige-detail-value">{{ empenho.ata.fornecedor.cnpj }}</span>
+        </div>
+        <div class="sige-detail-field">
+          <span class="sige-detail-label">Telefone</span>
+          <span class="sige-detail-value">{{ empenho.ata.fornecedor.telefone }}</span>
+        </div>
+        <div class="sige-detail-field">
+          <span class="sige-detail-label">E-mail</span>
+          <span class="sige-detail-value">{{ empenho.ata.fornecedor.email }}</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="sige-metric-grid cards-valor">
+      <div class="sige-metric-card valor-empenhado">
+        <span class="sige-metric-label">Valor empenhado</span>
+        <strong class="sige-metric-value">R$ {{ empenho.valor_total }}</strong>
+      </div>
+      <div class="sige-metric-card valor-utilizado">
+        <span class="sige-metric-label">Valor utilizado</span>
+        <strong class="sige-metric-value">R$ {{ empenho.saldo_utilizado }}</strong>
+      </div>
     </div>
+  </div>
 
-    <div class="info-fornecedor">
-      <div>
-        <h5><b>Razão Social:</b> {{ empenho.ata.fornecedor.razao_social }}</h5>
-        <h5><b>CNPJ:</b> {{ empenho.ata.fornecedor.cnpj }}</h5>
-        <div class="d-flex gap-1">
-          <h5><b>Telefone: {{ empenho.ata.fornecedor.telefone }}</b></h5>
-          |
-          <h5><b>Email: {{ empenho.ata.fornecedor.email }}</b></h5>
-        </div>
-      </div>
-
-      <div class="d-flex gap-5 cards-valor">
-        <div class="valor-utilizado">
-          <h4>Valor Utilizado</h4>
-          <p>R$ {{ empenho.saldo_utilizado }}</p>
-        </div>
-
-        <div class="valor-empenhado">
-          <h4>Valor Empenhado</h4>
-          <p>R$ {{ empenho.valor_total }}</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="container-tabela-alimentos">
-      <div class="d-flex justify-content-between align-items-start">
-        <h3>Tabela de Itens</h3>
+    <section class="sige-detail-section container-tabela-alimentos" aria-labelledby="itens-empenho-title">
+      <div class="sige-detail-section-header">
+        <h2 id="itens-empenho-title" class="sige-detail-section-title">Itens do empenho</h2>
         <div class="solicitacao-acoes">
-          <button #myInput [attr.data-bs-toggle]="isSolicitandoEntrega ? null : 'modal'" class="btn-solicitar-entregas" data-bs-target="#entregaModal"
+          @if (pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
+          <button #myInput [attr.data-bs-toggle]="isSolicitandoEntrega ? null : 'modal'" class="sige-button sige-button--primary btn-solicitar-entregas" data-bs-target="#entregaModal"
             [disabled]="!possuiItensSelecionados || isSolicitandoEntrega" [class.btn-solicitar-entregas-desabilitado]="!possuiItensSelecionados || isSolicitandoEntrega"
             (click)="reiniciarModalSolicitacao()">
             <i class="bi bi-truck"></i> SOLICITAR ENTREGA
           </button>
+          }
 
-          @if(!possuiItensSelecionados) {
+          <button type="button" class="sige-button sige-button--secondary" (click)="verEntregasDoEmpenho()">
+            <i class="bi bi-truck"></i> Ver entregas deste empenho
+          </button>
+
+          @if(!possuiItensSelecionados && pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
           <small class="alerta-selecao-item">
             <i class="bi bi-exclamation-triangle-fill"></i>
             Selecione ao menos um item do empenho para solicitar a entrega.
@@ -55,27 +100,28 @@
         </div>
       </div>
 
-      <table class="table">
+      <div class="sige-detail-table-wrap tabela-empenho-wrap">
+      <table class="table sige-detail-table">
         <thead>
           <tr>
             <th scope="col">Sel.</th>
             <th scope="col">Item</th>
 
-            <th scope="col">Valor Unitario</th>
+            <th scope="col">Valor unitário</th>
             <th scope="col">
               <div>
-                <p class="m-0">Quantidade em Ata</p>
-                <span class="unidade-item-suave">(Disponivel)</span>
+                <p class="m-0">Quantidade em ata</p>
+                <span class="unidade-item-suave">(Disponível)</span>
               </div>
             </th>
 
             <th scope="col">
               <div>
-                <p class="m-0">Quantidade Empenhada</p>
+                <p class="m-0">Quantidade empenhada</p>
               </div>
             </th>
 
-            <th scope="col">Quantidade Solicitada</th>
+            <th scope="col">Quantidade solicitada</th>
 
             <th scope="col">Categoria</th>
 
@@ -87,7 +133,9 @@
           @for (item of itensEmpenho; track $index) {
           <tr>
             <td>
+              @if (pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
               <input type="checkbox" name="itemEmpenhoSelecionado{{ $index }}" [(ngModel)]="itensSelecionados[$index]">
+              }
             </td>
             <td>
               <span>{{ item.item_ata.item_generico.descricao }} </span>
@@ -123,6 +171,7 @@
             <td> {{ getCategoria(item) }} </td>
 
             <td>
+              @if (pode(Recurso.OPERACAO_EMPENHO, Acao.REFORCAR_EMPENHO)) {
               <div class="botoes-acoes">
                 <button (click)="prepararOperacao('reforco')" data-bs-toggle="modal" data-bs-target="#modalSaldo"
                   (click)="carregarItemEmpenho(item); trocarOperacao('ref');">
@@ -133,6 +182,14 @@
                   <i class="bi bi-x-circle anular"></i>
                 </button>
               </div>
+              }
+              @if (pode(Recurso.SOLICITACAO_REFORCO, Acao.CADASTRAR)) {
+              <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" data-bs-toggle="modal"
+                data-bs-target="#modalSolicitarReforco" (click)="abrirSolicitacaoReforco(item)"
+                title="Pedir ao Diretor um reforço deste item">
+                <i class="bi bi-plus-circle" aria-hidden="true"></i> Solicitar reforço
+              </button>
+              }
             </td>
 
           </tr>
@@ -149,8 +206,81 @@
 
         </tbody>
       </table>
-    </div>
-    <section class="historico-operacoes">
+      </div>
+    </section>
+
+    @if (pode(Recurso.SOLICITACAO_REFORCO, Acao.CONSULTAR) && solicitacoesReforco.length) {
+    <section class="sige-detail-section" aria-labelledby="solicitacoes-reforco-title">
+      <div class="sige-detail-section-header">
+        <h2 id="solicitacoes-reforco-title" class="sige-detail-section-title">Solicitações de reforço</h2>
+      </div>
+
+      @if (erroRespostaReforco) {
+      <div class="alert alert-danger py-2" role="alert">{{ erroRespostaReforco }}</div>
+      }
+
+      <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+        @for (solicitacao of solicitacoesReforco; track solicitacao.id) {
+        <li class="border rounded p-3">
+          <div class="d-flex flex-wrap justify-content-between gap-2">
+            <div>
+              <strong>{{ solicitacao.quantidade | number:'1.2-2' }} {{ solicitacao.unidade_medida }}</strong>
+              de {{ solicitacao.genero }}
+              <div class="small text-muted">
+                Pedido por {{ solicitacao.solicitante_nome }} em {{ solicitacao.data_solicitacao | date:'dd/MM/yyyy HH:mm' }}
+              </div>
+            </div>
+            <span class="badge align-self-start"
+              [ngClass]="{
+                'text-bg-warning': solicitacao.status === 'PENDENTE',
+                'text-bg-success': solicitacao.status === 'ATENDIDA',
+                'text-bg-secondary': solicitacao.status === 'RECUSADA'
+              }">
+              {{ textoStatusReforco(solicitacao.status) }}
+            </span>
+          </div>
+
+          <p class="mb-1 mt-2 fst-italic">"{{ solicitacao.justificativa }}"</p>
+
+          @if (solicitacao.status !== 'PENDENTE') {
+          <p class="small text-muted mb-0">
+            {{ solicitacao.status === 'ATENDIDA' ? 'Reforço executado' : 'Recusada' }}
+            por {{ solicitacao.respondida_por_nome }} em {{ solicitacao.data_resposta | date:'dd/MM/yyyy HH:mm' }}
+            @if (solicitacao.resposta) { — {{ solicitacao.resposta }} }
+          </p>
+          } @else if (pode(Recurso.SOLICITACAO_REFORCO, Acao.REFORCAR_EMPENHO)) {
+            @if (recusandoReforcoId === solicitacao.id) {
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              <input class="form-control form-control-sm flex-grow-1 w-auto" maxlength="500"
+                placeholder="Motivo da recusa (obrigatório)" [(ngModel)]="motivoRecusaReforco"
+                [disabled]="respondendoReforcoId === solicitacao.id">
+              <button type="button" class="btn btn-sm btn-danger"
+                [disabled]="!motivoRecusaReforco.trim() || respondendoReforcoId === solicitacao.id"
+                (click)="recusarReforco(solicitacao)">Confirmar recusa</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                [disabled]="respondendoReforcoId === solicitacao.id"
+                (click)="recusandoReforcoId = null">Cancelar</button>
+            </div>
+            } @else {
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              <button type="button" class="btn btn-sm btn-primary" [disabled]="respondendoReforcoId === solicitacao.id"
+                (click)="atenderReforco(solicitacao)">
+                <i class="bi bi-check-lg" aria-hidden="true"></i> Atender (executar reforço)
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger" [disabled]="respondendoReforcoId === solicitacao.id"
+                (click)="recusandoReforcoId = solicitacao.id; motivoRecusaReforco = ''">
+                Recusar
+              </button>
+            </div>
+            }
+          }
+        </li>
+        }
+      </ul>
+    </section>
+    }
+
+    <section class="sige-detail-section historico-operacoes">
       <div class="historico-operacoes-cabecalho">
         <button class="btn-toggle-historico" type="button" data-bs-toggle="collapse"
           data-bs-target="#historicoOperacoesCollapse" aria-expanded="false" aria-controls="historicoOperacoesCollapse">
@@ -160,11 +290,11 @@
       </div>
 
       <div class="collapse mt-3" id="historicoOperacoesCollapse">
-        <div class="paitabela historico-tabela-wrap">
-          <table class="tabela tabela-historico">
+        <div class="sige-detail-table-wrap historico-tabela-wrap">
+          <table class="tabela tabela-historico sige-detail-table">
             <thead>
               <tr>
-                <th scope="col">Data/Hora</th>
+                <th scope="col">Data/hora</th>
                 <th scope="col">Item</th>
                 <th scope="col">Tipo</th>
                 <th scope="col" class="coluna-direita">Quantidade</th>
@@ -357,4 +487,66 @@
     </div>
   </div>
 
-</body>
+  <div class="modal fade" id="modalSolicitarReforco" tabindex="-1" aria-labelledby="modalSolicitarReforcoLabel">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="modalSolicitarReforcoLabel">SOLICITAR REFORÇO AO DIRETOR</h5>
+          <button #fecharSolicitacaoReforcoBtn type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+            aria-label="Fechar" [disabled]="enviandoReforco"></button>
+        </div>
+
+        @if (itemReforco) {
+        <form (submit)="enviarSolicitacaoReforco(); $event.preventDefault()">
+          <div class="modal-body">
+            <label class="text-muted small">ITEM</label>
+            <div class="bg-light p-2 rounded mb-3">
+              {{ itemReforco.item_ata.item_generico.descricao }} ({{ itemReforco.item_ata.item_generico.unidade_medida }})
+              <div class="small text-muted">Quantidade empenhada: {{ itemReforco.quantidade_atual | number:'1.2-2' }}</div>
+            </div>
+
+            <p class="small mb-3">
+              Saldo disponível na ARP:
+              @if (saldoReforco === null) {
+              <span class="text-muted">carregando...</span>
+              } @else {
+              <b>{{ saldoReforco | number:'1.2-2' }} {{ itemReforco.item_ata.item_generico.unidade_medida }}</b>
+              }
+            </p>
+
+            @if (saldoReforco !== null && saldoReforco < 1) {
+            <div class="alert alert-warning py-2">Não há saldo na ARP para reforçar este item.</div>
+            }
+
+            <label for="quantidadeReforco" class="form-label">Quantidade desejada ({{ itemReforco.item_ata.item_generico.unidade_medida }})</label>
+            <input id="quantidadeReforco" name="quantidadeReforco" type="number" class="form-control mb-1" min="1"
+              [max]="saldoReforco ?? null" step="0.01" [(ngModel)]="quantidadeReforco" [disabled]="enviandoReforco">
+            @if (quantidadeReforco && saldoReforco !== null && quantidadeReforco > saldoReforco) {
+            <small class="text-danger d-block mb-2">A quantidade excede o saldo disponível na ARP.</small>
+            }
+
+            <label for="justificativaReforco" class="form-label mt-2">Justificativa</label>
+            <textarea id="justificativaReforco" name="justificativaReforco" class="form-control" rows="3" maxlength="500"
+              placeholder="Ex.: cardápio das próximas semanas exige mais carne bovina."
+              [(ngModel)]="justificativaReforco" [disabled]="enviandoReforco"></textarea>
+
+            @if (erroSolicitacaoReforco) {
+            <div class="alert alert-danger py-2 mt-3 mb-0">{{ erroSolicitacaoReforco }}</div>
+            }
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary w-100" [disabled]="!podeEnviarSolicitacaoReforco">
+              @if (enviandoReforco) {
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+              }
+              <i class="bi bi-send" aria-hidden="true"></i> Enviar ao Diretor
+            </button>
+          </div>
+        </form>
+        }
+      </div>
+    </div>
+  </div>
+
+</main>

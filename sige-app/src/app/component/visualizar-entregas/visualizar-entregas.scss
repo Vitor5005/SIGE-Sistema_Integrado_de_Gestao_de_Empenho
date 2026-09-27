@@ -13,7 +13,8 @@
 }
 
 .container-entregas {
-  width: 85vw;
+  width: 100%;
+  max-width: var(--sige-content-max-width);
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -22,11 +23,13 @@
 .status-listagem,
 .mensagem-listagem-erro,
 .estado-vazio-entregas {
-  width: 85vw;
+  width: 100%;
+  max-width: var(--sige-content-max-width);
 }
 
 .paginacao-lista {
-  width: 85vw;
+  width: 100%;
+  max-width: var(--sige-content-max-width);
   margin-top: 0;
   display: flex;
   flex-direction: column;
@@ -85,6 +88,10 @@
   &.realizada {
     background: var(--verde);
   }
+
+  &.parcial {
+    background: #d97706;
+  }
 }
 
 .info-entrega-principal {
@@ -103,6 +110,45 @@
   flex-wrap: wrap;
 }
 
+.contexto-entregas {
+  width: 100%;
+  max-width: var(--sige-content-max-width);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid #d7e3f7;
+  border-radius: 10px;
+  background: #f4f8ff;
+}
+
+.contexto-cadeia {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  color: var(--font-cinza2);
+  font-size: 14px;
+}
+
+.contexto-cadeia a {
+  color: var(--azul-escuro);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.contexto-separador {
+  color: var(--font-cinza2);
+  font-weight: 700;
+}
+
+.links-entrega .contexto-separador {
+  color: var(--branco);
+}
+
 .pedido-entrega {
   font-size: 18px;
   font-weight: bold;
@@ -110,7 +156,8 @@
 }
 
 .link-emp,
-.link-arp {
+.link-arp,
+.link-licitacao {
   background: var(--azul-escuro);
   padding: 2px 5px;
   border-radius: 6px;
@@ -118,6 +165,8 @@
   font-size: 12px;
   cursor: pointer;
   color: var(--branco);
+  text-decoration: underline;
+  text-underline-offset: 2px;
   transition: 0.2s;
 
   &:hover {
@@ -451,6 +500,15 @@
 }
 
 @media (max-width: 768px) {
+  .contexto-entregas {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .contexto-cadeia {
+    width: 100%;
+  }
+
   .topo-entrega {
     flex-wrap: wrap;
   }

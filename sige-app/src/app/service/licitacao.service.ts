@@ -52,9 +52,20 @@ export class LicitacaoService implements ICrudService<Licitacao> {
     return this.get(search, page, pageSize, filtrosRestantes);
   }
 
+  getAtual(): Observable<Licitacao | null> {
+    return this.get('', 1, 1, { atual: true }).pipe(
+      map((response) => response.results[0] ?? null)
+    );
+  }
+
   getById(id: number): Observable<Licitacao> {
     const url = this.apiUrl + id + '/';
     return this.http.get<Licitacao>(url);
+  }
+
+  definirAtual(id: number): Observable<Licitacao> {
+    const url = `${this.apiUrl}${id}/definir-atual/`;
+    return this.http.post<Licitacao>(url, {});
   }
 
   save(item: Licitacao): Observable<Licitacao> {

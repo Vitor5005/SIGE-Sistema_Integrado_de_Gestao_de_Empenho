@@ -1,0 +1,430 @@
+<div class="sige-page-container home-operacional">
+  <header class="sige-page-header home-cabecalho">
+    <div>
+      <h1 class="sige-page-title" id="home-title">Início</h1>
+      <p class="sige-page-description">Acompanhe os principais dados e pendências da operação.</p>
+    </div>
+  </header>
+
+  @if (podeVerLicitacoes) {
+  <section class="sige-section contexto-dados" aria-labelledby="contexto-dados-title">
+    <div class="contexto-cabecalho">
+      <div>
+        <h2 id="contexto-dados-title">Contexto dos dados</h2>
+        <p>Escolha o recorte operacional exibido na Home.</p>
+      </div>
+    </div>
+
+    @if (carregandoContexto) {
+      <p class="contexto-mensagem texto-carregando">Carregando licitação atual...</p>
+    } @else if (licitacaoAtual) {
+      <div class="contexto-seletor" role="group" aria-label="Contexto dos dados">
+        <button
+          type="button"
+          class="contexto-opcao"
+          [class.contexto-opcao--ativa]="contextoDados === 'atual'"
+          [attr.aria-pressed]="contextoDados === 'atual'"
+          (click)="selecionarContexto('atual')"
+        >
+          Licitação atual — {{ licitacaoAtual.numero_licitacao }}
+        </button>
+        <button
+          type="button"
+          class="contexto-opcao"
+          [class.contexto-opcao--ativa]="contextoDados === 'todas'"
+          [attr.aria-pressed]="contextoDados === 'todas'"
+          (click)="selecionarContexto('todas')"
+        >
+          Todas as licitações
+        </button>
+      </div>
+      <p class="contexto-mensagem">
+        {{ contextoDados === 'atual' ? 'Exibindo dados da licitação atual.' : 'Exibindo dados de todas as licitações.' }}
+      </p>
+    } @else {
+      <div class="contexto-seletor">
+        <span class="contexto-opcao contexto-opcao--ativa">Todas as licitações</span>
+      </div>
+      <p class="contexto-mensagem">
+        {{ erroContexto
+          ? 'Não foi possível identificar a licitação atual. Exibindo todos os dados.'
+          : 'Nenhuma licitação atual foi definida. Exibindo todos os dados.' }}
+        <a routerLink="/visualizar-licitacoes">Ver licitações</a>
+      </p>
+    }
+  </section>
+  }
+
+  <section class="home-bloco" aria-labelledby="visao-geral-title">
+    <div class="home-bloco-cabecalho">
+      <h2 id="visao-geral-title">Visão geral</h2>
+    </div>
+
+    <div class="indicadores-grid">
+      @if (podeVerLicitacoes) {
+      <a class="indicador-card" routerLink="/visualizar-licitacoes">
+        <span class="indicador-icone"><i class="bi bi-file-earmark-text" aria-hidden="true"></i></span>
+        <span class="indicador-conteudo">
+          <span class="indicador-titulo">Licitações</span>
+          @if (indicadores.licitacoes.carregando) {
+            <span class="indicador-valor indicador-valor--carregando" aria-label="Carregando">...</span>
+          } @else if (indicadores.licitacoes.erro) {
+            <span class="indicador-valor">—</span>
+            <span class="indicador-erro">Não foi possível carregar este dado.</span>
+          } @else {
+            <span class="indicador-valor">{{ indicadores.licitacoes.valor }}</span>
+          }
+        </span>
+      </a>
+      }
+
+      @if (podeVerAtas) {
+      <a class="indicador-card" routerLink="/visualizar-atas">
+        <span class="indicador-icone"><i class="bi bi-journal-text" aria-hidden="true"></i></span>
+        <span class="indicador-conteudo">
+          <span class="indicador-titulo">ARPs</span>
+          @if (indicadores.arps.carregando) {
+            <span class="indicador-valor indicador-valor--carregando" aria-label="Carregando">...</span>
+          } @else if (indicadores.arps.erro) {
+            <span class="indicador-valor">—</span>
+            <span class="indicador-erro">Não foi possível carregar este dado.</span>
+          } @else {
+            <span class="indicador-valor">{{ indicadores.arps.valor }}</span>
+          }
+        </span>
+      </a>
+      }
+
+      @if (podeVerEmpenhos) {
+      <a class="indicador-card" routerLink="/visualizar-empenhos">
+        <span class="indicador-icone"><i class="bi bi-receipt" aria-hidden="true"></i></span>
+        <span class="indicador-conteudo">
+          <span class="indicador-titulo">Empenhos</span>
+          @if (indicadores.empenhos.carregando) {
+            <span class="indicador-valor indicador-valor--carregando" aria-label="Carregando">...</span>
+          } @else if (indicadores.empenhos.erro) {
+            <span class="indicador-valor">—</span>
+            <span class="indicador-erro">Não foi possível carregar este dado.</span>
+          } @else {
+            <span class="indicador-valor">{{ indicadores.empenhos.valor }}</span>
+          }
+        </span>
+      </a>
+      }
+
+      <a class="indicador-card" routerLink="/visualizar-entregas">
+        <span class="indicador-icone"><i class="bi bi-truck" aria-hidden="true"></i></span>
+        <span class="indicador-conteudo">
+          <span class="indicador-titulo">Entregas em espera</span>
+          @if (indicadores.entregasEmEspera.carregando) {
+            <span class="indicador-valor indicador-valor--carregando" aria-label="Carregando">...</span>
+          } @else if (indicadores.entregasEmEspera.erro) {
+            <span class="indicador-valor">—</span>
+            <span class="indicador-erro">Não foi possível carregar este dado.</span>
+          } @else {
+            <span class="indicador-valor">{{ indicadores.entregasEmEspera.valor }}</span>
+          }
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <section
+    class="sige-section atencao"
+    [class.atencao--critica]="totalEntregasAtrasadas !== null && totalEntregasAtrasadas > 0"
+    aria-labelledby="atencao-title"
+  >
+    <div class="atencao-icone"><i class="bi bi-exclamation-circle" aria-hidden="true"></i></div>
+    <div class="atencao-conteudo">
+      <h2 id="atencao-title">Atenção</h2>
+      @if (carregandoAtencao) {
+        <p class="texto-carregando">Verificando entregas pendentes...</p>
+      } @else if (erroAtencao) {
+        <p>Não foi possível verificar entregas atrasadas.</p>
+      } @else if (usandoLicitacaoAtual) {
+        @if (carregandoAtrasosContextuais) {
+          <p class="texto-carregando">Verificando entregas atrasadas nesta licitação...</p>
+        } @else if (erroAtrasosContextuais) {
+          @if (totalEntregasAtrasadas !== null && totalEntregasAtrasadas > 0) {
+            <p>
+              {{ totalEntregasAtrasadas }}
+              {{ totalEntregasAtrasadas === 1 ? 'entrega está atrasada.' : 'entregas estão atrasadas.' }}
+            </p>
+          } @else {
+            <p>Nenhuma entrega atrasada no momento.</p>
+          }
+          <p class="atencao-contexto">Não foi possível separar os atrasos desta licitação.</p>
+        } @else {
+          @if (totalEntregasAtrasadasContexto !== null && totalEntregasAtrasadasContexto > 0) {
+            <p>
+              {{ totalEntregasAtrasadasContexto }}
+              {{ totalEntregasAtrasadasContexto === 1
+                ? 'entrega está atrasada nesta licitação.'
+                : 'entregas estão atrasadas nesta licitação.' }}
+            </p>
+          } @else {
+            <p>Nenhuma entrega atrasada nesta licitação.</p>
+          }
+          @if (atrasosOutrasLicitacoes > 0) {
+            <p class="atencao-contexto">
+              {{ atrasosOutrasLicitacoes }}
+              {{ atrasosOutrasLicitacoes === 1
+                ? 'entrega atrasada pertence a outra licitação.'
+                : 'entregas atrasadas pertencem a outras licitações.' }}
+            </p>
+          }
+        }
+      } @else if (totalEntregasAtrasadas !== null && totalEntregasAtrasadas > 0) {
+        <p>
+          {{ totalEntregasAtrasadas }}
+          {{ totalEntregasAtrasadas === 1 ? 'entrega está atrasada.' : 'entregas estão atrasadas.' }}
+        </p>
+      } @else {
+        <p>Nenhuma entrega atrasada no momento.</p>
+      }
+    </div>
+    @if (!carregandoAtencao && !erroAtencao && totalEntregasAtrasadas !== null && totalEntregasAtrasadas > 0) {
+      <a class="sige-button sige-button--secondary atencao-acao" routerLink="/visualizar-entregas">
+        Ver entregas
+      </a>
+    }
+  </section>
+
+  <section class="home-bloco indicadores-operacionais" aria-labelledby="indicadores-operacionais-title">
+    <div class="home-bloco-cabecalho">
+      <div>
+        <h2 id="indicadores-operacionais-title">Indicadores operacionais</h2>
+        <p>Uma leitura rápida das entregas e dos recursos empenhados no contexto selecionado.</p>
+      </div>
+    </div>
+
+    <div class="graficos-grid">
+      <article class="sige-section grafico-card" aria-labelledby="grafico-entregas-title">
+        <header class="grafico-cabecalho">
+          <h3 id="grafico-entregas-title">Situação das entregas</h3>
+          <p>Distribuição das ordens no contexto selecionado.</p>
+        </header>
+
+        @if (carregandoGraficoEntregas) {
+          <div class="grafico-skeleton" role="status" aria-label="Carregando situação das entregas">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        } @else if (erroGraficoEntregas) {
+          <p class="grafico-estado">Não foi possível carregar a situação das entregas.</p>
+        } @else if (totalEntregasGrafico === 0) {
+          <p class="grafico-estado">Ainda não há entregas para visualizar neste contexto.</p>
+        } @else {
+          <div class="grafico-resumo" aria-label="Dados da situação das entregas">
+            <div class="grafico-linha">
+              <div>
+                <span class="grafico-linha-titulo">Concluídas</span>
+                <span class="grafico-linha-valor">
+                  {{ quantidadeEntregasConcluidasGrafico }}
+                  {{ quantidadeEntregasConcluidasGrafico === 1 ? 'registro' : 'registros' }}
+                </span>
+              </div>
+              <strong>{{ formatarPercentual(percentualEntregasConcluidas) }}</strong>
+            </div>
+            <div class="grafico-linha">
+              <div>
+                <span class="grafico-linha-titulo">Em espera</span>
+                <span class="grafico-linha-valor">
+                  {{ quantidadeEntregasEmEsperaGrafico }}
+                  {{ quantidadeEntregasEmEsperaGrafico === 1 ? 'registro' : 'registros' }}
+                </span>
+              </div>
+              <strong>{{ formatarPercentual(percentualEntregasEmEspera) }}</strong>
+            </div>
+          </div>
+
+          <div class="grafico-barra" aria-hidden="true">
+            <span
+              class="grafico-segmento grafico-segmento--concluido"
+              [style.width.%]="percentualEntregasConcluidas"
+            ></span>
+            <span
+              class="grafico-segmento grafico-segmento--espera"
+              [style.width.%]="percentualEntregasEmEspera"
+            ></span>
+          </div>
+
+          @if (usandoLicitacaoAtual) {
+            @if (carregandoAtrasosContextuais) {
+              <p class="grafico-contexto">Verificando atrasos neste contexto...</p>
+            } @else if (!erroAtrasosContextuais && totalEntregasAtrasadasContexto !== null) {
+              <p class="grafico-contexto">
+                @if (totalEntregasAtrasadasContexto === 0) {
+                  Nenhuma entrega em espera está atrasada.
+                } @else {
+                  {{ totalEntregasAtrasadasContexto }} de {{ quantidadeEntregasEmEsperaGrafico }}
+                  {{ quantidadeEntregasEmEsperaGrafico === 1
+                    ? 'entrega em espera está atrasada.'
+                    : 'entregas em espera estão atrasadas.' }}
+                }
+              </p>
+            } @else {
+              <p class="grafico-contexto">Não foi possível verificar os atrasos deste contexto.</p>
+            }
+          } @else if (carregandoAtencao) {
+            <p class="grafico-contexto">Verificando atrasos...</p>
+          } @else if (!erroAtencao && totalEntregasAtrasadas !== null) {
+            <p class="grafico-contexto">
+              @if (totalEntregasAtrasadas === 0) {
+                Nenhuma entrega em espera está atrasada.
+              } @else {
+                {{ totalEntregasAtrasadas }} de {{ quantidadeEntregasEmEsperaGrafico }}
+                {{ quantidadeEntregasEmEsperaGrafico === 1
+                  ? 'entrega em espera está atrasada.'
+                  : 'entregas em espera estão atrasadas.' }}
+              }
+            </p>
+          } @else {
+            <p class="grafico-contexto">Não foi possível verificar os atrasos.</p>
+          }
+        }
+      </article>
+
+      @if (podeVerEmpenhos) {
+      <article class="sige-section grafico-card" aria-labelledby="grafico-financeiro-title">
+        <header class="grafico-cabecalho">
+          <h3 id="grafico-financeiro-title">Utilização financeira dos empenhos</h3>
+          <p>Relação entre o valor utilizado e o saldo disponível.</p>
+        </header>
+
+        @if (carregandoResumoFinanceiro) {
+          <div class="grafico-skeleton" role="status" aria-label="Carregando utilização financeira dos empenhos">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        } @else if (erroResumoFinanceiro) {
+          <p class="grafico-estado">Não foi possível carregar os dados financeiros.</p>
+        } @else if (!possuiResumoFinanceiro) {
+          <p class="grafico-estado">Ainda não há valores de empenho para visualizar neste contexto.</p>
+        } @else {
+          <div class="grafico-total">
+            <span>Total empenhado</span>
+            <strong>{{ formatarMoeda(resumoFinanceiro?.valor_empenhado) }}</strong>
+          </div>
+
+          <div class="grafico-resumo" aria-label="Dados da utilização financeira dos empenhos">
+            <div class="grafico-linha">
+              <div>
+                <span class="grafico-linha-titulo">Utilizado</span>
+                <span class="grafico-linha-valor">{{ formatarMoeda(resumoFinanceiro?.valor_utilizado) }}</span>
+              </div>
+              <strong>{{ formatarPercentual(percentualUtilizado) }}</strong>
+            </div>
+            <div class="grafico-linha">
+              <div>
+                <span class="grafico-linha-titulo">Disponível</span>
+                <span class="grafico-linha-valor">{{ formatarMoeda(resumoFinanceiro?.valor_disponivel) }}</span>
+              </div>
+              <strong>{{ formatarPercentual(percentualDisponivel) }}</strong>
+            </div>
+          </div>
+
+          <div class="grafico-barra" aria-hidden="true">
+            <span
+              class="grafico-segmento grafico-segmento--utilizado"
+              [style.width.%]="larguraPercentualUtilizado"
+            ></span>
+            <span
+              class="grafico-segmento grafico-segmento--disponivel"
+              [style.width.%]="larguraPercentualDisponivel"
+            ></span>
+          </div>
+        }
+      </article>
+      }
+    </div>
+  </section>
+
+  <section class="sige-section acoes-rapidas" aria-labelledby="acoes-rapidas-title">
+    <div class="home-bloco-cabecalho">
+      <div>
+        <h2 id="acoes-rapidas-title">Ações rápidas</h2>
+        <p>Atalhos para as tarefas mais frequentes.</p>
+      </div>
+    </div>
+    <div class="sige-actions home-acoes">
+      @if (pode(Recurso.LICITACAO, Acao.CADASTRAR)) {
+      <a class="sige-button sige-button--primary" routerLink="/adicionar-licitacao">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        Nova licitação
+      </a>
+      }
+      @if (podeVerEmpenhos) {
+      <a class="sige-button sige-button--secondary" routerLink="/visualizar-empenhos">
+        <i class="bi bi-receipt" aria-hidden="true"></i>
+        Consultar empenhos
+      </a>
+      }
+      <a class="sige-button sige-button--secondary" routerLink="/visualizar-entregas">
+        <i class="bi bi-truck" aria-hidden="true"></i>
+        Acompanhar entregas
+      </a>
+    </div>
+  </section>
+
+  <section class="sige-section entregas-recentes" aria-labelledby="entregas-recentes-title">
+    <div class="home-bloco-cabecalho entregas-recentes-cabecalho">
+      <div>
+        <h2 id="entregas-recentes-title">Entregas recentes</h2>
+        <p>Últimas ordens de entrega emitidas.</p>
+      </div>
+      <a class="link-todas-entregas" routerLink="/visualizar-entregas">Ver todas as entregas</a>
+    </div>
+
+    @if (carregandoEntregasRecentes) {
+      <div class="entregas-recentes-lista" aria-label="Carregando entregas recentes">
+        <div class="entrega-skeleton"></div>
+        <div class="entrega-skeleton"></div>
+        <div class="entrega-skeleton"></div>
+      </div>
+    } @else if (erroEntregasRecentes) {
+      <div class="estado-lista">Não foi possível carregar as entregas recentes.</div>
+    } @else if (entregasRecentes.length === 0) {
+      <div class="estado-lista">Nenhuma entrega recente encontrada.</div>
+    } @else {
+      <div class="entregas-recentes-lista">
+        @for (entrega of entregasRecentes; track entrega.id) {
+          <article class="entrega-recente">
+            <div class="entrega-recente-topo">
+              <div>
+                <span class="entrega-codigo">{{ entrega.codigo }}</span>
+                <span class="entrega-empenho">Empenho {{ entrega.empenho?.codigo || '—' }}</span>
+              </div>
+              <span
+                class="status-entrega"
+                [class.status-entrega--atrasada]="estaAtrasada(entrega)"
+                [class.status-entrega--concluida]="entrega.status === 'con'"
+              >
+                {{ textoStatusEntrega(entrega) }}
+              </span>
+            </div>
+
+            <dl class="entrega-informacoes">
+              <div>
+                <dt>Emissão</dt>
+                <dd>{{ entrega.data_emissao | date: 'dd/MM/yyyy' }}</dd>
+              </div>
+              <div>
+                <dt>Prevista</dt>
+                <dd>{{ entrega.data_entrega_prevista | date: 'dd/MM/yyyy' }}</dd>
+              </div>
+              @if (entrega.valor_total_executado !== null && entrega.valor_total_executado !== undefined) {
+                <div>
+                  <dt>Valor executado</dt>
+                  <dd>{{ formatarMoeda(entrega.valor_total_executado) }}</dd>
+                </div>
+              }
+            </dl>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>

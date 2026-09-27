@@ -1,5 +1,5 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink, TitleStrategy } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 import { CommonModule } from '@angular/common';
 import { EmpenhoService } from '../../service/empenho.service';
@@ -18,14 +18,20 @@ import { ItemOrdemService } from '../../service/item-ordem.service';
 import { OrdemEntregaService } from '../../service/ordem-entrega.service';
 import { forkJoin, switchMap } from 'rxjs';
 import { ItemOrdem } from '../../model/itemOrdem';
+import { Acao, pode, Recurso } from '../../security/rbac';
+import { SolicitacaoReforco, StatusSolicitacaoReforco } from '../../model/solicitacao_reforco';
+import { SolicitacaoReforcoService } from '../../service/solicitacao-reforco.service';
 
 @Component({
   selector: 'app-visualizar-empenho',
-  imports: [BotaoVoltar, CommonModule, FormsModule],
+  imports: [BotaoVoltar, CommonModule, FormsModule, RouterLink],
   templateUrl: './visualizar-empenho.html',
   styleUrl: './visualizar-empenho.scss',
 })
 export class VisualizarEmpenho {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
   tipo: 'reforco' | 'anulacao' = 'reforco';
   isSolicitandoEntrega: boolean = false;
   private permitirFecharModalSemConfirmacao: boolean = false;
@@ -38,8 +44,116 @@ export class VisualizarEmpenho {
     private itemEmpenhoService: ItemEmpenhoService,
     private ordemEntregaService: OrdemEntregaService,
     private itemOrdemService: ItemOrdemService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private solicitacaoReforcoService: SolicitacaoReforcoService,
   ) { }
+
+  @ViewChild('fecharSolicitacaoReforcoBtn') fecharSolicitacaoReforcoBtn?: ElementRef<HTMLButtonElement>;
+
+  solicitacoesReforco: SolicitacaoReforco[] = [];
+  itemReforco: ItemEmpenho | null = null;
+  saldoReforco: number | null = null;
+  quantidadeReforco: number | null = null;
+  justificativaReforco = '';
+  enviandoReforco = false;
+  erroSolicitacaoReforco = '';
+  respondendoReforcoId: number | null = null;
+  recusandoReforcoId: number | null = null;
+  motivoRecusaReforco = '';
+  erroRespostaReforco = '';
+
+  get podeEnviarSolicitacaoReforco(): boolean {
+    const quantidade = Number(this.quantidadeReforco);
+    return !this.enviandoReforco
+      && this.saldoReforco !== null
+      && quantidade >= 1
+      && quantidade <= this.saldoReforco
+      && this.justificativaReforco.trim().length > 0;
+  }
+
+  textoStatusReforco(status: StatusSolicitacaoReforco): string {
+    return { PENDENTE: 'Aguardando Diretor', ATENDIDA: 'Atendida', RECUSADA: 'Recusada' }[status];
+  }
+
+  getSolicitacoesReforco(empenhoId: number): void {
+    if (!pode(Recurso.SOLICITACAO_REFORCO, Acao.CONSULTAR)) {
+      return;
+    }
+    this.solicitacaoReforcoService.listar({ empenhoId }).subscribe({
+      next: (resposta) => this.solicitacoesReforco = resposta.results,
+    });
+  }
+
+  abrirSolicitacaoReforco(item: ItemEmpenho): void {
+    this.itemReforco = item;
+    this.saldoReforco = null;
+    this.quantidadeReforco = null;
+    this.justificativaReforco = '';
+    this.erroSolicitacaoReforco = '';
+    this.solicitacaoReforcoService.saldoDisponivel(item.id).subscribe({
+      next: (saldo) => this.saldoReforco = saldo,
+      error: () => this.erroSolicitacaoReforco = 'Não foi possível consultar o saldo da ARP.',
+    });
+  }
+
+  enviarSolicitacaoReforco(): void {
+    if (!this.itemReforco || !this.podeEnviarSolicitacaoReforco) {
+      return;
+    }
+    this.enviandoReforco = true;
+    this.erroSolicitacaoReforco = '';
+    this.solicitacaoReforcoService
+      .solicitar(this.itemReforco.id, Number(this.quantidadeReforco), this.justificativaReforco.trim())
+      .subscribe({
+        next: () => {
+          this.enviandoReforco = false;
+          this.fecharSolicitacaoReforcoBtn?.nativeElement.click();
+          this.getSolicitacoesReforco(this.empenho.id);
+        },
+        error: (erro) => {
+          this.enviandoReforco = false;
+          this.erroSolicitacaoReforco = this.mensagemErroApi(erro, 'Não foi possível enviar a solicitação.');
+        },
+      });
+  }
+
+  atenderReforco(solicitacao: SolicitacaoReforco): void {
+    this.responderReforco(solicitacao, this.solicitacaoReforcoService.atender(solicitacao.id), true);
+  }
+
+  recusarReforco(solicitacao: SolicitacaoReforco): void {
+    this.responderReforco(
+      solicitacao,
+      this.solicitacaoReforcoService.recusar(solicitacao.id, this.motivoRecusaReforco.trim()),
+      false,
+    );
+  }
+
+  private responderReforco(solicitacao: SolicitacaoReforco, requisicao: ReturnType<SolicitacaoReforcoService['atender']>, alterouSaldos: boolean): void {
+    this.respondendoReforcoId = solicitacao.id;
+    this.erroRespostaReforco = '';
+    requisicao.subscribe({
+      next: () => {
+        this.respondendoReforcoId = null;
+        this.recusandoReforcoId = null;
+        this.getSolicitacoesReforco(this.empenho.id);
+        if (alterouSaldos) {
+          this.getEmpenho(this.empenho.id);
+          this.getItensEmpenho(this.empenho.id);
+          this.getOperacoesEmpenho(this.empenho.id);
+        }
+      },
+      error: (erro) => {
+        this.respondendoReforcoId = null;
+        this.erroRespostaReforco = this.mensagemErroApi(erro, 'Não foi possível responder a solicitação.');
+      },
+    });
+  }
+
+  private mensagemErroApi(erro: any, padrao: string): string {
+    const valor = erro?.error && typeof erro.error === 'object' ? Object.values(erro.error)[0] : null;
+    return Array.isArray(valor) ? String(valor[0]) : (typeof valor === 'string' ? valor : padrao);
+  }
 
   empenho: Empenho = <Empenho>{};
   itensEmpenho: ItemEmpenho[] = [];
@@ -153,6 +267,17 @@ export class VisualizarEmpenho {
       this.router.navigate([rota]);
     }
   }
+
+  verEntregasDoEmpenho(): void {
+    if (!this.empenho.id) {
+      return;
+    }
+
+    this.router.navigate(['/visualizar-entregas'], {
+      queryParams: { empenho_id: this.empenho.id }
+    });
+  }
+
   prepararOperacao(tipoOperacao: 'reforco' | 'anulacao') {
     this.tipo = tipoOperacao;
   }
@@ -165,6 +290,7 @@ export class VisualizarEmpenho {
       this.getEmpenho(Number(id));
       this.getItensEmpenho(Number(id));
       this.getOperacoesEmpenho(Number(id));
+      this.getSolicitacoesReforco(Number(id));
     }
   }
 
@@ -358,9 +484,11 @@ export class VisualizarEmpenho {
   salvarOperacaoItem(): void {
     this.operacaoItem_insercao.data = new Date();
     this.operacaoItemService.save(this.operacaoItem_insercao).subscribe({
-      complete: () => {
-        this.atualizarItemEmpenho(this.operacaoItem_insercao.valor, this.operacaoItem_insercao.tipo, this.operacaoItem_insercao.item_empenho);
-      }
+      next: () => window.location.reload(),
+      error: (erro) => {
+        const detalhe = erro?.error ? Object.values(erro.error)[0] : null;
+        alert(Array.isArray(detalhe) ? String(detalhe[0]) : 'Não foi possível registrar a operação.');
+      },
     });
   }
 
@@ -422,7 +550,7 @@ export class VisualizarEmpenho {
     this.ordemEntregaInsert.empenho = this.empenho.id;
     this.ordemEntregaInsert.data_emissao = new Date();
     this.ordemEntregaInsert.status = 'esp';
-    this.ordemEntregaInsert.valor_total_executado = this.calcularSomaTotalItensSolicitados();
+    this.ordemEntregaInsert.valor_total_executado = 0;
 
     this.ordemEntregaService.save(this.ordemEntregaInsert).subscribe({
       next: (ordemCriada: OrdemEntregaInsert) => {
