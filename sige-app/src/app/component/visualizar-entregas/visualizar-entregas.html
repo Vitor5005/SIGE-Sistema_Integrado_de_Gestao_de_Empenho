@@ -110,16 +110,14 @@
             </div>
 
             <div class="acoes-entrega">
-              @if (item.status !== 'con') {
+              @if (item.status !== 'con' && pode(Recurso.ESTOQUE, Acao.REGISTRAR_RECEBIMENTO)) {
                 <button
                   class="btn-confirmar"
-                  data-bs-toggle="modal"
-                  data-bs-target="#confirmarModal"
                   *ngIf="!confirmado"
-                  (click)="getItensOrdem(item.id, $index)"
+                  (click)="enviarPara('/estoque/recebimento', item.id)"
                 >
                   <i class="bi bi-check-circle"></i>
-                  CONFIRMAR ENTREGA
+                  REGISTRAR RECEBIMENTO
                 </button>
               }
 

@@ -27,6 +27,7 @@
                     <p class="sige-detail-subtitle ata-numero"><i class="bi bi-file-earmark-text" aria-hidden="true"></i>
                         {{ ata.numero_ata }}</p>
                 </div>
+                @if (pode(Recurso.ITEM_ATA, Acao.CADASTRAR)) {
                 <div class="sige-detail-actions">
                     <button #myInput class="sige-button sige-button--primary" data-bs-toggle="modal"
                         data-bs-target="#adicionarItemModal" [disabled]="isSaving" (click)="reiniciar_Modal()">
@@ -34,6 +35,7 @@
                         Adicionar item
                     </button>
                 </div>
+                }
             </header>
 
             <div class="sige-metric-grid ata-metric-grid">

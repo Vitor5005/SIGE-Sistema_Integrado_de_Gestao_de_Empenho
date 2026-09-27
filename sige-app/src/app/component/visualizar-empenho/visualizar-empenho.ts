@@ -18,8 +18,12 @@ import { ItemOrdemService } from '../../service/item-ordem.service';
 import { OrdemEntregaService } from '../../service/ordem-entrega.service';
 import { forkJoin, switchMap } from 'rxjs';
 import { ItemOrdem } from '../../model/itemOrdem';
+<<<<<<< HEAD
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
+=======
+import { Acao, pode, Recurso } from '../../security/rbac';
+>>>>>>> origin/marcos
 
 @Component({
   selector: 'app-visualizar-empenho',
@@ -28,6 +32,9 @@ import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
   styleUrl: './visualizar-empenho.scss',
 })
 export class VisualizarEmpenho {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
   tipo: 'reforco' | 'anulacao' = 'reforco';
   isSolicitandoEntrega: boolean = false;
   etapaSolicitacao: 1 | 2 | 3 = 1;
@@ -591,9 +598,11 @@ export class VisualizarEmpenho {
 
     this.operacaoItem_insercao.data = new Date();
     this.operacaoItemService.save(this.operacaoItem_insercao).subscribe({
-      complete: () => {
-        this.atualizarItemEmpenho(this.operacaoItem_insercao.valor, this.operacaoItem_insercao.tipo, this.operacaoItem_insercao.item_empenho);
-      }
+      next: () => window.location.reload(),
+      error: (erro) => {
+        const detalhe = erro?.error ? Object.values(erro.error)[0] : null;
+        alert(Array.isArray(detalhe) ? String(detalhe[0]) : 'Não foi possível registrar a operação.');
+      },
     });
   }
 
@@ -661,7 +670,7 @@ export class VisualizarEmpenho {
     this.ordemEntregaInsert.empenho = this.empenho.id;
     this.ordemEntregaInsert.data_emissao = new Date();
     this.ordemEntregaInsert.status = 'esp';
-    this.ordemEntregaInsert.valor_total_executado = this.calcularSomaTotalItensSolicitados();
+    this.ordemEntregaInsert.valor_total_executado = 0;
 
     this.ordemEntregaService.save(this.ordemEntregaInsert).subscribe({
       next: (ordemCriada: OrdemEntregaInsert) => {

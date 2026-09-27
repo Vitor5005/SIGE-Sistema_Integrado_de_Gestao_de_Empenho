@@ -6,6 +6,7 @@
     </div>
   </header>
 
+  @if (podeVerLicitacoes) {
   <section class="sige-section contexto-dados" aria-labelledby="contexto-dados-title">
     <div class="contexto-cabecalho">
       <div>
@@ -52,6 +53,7 @@
       </p>
     }
   </section>
+  }
 
   <section class="home-bloco" aria-labelledby="visao-geral-title">
     <div class="home-bloco-cabecalho">
@@ -59,6 +61,7 @@
     </div>
 
     <div class="indicadores-grid">
+      @if (podeVerLicitacoes) {
       <a class="indicador-card" routerLink="/visualizar-licitacoes">
         <span class="indicador-icone"><i class="bi bi-file-earmark-text" aria-hidden="true"></i></span>
         <span class="indicador-conteudo">
@@ -73,7 +76,9 @@
           }
         </span>
       </a>
+      }
 
+      @if (podeVerAtas) {
       <a class="indicador-card" routerLink="/visualizar-atas">
         <span class="indicador-icone"><i class="bi bi-journal-text" aria-hidden="true"></i></span>
         <span class="indicador-conteudo">
@@ -88,7 +93,9 @@
           }
         </span>
       </a>
+      }
 
+      @if (podeVerEmpenhos) {
       <a class="indicador-card" routerLink="/visualizar-empenhos">
         <span class="indicador-icone"><i class="bi bi-receipt" aria-hidden="true"></i></span>
         <span class="indicador-conteudo">
@@ -103,6 +110,7 @@
           }
         </span>
       </a>
+      }
 
       <a class="indicador-card" routerLink="/visualizar-entregas">
         <span class="indicador-icone"><i class="bi bi-truck" aria-hidden="true"></i></span>
@@ -278,6 +286,7 @@
         }
       </article>
 
+      @if (podeVerEmpenhos) {
       <article class="sige-section grafico-card" aria-labelledby="grafico-financeiro-title">
         <header class="grafico-cabecalho">
           <h3 id="grafico-financeiro-title">Utilização financeira dos empenhos</h3>
@@ -329,6 +338,7 @@
           </div>
         }
       </article>
+      }
     </div>
   </section>
 
@@ -340,14 +350,18 @@
       </div>
     </div>
     <div class="sige-actions home-acoes">
+      @if (pode(Recurso.LICITACAO, Acao.CADASTRAR)) {
       <a class="sige-button sige-button--primary" routerLink="/adicionar-licitacao">
         <i class="bi bi-plus-lg" aria-hidden="true"></i>
         Nova licitação
       </a>
+      }
+      @if (podeVerEmpenhos) {
       <a class="sige-button sige-button--secondary" routerLink="/visualizar-empenhos">
         <i class="bi bi-receipt" aria-hidden="true"></i>
         Consultar empenhos
       </a>
+      }
       <a class="sige-button sige-button--secondary" routerLink="/visualizar-entregas">
         <i class="bi bi-truck" aria-hidden="true"></i>
         Acompanhar entregas

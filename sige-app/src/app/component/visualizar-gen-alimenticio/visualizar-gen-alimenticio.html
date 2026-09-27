@@ -51,10 +51,12 @@
           </div>
         </div>
 
+        @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.EDITAR)) {
         <div class="sige-detail-actions genero-actions">
           <button class="sige-button sige-button--primary btn-editar" value="btn-editar" type="button"
             (click)="habilitarEdicao()">{{ editando ? 'Salvar' : 'Editar' }}</button>
         </div>
+        }
       </section>
     </section>
   </div>

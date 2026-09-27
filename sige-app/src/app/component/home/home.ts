@@ -11,6 +11,7 @@ import { AtaService } from '../../service/ata.service';
 import { EmpenhoService, ResumoFinanceiroEmpenhos } from '../../service/empenho.service';
 import { LicitacaoService } from '../../service/licitacao.service';
 import { OrdemEntregaService } from '../../service/ordem-entrega.service';
+import { Acao, pode, Recurso } from '../../security/rbac';
 
 type IndicadorKey = 'licitacoes' | 'arps' | 'empenhos' | 'entregasEmEspera';
 type ContextoDados = 'atual' | 'todas';
@@ -28,6 +29,14 @@ interface EstadoIndicador {
   styleUrl: './home.scss',
 })
 export class Home implements OnInit {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
+
+  readonly podeVerLicitacoes = pode(Recurso.LICITACAO, Acao.CONSULTAR);
+  readonly podeVerAtas = pode(Recurso.ATA, Acao.CONSULTAR);
+  readonly podeVerEmpenhos = pode(Recurso.EMPENHO, Acao.CONSULTAR);
+
   indicadores: Record<IndicadorKey, EstadoIndicador> = {
     licitacoes: { valor: null, carregando: true, erro: false },
     arps: { valor: null, carregando: true, erro: false },
@@ -76,7 +85,15 @@ export class Home implements OnInit {
 
   ngOnInit(): void {
     this.carregarAtrasosGlobais();
-    this.carregarContextoInicial();
+
+    if (this.podeVerLicitacoes) {
+      this.carregarContextoInicial();
+      return;
+    }
+
+    // Sem acesso às licitações (ex.: Estoquista): exibe apenas dados de todas as entregas.
+    this.carregandoContexto = false;
+    this.carregarDadosDoContexto();
   }
 
   selecionarContexto(contexto: ContextoDados): void {
@@ -175,11 +192,15 @@ export class Home implements OnInit {
       return 'Em espera';
     }
 
+    if (entrega.status === 'par') {
+      return 'Parcialmente entregue';
+    }
+
     return entrega.status;
   }
 
   estaAtrasada(entrega: OrdemEntrega): boolean {
-    if (entrega.status !== 'esp' || !entrega.data_entrega_prevista) {
+    if (entrega.status === 'con' || !entrega.data_entrega_prevista) {
       return false;
     }
 
@@ -262,8 +283,12 @@ export class Home implements OnInit {
       : { status: 'con', empenho__ata__licitacao__id: licitacaoId };
 
     const consultasContextuais = {
-      arps: this.consultaSegura(this.ataService.get(filtrosAta, 1, 1)),
-      empenhos: this.consultaSegura(this.empenhoService.get('', 1, 1, filtrosEmpenho)),
+      arps: this.podeVerAtas
+        ? this.consultaSegura(this.ataService.get(filtrosAta, 1, 1))
+        : of(null),
+      empenhos: this.podeVerEmpenhos
+        ? this.consultaSegura(this.empenhoService.get('', 1, 1, filtrosEmpenho))
+        : of(null),
       entregasEmEspera: this.consultaSegura(
         this.ordemEntregaService.get('', 1, 1, filtrosEntregas),
       ),
@@ -292,7 +317,9 @@ export class Home implements OnInit {
     }
 
     forkJoin({
-      licitacoes: this.consultaSegura(this.licitacaoService.get('', 1, 1)),
+      licitacoes: this.podeVerLicitacoes
+        ? this.consultaSegura(this.licitacaoService.get('', 1, 1))
+        : of(null),
       ...consultasContextuais,
     }).subscribe(({ licitacoes, arps, empenhos, entregasEmEspera, entregasConcluidas }) => {
       if (versao !== this.versaoContexto) {
@@ -318,8 +345,12 @@ export class Home implements OnInit {
 
   private carregarResumoFinanceiro(licitacaoId: number | null, versao: number): void {
     this.resumoFinanceiro = null;
-    this.carregandoResumoFinanceiro = true;
+    this.carregandoResumoFinanceiro = this.podeVerEmpenhos;
     this.erroResumoFinanceiro = false;
+
+    if (!this.podeVerEmpenhos) {
+      return;
+    }
 
     this.empenhoService
       .getResumoFinanceiro(licitacaoId)

@@ -2,16 +2,20 @@ from rest_framework import viewsets
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from cadastro.serializers import EnderecoSerializer, FornecedorSerializer, FornecedorCreateSerializer, ItemGenericoSerializer
 from licitacao.views import BaseFiltroMixin
-from utils.permissions import IsAdmin,IsTecnico
-class EnderecoViewSet(viewsets.ModelViewSet):
+from utils.audit import AuditoriaRBACMixin
+from utils.permissions import RBACPermission
+from utils.rbac import Recurso
+class EnderecoViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = Endereco.objects.all()
     serializer_class = EnderecoSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.ENDERECO
 
-class FornecedorViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
+class FornecedorViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Fornecedor.objects.all()
     serializer_class = FornecedorSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.FORNECEDOR
     
     def get_serializer_class(self):
         
@@ -37,10 +41,11 @@ class FornecedorViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
 
     ordering_fields = ['nome_fantasia', 'cnpj']
     ordering = ['nome_fantasia']
-class ItemGenericoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
+class ItemGenericoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = ItemGenerico.objects.all()
     serializer_class = ItemGenericoSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.GENERO_ALIMENTICIO
 
     
     search_fields = [

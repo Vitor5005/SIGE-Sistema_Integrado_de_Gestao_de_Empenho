@@ -14,8 +14,12 @@ import { EmpenhoService } from '../../service/empenho.service';
 import { Empenho } from '../../model/empenho';
 import { ItemEmpenhoService } from '../../service/item-empenho.service';
 import { Paginacao } from '../utils/paginacao/paginacao';
+<<<<<<< HEAD
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
+=======
+import { Acao, pode, Recurso } from '../../security/rbac';
+>>>>>>> origin/marcos
 
 @Component({
   selector: 'app-visualizar-entregas',
@@ -25,6 +29,9 @@ import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
   styleUrl: './visualizar-entregas.scss',
 })
 export class VisualizarEntregas {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
 
   filtros: FiltroConfig[] = [
   {
@@ -33,6 +40,7 @@ export class VisualizarEntregas {
     tipo: 'radio',
     opcoes: [
       { valor: 'esp', label: 'Entrega em espera' },
+      { valor: 'par', label: 'Entrega parcial' },
       { valor: 'con', label: 'Entrega realizada' }
     ]
   },
@@ -306,12 +314,18 @@ export class VisualizarEntregas {
     if (status === "esp") {
       return "Entrega em espera";
     }
+    if (status === "par") {
+      return "Entrega parcial";
+    }
     return "Entrega realizada";
   }
 
   classeStatus(status: string): string {
     if (status === "esp") {
       return "em_espera";
+    }
+    if (status === "par") {
+      return "parcial";
     }
     return "realizada";
   }
@@ -321,7 +335,8 @@ export class VisualizarEntregas {
       if (a.status === b.status) {
         return new Date(a.data_emissao).getTime() - new Date(b.data_emissao).getTime();
       }
-      return a.status === 'esp' ? -1 : 1;
+      const prioridade: Record<string, number> = { par: 0, esp: 1, con: 2 };
+      return (prioridade[a.status] ?? 3) - (prioridade[b.status] ?? 3);
     });
   }
 

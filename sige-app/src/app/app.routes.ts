@@ -17,6 +17,12 @@ import { RecuperarSenha } from './component/recuperar-senha/recuperar-senha';
 import { authGuard } from './guard/auth.guard';
 import { Home } from './component/home/home';
 import { VisualizarUsuarios } from './component/visualizar-usuarios/visualizar-usuarios';
+import { permissionGuard } from './guard/permission.guard';
+import { Acao, Recurso } from './security/rbac';
+import { Estoque } from './component/estoque/estoque';
+import { ExtratoEstoque } from './component/estoque/extrato-estoque/extrato-estoque';
+import { MovimentarEstoque } from './component/estoque/movimentar-estoque/movimentar-estoque';
+import { RegistrarRecebimento } from './component/estoque/registrar-recebimento/registrar-recebimento';
 
 export const routes: Routes = [
   {
@@ -43,62 +49,111 @@ export const routes: Routes = [
       {
         path: 'visualizar-licitacoes',
         component: VisualizarLicitacoes,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.LICITACAO, acao: Acao.CONSULTAR } },
       },
       {
         path: 'adicionar-licitacao',
         component: AdicionarLicitacao,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.LICITACAO, acao: Acao.CADASTRAR } },
       },
       {
         path: 'visualizar-licitacao',
-        component: VisualizarLicitacao
+        component: VisualizarLicitacao,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.LICITACAO, acao: Acao.CONSULTAR } },
       },
       {
         path: "visualizar-atas",
-        component: VisualizarAtas
+        component: VisualizarAtas,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.ATA, acao: Acao.CONSULTAR } },
       },
       {
         path: 'visualizar-ata',
-        component: VisualizarAta
+        component: VisualizarAta,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.ATA, acao: Acao.CONSULTAR } },
       },
       {
         path: 'visualizar-empenhos',
-        component: VisualizarEmpenhos
+        component: VisualizarEmpenhos,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.EMPENHO, acao: Acao.CONSULTAR } },
       },
       {
         path: "visualizar-empenho",
-        component: VisualizarEmpenho
+        component: VisualizarEmpenho,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.EMPENHO, acao: Acao.CONSULTAR } },
       },
       {
         path: "visualizar-entregas",
-        component: VisualizarEntregas
+        component: VisualizarEntregas,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.ORDEM_ENTREGA, acao: Acao.CONSULTAR } },
       },
       {
         path: "visualizar-fornecedores",
-        component: VisualizarFornecedores
+        component: VisualizarFornecedores,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.FORNECEDOR, acao: Acao.CONSULTAR } },
       },
       {
         path: "visualizar-fornecedor",
-        component: VisualizarFornecedor
+        component: VisualizarFornecedor,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.FORNECEDOR, acao: Acao.CONSULTAR } },
       },
 
       {
         path: "visualizar-gens-alimenticios",
-        component: VisualizarGensAlimenticios
+        component: VisualizarGensAlimenticios,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.GENERO_ALIMENTICIO, acao: Acao.CONSULTAR } },
       },
       {
         path: 'visualizar-gen-alimenticio',
-        component: VisualizarGenAlimenticio
+        component: VisualizarGenAlimenticio,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.GENERO_ALIMENTICIO, acao: Acao.CONSULTAR } },
+      },
+      {
+        path: 'estoque',
+        component: Estoque,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.ESTOQUE, acao: Acao.CONSULTAR } },
+      },
+      {
+        path: 'estoque/extrato',
+        component: ExtratoEstoque,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.MOVIMENTACAO_ESTOQUE, acao: Acao.CONSULTAR_EXTRATO } },
+      },
+      {
+        path: 'estoque/movimentacao',
+        component: MovimentarEstoque,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.ESTOQUE, acao: Acao.REGISTRAR_SAIDA } },
+      },
+      {
+        path: 'estoque/recebimento',
+        component: RegistrarRecebimento,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.ESTOQUE, acao: Acao.REGISTRAR_RECEBIMENTO } },
       }
     ]
   },
   {
     path: "",
     canActivate: [authGuard],
-    data: { roles: ['ADMIN'] },
     children: [
       {
         path: "visualizar-usuarios",
         component: VisualizarUsuarios,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.USUARIO, acao: Acao.CONSULTAR } },
       }
     ]
   },

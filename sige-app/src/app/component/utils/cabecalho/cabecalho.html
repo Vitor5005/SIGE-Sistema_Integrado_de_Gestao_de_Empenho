@@ -11,6 +11,7 @@
       Início
     </a>
 
+    @if (pode(Recurso.LICITACAO, Acao.CONSULTAR)) {
     <div class="dropdown">
       <button
         class="nav-item nav-dropdown dropdown-toggle"
@@ -43,6 +44,7 @@
         </li>
       </ul>
     </div>
+    }
 
     <a
       class="nav-item"
@@ -53,6 +55,13 @@
       Entregas
     </a>
 
+    @if (pode(Recurso.ESTOQUE, Acao.CONSULTAR)) {
+    <a class="nav-item" routerLink="/estoque" routerLinkActive="is-active">
+      Estoque
+    </a>
+    }
+
+    @if (pode(Recurso.FORNECEDOR, Acao.CONSULTAR) || pode(Recurso.GENERO_ALIMENTICIO, Acao.CONSULTAR)) {
     <div class="dropdown">
       <button
         class="nav-item nav-dropdown dropdown-toggle"
@@ -65,27 +74,92 @@
         Cadastros
       </button>
       <ul class="dropdown-menu dropdown-menu--sige" aria-labelledby="menuCadastros">
+        @if (pode(Recurso.FORNECEDOR, Acao.CONSULTAR)) {
         <li>
           <a class="dropdown-item" routerLink="/visualizar-fornecedores">
             <i class="bi bi-shop-window" aria-hidden="true"></i>
             Fornecedores
           </a>
         </li>
+        }
+        @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.CONSULTAR)) {
         <li>
           <a class="dropdown-item" routerLink="/visualizar-gens-alimenticios">
             <i class="bi bi-card-list" aria-hidden="true"></i>
             Gêneros alimentícios
           </a>
         </li>
+        }
       </ul>
     </div>
+    }
   </nav>
 
   <div class="cabecalho-acoes">
+    @if (pode(Recurso.LICITACAO, Acao.CADASTRAR)) {
     <a class="nova-licitacao" routerLink="/adicionar-licitacao">
       <i class="bi bi-plus-lg" aria-hidden="true"></i>
       <span>Nova licitação</span>
     </a>
+    }
+
+    @if (pode(Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)) {
+    <div class="dropdown">
+      <button
+        class="alertas-botao"
+        type="button"
+        id="menuAlertas"
+        data-bs-toggle="dropdown"
+        data-bs-auto-close="outside"
+        aria-expanded="false"
+        [attr.aria-label]="pendencias.length ? pendencias.length + ' pendências de fornecedores' : 'Pendências de fornecedores'"
+        (click)="carregarPendencias()"
+      >
+        <i class="bi bi-bell" aria-hidden="true"></i>
+        @if (pendencias.length) {
+        <span class="alertas-contador">{{ totalPendencias > 9 ? '9+' : totalPendencias }}</span>
+        }
+      </button>
+
+      <div class="dropdown-menu dropdown-menu-end dropdown-menu--sige alertas-dropdown" aria-labelledby="menuAlertas">
+        <span class="dropdown-header">Pendências de fornecedores</span>
+
+        @if (erroPendencias) {
+        <p class="alertas-vazio">Não foi possível carregar as pendências.</p>
+        } @else if (!pendencias.length) {
+        <p class="alertas-vazio">Nenhuma pendência em aberto.</p>
+        } @else {
+        <ul class="alertas-lista">
+          @for (pendencia of pendencias; track pendencia.id) {
+          <li class="alerta-item">
+            <div class="alerta-topo">
+              <strong>{{ pendencia.fornecedor }}</strong>
+              <span>{{ pendencia.data_atualizacao | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <p class="alerta-resumo">
+              Faltam <b>{{ pendencia.quantidade_pendente | number: '1.0-3' }} {{ pendencia.unidade_medida }}</b>
+              de {{ pendencia.genero }}
+              ({{ pendencia.quantidade_entregue | number: '1.0-3' }} de
+              {{ pendencia.quantidade_solicitada | number: '1.0-3' }} recebidos)
+            </p>
+            <p class="alerta-motivo">"{{ pendencia.motivo }}"</p>
+            <div class="alerta-rodape">
+              <span>Ordem {{ pendencia.ordem_codigo }} · por {{ pendencia.registrada_por_nome }}</span>
+              <button type="button" class="alerta-ciente" [disabled]="marcandoCiente === pendencia.id"
+                (click)="marcarCiente(pendencia)">
+                <i class="bi bi-check2" aria-hidden="true"></i> Ciente
+              </button>
+            </div>
+          </li>
+          }
+        </ul>
+        @if (totalPendencias > pendencias.length) {
+        <p class="alertas-vazio">E mais {{ totalPendencias - pendencias.length }} pendência(s).</p>
+        }
+        }
+      </div>
+    </div>
+    }
 
     <div class="dropdown">
       <button
@@ -108,7 +182,7 @@
           <span class="usuario-detalhes-papel">{{ verificarPapel(papel) }}</span>
         </li>
 
-        @if (papel === 'ADMIN') {
+        @if (pode(Recurso.USUARIO, Acao.CONSULTAR)) {
           <li><span class="dropdown-header">Administração</span></li>
           <li>
             <a class="dropdown-item" routerLink="/visualizar-usuarios">

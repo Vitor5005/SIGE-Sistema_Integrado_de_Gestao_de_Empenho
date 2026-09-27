@@ -1,6 +1,10 @@
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from "@angular/router";
+import { PendenciaFornecedor } from '../../../model/pendencia_fornecedor';
 import { Auth } from '../../../service/auth';
+import { PendenciaFornecedorService } from '../../../service/pendencia-fornecedor.service';
+import { Acao, Papel, pode, Recurso } from '../../../security/rbac';
 
 type TokenPayload = {
   papel?: string;
@@ -9,19 +13,28 @@ type TokenPayload = {
 
 @Component({
   selector: 'app-cabecalho',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, DatePipe, DecimalPipe],
   templateUrl: './cabecalho.html',
   styleUrl: './cabecalho.scss',
 })
 export class Cabecalho {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
 
   constructor(
     private router: Router,
-    private auth: Auth
+    private auth: Auth,
+    private pendenciaService: PendenciaFornecedorService,
   ) { }
 
   papel: string = "";
   usuario: string = "";
+
+  pendencias: PendenciaFornecedor[] = [];
+  totalPendencias = 0;
+  erroPendencias = false;
+  marcandoCiente: number | null = null;
 
   readonly rotasAquisicoes = [
     '/visualizar-licitacoes',
@@ -67,13 +80,51 @@ export class Cabecalho {
   ngOnInit() {
     this.getPapel();
     this.getUser();
+    this.carregarPendencias();
+  }
+
+  carregarPendencias(): void {
+    if (!pode(Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)) {
+      return;
+    }
+
+    this.pendenciaService.listar('ABERTA', 1, 5).subscribe({
+      next: (resposta) => {
+        this.pendencias = resposta.results;
+        this.totalPendencias = resposta.count;
+        this.erroPendencias = false;
+      },
+      error: () => {
+        this.erroPendencias = true;
+      },
+    });
+  }
+
+  marcarCiente(pendencia: PendenciaFornecedor): void {
+    this.marcandoCiente = pendencia.id;
+    this.pendenciaService.marcarCiente(pendencia.id).subscribe({
+      next: () => {
+        this.marcandoCiente = null;
+        this.carregarPendencias();
+      },
+      error: () => {
+        this.marcandoCiente = null;
+        this.erroPendencias = true;
+      },
+    });
   }
 
   verificarPapel(papel: string): string {
-    if (papel === 'ADMIN') {
-      return 'Administrador';
+    if (papel === Papel.DIRETOR) {
+      return 'Diretor';
     }
-    return 'Técnico';
+    if (papel === Papel.NUTRICIONISTA) {
+      return 'Nutricionista';
+    }
+    if (papel === Papel.ESTOQUISTA) {
+      return 'Estoquista';
+    }
+    return 'Técnico Administrativo';
   }
 
   isGrupoAtivo(rotas: readonly string[]): boolean {

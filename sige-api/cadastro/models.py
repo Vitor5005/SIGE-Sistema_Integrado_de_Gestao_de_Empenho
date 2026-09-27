@@ -53,6 +53,38 @@ class ItemGenerico(models.Model):
         ("Pr","Proteínas")
     )
     categoria = models.CharField(max_length=5, choices=categorias_de_alimento, blank=False, null=False)
+    conteudo_embalagem = models.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        null=True,
+        blank=True,
+    )
+    unidades_embalagem = (
+        ('g', 'Grama'),
+        ('kg', 'Quilograma'),
+        ('ml', 'Mililitro'),
+        ('L', 'Litro'),
+    )
+    unidade_embalagem = models.CharField(
+        max_length=5,
+        choices=unidades_embalagem,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(conteudo_embalagem__isnull=True, unidade_embalagem__isnull=True)
+                    | models.Q(
+                        conteudo_embalagem__gt=0,
+                        unidade_embalagem__in=['g', 'kg', 'ml', 'L'],
+                    )
+                ),
+                name='item_generico_embalagem_coerente',
+            ),
+        ]
     
     def __str__(self):
         return f"{self.catmat} - {self.descricao}"

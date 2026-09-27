@@ -6,12 +6,17 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from empenho.models import Empenho, ItemEmpenho,  OperacaoItem
 from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer
+from empenho.services import registrar_operacao_item
 from licitacao.views import BaseFiltroMixin
-from utils.permissions import IsAdmin,IsTecnico
-class EmpenhoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
+from utils.audit import AuditoriaRBACMixin
+from utils.permissions import RBACPermission
+from utils.rbac import Acao, Recurso
+class EmpenhoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Empenho.objects.all()
     serializer_class = EmpenhoSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.EMPENHO
+    rbac_action_map = {'resumo_financeiro': Acao.CONSULTAR}
     search_fields = ['codigo', 'ata__numero_ata', 'ata__fornecedor__nome_fantasia']
     filterset_fields = {
         'ata__id': ['exact'], 
@@ -48,20 +53,22 @@ class EmpenhoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     ordering = ['-id']  
 
     
-class ItemDoEmpehoViewSet(viewsets.ModelViewSet):
+class ItemDoEmpehoViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = ItemEmpenho.objects.all()
     serializer_class = ItemEmpenhoSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.ITEM_EMPENHO
     pagination_class = None
     
     def get_queryset(self):
         empenho_id = self.request.query_params.get('empenho_id')
         return ItemEmpenho.objects.filter(empenho_id=empenho_id)
 
-class ItemEmpenhoViewSet(viewsets.ModelViewSet):
+class ItemEmpenhoViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = ItemEmpenho.objects.all()
     serializer_class = ItemEmpenhoSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.ITEM_EMPENHO
     
     def get_serializer_class(self):
         if self.action in ['create', 'update']:
@@ -69,10 +76,11 @@ class ItemEmpenhoViewSet(viewsets.ModelViewSet):
         
         return ItemEmpenhoSerializer
     
-class OperacaoDoEmpenhoViewSet(viewsets.ModelViewSet):
+class OperacaoDoEmpenhoViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = OperacaoItem.objects.all()
     serializer_class = OperacaoItemSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.OPERACAO_EMPENHO
     pagination_class = None
     
     def get_queryset(self):
@@ -81,10 +89,24 @@ class OperacaoDoEmpenhoViewSet(viewsets.ModelViewSet):
             return OperacaoItem.objects.filter(item_empenho__empenho_id=empenho_id)
         return OperacaoItem.objects.all() 
 
-class OperacaoItemViewSet(viewsets.ModelViewSet):
+class OperacaoItemViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = OperacaoItem.objects.all()
     serializer_class = OperacaoItemSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.OPERACAO_EMPENHO
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def create(self, request, *args, **kwargs):
+        serializer = OperacaoItemInsertSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        dados = serializer.validated_data
+        operacao = registrar_operacao_item(
+            item_empenho_id=dados['item_empenho'].pk,
+            tipo=dados['tipo'],
+            valor=dados['valor'],
+            data=dados['data'],
+        )
+        return Response(OperacaoItemSerializer(operacao).data, status=201)
     
     def get_serializer_class(self):
         if self.action in ['create', 'update']:

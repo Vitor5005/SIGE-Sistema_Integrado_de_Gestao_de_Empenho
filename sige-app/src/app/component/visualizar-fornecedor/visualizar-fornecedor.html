@@ -16,12 +16,14 @@
           <p class="sige-detail-subtitle">{{ fornecedor.nome_fantasia || fornecedor.cnpj }}</p>
         </div>
 
+        @if (pode(Recurso.FORNECEDOR, Acao.EDITAR)) {
         <div class="sige-detail-actions fornecedor-actions">
           <button class="sige-button sige-button--primary fornecedor-editar" data-bs-toggle="modal"
             data-bs-target="#fornecedorModal" (click)="carregar_Fornecedor()">
             <i class="bi bi-pencil-square"></i> Editar informações
           </button>
         </div>
+        }
       </header>
 
       <section class="sige-detail-section sige-detail-section--flat fornecedor-section" aria-labelledby="informacoes-gerais-title">

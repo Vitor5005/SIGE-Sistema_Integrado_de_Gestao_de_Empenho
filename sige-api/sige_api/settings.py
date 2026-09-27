@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "entrega",
     "licitacao",
     'usuario',
+    'estoque',
     "rest_framework",
     'django_filters',                       
     'rest_framework_simplejwt',

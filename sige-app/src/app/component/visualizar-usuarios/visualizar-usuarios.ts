@@ -6,8 +6,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { Paginacao } from '../utils/paginacao/paginacao';
+<<<<<<< HEAD
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
+=======
+import { Papel } from '../../security/rbac';
+>>>>>>> origin/marcos
 
 @Component({
   selector: 'app-visualizar-usuarios',
@@ -44,6 +48,7 @@ export class VisualizarUsuarios {
   hasPrev: boolean = false;
   termoBuscaAtual: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
+  private usuarioAtualId: number | null = null;
   private estadoInicialModal: { username: string; email: string; first_name: string; last_name: string; papel: string; password: string } = {
     username: '',
     email: '',
@@ -83,7 +88,7 @@ export class VisualizarUsuarios {
 
   get papelValido(): boolean {
     const papel = (this.registro.papel || '').trim();
-    return papel === 'ADMIN' || papel === 'TECNI';
+    return papel === Papel.DIRETOR || papel === Papel.TECNICO_ADMINISTRATIVO || papel === Papel.NUTRICIONISTA || papel === Papel.ESTOQUISTA;
   }
 
   get senhaObrigatoria(): boolean {
@@ -119,7 +124,28 @@ export class VisualizarUsuarios {
   }
 
   ngOnInit() {
+    this.usuarioAtualId = this.obterUsuarioAtualId();
     this.getUsuarios();
+  }
+
+  private obterUsuarioAtualId(): number | null {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(base64));
+      const userId = Number(payload?.user_id);
+      return Number.isFinite(userId) ? userId : null;
+    } catch {
+      return null;
+    }
+  }
+
+  isUsuarioAtual(usuario: Usuario): boolean {
+    return usuario.id === this.usuarioAtualId;
   }
 
   ngAfterViewInit() {
@@ -203,10 +229,16 @@ export class VisualizarUsuarios {
   }
 
   verificarPapel(papel: string): string {
-    if (papel === 'ADMIN') {
-      return 'Administrador';
+    if (papel === Papel.DIRETOR) {
+      return 'Diretor';
     }
-    return 'Tecnico';
+    if (papel === Papel.NUTRICIONISTA) {
+      return 'Nutricionista';
+    }
+    if (papel === Papel.ESTOQUISTA) {
+      return 'Estoquista';
+    }
+    return 'Técnico Administrativo';
   }
 
   verificarStatus(status: boolean): string {
@@ -451,4 +483,37 @@ export class VisualizarUsuarios {
       this.fecharModalInternoBtn.nativeElement.click();
     }
   }
+<<<<<<< HEAD
+=======
+
+  desativarAtivarUsuario(usuario: Usuario): void {
+    if (usuario.is_active && this.isUsuarioAtual(usuario)) {
+      alert('Você não pode desativar a própria conta.');
+      return;
+    }
+
+    let mensagem = "";
+    if (usuario.is_active) {
+      mensagem = 'Tem certeza que deseja desativar este usuário?';
+    }
+    else {
+      mensagem = 'Tem certeza que deseja ativar este usuário?';
+    }
+    const confirmar = confirm(mensagem);
+    if (!confirmar) {
+      return;
+    }
+    const novoStatus = !usuario.is_active;
+    this.usuarioService.patch(usuario.id, { is_active: novoStatus }).subscribe(
+      {
+        next: (registro: Usuario) => {
+          usuario.is_active = registro.is_active;
+        },
+        error: (error) => {
+          alert(this.extrairMensagemErro(error));
+        }
+      }
+    );
+  }
+>>>>>>> origin/marcos
 }
