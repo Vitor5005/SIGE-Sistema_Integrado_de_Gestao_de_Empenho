@@ -14,12 +14,9 @@ import { EmpenhoService } from '../../service/empenho.service';
 import { Empenho } from '../../model/empenho';
 import { ItemEmpenhoService } from '../../service/item-empenho.service';
 import { Paginacao } from '../utils/paginacao/paginacao';
-<<<<<<< HEAD
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
-=======
 import { Acao, pode, Recurso } from '../../security/rbac';
->>>>>>> origin/marcos
 
 @Component({
   selector: 'app-visualizar-entregas',

@@ -18,7 +18,6 @@ import { ItemAtaInsert } from '../../model/itemAta_insert';
 import { ItemEmpenhoInsert } from '../../model/itemEmpenho_insert';
 import { OperacaoItemService } from '../../service/operacao-item.service';
 import { OperacaoItemInsert } from '../../model/operacao_item_insert';
-import { EmpenhoService } from '../../service/empenho.service';
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
@@ -43,7 +42,6 @@ export class VisualizarAta {
     private itemAtaService: ItemAtaService,
     private itemEmpenhoService: ItemEmpenhoService,
     private operacaService: OperacaoItemService,
-    private empenhoService: EmpenhoService,
     private feedback: FeedbackService
   ) { }
 
@@ -551,39 +549,6 @@ export class VisualizarAta {
 
     this.operacaService.save(this.operacaoInsercao).subscribe({
       next: () => {
-        alert('Item cadastrado com sucesso!');
-        window.location.reload();
-      },
-      error: () => {
-        this.isSaving = false;
-        this.errorMessageModal = 'Não foi possível registrar a operação de inclusão. Tente novamente.';
-      }
-    });
-  }
-
-  atualizarEmpenho(): void {
-    const valorInclusaoInicial = Number(this.itemAta_insercao.valor_unitario) || 0;
-    const valorEmpenhadoAtual = Number(this.empenho.valor_total) || 0;
-    const novoValorEmpenhado = this.arredondarDuasCasas(valorEmpenhadoAtual + valorInclusaoInicial);
-
-    this.empenhoService.patch(this.empenho.id, { valor_total: novoValorEmpenhado }).subscribe({
-      complete: () => {
-        this.atualizarAta();
-      },
-      error: () => {
-        this.isSaving = false;
-        this.errorMessageModal = 'Item salvo, mas houve erro ao atualizar o valor empenhado.';
-      }
-    });
-  }
-
-  atualizarAta(): void {
-    const valorTotal = Number(this.itemAta_insercao.valor_unitario) * Number(this.itemAta_insercao.quantidade_licitada);
-    const saldoAtual = Number(this.ata.ata_saldo_total) || 0;
-    this.ata.ata_saldo_total = Number((saldoAtual + valorTotal).toFixed(2));
-
-    this.ataService.patch(this.ata.id, { ata_saldo_total: this.ata.ata_saldo_total }).subscribe({
-      complete: () => {
         this.isSaving = false;
         this.fecharModalSemConfirmacao();
         this.feedback.sucesso('Item adicionado à ARP com sucesso.');
@@ -593,7 +558,7 @@ export class VisualizarAta {
       },
       error: () => {
         this.isSaving = false;
-        this.errorMessageModal = 'Item salvo, mas houve erro ao atualizar saldo da ata.';
+        this.errorMessageModal = 'Não foi possível registrar a operação de inclusão. Tente novamente.';
       }
     });
   }

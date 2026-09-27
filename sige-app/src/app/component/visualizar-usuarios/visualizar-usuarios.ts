@@ -6,12 +6,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { Paginacao } from '../utils/paginacao/paginacao';
-<<<<<<< HEAD
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
-=======
 import { Papel } from '../../security/rbac';
->>>>>>> origin/marcos
 
 @Component({
   selector: 'app-visualizar-usuarios',
@@ -430,6 +427,11 @@ export class VisualizarUsuarios {
   }
 
   desativarAtivarUsuario(usuario: Usuario): void {
+    if (usuario.is_active && this.isUsuarioAtual(usuario)) {
+      this.feedback.aviso('Você não pode desativar a própria conta.');
+      return;
+    }
+
     const novoStatus = !usuario.is_active;
     const desativando = Boolean(usuario.is_active);
 
@@ -449,8 +451,8 @@ export class VisualizarUsuarios {
           usuario.is_active = novoStatus;
           this.feedback.sucesso(novoStatus ? 'Usuário ativado com sucesso.' : 'Usuário desativado com sucesso.');
         },
-        error: () => {
-          this.feedback.erro('Não foi possível atualizar o status do usuário.');
+        error: (error) => {
+          this.feedback.erro(this.extrairMensagemErro(error));
         }
       });
     });
@@ -483,37 +485,4 @@ export class VisualizarUsuarios {
       this.fecharModalInternoBtn.nativeElement.click();
     }
   }
-<<<<<<< HEAD
-=======
-
-  desativarAtivarUsuario(usuario: Usuario): void {
-    if (usuario.is_active && this.isUsuarioAtual(usuario)) {
-      alert('Você não pode desativar a própria conta.');
-      return;
-    }
-
-    let mensagem = "";
-    if (usuario.is_active) {
-      mensagem = 'Tem certeza que deseja desativar este usuário?';
-    }
-    else {
-      mensagem = 'Tem certeza que deseja ativar este usuário?';
-    }
-    const confirmar = confirm(mensagem);
-    if (!confirmar) {
-      return;
-    }
-    const novoStatus = !usuario.is_active;
-    this.usuarioService.patch(usuario.id, { is_active: novoStatus }).subscribe(
-      {
-        next: (registro: Usuario) => {
-          usuario.is_active = registro.is_active;
-        },
-        error: (error) => {
-          alert(this.extrairMensagemErro(error));
-        }
-      }
-    );
-  }
->>>>>>> origin/marcos
 }

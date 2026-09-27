@@ -9,8 +9,6 @@ import { OperacaoItem } from '../../model/operacao_item';
 import { OperacaoItemService } from '../../service/operacao-item.service';
 import { OperacaoItemInsert } from '../../model/operacao_item_insert';
 import { FormsModule } from '@angular/forms';
-import { AtaService } from '../../service/ata.service';
-import { ItemAtaService } from '../../service/item-ata.service';
 import { ItemEmpenhoService } from '../../service/item-empenho.service';
 import { ItemOrdemInsert } from '../../model/itemOrdem_insert';
 import { OrdemEntregaInsert } from '../../model/ordem_entrega_insert';
@@ -18,12 +16,9 @@ import { ItemOrdemService } from '../../service/item-ordem.service';
 import { OrdemEntregaService } from '../../service/ordem-entrega.service';
 import { forkJoin, switchMap } from 'rxjs';
 import { ItemOrdem } from '../../model/itemOrdem';
-<<<<<<< HEAD
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
-=======
 import { Acao, pode, Recurso } from '../../security/rbac';
->>>>>>> origin/marcos
 
 @Component({
   selector: 'app-visualizar-empenho',
@@ -50,8 +45,6 @@ export class VisualizarEmpenho {
     private router: Router,
     private empenhoService: EmpenhoService,
     private operacaoItemService: OperacaoItemService,
-    private ataService: AtaService,
-    private itemAtaService: ItemAtaService,
     private itemEmpenhoService: ItemEmpenhoService,
     private ordemEntregaService: OrdemEntregaService,
     private itemOrdemService: ItemOrdemService,
@@ -345,6 +338,13 @@ export class VisualizarEmpenho {
   }
 
   getOperacoesEmpenho(id: number): void {
+    if (!this.pode(Recurso.OPERACAO_EMPENHO, Acao.CONSULTAR)) {
+      this.isLoadingOperacoes = false;
+      this.errorMessageOperacoes = '';
+      this.operacoesEmpenho = [];
+      return;
+    }
+
     this.isLoadingOperacoes = true;
     this.errorMessageOperacoes = '';
 
@@ -447,7 +447,7 @@ export class VisualizarEmpenho {
 
   get operacaoValida(): boolean {
     const valor = Number(this.operacaoItem_insercao?.valor) || 0;
-    return valor > 0 && valor <= this.limiteOperacaoAtual;
+    return valor >= 1 && valor <= this.limiteOperacaoAtual;
   }
 
   get quantidadeAposOperacao(): number {
@@ -596,60 +596,32 @@ export class VisualizarEmpenho {
       return;
     }
 
+    const tipoOperacao = this.operacaoItem_insercao.tipo;
     this.operacaoItem_insercao.data = new Date();
     this.operacaoItemService.save(this.operacaoItem_insercao).subscribe({
-      next: () => window.location.reload(),
-      error: (erro) => {
-        const detalhe = erro?.error ? Object.values(erro.error)[0] : null;
-        alert(Array.isArray(detalhe) ? String(detalhe[0]) : 'Não foi possível registrar a operação.');
-      },
-    });
-  }
-
-  atualizarItemEmpenho(valor: number, operacao: string, item_id: number): void {
-    const qtdAtual = Number(this.itemEmpenhoModal.quantidade_atual) || 0;
-    const delta = Number(valor) || 0;
-
-    let novaQuantidade = qtdAtual;
-
-    if (operacao === 'ref') {
-      novaQuantidade = qtdAtual + delta;
-    } else if (operacao === 'anl') {
-      novaQuantidade = qtdAtual - delta;
-    }
-
-    novaQuantidade = Math.round((novaQuantidade + Number.EPSILON) * 100) / 100;
-
-    this.itemEmpenhoService.patch(item_id, { quantidade_atual: novaQuantidade }).subscribe({
-      complete: () => {
-        this.atualizarEmpenho(valor * this.itemEmpenhoModal.item_ata.valor_unitario, operacao, this.empenho.id);
-      }
-    });
-  }
-
-  atualizarEmpenho(valor: number, operacao: string, item_id: number): void {
-    const qtdAtual = Number(this.empenho.valor_total) || 0;
-    const delta = Number(valor) || 0;
-
-    let novaQuantidade = qtdAtual;
-
-    if (operacao === 'ref') {
-      novaQuantidade = qtdAtual + delta;
-    } else if (operacao === 'anl') {
-      novaQuantidade = qtdAtual - delta;
-    }
-
-    novaQuantidade = Math.round((novaQuantidade + Number.EPSILON) * 100) / 100;
-
-    this.empenhoService.patch(item_id, { valor_total: novaQuantidade }).subscribe({
-      complete: () => {
+      next: () => {
         this.fecharModalOperacao();
+
         this.feedback.sucesso(
-          operacao === 'ref' ? 'Reforço realizado com sucesso.' : 'Anulação realizada com sucesso.'
+          tipoOperacao === 'ref'
+            ? 'Reforço realizado com sucesso.'
+            : 'Anulação realizada com sucesso.'
         );
+
         this.getEmpenho(this.empenho.id);
         this.getItensEmpenho(this.empenho.id);
         this.getOperacoesEmpenho(this.empenho.id);
+      },
+      error: (erro) => {
+        const detalhe = erro?.error ? Object.values(erro.error)[0] : null;
+        const mensagem =
+          Array.isArray(detalhe)
+            ? String(detalhe[0])
+            : typeof detalhe === 'string'
+              ? detalhe
+              : 'Não foi possível registrar a operação.';
+
+        this.feedback.erro(mensagem, 'Erro na operação');
       }
     });
   }

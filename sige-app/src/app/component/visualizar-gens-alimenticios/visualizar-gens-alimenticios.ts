@@ -6,12 +6,9 @@ import { Router } from '@angular/router';
 import { ItemGenericoService } from '../../service/item-generico.service';
 import { ItemGenerico } from '../../model/item_generico';
 import { FormsModule } from '@angular/forms';
-<<<<<<< HEAD
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
-=======
 import { Acao, pode, Recurso } from '../../security/rbac';
->>>>>>> origin/marcos
 
 @Component({
   selector: 'app-visualizar-gens-alimenticios',

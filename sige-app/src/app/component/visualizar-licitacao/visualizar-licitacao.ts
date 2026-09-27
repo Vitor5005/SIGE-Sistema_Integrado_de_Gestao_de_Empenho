@@ -18,12 +18,9 @@ import { FornecedorInsert } from '../../model/fornecedor_insert';
 import { EnderecoService } from '../../service/endereco.service';
 import { EmpenhoInsert } from '../../model/empenho_insert';
 import { EmpenhoService } from '../../service/empenho.service';
-<<<<<<< HEAD
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
-=======
 import { Acao, pode, Recurso } from '../../security/rbac';
->>>>>>> origin/marcos
 
 @Component({
   selector: 'app-visualizar-licitacao',
@@ -456,6 +453,10 @@ export class VisualizarLicitacao {
   }
 
   private carregarFornecedoresLicitados(licitacaoId: number, page: number = 1): void {
+    if (!this.pode(Recurso.ATA, Acao.CADASTRAR)) {
+      return;
+    }
+
     this.ataService.getByLicicao(String(licitacaoId), page, 100).subscribe({
       next: (resposta) => {
         resposta.results.forEach((ata) => {
@@ -472,6 +473,13 @@ export class VisualizarLicitacao {
   }
 
   getFornecedores(termobusca?: string): void {
+    if (
+      !this.pode(Recurso.ATA, Acao.CADASTRAR) ||
+      !this.pode(Recurso.FORNECEDOR, Acao.CONSULTAR)
+    ) {
+      return;
+    }
+
     if (termobusca !== undefined) {
       this.termoBuscaFornecedor = termobusca;
       this.currentPageFornecedores = 1;
