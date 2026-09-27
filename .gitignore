@@ -135,3 +135,7 @@ staticfiles/
 .idea
 .vscode
 sige-api/sige.db
+
+# Chaves SSH/AWS nunca devem ir para o repositório
+*.pem
+*.key

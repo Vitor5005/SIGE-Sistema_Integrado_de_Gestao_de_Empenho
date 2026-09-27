@@ -26,8 +26,15 @@ if ! docker compose version >/dev/null 2>&1 && ! sudo docker compose version >/d
   sudo chmod +x "$PLUGINS/docker-compose"
 fi
 
-# O "docker compose build" exige o plugin buildx.
-if ! sudo docker buildx version >/dev/null 2>&1; then
+# O "docker compose build" exige o plugin buildx 0.17+. O pacote docker do
+# Amazon Linux traz uma versão antiga (0.12), então checamos a versão, não só a presença.
+buildx_atualizado() {
+  local versao
+  versao="$(sudo docker buildx version 2>/dev/null | grep -oE 'v?[0-9]+\.[0-9]+' | head -1 | tr -d v)" || return 1
+  [ -n "$versao" ] && [ "$(printf '%s\n0.17\n' "$versao" | sort -V | head -1)" = "0.17" ]
+}
+
+if ! buildx_atualizado; then
   echo "==> Instalando Docker Buildx..."
   VERSAO_BUILDX="$(curl -fsSL https://api.github.com/repos/docker/buildx/releases/latest | grep -m1 '"tag_name"' | cut -d '"' -f4)"
   sudo curl -fsSL "https://github.com/docker/buildx/releases/download/${VERSAO_BUILDX}/buildx-${VERSAO_BUILDX}.linux-${ARQ_BUILDX}" \
