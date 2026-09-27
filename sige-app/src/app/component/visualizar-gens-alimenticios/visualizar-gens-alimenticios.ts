@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { ItemGenericoService } from '../../service/item-generico.service';
 import { ItemGenerico } from '../../model/item_generico';
 import { FormsModule } from '@angular/forms';
+import { FeedbackService } from '../../service/feedback.service';
 
 @Component({
   selector: 'app-visualizar-gens-alimenticios',
@@ -39,7 +40,8 @@ filtrosAtivos: any = {};
 
   constructor(
     private ItemGenericoService: ItemGenericoService,
-    private router: Router
+    private router: Router,
+    private feedback: FeedbackService
   ) { }
 
   registros: ItemGenerico[] = [];
@@ -180,10 +182,8 @@ filtrosAtivos: any = {};
       }
 
       if (this.possuiDadosAlteradosModal) {
-        const desejaSair = confirm('Você alterou dados do gênero alimentício. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModal();
       }
     });
   }
@@ -281,7 +281,10 @@ filtrosAtivos: any = {};
 
     this.ItemGenericoService.save(this.registroEditar).subscribe({
       next: () => {
-        window.location.reload();
+        this.isSaving = false;
+        this.fecharModalSemConfirmacao();
+        this.feedback.sucesso('Gênero alimentício atualizado com sucesso.');
+        this.getItens();
       },
       error: () => {
         this.isSaving = false;
@@ -296,12 +299,28 @@ filtrosAtivos: any = {};
     }
 
     if (this.possuiDadosAlteradosModal) {
-      const desejaSair = confirm('Você alterou dados do gênero alimentício. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModal();
+      return;
     }
 
+    this.fecharModalSemConfirmacao();
+  }
+
+  private confirmarDescarteModal(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você alterou dados do gênero alimentício. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalSemConfirmacao();
+      }
+    });
+  }
+
+  private fecharModalSemConfirmacao(): void {
     if (this.fecharModalInternoBtn?.nativeElement) {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();

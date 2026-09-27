@@ -2,10 +2,11 @@ import { Component, DoCheck, signal } from '@angular/core';
 import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
 import { Cabecalho } from './component/utils/cabecalho/cabecalho';
 import { CommonModule } from '@angular/common';
+import { FeedbackGlobal } from './component/utils/feedback-global/feedback-global';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Cabecalho, CommonModule],
+  imports: [RouterOutlet, Cabecalho, CommonModule, FeedbackGlobal],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

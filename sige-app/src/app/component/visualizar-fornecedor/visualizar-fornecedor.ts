@@ -9,6 +9,7 @@ import { EnderecoService } from '../../service/endereco.service';
 
 import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 import { FornecedorInsert } from '../../model/fornecedor_insert';
+import { FeedbackService } from '../../service/feedback.service';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
@@ -26,7 +27,8 @@ export class VisualizarFornecedor {
     private fornecedorService: FornecedorService,
     private enderecoService: EnderecoService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private feedback: FeedbackService
   ) { }
 
 
@@ -233,10 +235,8 @@ export class VisualizarFornecedor {
       }
 
       if (this.possuiDadosModalPreenchidos) {
-        const desejaSair = confirm('Você já preencheu dados do fornecedor. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModal();
       }
     });
 
@@ -275,8 +275,10 @@ export class VisualizarFornecedor {
     this.fornecedorService.save(this.fornecedor_editar).subscribe(
       {
         complete: () => {
-          alert('Fornecedor editado com sucesso!');
-          window.location.reload();
+          this.isSaving = false;
+          this.fecharModalSemConfirmacao();
+          this.feedback.sucesso('Fornecedor atualizado com sucesso.');
+          this.get(this.fornecedor.id);
         },
         error: () => {
           this.isSaving = false;
@@ -315,12 +317,28 @@ export class VisualizarFornecedor {
     }
 
     if (this.possuiDadosModalPreenchidos) {
-      const desejaSair = confirm('Você já preencheu dados do fornecedor. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModal();
+      return;
     }
 
+    this.fecharModalSemConfirmacao();
+  }
+
+  private confirmarDescarteModal(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você já preencheu dados do fornecedor. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalSemConfirmacao();
+      }
+    });
+  }
+
+  private fecharModalSemConfirmacao(): void {
     if (this.fecharModalInternoBtn?.nativeElement) {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();

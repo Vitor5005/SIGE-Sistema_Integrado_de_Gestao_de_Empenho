@@ -18,6 +18,7 @@ import { FornecedorInsert } from '../../model/fornecedor_insert';
 import { EnderecoService } from '../../service/endereco.service';
 import { EmpenhoInsert } from '../../model/empenho_insert';
 import { EmpenhoService } from '../../service/empenho.service';
+import { FeedbackService } from '../../service/feedback.service';
 
 @Component({
   selector: 'app-visualizar-licitacao',
@@ -35,7 +36,8 @@ export class VisualizarLicitacao {
     private enderecoService: EnderecoService,
     private empenhoService: EmpenhoService,
     private ataService: AtaService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private feedback: FeedbackService
   ) { }
 
   @ViewChild('myModal') modal!: ElementRef;
@@ -274,8 +276,13 @@ export class VisualizarLicitacao {
         this.empenho_insercao.ata = resposta.id;
         this.empenhoService.save(this.empenho_insercao).subscribe({
           complete: () => {
-            alert('Ata cadastrada com sucesso!');
-            window.location.reload();
+            this.isSaving = false;
+            this.fecharModalSemConfirmacao();
+            this.feedback.sucesso('Ata e empenho cadastrados com sucesso.');
+            this.getAtas(this.licitacao.id);
+            this.fornecedores_licitados = [];
+            this.carregarFornecedoresLicitados(this.licitacao.id);
+            this.getFornecedores();
           },
           error: () => {
             this.isSaving = false;
@@ -325,10 +332,8 @@ export class VisualizarLicitacao {
       }
 
       if (this.possuiDadosModalPreenchidos) {
-        const desejaSair = confirm('Você já preencheu dados da ata. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModal();
       }
 
     });
@@ -613,12 +618,28 @@ export class VisualizarLicitacao {
     }
 
     if (this.possuiDadosModalPreenchidos) {
-      const desejaSair = confirm('Você já preencheu dados da ata. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModal();
+      return;
     }
 
+    this.fecharModalSemConfirmacao();
+  }
+
+  private confirmarDescarteModal(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você já preencheu dados da ata. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalSemConfirmacao();
+      }
+    });
+  }
+
+  private fecharModalSemConfirmacao(): void {
     if (this.fecharModalInternoBtn?.nativeElement) {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();

@@ -19,6 +19,7 @@ import { ItemEmpenhoInsert } from '../../model/itemEmpenho_insert';
 import { OperacaoItemService } from '../../service/operacao-item.service';
 import { OperacaoItemInsert } from '../../model/operacao_item_insert';
 import { EmpenhoService } from '../../service/empenho.service';
+import { FeedbackService } from '../../service/feedback.service';
 
 @Component({
   selector: 'app-visualizar-ata',
@@ -37,7 +38,8 @@ export class VisualizarAta {
     private itemAtaService: ItemAtaService,
     private itemEmpenhoService: ItemEmpenhoService,
     private operacaService: OperacaoItemService,
-    private empenhoService: EmpenhoService
+    private empenhoService: EmpenhoService,
+    private feedback: FeedbackService
   ) { }
 
   @ViewChild('myModal') modal!: ElementRef;
@@ -224,10 +226,8 @@ export class VisualizarAta {
       }
 
       if (this.possuiDadosModalPreenchidos) {
-        const desejaSair = confirm('Você já preencheu dados do item. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModal();
       }
     });
   }
@@ -523,8 +523,12 @@ export class VisualizarAta {
 
     this.ataService.patch(this.ata.id, { ata_saldo_total: this.ata.ata_saldo_total }).subscribe({
       complete: () => {
-        alert('Item cadastrado com sucesso!');
-        window.location.reload();
+        this.isSaving = false;
+        this.fecharModalSemConfirmacao();
+        this.feedback.sucesso('Item adicionado à ARP com sucesso.');
+        this.get(this.ata.id);
+        this.getEmpenho(this.ata.id);
+        this.getItens(this.ata.id);
       },
       error: () => {
         this.isSaving = false;
@@ -539,12 +543,28 @@ export class VisualizarAta {
     }
 
     if (this.possuiDadosModalPreenchidos) {
-      const desejaSair = confirm('Você já preencheu dados do item. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModal();
+      return;
     }
 
+    this.fecharModalSemConfirmacao();
+  }
+
+  private confirmarDescarteModal(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você já preencheu dados do item. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalSemConfirmacao();
+      }
+    });
+  }
+
+  private fecharModalSemConfirmacao(): void {
     if (this.fecharModalInternoBtn?.nativeElement) {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();

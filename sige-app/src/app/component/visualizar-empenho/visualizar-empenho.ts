@@ -18,6 +18,7 @@ import { ItemOrdemService } from '../../service/item-ordem.service';
 import { OrdemEntregaService } from '../../service/ordem-entrega.service';
 import { forkJoin, switchMap } from 'rxjs';
 import { ItemOrdem } from '../../model/itemOrdem';
+import { FeedbackService } from '../../service/feedback.service';
 
 @Component({
   selector: 'app-visualizar-empenho',
@@ -28,6 +29,7 @@ import { ItemOrdem } from '../../model/itemOrdem';
 export class VisualizarEmpenho {
   tipo: 'reforco' | 'anulacao' = 'reforco';
   isSolicitandoEntrega: boolean = false;
+  etapaSolicitacao: 1 | 2 | 3 = 1;
   private permitirFecharModalSemConfirmacao: boolean = false;
   constructor(
     private router: Router,
@@ -38,7 +40,8 @@ export class VisualizarEmpenho {
     private itemEmpenhoService: ItemEmpenhoService,
     private ordemEntregaService: OrdemEntregaService,
     private itemOrdemService: ItemOrdemService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private feedback: FeedbackService
   ) { }
 
   empenho: Empenho = <Empenho>{};
@@ -52,6 +55,32 @@ export class VisualizarEmpenho {
 
   get possuiItensSelecionados(): boolean {
     return this.itensSelecionados.some(Boolean);
+  }
+
+  get todosItensDisponiveisSelecionados(): boolean {
+    const itensDisponiveis = this.itensEmpenho
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => Number(item.quantidade_atual) > 0);
+
+    return itensDisponiveis.length > 0 && itensDisponiveis.every(({ index }) => this.itensSelecionados[index]);
+  }
+
+  get saldoNaoUtilizado(): number {
+    const valorEmpenhado = Number(this.empenho?.valor_total || 0);
+    const valorUtilizado = Number(this.empenho?.saldo_utilizado || 0);
+
+    return Math.max(valorEmpenhado - valorUtilizado, 0);
+  }
+
+  get percentualUtilizado(): number {
+    const valorEmpenhado = Number(this.empenho?.valor_total || 0);
+    const valorUtilizado = Number(this.empenho?.saldo_utilizado || 0);
+
+    if (valorEmpenhado <= 0) {
+      return 0;
+    }
+
+    return Math.min(100, Math.max(0, (valorUtilizado / valorEmpenhado) * 100));
   }
 
   get placeholderMensagemSolicitacao(): string {
@@ -78,6 +107,23 @@ export class VisualizarEmpenho {
     return this.arquivoSolicitacao instanceof File;
   }
 
+  get fornecedorPodeReceberPedido(): boolean {
+    return Boolean(this.empenho?.ata?.fornecedor?.email?.trim());
+  }
+
+  get nomeArquivoSolicitacao(): string {
+    return this.arquivoSolicitacao?.name || 'Nenhum arquivo selecionado';
+  }
+
+  get podeAvancarDadosSolicitacao(): boolean {
+    return (
+      !this.isSolicitandoEntrega &&
+      this.dataPrevisaoPreenchida &&
+      this.arquivoPreenchido &&
+      this.fornecedorPodeReceberPedido
+    );
+  }
+
   get itensSelecionadosCount(): number {
     return this.itensSelecionados.filter(Boolean).length;
   }
@@ -96,18 +142,32 @@ export class VisualizarEmpenho {
     });
   }
 
+  get podeAvancarItensSolicitacao(): boolean {
+    return (
+      !this.isSolicitandoEntrega &&
+      this.possuiItensSelecionados &&
+      this.itensSelecionadosComQuantidadeValida
+    );
+  }
+
   get podeSolicitarEntrega(): boolean {
     return (
       !this.isSolicitandoEntrega &&
       this.possuiItensSelecionados &&
       this.dataPrevisaoPreenchida &&
       this.arquivoPreenchido &&
+      this.fornecedorPodeReceberPedido &&
       this.itensSelecionadosComQuantidadeValida
     );
   }
 
   get todayDate(): string {
-    return new Date().toISOString().split('T')[0];
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}`;
   }
 
   get possuiDadosPreenchidosModal(): boolean {
@@ -144,6 +204,7 @@ export class VisualizarEmpenho {
   @ViewChild('myInput') input!: ElementRef;
   @ViewChild('arquivoSolicitacaoInput') arquivoSolicitacaoInput!: ElementRef<HTMLInputElement>;
   @ViewChild('fecharModalInternoBtn') fecharModalInternoBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('fecharOperacaoInternoBtn') fecharOperacaoInternoBtn!: ElementRef<HTMLButtonElement>;
 
   enviarPara(rota: string, id?: number) {
     if (id) {
@@ -164,8 +225,15 @@ export class VisualizarEmpenho {
     });
   }
 
-  prepararOperacao(tipoOperacao: 'reforco' | 'anulacao') {
+  prepararOperacao(tipoOperacao: 'reforco' | 'anulacao'): void {
     this.tipo = tipoOperacao;
+    this.operacaoItem_insercao.valor = 0;
+  }
+
+  abrirOperacao(item: ItemEmpenho, tipoOperacao: 'reforco' | 'anulacao'): void {
+    this.prepararOperacao(tipoOperacao);
+    this.carregarItemEmpenho(item);
+    this.trocarOperacao(tipoOperacao === 'reforco' ? 'ref' : 'anl');
   }
 
 
@@ -199,10 +267,8 @@ export class VisualizarEmpenho {
       }
 
       if (this.possuiDadosPreenchidosModal) {
-        const desejaSair = confirm('Você já preencheu dados da solicitação. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModalSolicitacao();
       }
     });
 
@@ -223,6 +289,7 @@ export class VisualizarEmpenho {
       },
       complete: () => {
         this.itemEmpenhoModal = this.itensEmpenho[0];
+        this.itensOrdemInsert = [];
         this.itensEmpenho.forEach(item => {
           let itemOrdemInsert = <ItemOrdemInsert>{};
           itemOrdemInsert.item_empenho = item.id;
@@ -238,7 +305,11 @@ export class VisualizarEmpenho {
   getOperacoesEmpenho(id: number): void {
     this.empenhoService.operacaoDoEmpenho(id).subscribe({
       next: (resposta: OperacaoItem[]) => {
-        this.operacoesEmpenho = resposta;
+        this.operacoesEmpenho = [...resposta].sort((operacaoA, operacaoB) => {
+          const dataA = Date.parse(String(operacaoA.data)) || 0;
+          const dataB = Date.parse(String(operacaoB.data)) || 0;
+          return dataB - dataA;
+        });
       }
     });
   }
@@ -290,6 +361,51 @@ export class VisualizarEmpenho {
     return this.arredondarDuasCasas(quantidadeEmpenhada);
   }
 
+  getQuantidadeDisponivelAta(item: ItemEmpenho): number {
+    const quantidadeLicitada = Number(item?.item_ata?.quantidade_licitada) || 0;
+    const quantidadeAtual = Number(item?.quantidade_atual) || 0;
+    const quantidadeEntregue = Number(item?.quantidade_entrege) || 0;
+
+    return this.arredondarDuasCasas(
+      Math.max(quantidadeLicitada - (quantidadeAtual + quantidadeEntregue), 0)
+    );
+  }
+
+  get limiteOperacaoAtual(): number {
+    if (!this.itemEmpenhoModal?.id) {
+      return 0;
+    }
+
+    if (this.tipo === 'reforco') {
+      return this.getQuantidadeDisponivelAta(this.itemEmpenhoModal);
+    }
+
+    return this.arredondarDuasCasas(
+      Math.max(Number(this.itemEmpenhoModal.quantidade_atual) || 0, 0)
+    );
+  }
+
+  get operacaoValida(): boolean {
+    const valor = Number(this.operacaoItem_insercao?.valor) || 0;
+    return valor > 0 && valor <= this.limiteOperacaoAtual;
+  }
+
+  get quantidadeAposOperacao(): number {
+    const quantidadeAtual = Number(this.itemEmpenhoModal?.quantidade_atual) || 0;
+    const valor = Number(this.operacaoItem_insercao?.valor) || 0;
+
+    return this.tipo === 'anulacao'
+      ? this.arredondarDuasCasas(quantidadeAtual - valor)
+      : this.arredondarDuasCasas(quantidadeAtual + valor);
+  }
+
+  get impactoFinanceiroOperacao(): number {
+    const valor = Number(this.operacaoItem_insercao?.valor) || 0;
+    const valorUnitario = Number(this.itemEmpenhoModal?.item_ata?.valor_unitario) || 0;
+
+    return this.arredondarDuasCasas(valor * valorUnitario);
+  }
+
   validarQuantidadeSolicitada(index: number, item: ItemEmpenho): void {
     const valorAtual = this.arredondarDuasCasas(Number(this.itensOrdemInsert[index]?.quantidade_solicitada) || 0);
     const quantidadeEmpenhada = this.getQuantidadeEmpenhadaMax(item);
@@ -334,13 +450,30 @@ export class VisualizarEmpenho {
     }, 0);
   }
 
-  carregarItemEmpenho(item: ItemEmpenho) {
+  limparSelecao(): void {
+    this.itensSelecionados = this.itensEmpenho.map(() => false);
+  }
+
+  alternarTodosItensDisponiveis(event: Event): void {
+    const selecionar = (event.target as HTMLInputElement).checked;
+
+    this.itensEmpenho.forEach((item, index) => {
+      this.itensSelecionados[index] =
+        Number(item.quantidade_atual) > 0
+          ? selecionar
+          : false;
+    });
+  }
+
+  carregarItemEmpenho(item: ItemEmpenho): void {
     this.itemEmpenhoModal = item;
     this.operacaoItem_insercao.item_empenho = item.id;
+    this.operacaoItem_insercao.valor = 0;
   }
 
   trocarOperacao(tipo: string): void {
     this.operacaoItem_insercao.tipo = tipo;
+    this.operacaoItem_insercao.valor = 0;
   }
 
   reiniciarModalSolicitacao(): void {
@@ -348,6 +481,7 @@ export class VisualizarEmpenho {
       return;
     }
 
+    this.etapaSolicitacao = 1;
     this.mensagemSolicitacao = '';
     this.arquivoSolicitacao = null;
     this.ordemEntregaInsert = <OrdemEntregaInsert>{};
@@ -366,7 +500,42 @@ export class VisualizarEmpenho {
     }
   }
 
+  irParaItensSolicitacao(): void {
+    if (!this.podeAvancarDadosSolicitacao) {
+      return;
+    }
+
+    this.etapaSolicitacao = 2;
+  }
+
+  irParaRevisaoSolicitacao(): void {
+    if (!this.podeAvancarItensSolicitacao) {
+      return;
+    }
+
+    this.etapaSolicitacao = 3;
+  }
+
+  voltarEtapaSolicitacao(): void {
+    if (this.isSolicitandoEntrega) {
+      return;
+    }
+
+    if (this.etapaSolicitacao === 3) {
+      this.etapaSolicitacao = 2;
+      return;
+    }
+
+    if (this.etapaSolicitacao === 2) {
+      this.etapaSolicitacao = 1;
+    }
+  }
+
   salvarOperacaoItem(): void {
+    if (!this.operacaoValida) {
+      return;
+    }
+
     this.operacaoItem_insercao.data = new Date();
     this.operacaoItemService.save(this.operacaoItem_insercao).subscribe({
       complete: () => {
@@ -412,7 +581,13 @@ export class VisualizarEmpenho {
 
     this.empenhoService.patch(item_id, { valor_total: novaQuantidade }).subscribe({
       complete: () => {
-        window.location.reload();
+        this.fecharModalOperacao();
+        this.feedback.sucesso(
+          operacao === 'ref' ? 'Reforço realizado com sucesso.' : 'Anulação realizada com sucesso.'
+        );
+        this.getEmpenho(this.empenho.id);
+        this.getItensEmpenho(this.empenho.id);
+        this.getOperacoesEmpenho(this.empenho.id);
       }
     });
   }
@@ -423,7 +598,7 @@ export class VisualizarEmpenho {
     }
 
     if (!this.podeSolicitarEntrega) {
-      alert('Preencha data de previsão, anexo e quantidade válida de todos os itens selecionados.');
+      this.feedback.aviso('Preencha data de previsão, anexo e quantidade válida de todos os itens selecionados.');
       return;
     }
 
@@ -476,12 +651,20 @@ export class VisualizarEmpenho {
           error: (err) => {
             this.isSolicitandoEntrega = false;
             console.error('Erro ao salvar itens da ordem', err);
+            this.feedback.erro(
+              'O pedido foi criado, mas não foi possível salvar todos os itens. Tente novamente.',
+              'Erro ao salvar itens'
+            );
           }
         });
       },
       error: (err) => {
         this.isSolicitandoEntrega = false;
         console.error('Erro ao criar ordem de entrega', err);
+        this.feedback.erro(
+          'Não foi possível criar o pedido de entrega. Tente novamente.',
+          'Erro ao solicitar entrega'
+        );
       }
     });
   }
@@ -496,12 +679,20 @@ export class VisualizarEmpenho {
 
     this.ordemEntregaService.enviarEmail(ordemId, formData).subscribe({
       next: () => {
-        alert('Pedido de entrega solicitado com sucesso!');
-        window.location.reload();
+        this.isSolicitandoEntrega = false;
+        this.fecharModalSolicitacaoSemConfirmacao();
+        this.feedback.sucesso('Pedido de entrega solicitado com sucesso.');
+        this.getEmpenho(this.empenho.id);
+        this.getItensEmpenho(this.empenho.id);
+        this.limparSelecao();
       },
       error: (err) => {
         this.isSolicitandoEntrega = false;
         console.error('Erro ao enviar e-mail do pedido', err);
+        this.feedback.erro(
+          'O pedido foi registrado, mas não foi possível enviá-lo ao fornecedor.',
+          'Erro no envio do pedido'
+        );
       }
     });
   }
@@ -512,16 +703,36 @@ export class VisualizarEmpenho {
     }
 
     if (this.possuiDadosPreenchidosModal) {
-      const desejaSair = confirm('Você já preencheu dados da solicitação. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModalSolicitacao();
+      return;
     }
 
+    this.fecharModalSolicitacaoSemConfirmacao();
+  }
+
+  private confirmarDescarteModalSolicitacao(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você já preencheu dados da solicitação. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalSolicitacaoSemConfirmacao();
+      }
+    });
+  }
+
+  private fecharModalSolicitacaoSemConfirmacao(): void {
     if (this.fecharModalInternoBtn?.nativeElement) {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();
     }
+  }
+
+  private fecharModalOperacao(): void {
+    this.fecharOperacaoInternoBtn?.nativeElement.click();
   }
 
   gerarCodigoPedidoEntrega(): string {

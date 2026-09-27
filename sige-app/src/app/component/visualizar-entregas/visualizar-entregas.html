@@ -172,193 +172,213 @@
 
   <div #confirmarModalRef class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel"
     data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
-
     <div class="modal-dialog modal-dialog-centered modal-xl modal-entrega-lg">
-      <div class="modal-content">
-
-        <div class="modal-header">
-
-          <h1 class="modal-title fs-5" id="entregaModalLabel">
-            CONFIRMAR ENTREGA <i class="bi bi-truck"></i>
-          </h1>
-          <button type="button" class="btn-close" [disabled]="isConfirmandoEntrega" (click)="tentarFecharModalConfirmacao()" aria-label="Close"></button>
+      <div class="modal-content confirmar-modal-content">
+        <div class="modal-header confirmar-modal-header">
+          <div>
+            <h1 class="modal-title fs-5" id="confirmarModalLabel">
+              <i class="bi bi-truck"></i> Confirmar entrega
+            </h1>
+            <p>Registre o recebimento efetivo e revise as informações antes de concluir.</p>
+          </div>
+          <button type="button" class="btn-close btn-close-white" [disabled]="isConfirmandoEntrega"
+            (click)="tentarFecharModalConfirmacao()" aria-label="Fechar"></button>
           <button #fecharConfirmacaoInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
-
         </div>
 
-        <div class="modal-body">
-          @if(isLoadingPedidos) {
+        @if (ordemSelecionadaAtual; as ordem) {
+        <div class="confirmacao-contexto-pedido">
+          <div><span>Pedido</span><strong>{{ ordem.codigo }}</strong></div>
+          <div><span>Fornecedor</span><strong>{{ ordem.empenho.ata.fornecedor.nome_fantasia }}</strong></div>
+          <div><span>Previsão</span><strong>{{ ordem.data_entrega_prevista | date:'dd/MM/yyyy' }}</strong></div>
+          <div><span>Empenho</span><strong>{{ ordem.empenho.codigo }}</strong></div>
+        </div>
+        }
+
+        <div class="confirmacao-fluxo-etapas" aria-label="Etapas da confirmação de entrega">
+          <span class="confirmacao-fluxo-etapa" [class.confirmacao-fluxo-etapa--ativa]="etapaConfirmacao === 1"
+            [class.confirmacao-fluxo-etapa--concluida]="etapaConfirmacao > 1">
+            <span class="confirmacao-fluxo-numero">1</span>
+            <span>Recebimento</span>
+          </span>
+          <span class="confirmacao-fluxo-separador" aria-hidden="true"></span>
+          <span class="confirmacao-fluxo-etapa" [class.confirmacao-fluxo-etapa--ativa]="etapaConfirmacao === 2">
+            <span class="confirmacao-fluxo-numero">2</span>
+            <span>Revisão</span>
+          </span>
+        </div>
+
+        <div class="modal-body confirmar-modal-body">
+          @if (isLoadingPedidos) {
           <div class="status-processamento-modal">
             <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
             <small>Carregando itens da entrega...</small>
           </div>
           }
 
-          @if(errorMessageModal) {
-          <div class="mensagem-erro-modal">
+          @if (errorMessageModal) {
+          <div class="mensagem-erro-modal" role="alert">
             <small>{{ errorMessageModal }}</small>
           </div>
           }
 
-          <form class="form-entrega">
+          @if (!isLoadingPedidos && !errorMessageModal && pedidosDaOrdem.length === 0) {
+          <div class="estado-vazio-modal">
+            <small>Nenhum item encontrado para esta entrega.</small>
+          </div>
+          }
 
-            @if(!isLoadingPedidos && pedidosDaOrdem.length === 0) {
-            <div class="estado-vazio-modal">
-              <small>Nenhum item encontrado para esta entrega.</small>
+          @if (!isLoadingPedidos && pedidosDaOrdem.length > 0 && etapaConfirmacao === 1) {
+          <form class="form-entrega confirmar-form" novalidate>
+            <div class="confirmacao-etapa-cabecalho">
+              <div>
+                <h2>Informe o que foi efetivamente recebido.</h2>
+                <p>Quantidades parciais ou não recebidas exigem uma observação.</p>
+              </div>
+              <button type="button" class="confirmacao-acao-secundaria" [disabled]="isConfirmandoEntrega"
+                (click)="marcarTodosComoRecebidos()">
+                <i class="bi bi-check2-all"></i> Marcar todos como recebidos
+              </button>
             </div>
-            }
 
-            <div class="lista-itens">
-
-              @for(item of pedidosDaOrdem; track $index) {
-              <div class="item-entrega" [class.item-entrega-invalido]="formSubmittedConfirmacao && !itemEntregaValido(item)">
-
-                <div class="info-coluna">
-                  <span class="label-info">
-                    Gênero Alimenticio
-                  </span>
-
-                  <div class="valor-info">
-                    <span class="nome-produto">
-                      {{ item.item_empenho.item_ata.item_generico.descricao }}
-                    </span>
-
-                    <span class="unidade-modal">
-                      {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                    </span>
-
-                  </div>
-                </div>
-
-                <div class="info-coluna">
-                  <span class="label-info">
-                    Quantidade Solicitada</span>
-
-                  <div class="valor-info">
-                    <span class="valor">
-                      {{ item.quantidade_solicitada | number:'1.0-2' }}
-                    </span>
-
-                    <span class="unidade-modal">
-                      {{ item.item_empenho.item_ata.item_generico.unidade_medida }}
-                    </span>
-
-                  </div>
-                </div>
-
-                <div class="info-coluna">
-                  <span class="label-info">
-                    Valor Unidade
-                  </span>
-
-                  <div class="valor-info">
-                    <span class="valor">
-                      R$ {{ item.item_empenho.item_ata.valor_unitario | number:'1.2-2' }}
-                    </span>
-
-                  </div>
-                </div>
-
-                <div class="info-coluna">
-                  <span class="label-info">
-                    Valor Total do Item
-                  </span>
-
-                  <div class="valor-info">
-                    <span class="valor">
-                      R$ {{ item.item_empenho.item_ata.valor_unitario * item.quantidade_solicitada
-                      | number:'1.2-2' }}
-                    </span>
-
-                  </div>
-                </div>
-
-                <div class="info-coluna">
-                  <span class="label-info">
-                    Valor Total Entregue
-                  </span>
-
-                  <div class="valor-info">
-                    <span class="valor">
-                      R$ {{ (item.item_empenho.item_ata.valor_unitario * item.quantidade_entregue) | number:'1.2-2' }}
-                    </span>
-
-                  </div>
-                </div>
-
-                <div class="info-coluna">
-                  <span class="label-info">
-                    Valor Total em Dívida
-                  </span>
-
-                                    <div class="valor-info">
-                                        <span class="valor">
-                                            R$ {{ (((item.quantidade_solicitada - item.quantidade_entregue) > 0 ? (item.quantidade_solicitada - item.quantidade_entregue) : 0) * item.item_empenho.item_ata.valor_unitario) | number:'1.2-2' }}
-                                        </span>
-
-                                    </div>
-                                </div>
-
-                                <div class="input-coluna input-coluna-qtd">
-                                    <label class="label-input">
-                                        Quantidade Efetivamente Recebida ({{
-                                        item.item_empenho.item_ata.item_generico.unidade_medida }})
-                                    </label>
-                                    <div>
-                                        <input type="number" class="form-control input-quantidade" min="0" step="0.01"
-                                            inputmode="decimal" [max]="item.quantidade_solicitada"
-                                            [(ngModel)]="item.quantidade_entregue"
-                                            [name]="'quantidadeEntregue' + $index"
-                                            [disabled]="isConfirmandoEntrega"
-                                            [class.campo-invalido]="formSubmittedConfirmacao && !quantidadeEntregueValida(item)"
-                                            (change)="verificarQuantidadeEntregue(item)">
-                                        @if(formSubmittedConfirmacao && !quantidadeEntregueValida(item)) {
-                                        <small class="mensagem-campo-invalido">Informe uma quantidade válida entre 0 e a quantidade solicitada.</small>
-                                        }
-                                    </div>
-                                </div>
-
-                                <div class="input-coluna">
-                                    <label class="label-input">
-                                        Observação sobre a entrega
-                                    </label>
-                                    <div>
-                                        <textarea class="form-control textarea-observacao" [(ngModel)]="item.observacao"
-                                            [name]="'observacao' + $index" [disabled]="isConfirmandoEntrega" maxlength="300"
-                                            [class.campo-invalido]="formSubmittedConfirmacao && !observacaoValida(item)"></textarea>
-                                        <small class="texto-apoio-input">{{ 300 - ((item.observacao || '').length) }} caracteres restantes.</small>
-                                        @if(formSubmittedConfirmacao && !observacaoValida(item)) {
-                                        <small class="mensagem-campo-invalido">Para entrega parcial, informe uma observação.</small>
-                                        }
-                                    </div>
-                                </div>
-
-                            </div>
-                            }
-
-                        </div>
-
-                        <div class="requisitos-modal" [class.requisitos-ok]="podeConfirmarEntrega">
-                            <small><b>Obrigatório:</b> preencher quantidades válidas; em entrega parcial, informar observação.</small>
-                        </div>
-
-                    </form>
-                </div>
-
-                <div class="modal-footer footer-entrega">
-                    <button type="button" class="btn-confirmar" [disabled]="isConfirmandoEntrega || !podeConfirmarEntrega"
-                        [class.btn-confirmar-desabilitado]="isConfirmandoEntrega || !podeConfirmarEntrega" (click)="confirmarEntrega(ordemSelecionada)">
-                        @if(isConfirmandoEntrega) {
-                        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-                        }
-                        <i class="bi bi-check-lg"></i> CONFIRMAR ENTREGA
-                    </button>
-                </div>
-
+            <div class="confirmacao-resumo-financeiro" aria-label="Resumo financeiro da confirmação">
+              <div><span>Valor solicitado</span><strong>R$ {{ valorSolicitadoConfirmacao | number:'1.2-2' }}</strong></div>
+              <div><span>Valor recebido</span><strong>R$ {{ valorRecebidoConfirmacao | number:'1.2-2' }}</strong></div>
+              <div><span>Valor pendente</span><strong>R$ {{ valorPendenteConfirmacao | number:'1.2-2' }}</strong></div>
             </div>
+
+            <div class="confirmacao-lista-itens">
+              @for (item of pedidosDaOrdem; track item.id; let index = $index) {
+              <article class="confirmacao-item" [class.confirmacao-item--invalido]="formSubmittedConfirmacao && !itemEntregaValido(item)">
+                <div class="confirmacao-item-cabecalho">
+                  <div>
+                    <h3>{{ item.item_empenho.item_ata.item_generico.descricao }}</h3>
+                    <span>{{ item.item_empenho.item_ata.item_generico.unidade_medida }}</span>
+                  </div>
+                  <span class="estado-recebimento" [ngClass]="'estado-recebimento--' + classeRecebimentoItem(item)">
+                    {{ textoRecebimentoItem(item) }}
+                  </span>
+                </div>
+
+                <div class="confirmacao-item-dados">
+                  <div><span>Solicitado</span><strong>{{ item.quantidade_solicitada | number:'1.0-2' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</strong></div>
+                  <div><span>Preço unitário</span><strong>R$ {{ item.item_empenho.item_ata.valor_unitario | number:'1.2-2' }}</strong></div>
+                  <div><span>Valor recebido</span><strong>R$ {{ calcularValorRecebidoItem(item) | number:'1.2-2' }}</strong></div>
+                  <div><span>Valor pendente</span><strong>R$ {{ calcularValorPendenteItem(item) | number:'1.2-2' }}</strong></div>
+                </div>
+
+                <div class="confirmacao-item-campos">
+                  <div class="confirmacao-campo">
+                    <label [for]="'quantidadeEntregue' + index">Quantidade efetivamente recebida ({{ item.item_empenho.item_ata.item_generico.unidade_medida }}) *</label>
+                    <input type="number" class="form-control input-quantidade" [id]="'quantidadeEntregue' + index" min="0" step="0.01"
+                      inputmode="decimal" [max]="item.quantidade_solicitada" [(ngModel)]="item.quantidade_entregue"
+                      [name]="'quantidadeEntregue' + index" [disabled]="isConfirmandoEntrega"
+                      [class.campo-invalido]="formSubmittedConfirmacao && !quantidadeEntregueValida(item)"
+                      (change)="verificarQuantidadeEntregue(item)">
+                    @if (formSubmittedConfirmacao && !quantidadeEntregueValida(item)) {
+                    <small class="mensagem-campo-invalido">Informe uma quantidade válida entre 0 e a quantidade solicitada.</small>
+                    }
+                  </div>
+
+                  <div class="confirmacao-campo">
+                    <label [for]="'observacao' + index">Observação <span>{{ classeRecebimentoItem(item) === 'integral' ? '(opcional)' : '*' }}</span></label>
+                    <textarea class="form-control textarea-observacao" [id]="'observacao' + index" [(ngModel)]="item.observacao"
+                      [name]="'observacao' + index" [disabled]="isConfirmandoEntrega" maxlength="300"
+                      [class.campo-invalido]="formSubmittedConfirmacao && !observacaoValida(item)"></textarea>
+                    <small class="texto-apoio-input">{{ 300 - ((item.observacao || '').length) }} caracteres restantes.</small>
+                    @if (formSubmittedConfirmacao && !observacaoValida(item)) {
+                    <small class="mensagem-campo-invalido">Para recebimento parcial ou não recebido, informe uma observação.</small>
+                    }
+                  </div>
+                </div>
+              </article>
+              }
+            </div>
+
+            <div class="requisitos-modal" [class.requisitos-ok]="podeConfirmarEntrega">
+              <small><b>Obrigatório:</b> preencha quantidades válidas; em recebimento parcial ou não recebido, informe uma observação.</small>
+            </div>
+          </form>
+          }
+
+          @if (!isLoadingPedidos && pedidosDaOrdem.length > 0 && etapaConfirmacao === 2) {
+          <section class="confirmacao-revisao" aria-labelledby="revisao-confirmacao-title">
+            <div class="confirmacao-etapa-cabecalho">
+              <div>
+                <h2 id="revisao-confirmacao-title">Revisão do recebimento</h2>
+                <p>Esta é a última conferência antes de concluir a entrega.</p>
+              </div>
+            </div>
+
+            <div class="confirmacao-resumo-contagens">
+              <div><span>Itens</span><strong>{{ pedidosDaOrdem.length }}</strong></div>
+              <div><span>Recebidos integralmente</span><strong>{{ itensRecebidosIntegralmente }}</strong></div>
+              <div><span>Recebidos parcialmente</span><strong>{{ itensRecebidosParcialmente }}</strong></div>
+              <div><span>Sem recebimento</span><strong>{{ itensSemRecebimento }}</strong></div>
+            </div>
+
+            <div class="confirmacao-resumo-financeiro" aria-label="Resumo financeiro da confirmação">
+              <div><span>Valor solicitado</span><strong>R$ {{ valorSolicitadoConfirmacao | number:'1.2-2' }}</strong></div>
+              <div><span>Valor recebido</span><strong>R$ {{ valorRecebidoConfirmacao | number:'1.2-2' }}</strong></div>
+              <div><span>Valor pendente</span><strong>R$ {{ valorPendenteConfirmacao | number:'1.2-2' }}</strong></div>
+            </div>
+
+            <div class="confirmacao-lista-revisao">
+              @for (item of pedidosDaOrdem; track item.id) {
+              <article class="confirmacao-item-revisao">
+                <div class="confirmacao-item-revisao-cabecalho">
+                  <div>
+                    <h3>{{ item.item_empenho.item_ata.item_generico.descricao }}</h3>
+                    <div class="confirmacao-item-revisao-quantidades">
+                      <span>Solicitado: {{ item.quantidade_solicitada | number:'1.0-2' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</span>
+                      <span>Recebido: {{ item.quantidade_entregue | number:'1.0-2' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</span>
+                      <span>Pendente: {{ calcularQuantidadePendenteItem(item) | number:'1.0-2' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</span>
+                    </div>
+                  </div>
+                  <span class="estado-recebimento" [ngClass]="'estado-recebimento--' + classeRecebimentoItem(item)">
+                    {{ textoRecebimentoItem(item) }}
+                  </span>
+                </div>
+                <div class="confirmacao-item-revisao-valores">
+                  <span>Valor recebido: <b>R$ {{ calcularValorRecebidoItem(item) | number:'1.2-2' }}</b></span>
+                  <span>Valor pendente: <b>R$ {{ calcularValorPendenteItem(item) | number:'1.2-2' }}</b></span>
+                </div>
+                @if (item.observacao?.trim()) {
+                <p class="confirmacao-item-observacao"><b>Observação:</b> {{ item.observacao }}</p>
+                }
+              </article>
+              }
+            </div>
+          </section>
+          }
         </div>
 
+        <div class="modal-footer footer-entrega confirmar-modal-footer">
+          @if (isConfirmandoEntrega) {
+          <div class="status-processamento-modal">
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <small>Confirmação em andamento. Aguarde a finalização da operação.</small>
+          </div>
+          }
+
+          @if (!isLoadingPedidos && !isConfirmandoEntrega && pedidosDaOrdem.length > 0 && etapaConfirmacao === 1) {
+          <button type="button" class="confirmacao-acao-primaria" (click)="irParaRevisaoConfirmacao()">
+            Revisar confirmação <i class="bi bi-arrow-right"></i>
+          </button>
+          }
+
+          @if (!isLoadingPedidos && !isConfirmandoEntrega && pedidosDaOrdem.length > 0 && etapaConfirmacao === 2) {
+          <button type="button" class="confirmacao-acao-secundaria" (click)="voltarParaRegistroConfirmacao()">
+            <i class="bi bi-arrow-left"></i> Voltar e editar
+          </button>
+          <button type="button" class="confirmacao-acao-primaria" [disabled]="!podeConfirmarEntrega" (click)="confirmarEntrega(ordemSelecionada)">
+            <i class="bi bi-check-lg"></i> Confirmar entrega
+          </button>
+          }
+        </div>
+      </div>
     </div>
+  </div>
 
 
     <div class="modal fade" id="verPedidoMordal" tabindex="-1" aria-labelledby="verPedidoMordalLabel"
