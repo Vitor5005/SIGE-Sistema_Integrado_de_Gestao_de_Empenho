@@ -5,11 +5,12 @@ import { Paginacao } from '../utils/paginacao/paginacao';
 import { FornecedorService } from '../../service/fornecedor.service';
 import { Fornecedor } from '../../model/fornecedor';
 import { CommonModule, JsonPipe } from '@angular/common';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 
 @Component({
   selector: 'app-visualizar-fornecedores',
   standalone: true,
-  imports: [CommonModule, BarraPesquisa, Paginacao],
+  imports: [CommonModule, BarraPesquisa, Paginacao, EstadoConteudo],
   templateUrl: './visualizar-fornecedores.html',
   styleUrl: './visualizar-fornecedores.scss',
 })
@@ -27,6 +28,8 @@ export class VisualizarFornecedores {
   hasNext: boolean = false;
   hasPrev: boolean = false;
   termoBuscaAtual: string = '';
+  isLoadingPage: boolean = false;
+  errorMessagePage: string = '';
 
   ngOnInit(){
 
@@ -48,16 +51,22 @@ export class VisualizarFornecedores {
       this.currentPage = 1;
     }
 
-    this.fornecedorService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe(
-      {
-        next: (resposta) => {
-          this.fornecedores = resposta.results
-          this.total = resposta.count;
-          this.hasNext = Boolean(resposta.next);
-          this.hasPrev = Boolean(resposta.previous);
-        }
+    this.isLoadingPage = true;
+    this.errorMessagePage = '';
+
+    this.fornecedorService.get(this.termoBuscaAtual, this.currentPage, this.pageSize).subscribe({
+      next: (resposta) => {
+        this.fornecedores = resposta.results;
+        this.total = resposta.count;
+        this.hasNext = Boolean(resposta.next);
+        this.hasPrev = Boolean(resposta.previous);
+        this.isLoadingPage = false;
+      },
+      error: () => {
+        this.isLoadingPage = false;
+        this.errorMessagePage = 'Não foi possível carregar os fornecedores no momento.';
       }
-    )
+    });
   }
 
   proximaPagina(): void {

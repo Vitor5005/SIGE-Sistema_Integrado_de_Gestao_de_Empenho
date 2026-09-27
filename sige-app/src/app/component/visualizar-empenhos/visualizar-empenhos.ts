@@ -5,11 +5,12 @@ import { Paginacao } from '../utils/paginacao/paginacao';
 import { Router } from '@angular/router';
 import { EmpenhoService } from '../../service/empenho.service';
 import { Empenho } from '../../model/empenho';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 
 @Component({
   selector: 'app-visualizar-empenhos',
   standalone: true,
-  imports: [BarraPesquisa, Paginacao],
+  imports: [BarraPesquisa, Paginacao, EstadoConteudo],
   templateUrl: './visualizar-empenhos.html',
   styleUrl: './visualizar-empenhos.scss',
 })
@@ -38,6 +39,8 @@ filtrosAtivos: any = {};
   hasNext: boolean = false;
   hasPrev: boolean = false;
   termoBuscaAtual: string = '';
+  isLoadingPage: boolean = false;
+  errorMessagePage: string = '';
 
   ngOnInit() {
     this.get();
@@ -58,13 +61,21 @@ filtrosAtivos: any = {};
     this.currentPage = 1;
   }
 
+  this.isLoadingPage = true;
+  this.errorMessagePage = '';
+
   this.empenhoService.get(this.termoBuscaAtual, this.currentPage, this.pageSize, this.filtrosAtivos).subscribe({
     next: (resposta) => {
       this.empenhos = resposta.results || [];
       this.total = resposta.count;
       this.hasNext = Boolean(resposta.next);
       this.hasPrev = Boolean(resposta.previous);
-    }
+      this.isLoadingPage = false;
+    },
+    error: () => {
+      this.isLoadingPage = false;
+      this.errorMessagePage = 'Não foi possível carregar os empenhos no momento.';
+    },
   });
 }
   aplicarFiltros(filtros: any) {

@@ -9,8 +9,6 @@ import { OperacaoItem } from '../../model/operacao_item';
 import { OperacaoItemService } from '../../service/operacao-item.service';
 import { OperacaoItemInsert } from '../../model/operacao_item_insert';
 import { FormsModule } from '@angular/forms';
-import { AtaService } from '../../service/ata.service';
-import { ItemAtaService } from '../../service/item-ata.service';
 import { ItemEmpenhoService } from '../../service/item-empenho.service';
 import { ItemOrdemInsert } from '../../model/itemOrdem_insert';
 import { OrdemEntregaInsert } from '../../model/ordem_entrega_insert';
@@ -18,13 +16,15 @@ import { ItemOrdemService } from '../../service/item-ordem.service';
 import { OrdemEntregaService } from '../../service/ordem-entrega.service';
 import { forkJoin, switchMap } from 'rxjs';
 import { ItemOrdem } from '../../model/itemOrdem';
+import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
 import { SolicitacaoReforco, StatusSolicitacaoReforco } from '../../model/solicitacao_reforco';
 import { SolicitacaoReforcoService } from '../../service/solicitacao-reforco.service';
 
 @Component({
   selector: 'app-visualizar-empenho',
-  imports: [BotaoVoltar, CommonModule, FormsModule, RouterLink],
+  imports: [BotaoVoltar, CommonModule, FormsModule, RouterLink, EstadoConteudo],
   templateUrl: './visualizar-empenho.html',
   styleUrl: './visualizar-empenho.scss',
 })
@@ -34,18 +34,25 @@ export class VisualizarEmpenho {
   readonly Recurso = Recurso;
   tipo: 'reforco' | 'anulacao' = 'reforco';
   isSolicitandoEntrega: boolean = false;
+  etapaSolicitacao: 1 | 2 | 3 = 1;
+  isLoadingPage: boolean = true;
+  errorMessagePage: string = '';
+  idPagina: number | null = null;
+  isLoadingItens: boolean = false;
+  errorMessageItens: string = '';
+  isLoadingOperacoes: boolean = false;
+  errorMessageOperacoes: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
   constructor(
     private router: Router,
     private empenhoService: EmpenhoService,
     private operacaoItemService: OperacaoItemService,
-    private ataService: AtaService,
-    private itemAtaService: ItemAtaService,
     private itemEmpenhoService: ItemEmpenhoService,
     private ordemEntregaService: OrdemEntregaService,
     private itemOrdemService: ItemOrdemService,
     private route: ActivatedRoute,
     private solicitacaoReforcoService: SolicitacaoReforcoService,
+    private feedback: FeedbackService
   ) { }
 
   @ViewChild('fecharSolicitacaoReforcoBtn') fecharSolicitacaoReforcoBtn?: ElementRef<HTMLButtonElement>;
@@ -168,6 +175,32 @@ export class VisualizarEmpenho {
     return this.itensSelecionados.some(Boolean);
   }
 
+  get todosItensDisponiveisSelecionados(): boolean {
+    const itensDisponiveis = this.itensEmpenho
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => Number(item.quantidade_atual) > 0);
+
+    return itensDisponiveis.length > 0 && itensDisponiveis.every(({ index }) => this.itensSelecionados[index]);
+  }
+
+  get saldoNaoUtilizado(): number {
+    const valorEmpenhado = Number(this.empenho?.valor_total || 0);
+    const valorUtilizado = Number(this.empenho?.saldo_utilizado || 0);
+
+    return Math.max(valorEmpenhado - valorUtilizado, 0);
+  }
+
+  get percentualUtilizado(): number {
+    const valorEmpenhado = Number(this.empenho?.valor_total || 0);
+    const valorUtilizado = Number(this.empenho?.saldo_utilizado || 0);
+
+    if (valorEmpenhado <= 0) {
+      return 0;
+    }
+
+    return Math.min(100, Math.max(0, (valorUtilizado / valorEmpenhado) * 100));
+  }
+
   get placeholderMensagemSolicitacao(): string {
     const fornecedor = this.empenho?.ata?.fornecedor?.nome_fantasia || '[Fornecedor]';
     return (
@@ -192,6 +225,23 @@ export class VisualizarEmpenho {
     return this.arquivoSolicitacao instanceof File;
   }
 
+  get fornecedorPodeReceberPedido(): boolean {
+    return Boolean(this.empenho?.ata?.fornecedor?.email?.trim());
+  }
+
+  get nomeArquivoSolicitacao(): string {
+    return this.arquivoSolicitacao?.name || 'Nenhum arquivo selecionado';
+  }
+
+  get podeAvancarDadosSolicitacao(): boolean {
+    return (
+      !this.isSolicitandoEntrega &&
+      this.dataPrevisaoPreenchida &&
+      this.arquivoPreenchido &&
+      this.fornecedorPodeReceberPedido
+    );
+  }
+
   get itensSelecionadosCount(): number {
     return this.itensSelecionados.filter(Boolean).length;
   }
@@ -210,18 +260,32 @@ export class VisualizarEmpenho {
     });
   }
 
+  get podeAvancarItensSolicitacao(): boolean {
+    return (
+      !this.isSolicitandoEntrega &&
+      this.possuiItensSelecionados &&
+      this.itensSelecionadosComQuantidadeValida
+    );
+  }
+
   get podeSolicitarEntrega(): boolean {
     return (
       !this.isSolicitandoEntrega &&
       this.possuiItensSelecionados &&
       this.dataPrevisaoPreenchida &&
       this.arquivoPreenchido &&
+      this.fornecedorPodeReceberPedido &&
       this.itensSelecionadosComQuantidadeValida
     );
   }
 
   get todayDate(): string {
-    return new Date().toISOString().split('T')[0];
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}`;
   }
 
   get possuiDadosPreenchidosModal(): boolean {
@@ -258,6 +322,7 @@ export class VisualizarEmpenho {
   @ViewChild('myInput') input!: ElementRef;
   @ViewChild('arquivoSolicitacaoInput') arquivoSolicitacaoInput!: ElementRef<HTMLInputElement>;
   @ViewChild('fecharModalInternoBtn') fecharModalInternoBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('fecharOperacaoInternoBtn') fecharOperacaoInternoBtn!: ElementRef<HTMLButtonElement>;
 
   enviarPara(rota: string, id?: number) {
     if (id) {
@@ -278,20 +343,32 @@ export class VisualizarEmpenho {
     });
   }
 
-  prepararOperacao(tipoOperacao: 'reforco' | 'anulacao') {
+  prepararOperacao(tipoOperacao: 'reforco' | 'anulacao'): void {
     this.tipo = tipoOperacao;
+    this.operacaoItem_insercao.valor = 0;
+  }
+
+  abrirOperacao(item: ItemEmpenho, tipoOperacao: 'reforco' | 'anulacao'): void {
+    this.prepararOperacao(tipoOperacao);
+    this.carregarItemEmpenho(item);
+    this.trocarOperacao(tipoOperacao === 'reforco' ? 'ref' : 'anl');
   }
 
 
   ngOnInit() {
-    const id = this.route.snapshot.queryParams['id'];
+    const id = Number(this.route.snapshot.queryParamMap.get('id'));
 
-    if (id) {
-      this.getEmpenho(Number(id));
-      this.getItensEmpenho(Number(id));
-      this.getOperacoesEmpenho(Number(id));
-      this.getSolicitacoesReforco(Number(id));
+    if (!Number.isInteger(id) || id <= 0) {
+      this.isLoadingPage = false;
+      this.errorMessagePage = 'Não foi possível identificar o registro solicitado.';
+      return;
     }
+
+    this.idPagina = id;
+    this.getEmpenho(id, true);
+    this.getItensEmpenho(id);
+    this.getOperacoesEmpenho(id);
+    this.getSolicitacoesReforco(id);
   }
 
   ngAfterViewInit() {
@@ -314,30 +391,46 @@ export class VisualizarEmpenho {
       }
 
       if (this.possuiDadosPreenchidosModal) {
-        const desejaSair = confirm('Você já preencheu dados da solicitação. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModalSolicitacao();
       }
     });
 
   }
 
-  getEmpenho(id: number): void {
+  getEmpenho(id: number, controlarEstadoPagina: boolean = false): void {
+    if (controlarEstadoPagina) {
+      this.isLoadingPage = true;
+      this.errorMessagePage = '';
+    }
+
     this.empenhoService.getById(id).subscribe({
       next: (resposta: Empenho) => {
         this.empenho = resposta;
+        if (controlarEstadoPagina) {
+          this.isLoadingPage = false;
+        }
+      },
+      error: () => {
+        if (controlarEstadoPagina) {
+          this.isLoadingPage = false;
+          this.errorMessagePage = 'Não foi possível carregar este empenho no momento.';
+        }
       }
     });
   }
 
   getItensEmpenho(id: number): void {
+    this.isLoadingItens = true;
+    this.errorMessageItens = '';
+
     this.empenhoService.itensDoEmpenho(id).subscribe({
       next: (resposta: ItemEmpenho[]) => {
         this.itensEmpenho = resposta;
       },
       complete: () => {
         this.itemEmpenhoModal = this.itensEmpenho[0];
+        this.itensOrdemInsert = [];
         this.itensEmpenho.forEach(item => {
           let itemOrdemInsert = <ItemOrdemInsert>{};
           itemOrdemInsert.item_empenho = item.id;
@@ -346,16 +439,50 @@ export class VisualizarEmpenho {
           this.itensOrdemInsert.push(itemOrdemInsert);
         });
         this.itensSelecionados = new Array(this.itensEmpenho.length).fill(false);
+        this.isLoadingItens = false;
+      },
+      error: () => {
+        this.isLoadingItens = false;
+        this.errorMessageItens = 'Não foi possível carregar os itens deste empenho.';
       }
     });
   }
 
   getOperacoesEmpenho(id: number): void {
+    if (!this.pode(Recurso.OPERACAO_EMPENHO, Acao.CONSULTAR)) {
+      this.isLoadingOperacoes = false;
+      this.errorMessageOperacoes = '';
+      this.operacoesEmpenho = [];
+      return;
+    }
+
+    this.isLoadingOperacoes = true;
+    this.errorMessageOperacoes = '';
+
     this.empenhoService.operacaoDoEmpenho(id).subscribe({
       next: (resposta: OperacaoItem[]) => {
-        this.operacoesEmpenho = resposta;
+        this.operacoesEmpenho = [...resposta].sort((operacaoA, operacaoB) => {
+          const dataA = Date.parse(String(operacaoA.data)) || 0;
+          const dataB = Date.parse(String(operacaoB.data)) || 0;
+          return dataB - dataA;
+        });
+        this.isLoadingOperacoes = false;
+      },
+      error: () => {
+        this.isLoadingOperacoes = false;
+        this.errorMessageOperacoes = 'Não foi possível carregar o histórico de operações.';
       }
     });
+  }
+
+  recarregarPagina(): void {
+    if (this.idPagina === null) {
+      return;
+    }
+
+    this.getEmpenho(this.idPagina, true);
+    this.getItensEmpenho(this.idPagina);
+    this.getOperacoesEmpenho(this.idPagina);
   }
 
   getCategoria(item: ItemEmpenho): string {
@@ -405,6 +532,51 @@ export class VisualizarEmpenho {
     return this.arredondarDuasCasas(quantidadeEmpenhada);
   }
 
+  getQuantidadeDisponivelAta(item: ItemEmpenho): number {
+    const quantidadeLicitada = Number(item?.item_ata?.quantidade_licitada) || 0;
+    const quantidadeAtual = Number(item?.quantidade_atual) || 0;
+    const quantidadeEntregue = Number(item?.quantidade_entrege) || 0;
+
+    return this.arredondarDuasCasas(
+      Math.max(quantidadeLicitada - (quantidadeAtual + quantidadeEntregue), 0)
+    );
+  }
+
+  get limiteOperacaoAtual(): number {
+    if (!this.itemEmpenhoModal?.id) {
+      return 0;
+    }
+
+    if (this.tipo === 'reforco') {
+      return this.getQuantidadeDisponivelAta(this.itemEmpenhoModal);
+    }
+
+    return this.arredondarDuasCasas(
+      Math.max(Number(this.itemEmpenhoModal.quantidade_atual) || 0, 0)
+    );
+  }
+
+  get operacaoValida(): boolean {
+    const valor = Number(this.operacaoItem_insercao?.valor) || 0;
+    return valor >= 1 && valor <= this.limiteOperacaoAtual;
+  }
+
+  get quantidadeAposOperacao(): number {
+    const quantidadeAtual = Number(this.itemEmpenhoModal?.quantidade_atual) || 0;
+    const valor = Number(this.operacaoItem_insercao?.valor) || 0;
+
+    return this.tipo === 'anulacao'
+      ? this.arredondarDuasCasas(quantidadeAtual - valor)
+      : this.arredondarDuasCasas(quantidadeAtual + valor);
+  }
+
+  get impactoFinanceiroOperacao(): number {
+    const valor = Number(this.operacaoItem_insercao?.valor) || 0;
+    const valorUnitario = Number(this.itemEmpenhoModal?.item_ata?.valor_unitario) || 0;
+
+    return this.arredondarDuasCasas(valor * valorUnitario);
+  }
+
   validarQuantidadeSolicitada(index: number, item: ItemEmpenho): void {
     const valorAtual = this.arredondarDuasCasas(Number(this.itensOrdemInsert[index]?.quantidade_solicitada) || 0);
     const quantidadeEmpenhada = this.getQuantidadeEmpenhadaMax(item);
@@ -449,13 +621,30 @@ export class VisualizarEmpenho {
     }, 0);
   }
 
-  carregarItemEmpenho(item: ItemEmpenho) {
+  limparSelecao(): void {
+    this.itensSelecionados = this.itensEmpenho.map(() => false);
+  }
+
+  alternarTodosItensDisponiveis(event: Event): void {
+    const selecionar = (event.target as HTMLInputElement).checked;
+
+    this.itensEmpenho.forEach((item, index) => {
+      this.itensSelecionados[index] =
+        Number(item.quantidade_atual) > 0
+          ? selecionar
+          : false;
+    });
+  }
+
+  carregarItemEmpenho(item: ItemEmpenho): void {
     this.itemEmpenhoModal = item;
     this.operacaoItem_insercao.item_empenho = item.id;
+    this.operacaoItem_insercao.valor = 0;
   }
 
   trocarOperacao(tipo: string): void {
     this.operacaoItem_insercao.tipo = tipo;
+    this.operacaoItem_insercao.valor = 0;
   }
 
   reiniciarModalSolicitacao(): void {
@@ -463,6 +652,7 @@ export class VisualizarEmpenho {
       return;
     }
 
+    this.etapaSolicitacao = 1;
     this.mensagemSolicitacao = '';
     this.arquivoSolicitacao = null;
     this.ordemEntregaInsert = <OrdemEntregaInsert>{};
@@ -481,55 +671,68 @@ export class VisualizarEmpenho {
     }
   }
 
+  irParaItensSolicitacao(): void {
+    if (!this.podeAvancarDadosSolicitacao) {
+      return;
+    }
+
+    this.etapaSolicitacao = 2;
+  }
+
+  irParaRevisaoSolicitacao(): void {
+    if (!this.podeAvancarItensSolicitacao) {
+      return;
+    }
+
+    this.etapaSolicitacao = 3;
+  }
+
+  voltarEtapaSolicitacao(): void {
+    if (this.isSolicitandoEntrega) {
+      return;
+    }
+
+    if (this.etapaSolicitacao === 3) {
+      this.etapaSolicitacao = 2;
+      return;
+    }
+
+    if (this.etapaSolicitacao === 2) {
+      this.etapaSolicitacao = 1;
+    }
+  }
+
   salvarOperacaoItem(): void {
+    if (!this.operacaoValida) {
+      return;
+    }
+
+    const tipoOperacao = this.operacaoItem_insercao.tipo;
     this.operacaoItem_insercao.data = new Date();
     this.operacaoItemService.save(this.operacaoItem_insercao).subscribe({
-      next: () => window.location.reload(),
+      next: () => {
+        this.fecharModalOperacao();
+
+        this.feedback.sucesso(
+          tipoOperacao === 'ref'
+            ? 'Reforço realizado com sucesso.'
+            : 'Anulação realizada com sucesso.'
+        );
+
+        this.getEmpenho(this.empenho.id);
+        this.getItensEmpenho(this.empenho.id);
+        this.getOperacoesEmpenho(this.empenho.id);
+      },
       error: (erro) => {
         const detalhe = erro?.error ? Object.values(erro.error)[0] : null;
-        alert(Array.isArray(detalhe) ? String(detalhe[0]) : 'Não foi possível registrar a operação.');
-      },
-    });
-  }
+        const mensagem =
+          Array.isArray(detalhe)
+            ? String(detalhe[0])
+            : typeof detalhe === 'string'
+              ? detalhe
+              : 'Não foi possível registrar a operação.';
 
-  atualizarItemEmpenho(valor: number, operacao: string, item_id: number): void {
-    const qtdAtual = Number(this.itemEmpenhoModal.quantidade_atual) || 0;
-    const delta = Number(valor) || 0;
-
-    let novaQuantidade = qtdAtual;
-
-    if (operacao === 'ref') {
-      novaQuantidade = qtdAtual + delta;
-    } else if (operacao === 'anl') {
-      novaQuantidade = qtdAtual - delta;
-    }
-
-    novaQuantidade = Math.round((novaQuantidade + Number.EPSILON) * 100) / 100;
-
-    this.itemEmpenhoService.patch(item_id, { quantidade_atual: novaQuantidade }).subscribe({
-      complete: () => {
-        this.atualizarEmpenho(valor * this.itemEmpenhoModal.item_ata.valor_unitario, operacao, this.empenho.id);
-      }
-    });
-  }
-
-  atualizarEmpenho(valor: number, operacao: string, item_id: number): void {
-    const qtdAtual = Number(this.empenho.valor_total) || 0;
-    const delta = Number(valor) || 0;
-
-    let novaQuantidade = qtdAtual;
-
-    if (operacao === 'ref') {
-      novaQuantidade = qtdAtual + delta;
-    } else if (operacao === 'anl') {
-      novaQuantidade = qtdAtual - delta;
-    }
-
-    novaQuantidade = Math.round((novaQuantidade + Number.EPSILON) * 100) / 100;
-
-    this.empenhoService.patch(item_id, { valor_total: novaQuantidade }).subscribe({
-      complete: () => {
-        window.location.reload();
+        this.feedback.erro(mensagem, 'Erro na operação');
       }
     });
   }
@@ -540,7 +743,7 @@ export class VisualizarEmpenho {
     }
 
     if (!this.podeSolicitarEntrega) {
-      alert('Preencha data de previsão, anexo e quantidade válida de todos os itens selecionados.');
+      this.feedback.aviso('Preencha data de previsão, anexo e quantidade válida de todos os itens selecionados.');
       return;
     }
 
@@ -593,12 +796,20 @@ export class VisualizarEmpenho {
           error: (err) => {
             this.isSolicitandoEntrega = false;
             console.error('Erro ao salvar itens da ordem', err);
+            this.feedback.erro(
+              'O pedido foi criado, mas não foi possível salvar todos os itens. Tente novamente.',
+              'Erro ao salvar itens'
+            );
           }
         });
       },
       error: (err) => {
         this.isSolicitandoEntrega = false;
         console.error('Erro ao criar ordem de entrega', err);
+        this.feedback.erro(
+          'Não foi possível criar o pedido de entrega. Tente novamente.',
+          'Erro ao solicitar entrega'
+        );
       }
     });
   }
@@ -613,12 +824,20 @@ export class VisualizarEmpenho {
 
     this.ordemEntregaService.enviarEmail(ordemId, formData).subscribe({
       next: () => {
-        alert('Pedido de entrega solicitado com sucesso!');
-        window.location.reload();
+        this.isSolicitandoEntrega = false;
+        this.fecharModalSolicitacaoSemConfirmacao();
+        this.feedback.sucesso('Pedido de entrega solicitado com sucesso.');
+        this.getEmpenho(this.empenho.id);
+        this.getItensEmpenho(this.empenho.id);
+        this.limparSelecao();
       },
       error: (err) => {
         this.isSolicitandoEntrega = false;
         console.error('Erro ao enviar e-mail do pedido', err);
+        this.feedback.erro(
+          'O pedido foi registrado, mas não foi possível enviá-lo ao fornecedor.',
+          'Erro no envio do pedido'
+        );
       }
     });
   }
@@ -629,16 +848,36 @@ export class VisualizarEmpenho {
     }
 
     if (this.possuiDadosPreenchidosModal) {
-      const desejaSair = confirm('Você já preencheu dados da solicitação. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModalSolicitacao();
+      return;
     }
 
+    this.fecharModalSolicitacaoSemConfirmacao();
+  }
+
+  private confirmarDescarteModalSolicitacao(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você já preencheu dados da solicitação. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalSolicitacaoSemConfirmacao();
+      }
+    });
+  }
+
+  private fecharModalSolicitacaoSemConfirmacao(): void {
     if (this.fecharModalInternoBtn?.nativeElement) {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();
     }
+  }
+
+  private fecharModalOperacao(): void {
+    this.fecharOperacaoInternoBtn?.nativeElement.click();
   }
 
   gerarCodigoPedidoEntrega(): string {

@@ -1,0 +1,29 @@
+<section class="estado-conteudo" [class.estado-conteudo--compacto]="compacto"
+  [class.estado-conteudo--erro]="tipo === 'error'" [attr.role]="tipo === 'loading' ? 'status' : tipo === 'error' ? 'alert' : null"
+  [attr.aria-live]="tipo === 'loading' ? 'polite' : null">
+  @if (tipo === 'loading') {
+  <span class="spinner-border estado-conteudo__icone" aria-hidden="true"></span>
+  <span class="visually-hidden">Carregando</span>
+  <strong>Carregando...</strong>
+  @if (mensagem) {
+  <p>{{ mensagem }}</p>
+  }
+  } @else if (tipo === 'error') {
+  <i class="bi bi-exclamation-triangle-fill estado-conteudo__icone" aria-hidden="true"></i>
+  <strong>{{ titulo || 'Não foi possível carregar os dados' }}</strong>
+  @if (mensagem) {
+  <p>{{ mensagem }}</p>
+  }
+  @if (mostrarAcao) {
+  <button type="button" class="sige-button sige-button--secondary" (click)="emitirAcao()">
+    {{ textoAcao }}
+  </button>
+  }
+  } @else {
+  <i class="bi bi-inbox-fill estado-conteudo__icone" aria-hidden="true"></i>
+  <strong>{{ titulo || 'Nenhum registro encontrado' }}</strong>
+  @if (mensagem) {
+  <p>{{ mensagem }}</p>
+  }
+  }
+</section>

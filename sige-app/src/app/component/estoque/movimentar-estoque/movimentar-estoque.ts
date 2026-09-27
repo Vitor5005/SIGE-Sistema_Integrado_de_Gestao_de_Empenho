@@ -20,7 +20,7 @@ export class MovimentarEstoque {
   quantidade?: number;
   tipoSaida = 'PRODUCAO';
   justificativa = '';
-  dataHora = new Date().toISOString().slice(0, 16);
+  dataHora = this.agoraLocalParaInput();
   processando = false;
   erro = '';
   sucesso = '';
@@ -67,6 +67,17 @@ export class MovimentarEstoque {
     if (!erro) return 'Não foi possível registrar a movimentação.';
     const valor = Object.values(erro)[0];
     return Array.isArray(valor) ? String(valor[0]) : String(valor);
+  }
+
+  private agoraLocalParaInput(): string {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const dia = String(agora.getDate()).padStart(2, '0');
+    const hora = String(agora.getHours()).padStart(2, '0');
+    const minuto = String(agora.getMinutes()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}T${hora}:${minuto}`;
   }
 }
 

@@ -1,0 +1,38 @@
+<section class="feedback-global" aria-live="polite" aria-atomic="false">
+  @for (toast of feedback.toasts(); track toast.id) {
+  <article class="feedback-toast feedback-toast--{{ toast.tipo }}" [attr.role]="toast.tipo === 'error' ? 'alert' : 'status'">
+    <i [class]="iconeToast(toast.tipo)" aria-hidden="true"></i>
+    <div class="feedback-toast__content">
+      <strong>{{ tituloToast(toast) }}</strong>
+      <p>{{ toast.mensagem }}</p>
+    </div>
+    <button type="button" class="feedback-toast__close" (click)="removerToast(toast.id)" aria-label="Fechar mensagem">
+      <i class="bi bi-x-lg" aria-hidden="true"></i>
+    </button>
+  </article>
+  }
+</section>
+
+<dialog #dialogConfirmacao class="feedback-confirmacao" (cancel)="cancelarDialog($event)" (close)="aoFecharDialog()"
+  (click)="aoClicarDialog($event)" aria-labelledby="feedback-confirmacao-titulo">
+  @if (feedback.confirmacaoAtiva(); as confirmacao) {
+  <div class="feedback-confirmacao__content">
+    <div class="feedback-confirmacao__icon" [class.feedback-confirmacao__icon--destrutiva]="confirmacao.destrutiva">
+      <i [class]="confirmacao.destrutiva ? 'bi bi-exclamation-triangle-fill' : 'bi bi-question-circle-fill'" aria-hidden="true"></i>
+    </div>
+    <div>
+      <h2 id="feedback-confirmacao-titulo">{{ confirmacao.titulo }}</h2>
+      <p>{{ confirmacao.mensagem }}</p>
+    </div>
+  </div>
+  <div class="feedback-confirmacao__actions">
+    <button type="button" class="feedback-confirmacao__cancelar" (click)="cancelar()">
+      {{ confirmacao.textoCancelar }}
+    </button>
+    <button type="button" class="feedback-confirmacao__confirmar"
+      [class.feedback-confirmacao__confirmar--destrutiva]="confirmacao.destrutiva" (click)="confirmar()">
+      {{ confirmacao.textoConfirmar }}
+    </button>
+  </div>
+  }
+</dialog>

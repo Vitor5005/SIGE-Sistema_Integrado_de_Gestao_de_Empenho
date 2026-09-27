@@ -6,11 +6,12 @@ import { Router } from '@angular/router';
 import { Licitacao } from '../../model/licitacao';
 import { LicitacaoService } from '../../service/licitacao.service';
 import { CommonModule } from '@angular/common';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 
 @Component({
   selector: 'app-licitacoes',
   standalone: true,
-  imports: [BarraPesquisa, CommonModule, Paginacao],
+  imports: [BarraPesquisa, CommonModule, Paginacao, EstadoConteudo],
   templateUrl: './visualizar-licitacoes.html',
   styleUrl: './visualizar-licitacoes.scss',
 })
@@ -27,6 +28,8 @@ export class VisualizarLicitacoes {
   hasNext: boolean = false;
   hasPrev: boolean = false;
   termoBuscaAtual: string = '';
+  isLoadingPage: boolean = false;
+  errorMessagePage: string = '';
 
   filtros: FiltroConfig[] = [
   {
@@ -57,6 +60,9 @@ export class VisualizarLicitacoes {
     this.currentPage = 1;
   }
 
+  this.isLoadingPage = true;
+  this.errorMessagePage = '';
+
   if (this.filtrosAtivos.status) {
     this.carregarLicitacoesComFiltroStatus(this.filtrosAtivos.status);
     return;
@@ -79,6 +85,11 @@ export class VisualizarLicitacoes {
       this.total = resposta.count;
       this.hasNext = Boolean(resposta.next);
       this.hasPrev = Boolean(resposta.previous);
+      this.isLoadingPage = false;
+    },
+    error: () => {
+      this.isLoadingPage = false;
+      this.errorMessagePage = 'Não foi possível carregar as licitações no momento.';
     },
   });
 }
@@ -114,7 +125,12 @@ export class VisualizarLicitacoes {
         this.registro = filtrados.slice(inicio, inicio + this.pageSize);
         this.hasPrev = this.currentPage > 1;
         this.hasNext = this.currentPage < totalPaginas;
-      }
+        this.isLoadingPage = false;
+      },
+      error: () => {
+        this.isLoadingPage = false;
+        this.errorMessagePage = 'Não foi possível carregar as licitações no momento.';
+      },
     });
   }
 

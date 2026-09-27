@@ -6,12 +6,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { Paginacao } from '../utils/paginacao/paginacao';
+import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Papel } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule, BarraPesquisa, Paginacao],
+  imports: [CommonModule, FormsModule, BarraPesquisa, Paginacao, EstadoConteudo],
   templateUrl: './visualizar-usuarios.html',
   styleUrl: './visualizar-usuarios.scss',
 })
@@ -20,6 +22,7 @@ export class VisualizarUsuarios {
   constructor(
     private router: Router,
     private usuarioService: UsuarioService,
+    private feedback: FeedbackService
   ) { }
 
   @ViewChild('myModal') modal!: ElementRef;
@@ -162,10 +165,8 @@ export class VisualizarUsuarios {
       }
 
       if (this.possuiDadosModalPreenchidos) {
-        const desejaSair = confirm('Você já preencheu dados do usuário. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModal();
       }
     });
 
@@ -187,12 +188,11 @@ export class VisualizarUsuarios {
           this.total = registro.count;
           this.hasNext = Boolean(registro.next);
           this.hasPrev = Boolean(registro.previous);
+          this.isLoadingUsuarios = false;
         },
         error: () => {
-          this.errorMessagePage = 'Não foi possível carregar os usuários no momento.';
-        },
-        complete: () => {
           this.isLoadingUsuarios = false;
+          this.errorMessagePage = 'Não foi possível carregar os usuários no momento.';
         }
       }
     );
@@ -377,47 +377,40 @@ export class VisualizarUsuarios {
       return;
     }
 
-    let mensagem = "";
-    if (this.registro.id) {
-      mensagem = 'Tem certeza que deseja atualizar este usuário?';
-    }
-    else {
-      mensagem = 'Tem certeza que deseja salvar este usuário?';
-    }
-    const confirmar = confirm(mensagem);
-    if (!confirmar) {
-      return;
-    }
+    const editando = this.isEditando;
 
-    this.isSaving = true;
-    const payload = this.construirPayload();
+    this.feedback.confirmar({
+      titulo: editando ? 'Confirmar alterações' : 'Confirmar cadastro',
+      mensagem: editando ? 'Deseja atualizar este usuário?' : 'Deseja salvar este usuário?',
+      textoConfirmar: editando ? 'Atualizar' : 'Salvar',
+      textoCancelar: 'Cancelar'
+    }).then((confirmado) => {
+      if (!confirmado || this.isSaving) {
+        return;
+      }
 
-    if(!this.registro.id) {
-      this.usuarioService.save(payload).subscribe(
-        {
-          next: () => {
-            window.location.reload();
-          },
+      this.isSaving = true;
+      const payload = this.construirPayload();
+
+      if (!this.registro.id) {
+        this.usuarioService.save(payload).subscribe({
+          next: () => this.concluirSalvamentoUsuario(false),
           error: (error) => {
             this.errorMessageModal = this.extrairMensagemErro(error);
             this.isSaving = false;
           }
+        });
+        return;
+      }
+
+      this.usuarioService.patch(this.registro.id, payload).subscribe({
+        next: () => this.concluirSalvamentoUsuario(true),
+        error: (error) => {
+          this.errorMessageModal = this.extrairMensagemErro(error);
+          this.isSaving = false;
         }
-      );
-    }
-    else{
-      this.usuarioService.patch(this.registro.id, payload).subscribe(
-        {
-          next: () => {
-            window.location.reload();
-          },
-          error: (error) => {
-            this.errorMessageModal = this.extrairMensagemErro(error);
-            this.isSaving = false;
-          }
-        }
-      );
-    }
+      });
+    });
   }
 
   tentarFecharModal(): void {
@@ -426,45 +419,70 @@ export class VisualizarUsuarios {
     }
 
     if (this.possuiDadosModalPreenchidos) {
-      const desejaSair = confirm('Você já preencheu dados do usuário. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModal();
+      return;
     }
 
-    if (this.fecharModalInternoBtn?.nativeElement) {
-      this.permitirFecharModalSemConfirmacao = true;
-      this.fecharModalInternoBtn.nativeElement.click();
-    }
+    this.fecharModalSemConfirmacao();
   }
 
   desativarAtivarUsuario(usuario: Usuario): void {
     if (usuario.is_active && this.isUsuarioAtual(usuario)) {
-      alert('Você não pode desativar a própria conta.');
+      this.feedback.aviso('Você não pode desativar a própria conta.');
       return;
     }
 
-    let mensagem = "";
-    if (usuario.is_active) {
-      mensagem = 'Tem certeza que deseja desativar este usuário?';
-    }
-    else {
-      mensagem = 'Tem certeza que deseja ativar este usuário?';
-    }
-    const confirmar = confirm(mensagem);
-    if (!confirmar) {
-      return;
-    }
     const novoStatus = !usuario.is_active;
-    this.usuarioService.patch(usuario.id, { is_active: novoStatus }).subscribe(
-      {
-        next: (registro: Usuario) => {
-          usuario.is_active = registro.is_active;
+    const desativando = Boolean(usuario.is_active);
+
+    this.feedback.confirmar({
+      titulo: desativando ? 'Desativar usuário?' : 'Ativar usuário?',
+      mensagem: desativando ? 'Deseja desativar este usuário?' : 'Deseja ativar este usuário?',
+      textoConfirmar: desativando ? 'Desativar' : 'Ativar',
+      textoCancelar: 'Cancelar',
+      destrutiva: desativando
+    }).then((confirmado) => {
+      if (!confirmado) {
+        return;
+      }
+
+      this.usuarioService.patch(usuario.id, { is_active: novoStatus }).subscribe({
+        next: () => {
+          usuario.is_active = novoStatus;
+          this.feedback.sucesso(novoStatus ? 'Usuário ativado com sucesso.' : 'Usuário desativado com sucesso.');
         },
         error: (error) => {
-          alert(this.extrairMensagemErro(error));
+          this.feedback.erro(this.extrairMensagemErro(error));
         }
+      });
+    });
+  }
+
+  private concluirSalvamentoUsuario(editando: boolean): void {
+    this.isSaving = false;
+    this.fecharModalSemConfirmacao();
+    this.feedback.sucesso(editando ? 'Usuário atualizado com sucesso.' : 'Usuário cadastrado com sucesso.');
+    this.getUsuarios();
+  }
+
+  private confirmarDescarteModal(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você já preencheu dados do usuário. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalSemConfirmacao();
       }
-    );
+    });
+  }
+
+  private fecharModalSemConfirmacao(): void {
+    if (this.fecharModalInternoBtn?.nativeElement) {
+      this.permitirFecharModalSemConfirmacao = true;
+      this.fecharModalInternoBtn.nativeElement.click();
+    }
   }
 }

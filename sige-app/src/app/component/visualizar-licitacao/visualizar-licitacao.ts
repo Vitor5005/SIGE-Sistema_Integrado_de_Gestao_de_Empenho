@@ -18,12 +18,14 @@ import { FornecedorInsert } from '../../model/fornecedor_insert';
 import { EnderecoService } from '../../service/endereco.service';
 import { EmpenhoInsert } from '../../model/empenho_insert';
 import { EmpenhoService } from '../../service/empenho.service';
+import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-licitacao',
   standalone: true,
-  imports: [CommonModule, BotaoVoltar, FormsModule, BarraPesquisa, Paginacao, RouterLink],
+  imports: [CommonModule, BotaoVoltar, FormsModule, BarraPesquisa, Paginacao, RouterLink, EstadoConteudo],
   templateUrl: './visualizar-licitacao.html',
   styleUrl: './visualizar-licitacao.scss',
 })
@@ -39,7 +41,8 @@ export class VisualizarLicitacao {
     private enderecoService: EnderecoService,
     private empenhoService: EmpenhoService,
     private ataService: AtaService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private feedback: FeedbackService
   ) { }
 
   @ViewChild('myModal') modal!: ElementRef;
@@ -48,6 +51,11 @@ export class VisualizarLicitacao {
 
   licitacao: Licitacao = <Licitacao>{};
   atas: Array<Ata> = Array<Ata>();
+  isLoadingPage: boolean = true;
+  errorMessagePage: string = '';
+  idPagina: number | null = null;
+  isLoadingAtas: boolean = false;
+  errorMessageAtas: string = '';
   fornecedores: Fornecedor[] = [];
   fornecedores_licitados: number[] = [];
   currentPageAtas: number = 1;
@@ -278,8 +286,13 @@ export class VisualizarLicitacao {
         this.empenho_insercao.ata = resposta.id;
         this.empenhoService.save(this.empenho_insercao).subscribe({
           complete: () => {
-            alert('Ata cadastrada com sucesso!');
-            window.location.reload();
+            this.isSaving = false;
+            this.fecharModalSemConfirmacao();
+            this.feedback.sucesso('Ata e empenho cadastrados com sucesso.');
+            this.getAtas(this.licitacao.id);
+            this.fornecedores_licitados = [];
+            this.carregarFornecedoresLicitados(this.licitacao.id);
+            this.getFornecedores();
           },
           error: () => {
             this.isSaving = false;
@@ -296,15 +309,19 @@ export class VisualizarLicitacao {
 
 
   ngOnInit() {
+    const id = Number(this.route.snapshot.queryParamMap.get('id'));
 
-    const id = this.route.snapshot.queryParamMap.get('id');
-
-    if (id) {
-      this.get(Number(id));
-      this.getFornecedores();
-      this.ata_insercao.licitacao = Number(id);
-      this.carregarFornecedoresLicitados(Number(id));
+    if (!Number.isInteger(id) || id <= 0) {
+      this.isLoadingPage = false;
+      this.errorMessagePage = 'Não foi possível identificar o registro solicitado.';
+      return;
     }
+
+    this.idPagina = id;
+    this.get(id, true);
+    this.getFornecedores();
+    this.ata_insercao.licitacao = id;
+    this.carregarFornecedoresLicitados(id);
   }
 
   ngAfterViewInit() {
@@ -329,10 +346,8 @@ export class VisualizarLicitacao {
       }
 
       if (this.possuiDadosModalPreenchidos) {
-        const desejaSair = confirm('Você já preencheu dados da ata. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-        if (!desejaSair) {
-          event.preventDefault();
-        }
+        event.preventDefault();
+        this.confirmarDescarteModal();
       }
 
     });
@@ -348,15 +363,35 @@ export class VisualizarLicitacao {
     }
   }
 
-  get(id: number): void {
+  get(id: number, controlarEstadoPagina: boolean = false): void {
+    if (controlarEstadoPagina) {
+      this.isLoadingPage = true;
+      this.errorMessagePage = '';
+    }
+
     this.licitacaoService.getById(id).subscribe({
       next: (resposta: Licitacao) => {
         this.licitacao = resposta;
       },
       complete: () => {
+        if (controlarEstadoPagina) {
+          this.isLoadingPage = false;
+        }
         this.getAtas(this.licitacao.id);
+      },
+      error: () => {
+        if (controlarEstadoPagina) {
+          this.isLoadingPage = false;
+          this.errorMessagePage = 'Não foi possível carregar esta licitação no momento.';
+        }
       }
     });
+  }
+
+  recarregarPagina(): void {
+    if (this.idPagina !== null) {
+      this.get(this.idPagina, true);
+    }
   }
 
   iniciarDefinicaoComoAtual(): void {
@@ -399,17 +434,29 @@ export class VisualizarLicitacao {
   }
 
   getAtas(licitacaoId: number): void {
+    this.isLoadingAtas = true;
+    this.errorMessageAtas = '';
+
     this.ataService.getByLicicao(String(licitacaoId), this.currentPageAtas, this.pageSizeAtas).subscribe({
       next: (resposta) => {
         this.atas = resposta.results;
         this.totalAtas = resposta.count;
         this.hasNextAtas = Boolean(resposta.next);
         this.hasPrevAtas = Boolean(resposta.previous);
+        this.isLoadingAtas = false;
+      },
+      error: () => {
+        this.isLoadingAtas = false;
+        this.errorMessageAtas = 'Não foi possível carregar as atas desta licitação.';
       }
     });
   }
 
   private carregarFornecedoresLicitados(licitacaoId: number, page: number = 1): void {
+    if (!this.pode(Recurso.ATA, Acao.CADASTRAR)) {
+      return;
+    }
+
     this.ataService.getByLicicao(String(licitacaoId), page, 100).subscribe({
       next: (resposta) => {
         resposta.results.forEach((ata) => {
@@ -426,6 +473,13 @@ export class VisualizarLicitacao {
   }
 
   getFornecedores(termobusca?: string): void {
+    if (
+      !this.pode(Recurso.ATA, Acao.CADASTRAR) ||
+      !this.pode(Recurso.FORNECEDOR, Acao.CONSULTAR)
+    ) {
+      return;
+    }
+
     if (termobusca !== undefined) {
       this.termoBuscaFornecedor = termobusca;
       this.currentPageFornecedores = 1;
@@ -617,12 +671,28 @@ export class VisualizarLicitacao {
     }
 
     if (this.possuiDadosModalPreenchidos) {
-      const desejaSair = confirm('Você já preencheu dados da ata. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?');
-      if (!desejaSair) {
-        return;
-      }
+      this.confirmarDescarteModal();
+      return;
     }
 
+    this.fecharModalSemConfirmacao();
+  }
+
+  private confirmarDescarteModal(): void {
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'Você já preencheu dados da ata. Se sair agora, perderá toda a operação. Deseja sair mesmo assim?',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaSair) => {
+      if (desejaSair) {
+        this.fecharModalSemConfirmacao();
+      }
+    });
+  }
+
+  private fecharModalSemConfirmacao(): void {
     if (this.fecharModalInternoBtn?.nativeElement) {
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();

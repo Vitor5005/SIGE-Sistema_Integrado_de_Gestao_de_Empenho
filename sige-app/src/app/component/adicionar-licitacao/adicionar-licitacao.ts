@@ -5,6 +5,7 @@ import { form } from '@angular/forms/signals';
 import { Licitacao } from '../../model/licitacao';
 import { LicitacaoService } from '../../service/licitacao.service';
 import { Router } from '@angular/router';
+import { FeedbackService } from '../../service/feedback.service';
 
 @Component({
   selector: 'app-adicionar-licitacao',
@@ -16,7 +17,8 @@ export class AdicionarLicitacao {
 
   constructor(
     private licitacaoService: LicitacaoService,
-    private router: Router
+    private router: Router,
+    private feedback: FeedbackService
   ){}
 
   form = {
@@ -88,11 +90,18 @@ export class AdicionarLicitacao {
   }
 
   excluirItem(index: number) {
-  if (confirm('Deseja realmente excluir este item?')) {
-    this.lista.splice(index, 1);
+    this.feedback.confirmar({
+      titulo: 'Remover item?',
+      mensagem: 'O item será removido desta licitação antes do salvamento.',
+      textoConfirmar: 'Remover',
+      textoCancelar: 'Cancelar',
+      destrutiva: true
+    }).then((confirmado) => {
+      if (confirmado) {
+        this.lista.splice(index, 1);
+      }
+    });
   }
-
-}
   ngOnInit(): void {
     const submitbtn = document.querySelector('.btn-submit') as HTMLElement | null;
     const adicionados = document.querySelector('.itens-adicionados') as HTMLElement | null;
@@ -159,7 +168,7 @@ export class AdicionarLicitacao {
     this.licitacaoService.save(this.licitacao).subscribe({
       next: (licitacao: Licitacao) => {
         const id = licitacao.id;
-        alert('Licitacao salva com sucesso!');
+        this.feedback.sucesso('Licitação salva com sucesso.');
         this.router.navigate(['/visualizar-licitacao'], {queryParams: { id }});
       },
       error: () => {
