@@ -7,11 +7,12 @@ import { FormsModule } from '@angular/forms';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { Paginacao } from '../utils/paginacao/paginacao';
 import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 
 @Component({
   selector: 'app-visualizar-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule, BarraPesquisa, Paginacao],
+  imports: [CommonModule, FormsModule, BarraPesquisa, Paginacao, EstadoConteudo],
   templateUrl: './visualizar-usuarios.html',
   styleUrl: './visualizar-usuarios.scss',
 })
@@ -164,12 +165,11 @@ export class VisualizarUsuarios {
           this.total = registro.count;
           this.hasNext = Boolean(registro.next);
           this.hasPrev = Boolean(registro.previous);
+          this.isLoadingUsuarios = false;
         },
         error: () => {
-          this.errorMessagePage = 'Não foi possível carregar os usuários no momento.';
-        },
-        complete: () => {
           this.isLoadingUsuarios = false;
+          this.errorMessagePage = 'Não foi possível carregar os usuários no momento.';
         }
       }
     );

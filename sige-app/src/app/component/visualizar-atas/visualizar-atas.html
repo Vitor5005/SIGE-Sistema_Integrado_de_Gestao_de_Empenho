@@ -21,44 +21,75 @@
     </thead>
 
     <tbody>
-      @for (item of atas; track item.id) {
-        <tr style="cursor: pointer" (click)="enviarPara('/visualizar-ata', item.id)">
-          <td>
-            <p>{{ item.numero_ata }}</p>
-            <small>cadastrado: {{ item.licitacao.data_abertura }}</small>
+      @if (isLoadingPage) {
+        <tr class="linha-vazia-tabela">
+          <td [attr.colspan]="5">
+            <app-estado-conteudo
+              tipo="loading"
+              mensagem="Carregando registros..."
+              [compacto]="true">
+            </app-estado-conteudo>
           </td>
-
-          <td>
-            <p>{{ item.fornecedor.nome_fantasia }}</p>
-            <small>{{ item.fornecedor.cnpj }}</small>
-          </td>
-
-          <td>
-            <span [ngClass]="classValidade(item)">
-              {{ verificarValidade(item) }}
-            </span>
-          </td>
-
-          <td>
-            <i class="bi bi-clock"></i>
-            {{ item.licitacao.validade }} meses
-          </td>
-
-          <td>R$ {{ item.ata_saldo_total }}</td>
         </tr>
-      }
+      } @else if (errorMessagePage) {
+        <tr class="linha-vazia-tabela">
+          <td [attr.colspan]="5">
+            <app-estado-conteudo
+              tipo="error"
+              titulo="Não foi possível carregar os dados"
+              [mensagem]="errorMessagePage"
+              [compacto]="true"
+              [mostrarAcao]="true"
+              (acao)="get()">
+            </app-estado-conteudo>
+          </td>
+        </tr>
+      } @else {
+        @for (item of atas; track item.id) {
+          <tr style="cursor: pointer" (click)="enviarPara('/visualizar-ata', item.id)">
+            <td>
+              <p>{{ item.numero_ata }}</p>
+              <small>cadastrado: {{ item.licitacao.data_abertura }}</small>
+            </td>
 
-      @if(atas.length === 0) {
-      <tr class="linha-vazia-tabela">
-        <td colspan="5" class="mensagem-tabela-vazia">
-          Nenhum registro encontrado.
-          <small>Ajuste os filtros ou realize um novo cadastro para continuar.</small>
-        </td>
-      </tr>
+            <td>
+              <p>{{ item.fornecedor.nome_fantasia }}</p>
+              <small>{{ item.fornecedor.cnpj }}</small>
+            </td>
+
+            <td>
+              <span [ngClass]="classValidade(item)">
+                {{ verificarValidade(item) }}
+              </span>
+            </td>
+
+            <td>
+              <i class="bi bi-clock"></i>
+              {{ item.licitacao.validade }} meses
+            </td>
+
+            <td>R$ {{ item.ata_saldo_total }}</td>
+          </tr>
+        }
+
+        @if (atas.length === 0) {
+          <tr class="linha-vazia-tabela">
+            <td [attr.colspan]="5">
+              <app-estado-conteudo
+                tipo="empty"
+                titulo="Nenhuma ata de registro de preços encontrada"
+                mensagem="Ajuste a busca ou os filtros para localizar uma ARP."
+                [compacto]="true">
+              </app-estado-conteudo>
+            </td>
+          </tr>
+        }
       }
     </tbody>
   </table>
 
-  <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-    totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+  @if (!isLoadingPage && !errorMessagePage && total > 0) {
+    <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
+      totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+  }
 </body>

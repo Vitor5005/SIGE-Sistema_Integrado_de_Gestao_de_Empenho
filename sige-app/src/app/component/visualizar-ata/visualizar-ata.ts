@@ -20,11 +20,12 @@ import { OperacaoItemService } from '../../service/operacao-item.service';
 import { OperacaoItemInsert } from '../../model/operacao_item_insert';
 import { EmpenhoService } from '../../service/empenho.service';
 import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 
 @Component({
   selector: 'app-visualizar-ata',
   standalone: true,
-  imports: [DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe, Paginacao, RouterLink],
+  imports: [DecimalPipe, BotaoVoltar, FormsModule, BarraPesquisa, KeyValuePipe, Paginacao, RouterLink, EstadoConteudo],
   templateUrl: './visualizar-ata.html',
   styleUrl: './visualizar-ata.scss',
 })
@@ -49,6 +50,13 @@ export class VisualizarAta {
   ata: Ata = <Ata>{};
   empenho: Empenho = <Empenho>{};
   itens: Array<ItemEmpenho> = [];
+  isLoadingPage: boolean = true;
+  errorMessagePage: string = '';
+  idPagina: number | null = null;
+  isLoadingEmpenho: boolean = false;
+  errorMessageEmpenho: string = '';
+  isLoadingItens: boolean = false;
+  errorMessageItens: string = '';
   validade: string = '';
   itemGenerico: Array<ItemGenerico> = [];
   itemGenericoCadastrados: Array<number> = [];
@@ -157,6 +165,10 @@ export class VisualizarAta {
     return this.itemGenerico.length;
   }
 
+  get possuiEmpenhoRelacionado(): boolean {
+    return Boolean(this.empenho?.id);
+  }
+
   get possuiDadosModalPreenchidos(): boolean {
     return Boolean(
       this.itemGenerico_insercao.catmat ||
@@ -198,13 +210,18 @@ export class VisualizarAta {
   }
 
   ngOnInit() {
-    const id = this.route.snapshot.queryParamMap.get('id');
+    const id = Number(this.route.snapshot.queryParamMap.get('id'));
 
-    if (id) {
-      this.get(Number(id));
-      this.getEmpenho(Number(id));
-      this.getItens(Number(id));
+    if (!Number.isInteger(id) || id <= 0) {
+      this.isLoadingPage = false;
+      this.errorMessagePage = 'Não foi possível identificar o registro solicitado.';
+      return;
     }
+
+    this.idPagina = id;
+    this.get(id, true);
+    this.getEmpenho(id);
+    this.getItens(id);
   }
 
   ngAfterViewInit() {
@@ -240,24 +257,59 @@ export class VisualizarAta {
     }
   }
 
-  get(id: number) {
+  get(id: number, controlarEstadoPagina: boolean = false): void {
+    if (controlarEstadoPagina) {
+      this.isLoadingPage = true;
+      this.errorMessagePage = '';
+    }
+
     this.ataService.getById(id).subscribe({
       next: (resposta: Ata) => {
         this.ata = resposta;
         this.verificarValidade(this.ata);
+        if (controlarEstadoPagina) {
+          this.isLoadingPage = false;
+        }
+      },
+      error: () => {
+        if (controlarEstadoPagina) {
+          this.isLoadingPage = false;
+          this.errorMessagePage = 'Não foi possível carregar esta ata de registro de preços no momento.';
+        }
       }
     });
   }
 
+  recarregarPagina(): void {
+    if (this.idPagina === null) {
+      return;
+    }
+
+    this.get(this.idPagina, true);
+    this.getEmpenho(this.idPagina);
+    this.getItens(this.idPagina);
+  }
+
   getEmpenho(ataId: number): void {
+    this.isLoadingEmpenho = true;
+    this.errorMessageEmpenho = '';
+
     this.ataService.getEmpenho(ataId).subscribe({
       next: (resposta: Empenho) => {
         this.empenho = resposta;
+        this.isLoadingEmpenho = false;
       },
+      error: () => {
+        this.isLoadingEmpenho = false;
+        this.errorMessageEmpenho = 'Não foi possível carregar o empenho vinculado.';
+      }
     });
   }
 
   getItens(ataId: number): void {
+    this.isLoadingItens = true;
+    this.errorMessageItens = '';
+
     this.ataService.getItens(ataId).subscribe({
       next: (resposta: ItemEmpenho[]) => {
         this.itens = resposta;
@@ -266,7 +318,12 @@ export class VisualizarAta {
           this.itemGenericoCadastrados.push(item.item_ata.item_generico.id);
         });
         this.getItemGenerico();
+        this.isLoadingItens = false;
       },
+      error: () => {
+        this.isLoadingItens = false;
+        this.errorMessageItens = 'Não foi possível carregar os itens desta ARP.';
+      }
     });
   }
 

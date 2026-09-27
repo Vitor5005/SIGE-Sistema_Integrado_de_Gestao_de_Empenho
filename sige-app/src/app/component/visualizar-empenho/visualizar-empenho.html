@@ -2,6 +2,12 @@
   <app-botao-voltar></app-botao-voltar>
 
   <div class="sige-detail-layout">
+  @if (isLoadingPage) {
+  <app-estado-conteudo tipo="loading" mensagem="Carregando informações..."></app-estado-conteudo>
+  } @else if (errorMessagePage) {
+  <app-estado-conteudo tipo="error" titulo="Não foi possível carregar o empenho" [mensagem]="errorMessagePage"
+    [mostrarAcao]="idPagina !== null" (acao)="recarregarPagina()"></app-estado-conteudo>
+  } @else {
   @if (empenho.id) {
   <nav class="sige-detail-breadcrumb" aria-label="Navegação contextual">
     <ol class="breadcrumb">
@@ -108,6 +114,7 @@
         </button>
       </div>
 
+      @if (!isLoadingItens && !errorMessageItens) {
       <div class="selecao-itens-barra" aria-live="polite">
         <p class="selecao-itens-status">
           @if (itensSelecionadosCount === 0) {
@@ -134,6 +141,7 @@
           </button>
         </div>
       </div>
+      }
 
       <div class="sige-detail-table-wrap tabela-empenho-wrap">
         <table class="table sige-detail-table">
@@ -153,6 +161,20 @@
             </tr>
           </thead>
           <tbody>
+            @if (isLoadingItens) {
+            <tr class="linha-vazia-tabela">
+              <td [attr.colspan]="7">
+                <app-estado-conteudo tipo="loading" mensagem="Carregando registros..." [compacto]="true"></app-estado-conteudo>
+              </td>
+            </tr>
+            } @else if (errorMessageItens) {
+            <tr class="linha-vazia-tabela">
+              <td [attr.colspan]="7">
+                <app-estado-conteudo tipo="error" titulo="Não foi possível carregar os dados" [mensagem]="errorMessageItens"
+                  [compacto]="true" [mostrarAcao]="true" (acao)="getItensEmpenho(empenho.id)"></app-estado-conteudo>
+              </td>
+            </tr>
+            } @else {
             @for (item of itensEmpenho; track $index) {
             <tr>
               <td>
@@ -205,11 +227,12 @@
 
             @if(itensEmpenho.length === 0) {
             <tr class="linha-vazia-tabela">
-              <td colspan="7" class="mensagem-tabela-vazia">
-                Nenhum registro encontrado.
-                <small>Nenhum item foi registrado para este empenho até o momento.</small>
+              <td [attr.colspan]="7">
+                <app-estado-conteudo tipo="empty" titulo="Nenhum item no empenho"
+                  mensagem="Nenhum item foi registrado para este empenho até o momento." [compacto]="true"></app-estado-conteudo>
               </td>
             </tr>
+            }
             }
           </tbody>
         </table>
@@ -237,15 +260,28 @@
               </tr>
             </thead>
             <tbody>
-              @if(operacoesEmpenho.length === 0) {
+              @if (isLoadingOperacoes) {
               <tr class="linha-vazia-tabela">
-                <td colspan="5" class="historico-vazio mensagem-tabela-vazia">
-                  Nenhum registro encontrado.
-                  <small>Nenhuma operação foi registrada para este empenho.</small>
+                <td [attr.colspan]="5">
+                  <app-estado-conteudo tipo="loading" mensagem="Carregando registros..." [compacto]="true"></app-estado-conteudo>
+                </td>
+              </tr>
+              } @else if (errorMessageOperacoes) {
+              <tr class="linha-vazia-tabela">
+                <td [attr.colspan]="5">
+                  <app-estado-conteudo tipo="error" titulo="Não foi possível carregar os dados" [mensagem]="errorMessageOperacoes"
+                    [compacto]="true" [mostrarAcao]="true" (acao)="getOperacoesEmpenho(empenho.id)"></app-estado-conteudo>
+                </td>
+              </tr>
+              } @else {
+              @if (operacoesEmpenho.length === 0) {
+              <tr class="linha-vazia-tabela">
+                <td [attr.colspan]="5">
+                  <app-estado-conteudo tipo="empty" titulo="Nenhuma operação registrada"
+                    mensagem="Ainda não existem operações neste empenho." [compacto]="true"></app-estado-conteudo>
                 </td>
               </tr>
               }
-
               @for (operacao of operacoesEmpenho; track operacao.id) {
               <tr>
                 <td class="coluna-data">{{ operacao.data | date:'dd/MM/yyyy | HH:mm' }}</td>
@@ -265,11 +301,13 @@
                 <td class="coluna-direita coluna-valor">R$ {{ operacao.item_empenho.item_ata.valor_unitario * operacao.valor | number:'1.2-2' }}</td>
               </tr>
               }
+              }
             </tbody>
           </table>
         </div>
       </div>
     </section>
+  }
   </div>
 
   <!-- Modal -->

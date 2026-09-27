@@ -48,29 +48,26 @@
     ></app-barra-pesquisa>
 
     <div class="container-entregas">
-      @if(isLoadingEntregas) {
-      <div class="estado-vazio-entregas conteudo-carregamento-lista">
-        <div class="conteudo-status-tabela">
-          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-          <small>Carregando entregas...</small>
-        </div>
-      </div>
-      }
-
-      @if(!isLoadingEntregas && errorMessagePage) {
-      <div class="estado-vazio-entregas conteudo-carregamento-lista">
-        <small>{{ errorMessagePage }}</small>
-      </div>
-      }
-
-      @if(!isLoadingEntregas && !errorMessagePage && entregas.length === 0) {
-      <div class="estado-vazio-entregas">
-        <h5>Nenhuma entrega encontrada.</h5>
-        <small>Tente ajustar os filtros da busca para localizar ordens de entrega.</small>
-      </div>
-      }
-
-      @if(!isLoadingEntregas && !errorMessagePage) {
+      @if (isLoadingEntregas) {
+      <app-estado-conteudo
+        tipo="loading"
+        mensagem="Carregando entregas...">
+      </app-estado-conteudo>
+      } @else if (errorMessagePage) {
+      <app-estado-conteudo
+        tipo="error"
+        titulo="Não foi possível carregar as entregas"
+        [mensagem]="errorMessagePage"
+        [mostrarAcao]="true"
+        (acao)="getEntregas()">
+      </app-estado-conteudo>
+      } @else if (entregas.length === 0) {
+      <app-estado-conteudo
+        tipo="empty"
+        titulo="Nenhuma entrega encontrada"
+        mensagem="Não há entregas para os critérios selecionados.">
+      </app-estado-conteudo>
+      } @else {
       @for (item of entregas; track $index) {
         <div class="card-entrega">
           <div class="topo-entrega">
@@ -164,8 +161,10 @@
       }
     </div>
 
+    @if (!isLoadingEntregas && !errorMessagePage && total > 0) {
     <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
       totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+    }
   </div>
 
   <!-- Modal -->

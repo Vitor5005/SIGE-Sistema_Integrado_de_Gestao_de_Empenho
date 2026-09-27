@@ -2,6 +2,12 @@
   <app-botao-voltar></app-botao-voltar>
 
   <div class="sige-detail-layout">
+    @if (isLoadingPage) {
+    <app-estado-conteudo tipo="loading" mensagem="Carregando informações..."></app-estado-conteudo>
+    } @else if (errorMessagePage) {
+    <app-estado-conteudo tipo="error" titulo="Não foi possível carregar a licitação" [mensagem]="errorMessagePage"
+      [mostrarAcao]="idPagina !== null" (acao)="recarregarPagina()"></app-estado-conteudo>
+    } @else {
     @if (licitacao.id) {
     <nav class="sige-detail-breadcrumb" aria-label="Navegação contextual">
       <ol class="breadcrumb">
@@ -81,6 +87,12 @@
         <h2 id="atas-title" class="sige-detail-section-title">Atas de Registro de Preços</h2>
       </header>
 
+      @if (isLoadingAtas) {
+      <app-estado-conteudo tipo="loading" mensagem="Carregando atas vinculadas..." [compacto]="true"></app-estado-conteudo>
+      } @else if (errorMessageAtas) {
+      <app-estado-conteudo tipo="error" titulo="Não foi possível carregar as atas" [mensagem]="errorMessageAtas"
+        [compacto]="true" [mostrarAcao]="true" (acao)="getAtas(licitacao.id)"></app-estado-conteudo>
+      } @else {
       <div class="container-atas" *ngIf="atas.length > 0">
         <div *ngFor="let item of atas" class="ata" (click)="enviarPara('visualizar-ata', item.id)">
           <div class="ata-identificacao">
@@ -105,11 +117,13 @@
       <app-paginacao class="paginacao-lista" *ngIf="totalAtas > 0" [currentPage]="currentPageAtas" [pageSize]="pageSizeAtas"
         [totalItems]="totalAtas" totalLabel="Total de atas" (pageChange)="irParaPaginaAtas($event)"></app-paginacao>
 
-      <div class="sige-detail-empty" *ngIf="atas.length === 0">
-        <p>Nenhuma ata de registro de preços foi adicionada para esta licitação.</p>
-        <p>Clique no botão “Adicionar ARP” para incluir uma nova ata.</p>
-      </div>
+      @if (atas.length === 0) {
+      <app-estado-conteudo tipo="empty" titulo="Nenhuma ARP vinculada"
+        mensagem="Nenhuma ata de registro de preços foi adicionada a esta licitação." [compacto]="true"></app-estado-conteudo>
+      }
+      }
     </section>
+    }
   </div>
 
   <div #myModal class="modal fade" id="adicionarAtaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">

@@ -6,11 +6,12 @@ import { Router } from '@angular/router';
 import { AtaService } from '../../service/ata.service';
 import { Ata } from '../../model/ata';
 import { CommonModule } from '@angular/common';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 
 @Component({
   selector: 'app-visualizar-atas',
   standalone: true,
-  imports: [BarraPesquisa, CommonModule, Paginacao],
+  imports: [BarraPesquisa, CommonModule, Paginacao, EstadoConteudo],
   templateUrl: './visualizar-atas.html',
   styleUrl: './visualizar-atas.scss',
 })
@@ -25,6 +26,8 @@ export class VisualizarAtas {
   hasNext: boolean = false;
   hasPrev: boolean = false;
   termoBuscaAtual: string = '';
+  isLoadingPage: boolean = false;
+  errorMessagePage: string = '';
 
   filtros: FiltroConfig[] = [
     {
@@ -65,6 +68,9 @@ export class VisualizarAtas {
     this.currentPage = 1;
   }
 
+  this.isLoadingPage = true;
+  this.errorMessagePage = '';
+
   const status = this.filtrosAtivos.status;
   if (status) {
     this.carregarAtasComFiltroStatus(status);
@@ -79,7 +85,12 @@ export class VisualizarAtas {
       this.total = resposta.count;
       this.hasNext = Boolean(resposta.next);
       this.hasPrev = Boolean(resposta.previous);
-    }
+      this.isLoadingPage = false;
+    },
+    error: () => {
+      this.isLoadingPage = false;
+      this.errorMessagePage = 'Não foi possível carregar as atas de registro de preços no momento.';
+    },
   });
 }
 
@@ -117,7 +128,12 @@ export class VisualizarAtas {
         this.atas = filtrados.slice(inicio, inicio + this.pageSize);
         this.hasPrev = this.currentPage > 1;
         this.hasNext = this.currentPage < totalPaginas;
-      }
+        this.isLoadingPage = false;
+      },
+      error: () => {
+        this.isLoadingPage = false;
+        this.errorMessagePage = 'Não foi possível carregar as atas de registro de preços no momento.';
+      },
     });
   }
 

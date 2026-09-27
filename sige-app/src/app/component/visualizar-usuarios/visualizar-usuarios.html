@@ -27,26 +27,30 @@
             </tr>
         </thead>
         <tbody>
-            @if(isLoadingUsuarios) {
+            @if (isLoadingUsuarios) {
             <tr class="linha-vazia-tabela">
-                <td colspan="7" class="mensagem-tabela-vazia">
-                    <div class="conteudo-status-tabela">
-                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                        <small>Carregando usuários...</small>
-                    </div>
+                <td colspan="7">
+                    <app-estado-conteudo
+                        tipo="loading"
+                        mensagem="Carregando usuários..."
+                        [compacto]="true">
+                    </app-estado-conteudo>
                 </td>
             </tr>
-            }
-
-            @if(!isLoadingUsuarios && errorMessagePage) {
+            } @else if (errorMessagePage) {
             <tr class="linha-vazia-tabela">
-                <td colspan="7" class="mensagem-tabela-vazia">
-                    <small>{{ errorMessagePage }}</small>
+                <td colspan="7">
+                    <app-estado-conteudo
+                        tipo="error"
+                        titulo="Não foi possível carregar os dados"
+                        [mensagem]="errorMessagePage"
+                        [compacto]="true"
+                        [mostrarAcao]="true"
+                        (acao)="getUsuarios()">
+                    </app-estado-conteudo>
                 </td>
             </tr>
-            }
-
-            @if(!isLoadingUsuarios && !errorMessagePage) {
+            } @else {
             @for(usuario of usuarios; track $index) {
             <tr>
                 <td> {{usuario.username}} </td>
@@ -77,21 +81,27 @@
                 </td>
             </tr>
             }
-            }
 
-            @if(!isLoadingUsuarios && !errorMessagePage && usuarios.length === 0) {
+            @if (usuarios.length === 0) {
             <tr class="linha-vazia-tabela">
-                <td colspan="7" class="mensagem-tabela-vazia">
-                    Nenhum registro encontrado.
-                    <small>Clique em "Adicionar Usuário" para realizar o primeiro cadastro.</small>
+                <td colspan="7">
+                    <app-estado-conteudo
+                        tipo="empty"
+                        titulo="Nenhum usuário encontrado"
+                        mensagem="Ajuste a busca para localizar um usuário."
+                        [compacto]="true">
+                    </app-estado-conteudo>
                 </td>
             </tr>
+            }
             }
         </tbody>
     </table>
 
+    @if (!isLoadingUsuarios && !errorMessagePage && total > 0) {
     <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
         totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+    }
 
     <div #myModal class="modal fade" id="adicionarUsuario" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">

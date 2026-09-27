@@ -15,11 +15,12 @@ import { Empenho } from '../../model/empenho';
 import { ItemEmpenhoService } from '../../service/item-empenho.service';
 import { Paginacao } from '../utils/paginacao/paginacao';
 import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 
 @Component({
   selector: 'app-visualizar-entregas',
   standalone: true,
-  imports: [BarraPesquisa, CommonModule, FormsModule, Paginacao, RouterLink],
+  imports: [BarraPesquisa, CommonModule, FormsModule, Paginacao, RouterLink, EstadoConteudo],
   templateUrl: './visualizar-entregas.html',
   styleUrl: './visualizar-entregas.scss',
 })
@@ -238,12 +239,11 @@ export class VisualizarEntregas {
         this.total = resposta.count;
         this.hasNext = Boolean(resposta.next);
         this.hasPrev = Boolean(resposta.previous);
+        this.isLoadingEntregas = false;
       },
       error: () => {
-        this.errorMessagePage = 'Não foi possível carregar as entregas no momento.';
-      },
-      complete: () => {
         this.isLoadingEntregas = false;
+        this.errorMessagePage = 'Não foi possível carregar as entregas no momento.';
       }
     });
 

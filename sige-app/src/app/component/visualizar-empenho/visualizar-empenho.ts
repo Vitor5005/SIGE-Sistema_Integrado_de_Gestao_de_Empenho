@@ -19,10 +19,11 @@ import { OrdemEntregaService } from '../../service/ordem-entrega.service';
 import { forkJoin, switchMap } from 'rxjs';
 import { ItemOrdem } from '../../model/itemOrdem';
 import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 
 @Component({
   selector: 'app-visualizar-empenho',
-  imports: [BotaoVoltar, CommonModule, FormsModule, RouterLink],
+  imports: [BotaoVoltar, CommonModule, FormsModule, RouterLink, EstadoConteudo],
   templateUrl: './visualizar-empenho.html',
   styleUrl: './visualizar-empenho.scss',
 })
@@ -30,6 +31,13 @@ export class VisualizarEmpenho {
   tipo: 'reforco' | 'anulacao' = 'reforco';
   isSolicitandoEntrega: boolean = false;
   etapaSolicitacao: 1 | 2 | 3 = 1;
+  isLoadingPage: boolean = true;
+  errorMessagePage: string = '';
+  idPagina: number | null = null;
+  isLoadingItens: boolean = false;
+  errorMessageItens: string = '';
+  isLoadingOperacoes: boolean = false;
+  errorMessageOperacoes: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
   constructor(
     private router: Router,
@@ -238,13 +246,18 @@ export class VisualizarEmpenho {
 
 
   ngOnInit() {
-    const id = this.route.snapshot.queryParams['id'];
+    const id = Number(this.route.snapshot.queryParamMap.get('id'));
 
-    if (id) {
-      this.getEmpenho(Number(id));
-      this.getItensEmpenho(Number(id));
-      this.getOperacoesEmpenho(Number(id));
+    if (!Number.isInteger(id) || id <= 0) {
+      this.isLoadingPage = false;
+      this.errorMessagePage = 'Não foi possível identificar o registro solicitado.';
+      return;
     }
+
+    this.idPagina = id;
+    this.getEmpenho(id, true);
+    this.getItensEmpenho(id);
+    this.getOperacoesEmpenho(id);
   }
 
   ngAfterViewInit() {
@@ -274,15 +287,32 @@ export class VisualizarEmpenho {
 
   }
 
-  getEmpenho(id: number): void {
+  getEmpenho(id: number, controlarEstadoPagina: boolean = false): void {
+    if (controlarEstadoPagina) {
+      this.isLoadingPage = true;
+      this.errorMessagePage = '';
+    }
+
     this.empenhoService.getById(id).subscribe({
       next: (resposta: Empenho) => {
         this.empenho = resposta;
+        if (controlarEstadoPagina) {
+          this.isLoadingPage = false;
+        }
+      },
+      error: () => {
+        if (controlarEstadoPagina) {
+          this.isLoadingPage = false;
+          this.errorMessagePage = 'Não foi possível carregar este empenho no momento.';
+        }
       }
     });
   }
 
   getItensEmpenho(id: number): void {
+    this.isLoadingItens = true;
+    this.errorMessageItens = '';
+
     this.empenhoService.itensDoEmpenho(id).subscribe({
       next: (resposta: ItemEmpenho[]) => {
         this.itensEmpenho = resposta;
@@ -298,11 +328,19 @@ export class VisualizarEmpenho {
           this.itensOrdemInsert.push(itemOrdemInsert);
         });
         this.itensSelecionados = new Array(this.itensEmpenho.length).fill(false);
+        this.isLoadingItens = false;
+      },
+      error: () => {
+        this.isLoadingItens = false;
+        this.errorMessageItens = 'Não foi possível carregar os itens deste empenho.';
       }
     });
   }
 
   getOperacoesEmpenho(id: number): void {
+    this.isLoadingOperacoes = true;
+    this.errorMessageOperacoes = '';
+
     this.empenhoService.operacaoDoEmpenho(id).subscribe({
       next: (resposta: OperacaoItem[]) => {
         this.operacoesEmpenho = [...resposta].sort((operacaoA, operacaoB) => {
@@ -310,8 +348,23 @@ export class VisualizarEmpenho {
           const dataB = Date.parse(String(operacaoB.data)) || 0;
           return dataB - dataA;
         });
+        this.isLoadingOperacoes = false;
+      },
+      error: () => {
+        this.isLoadingOperacoes = false;
+        this.errorMessageOperacoes = 'Não foi possível carregar o histórico de operações.';
       }
     });
+  }
+
+  recarregarPagina(): void {
+    if (this.idPagina === null) {
+      return;
+    }
+
+    this.getEmpenho(this.idPagina, true);
+    this.getItensEmpenho(this.idPagina);
+    this.getOperacoesEmpenho(this.idPagina);
   }
 
   getCategoria(item: ItemEmpenho): string {

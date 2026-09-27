@@ -17,40 +17,70 @@
             </tr>
         </thead>
         <tbody>
-
-            @for (item of empenhos; track item.id) {
-                <!-- Exemplo 1 -->
-                <tr style="cursor: pointer;" (click)="enviarPara('visualizar-empenho', item.id)">
-
-                    <td>
-                        <span>{{ item.codigo }}</span>
-                    </td>
-                    <td>
-                        <span>{{ item.ata.fornecedor.nome_fantasia }}</span>
-                    </td>
-                    <td>
-                        <span> {{ item.saldo_utilizado }} </span>
-                    </td>
-                    <td>
-                        <span> {{ item.valor_total}} </span>
+            @if (isLoadingPage) {
+                <tr class="linha-vazia-tabela">
+                    <td [attr.colspan]="4">
+                        <app-estado-conteudo
+                            tipo="loading"
+                            mensagem="Carregando registros..."
+                            [compacto]="true">
+                        </app-estado-conteudo>
                     </td>
                 </tr>
-            }
+            } @else if (errorMessagePage) {
+                <tr class="linha-vazia-tabela">
+                    <td [attr.colspan]="4">
+                        <app-estado-conteudo
+                            tipo="error"
+                            titulo="Não foi possível carregar os dados"
+                            [mensagem]="errorMessagePage"
+                            [compacto]="true"
+                            [mostrarAcao]="true"
+                            (acao)="get()">
+                        </app-estado-conteudo>
+                    </td>
+                </tr>
+            } @else {
+                @for (item of empenhos; track item.id) {
+                    <!-- Exemplo 1 -->
+                    <tr style="cursor: pointer;" (click)="enviarPara('visualizar-empenho', item.id)">
 
-            @if(empenhos.length === 0) {
-            <tr class="linha-vazia-tabela">
-                <td colspan="4" class="mensagem-tabela-vazia">
-                    Nenhum registro encontrado.
-                    <small>Ajuste os filtros ou realize um novo cadastro para continuar.</small>
-                </td>
-            </tr>
+                        <td>
+                            <span>{{ item.codigo }}</span>
+                        </td>
+                        <td>
+                            <span>{{ item.ata.fornecedor.nome_fantasia }}</span>
+                        </td>
+                        <td>
+                            <span> {{ item.saldo_utilizado }} </span>
+                        </td>
+                        <td>
+                            <span> {{ item.valor_total}} </span>
+                        </td>
+                    </tr>
+                }
+
+                @if (empenhos.length === 0) {
+                    <tr class="linha-vazia-tabela">
+                        <td [attr.colspan]="4">
+                            <app-estado-conteudo
+                                tipo="empty"
+                                titulo="Nenhum empenho encontrado"
+                                mensagem="Ajuste a busca ou os filtros para localizar um empenho."
+                                [compacto]="true">
+                            </app-estado-conteudo>
+                        </td>
+                    </tr>
+                }
             }
 
         </tbody>
 
     </table>
 
-    <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-        totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+    @if (!isLoadingPage && !errorMessagePage && total > 0) {
+        <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
+            totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+    }
 
 </body>

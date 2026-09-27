@@ -10,10 +10,11 @@ import { EnderecoService } from '../../service/endereco.service';
 import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 import { FornecedorInsert } from '../../model/fornecedor_insert';
 import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
-  imports: [BotaoVoltar, FormsModule],
+  imports: [BotaoVoltar, FormsModule, EstadoConteudo],
   templateUrl: './visualizar-fornecedor.html',
   styleUrl: './visualizar-fornecedor.scss',
 })
@@ -38,6 +39,9 @@ export class VisualizarFornecedor {
   formSubmitted: boolean = false;
   isSaving: boolean = false;
   errorMessageModal: string = '';
+  isLoadingPage: boolean = true;
+  errorMessagePage: string = '';
+  idPagina: number | null = null;
   private permitirFecharModalSemConfirmacao: boolean = false;
 
   private limparNumero(valor: string | undefined): string {
@@ -208,11 +212,16 @@ export class VisualizarFornecedor {
 
 
   ngOnInit() {
-    const id = this.route.snapshot.queryParamMap.get('id');
+    const id = Number(this.route.snapshot.queryParamMap.get('id'));
 
-    if (id) {
-      this.get(Number(id))
+    if (!Number.isInteger(id) || id <= 0) {
+      this.isLoadingPage = false;
+      this.errorMessagePage = 'Não foi possível identificar o registro solicitado.';
+      return;
     }
+
+    this.idPagina = id;
+    this.get(id, true);
   }
 
   ngAfterViewInit() {
@@ -261,14 +270,34 @@ export class VisualizarFornecedor {
     this.endereco_editar.cep = this.fornecedor.endereco.cep;
   }
 
-  get(id: number): void {
+  get(id: number, controlarEstadoPagina: boolean = false): void {
+    if (controlarEstadoPagina) {
+      this.isLoadingPage = true;
+      this.errorMessagePage = '';
+    }
+
     this.fornecedorService.getById(id).subscribe(
       {
         next: (reposta: Fornecedor) => {
-          this.fornecedor = reposta
+          this.fornecedor = reposta;
+          if (controlarEstadoPagina) {
+            this.isLoadingPage = false;
+          }
+        },
+        error: () => {
+          if (controlarEstadoPagina) {
+            this.isLoadingPage = false;
+            this.errorMessagePage = 'Não foi possível carregar este fornecedor no momento.';
+          }
         }
       }
     )
+  }
+
+  recarregarPagina(): void {
+    if (this.idPagina !== null) {
+      this.get(this.idPagina, true);
+    }
   }
 
   saveFornecedo(): void {

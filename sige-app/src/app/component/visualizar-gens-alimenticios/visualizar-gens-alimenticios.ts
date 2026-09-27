@@ -7,11 +7,12 @@ import { ItemGenericoService } from '../../service/item-generico.service';
 import { ItemGenerico } from '../../model/item_generico';
 import { FormsModule } from '@angular/forms';
 import { FeedbackService } from '../../service/feedback.service';
+import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 
 @Component({
   selector: 'app-visualizar-gens-alimenticios',
   standalone: true,
-  imports: [BarraPesquisa, FormsModule, Paginacao],
+  imports: [BarraPesquisa, FormsModule, Paginacao, EstadoConteudo],
   templateUrl: './visualizar-gens-alimenticios.html',
   styleUrl: './visualizar-gens-alimenticios.scss',
 })
@@ -51,6 +52,8 @@ filtrosAtivos: any = {};
   hasNext: boolean = false;
   hasPrev: boolean = false;
   termoBuscaAtual: string = '';
+  isLoadingPage: boolean = false;
+  errorMessagePage: string = '';
   registroEditar: ItemGenerico = <ItemGenerico>{};
   registroOriginalModal: ItemGenerico | null = null;
   formSubmitted: boolean = false;
@@ -93,14 +96,22 @@ filtrosAtivos: any = {};
       this.currentPage = 1;
     }
 
-    this.ItemGenericoService.get(this.termoBuscaAtual, this.currentPage, this.pageSize, this.normalizarFiltrosParaEnvio()).subscribe(
-      (resposta) => {
+    this.isLoadingPage = true;
+    this.errorMessagePage = '';
+
+    this.ItemGenericoService.get(this.termoBuscaAtual, this.currentPage, this.pageSize, this.normalizarFiltrosParaEnvio()).subscribe({
+      next: (resposta) => {
         this.registros = resposta.results;
         this.total = resposta.count;
         this.hasNext = Boolean(resposta.next);
         this.hasPrev = Boolean(resposta.previous);
+        this.isLoadingPage = false;
+      },
+      error: () => {
+        this.isLoadingPage = false;
+        this.errorMessagePage = 'Não foi possível carregar os gêneros alimentícios no momento.';
       }
-    );
+    });
 
   }
 

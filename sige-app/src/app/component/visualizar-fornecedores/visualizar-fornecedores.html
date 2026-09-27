@@ -19,6 +19,30 @@
             </tr>
         </thead>
         <tbody>
+            @if (isLoadingPage) {
+            <tr class="linha-vazia-tabela">
+                <td colspan="5">
+                    <app-estado-conteudo
+                        tipo="loading"
+                        mensagem="Carregando registros..."
+                        [compacto]="true">
+                    </app-estado-conteudo>
+                </td>
+            </tr>
+            } @else if (errorMessagePage) {
+            <tr class="linha-vazia-tabela">
+                <td colspan="5">
+                    <app-estado-conteudo
+                        tipo="error"
+                        titulo="Não foi possível carregar os dados"
+                        [mensagem]="errorMessagePage"
+                        [compacto]="true"
+                        [mostrarAcao]="true"
+                        (acao)="get()">
+                    </app-estado-conteudo>
+                </td>
+            </tr>
+            } @else {
             @for (item of fornecedores; track item.id) {
             <tr (click)="enviarPara('/visualizar-fornecedor', item.id)" style="cursor: pointer;">
                 <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
@@ -32,17 +56,24 @@
             </tr>
             }
 
-            @if(fornecedores.length === 0) {
+            @if (fornecedores.length === 0) {
             <tr class="linha-vazia-tabela">
-                <td colspan="5" class="mensagem-tabela-vazia">
-                    Nenhum registro encontrado.
-                    <small>Ajuste a busca ou realize um novo cadastro para continuar.</small>
+                <td colspan="5">
+                    <app-estado-conteudo
+                        tipo="empty"
+                        titulo="Nenhum fornecedor encontrado"
+                        mensagem="Ajuste a busca para localizar um fornecedor."
+                        [compacto]="true">
+                    </app-estado-conteudo>
                 </td>
             </tr>
+            }
             }
         </tbody>
     </table>
 
+    @if (!isLoadingPage && !errorMessagePage && total > 0) {
     <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
         totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+    }
 </body>
