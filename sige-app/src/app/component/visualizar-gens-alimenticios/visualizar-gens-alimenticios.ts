@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { ItemGenericoService } from '../../service/item-generico.service';
 import { ItemGenerico } from '../../model/item_generico';
 import { FormsModule } from '@angular/forms';
+import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-gens-alimenticios',
@@ -15,6 +16,9 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './visualizar-gens-alimenticios.scss',
 })
 export class VisualizarGensAlimenticios {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
 
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild('myInput') input!: ElementRef;

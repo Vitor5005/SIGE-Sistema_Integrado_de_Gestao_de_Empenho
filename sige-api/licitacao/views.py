@@ -10,7 +10,9 @@ from licitacao.models import Licitacao, Ata, ItemAta
 from licitacao.serializers import AtaInsertSerializer, ItemAtaInsertSerializer, LicitacaoSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
 from empenho.serializers import ValorEmpenhoSerializer
 from empenho.models import Empenho, ItemEmpenho
-from utils.permissions import IsAdmin,IsTecnico
+from utils.audit import AuditoriaRBACMixin
+from utils.permissions import RBACPermission
+from utils.rbac import Acao, Recurso
 class BaseFiltroMixin:
     """
     Mixin de configuração padrão de busca, filtro e ordenação
@@ -22,10 +24,12 @@ class BaseFiltroMixin:
         filters.OrderingFilter
     ]
     
-class LicitacaoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
+class LicitacaoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Licitacao.objects.all()
     serializer_class = LicitacaoSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.LICITACAO
+    rbac_action_map = {'definir_atual': Acao.DEFINIR_ATUAL}
     # filter_backends = [
     #     DjangoFilterBackend,
     #     filters.SearchFilter,
@@ -47,10 +51,11 @@ class LicitacaoViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
         licitacao.definir_como_atual()
         return Response(self.get_serializer(licitacao).data)
 
-class AtaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
+class AtaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = Ata.objects.all()
     serializer_class = AtaSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.ATA
 
     def get_serializer_class(self):
         
@@ -68,10 +73,11 @@ class AtaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
     ordering_fields = ['ata_saldo_total', 'numero_ata']
     ordering = ['-ata_saldo_total']
 
-class ItemAtaViewSet(viewsets.ModelViewSet):
+class ItemAtaViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = ItemAta.objects.all()
     serializer_class = ItemAtaSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.ITEM_ATA
     
     def get_serializer_class(self):
         if self.action in ['create', 'update']:
@@ -79,9 +85,10 @@ class ItemAtaViewSet(viewsets.ModelViewSet):
         
         return ItemAtaSerializer
 
-class ValorDoEmpenhoViewSet(viewsets.ModelViewSet):
+class ValorDoEmpenhoViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     serializer_class = ValorEmpenhoSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.EMPENHO
 
     def get_queryset(self):
         ata_id = self.request.query_params.get('ata_id')
@@ -99,9 +106,10 @@ class ValorDoEmpenhoViewSet(viewsets.ModelViewSet):
         # Retorna um objeto vazio ou 404 se preferir
         return Response({})
     
-class ItensDaAtaViewSet(viewsets.ModelViewSet):
+class ItensDaAtaViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     serializer_class = ItensEmpenhoDaAtaSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.ITEM_EMPENHO
     pagination_class = None
 
     def get_queryset(self):

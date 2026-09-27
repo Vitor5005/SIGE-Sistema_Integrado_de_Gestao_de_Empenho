@@ -18,6 +18,7 @@ import { FornecedorInsert } from '../../model/fornecedor_insert';
 import { EnderecoService } from '../../service/endereco.service';
 import { EmpenhoInsert } from '../../model/empenho_insert';
 import { EmpenhoService } from '../../service/empenho.service';
+import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-licitacao',
@@ -27,6 +28,9 @@ import { EmpenhoService } from '../../service/empenho.service';
   styleUrl: './visualizar-licitacao.scss',
 })
 export class VisualizarLicitacao {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
 
   constructor(
     private router: Router,

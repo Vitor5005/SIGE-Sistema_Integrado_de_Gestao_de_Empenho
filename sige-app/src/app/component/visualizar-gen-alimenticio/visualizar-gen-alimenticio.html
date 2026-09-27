@@ -48,7 +48,9 @@
         </div>
 
         <div class="container-botao">
+          @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.EDITAR)) {
           <button   class="btn-editar"  value="btn-editar" type="button" (click)="habilitarEdicao()">{{ editando ? 'Salvar' : 'Editar' }}</button>
+          }
         </div>
 
       </div>

@@ -7,5 +7,6 @@ export type ItemOrdem = {
     item_empenho: ItemEmpenho; 
     quantidade_solicitada: number;
     quantidade_entregue: number;
+    quantidade_pendente?: number;
     observacao?: string | null;
 }

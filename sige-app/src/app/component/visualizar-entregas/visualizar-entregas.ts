@@ -13,6 +13,7 @@ import { forkJoin, Observable, of, switchMap } from 'rxjs';
 import { EmpenhoService } from '../../service/empenho.service';
 import { ItemEmpenhoService } from '../../service/item-empenho.service';
 import { Paginacao } from '../utils/paginacao/paginacao';
+import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-entregas',
@@ -22,6 +23,9 @@ import { Paginacao } from '../utils/paginacao/paginacao';
   styleUrl: './visualizar-entregas.scss',
 })
 export class VisualizarEntregas {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
 
   filtros: FiltroConfig[] = [
   {
@@ -30,6 +34,7 @@ export class VisualizarEntregas {
     tipo: 'radio',
     opcoes: [
       { valor: 'esp', label: 'Entrega em espera' },
+      { valor: 'par', label: 'Entrega parcial' },
       { valor: 'con', label: 'Entrega realizada' }
     ]
   },
@@ -240,12 +245,18 @@ filtrosAtivos: any = {};
     if (status === "esp") {
       return "Entrega em espera";
     }
+    if (status === "par") {
+      return "Entrega parcial";
+    }
     return "Entrega realizada";
   }
 
   classeStatus(status: string): string {
     if (status === "esp") {
       return "em_espera";
+    }
+    if (status === "par") {
+      return "parcial";
     }
     return "realizada";
   }
@@ -255,7 +266,8 @@ filtrosAtivos: any = {};
       if (a.status === b.status) {
         return new Date(a.data_emissao).getTime() - new Date(b.data_emissao).getTime();
       }
-      return a.status === 'esp' ? -1 : 1;
+      const prioridade: Record<string, number> = { par: 0, esp: 1, con: 2 };
+      return (prioridade[a.status] ?? 3) - (prioridade[b.status] ?? 3);
     });
   }
 

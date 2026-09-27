@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from "@angular/router";
 import { Auth } from '../../../service/auth';
+import { Acao, Papel, pode, Recurso } from '../../../security/rbac';
 
 type TokenPayload = {
   papel?: string;
@@ -14,6 +15,9 @@ type TokenPayload = {
   styleUrl: './cabecalho.scss',
 })
 export class Cabecalho {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
 
   constructor(
     private router: Router,
@@ -70,10 +74,16 @@ export class Cabecalho {
   }
 
   verificarPapel(papel: string): string {
-    if (papel === 'ADMIN') {
-      return 'Administrador';
+    if (papel === Papel.DIRETOR) {
+      return 'Diretor';
     }
-    return 'Técnico';
+    if (papel === Papel.NUTRICIONISTA) {
+      return 'Nutricionista';
+    }
+    if (papel === Papel.ESTOQUISTA) {
+      return 'Estoquista';
+    }
+    return 'Técnico Administrativo';
   }
 
   isGrupoAtivo(rotas: readonly string[]): boolean {

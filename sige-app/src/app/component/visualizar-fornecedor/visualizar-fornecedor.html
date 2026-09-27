@@ -58,12 +58,14 @@
       </div>
     </div>
 
+    @if (pode(Recurso.FORNECEDOR, Acao.EDITAR)) {
     <div class="footer-acoes">
       <button class="btn-editar" data-bs-toggle="modal" data-bs-target="#fornecedorModal"
         (click)="carregar_Fornecedor()">
         <i class="bi bi-pencil-square"></i> EDITAR INFORMAÇÕES
       </button>
     </div>
+    }
   </section>
 
   <div #myModal class="modal fade" id="fornecedorModal" tabindex="-1" aria-hidden="true">

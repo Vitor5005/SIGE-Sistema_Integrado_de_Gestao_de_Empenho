@@ -88,6 +88,10 @@
   &.realizada {
     background: var(--verde);
   }
+
+  &.parcial {
+    background: #d97706;
+  }
 }
 
 .info-entrega-principal {

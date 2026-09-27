@@ -340,10 +340,12 @@
       </div>
     </div>
     <div class="sige-actions home-acoes">
+      @if (pode(Recurso.LICITACAO, Acao.CADASTRAR)) {
       <a class="sige-button sige-button--primary" routerLink="/adicionar-licitacao">
         <i class="bi bi-plus-lg" aria-hidden="true"></i>
         Nova licitação
       </a>
+      }
       <a class="sige-button sige-button--secondary" routerLink="/visualizar-empenhos">
         <i class="bi bi-receipt" aria-hidden="true"></i>
         Consultar empenhos

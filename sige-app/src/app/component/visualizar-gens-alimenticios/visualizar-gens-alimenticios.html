@@ -37,10 +37,12 @@
           <p class="descricao">{{ item.descricao }}</p>
         </td>
         <td>
+          @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.EDITAR)) {
           <button class="btn btn-primary" title="Editar usuário" data-bs-toggle="modal"
             data-bs-target="#editarItemGenerico" (click)="carregarRegistro(item)">
             <i class="bi bi-pencil"></i>
           </button>
+          }
 
         </td>
 

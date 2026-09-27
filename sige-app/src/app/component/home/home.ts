@@ -11,6 +11,7 @@ import { AtaService } from '../../service/ata.service';
 import { EmpenhoService, ResumoFinanceiroEmpenhos } from '../../service/empenho.service';
 import { LicitacaoService } from '../../service/licitacao.service';
 import { OrdemEntregaService } from '../../service/ordem-entrega.service';
+import { Acao, pode, Recurso } from '../../security/rbac';
 
 type IndicadorKey = 'licitacoes' | 'arps' | 'empenhos' | 'entregasEmEspera';
 type ContextoDados = 'atual' | 'todas';
@@ -28,6 +29,9 @@ interface EstadoIndicador {
   styleUrl: './home.scss',
 })
 export class Home implements OnInit {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
   indicadores: Record<IndicadorKey, EstadoIndicador> = {
     licitacoes: { valor: null, carregando: true, erro: false },
     arps: { valor: null, carregando: true, erro: false },
@@ -175,11 +179,15 @@ export class Home implements OnInit {
       return 'Em espera';
     }
 
+    if (entrega.status === 'par') {
+      return 'Parcialmente entregue';
+    }
+
     return entrega.status;
   }
 
   estaAtrasada(entrega: OrdemEntrega): boolean {
-    if (entrega.status !== 'esp' || !entrega.data_entrega_prevista) {
+    if (entrega.status === 'con' || !entrega.data_entrega_prevista) {
       return false;
     }
 

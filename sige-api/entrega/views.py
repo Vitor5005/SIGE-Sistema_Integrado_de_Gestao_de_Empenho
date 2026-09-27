@@ -10,13 +10,17 @@ from entrega.models import OrdemEntrega, ItemOrdem
 from entrega.serializers import OrdemEntregaInsertSerializer, OrdemEntregaSerializer, ItemOrdemSerializer, itemOrdemInsertSerializer
 from licitacao.views import BaseFiltroMixin
 from utils.mail import get_email_client
-from utils.permissions import IsAdmin, IsTecnico
+from utils.audit import AuditoriaRBACMixin
+from utils.permissions import RBACPermission
+from utils.rbac import Acao, Recurso
 
-class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
+class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = OrdemEntrega.objects.all()
     serializer_class = OrdemEntregaSerializer
     parser_classes = [JSONParser, MultiPartParser, FormParser]
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.ORDEM_ENTREGA
+    rbac_action_map = {'EnviarPedidoPorEmail': Acao.EMITIR_ORDEM}
 
     def get_serializer_class(self):
         
@@ -99,11 +103,12 @@ class EntregaViewSet(BaseFiltroMixin,viewsets.ModelViewSet):
         return Response({'sucesso': f'Pedido de entrega enviado com sucesso para {fornecedor.email}.'}, status=status.HTTP_200_OK)
 
     
-class PedidosDaOrdemViewSet(viewsets.ModelViewSet):
+class PedidosDaOrdemViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = ItemOrdem.objects.all()
     serializer_class = ItemOrdemSerializer
     pagination_class = None
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.ITEM_ORDEM
     
     def get_queryset(self):
             queryset = super().get_queryset()
@@ -112,10 +117,11 @@ class PedidosDaOrdemViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(ordem_entrega__id=ordem_id)
             return queryset
     
-class ItemEntregaViewSet(viewsets.ModelViewSet):
+class ItemEntregaViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = ItemOrdem.objects.all()
     serializer_class = ItemOrdemSerializer
-    permission_classes = [IsAdmin|IsTecnico]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.ITEM_ORDEM
 
     def get_serializer_class(self):
         

@@ -19,6 +19,7 @@ import { ItemEmpenhoInsert } from '../../model/itemEmpenho_insert';
 import { OperacaoItemService } from '../../service/operacao-item.service';
 import { OperacaoItemInsert } from '../../model/operacao_item_insert';
 import { EmpenhoService } from '../../service/empenho.service';
+import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-ata',
@@ -28,6 +29,9 @@ import { EmpenhoService } from '../../service/empenho.service';
   styleUrl: './visualizar-ata.scss',
 })
 export class VisualizarAta {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
 
   constructor(
     private router: Router,
@@ -454,13 +458,12 @@ export class VisualizarAta {
 
   private salvarItemAtaECriarEmpenho(): void {
     this.itemAta_insercao.ata = this.ata.id;
-    this.itemAta_insercao.quantidade_licitada = Number(this.itemAta_insercao.quantidade_licitada) - 1;
 
     this.itemAtaService.save(this.itemAta_insercao).subscribe({
       next: (resposta: ItemAtaInsert) => {
         this.itemEmpenho_insercao.item_ata = resposta.id;
         this.itemEmpenho_insercao.empenho = this.empenho.id;
-        this.itemEmpenho_insercao.quantidade_atual = 1;
+        this.itemEmpenho_insercao.quantidade_atual = 0;
         this.itemEmpenho_insercao.quantidade_entrege = 0;
         this.saveItemEmpenho();
       },
@@ -490,8 +493,9 @@ export class VisualizarAta {
     this.operacaoInsercao.data = new Date();
 
     this.operacaService.save(this.operacaoInsercao).subscribe({
-      complete: () => {
-        this.atualizarEmpenho();
+      next: () => {
+        alert('Item cadastrado com sucesso!');
+        window.location.reload();
       },
       error: () => {
         this.isSaving = false;

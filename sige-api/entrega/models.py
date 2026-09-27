@@ -7,6 +7,7 @@ class OrdemEntrega(models.Model):
     codigo = models.CharField(max_length=20, unique=True, null=False, blank=False)
     status_tipo = (
         ("esp", "Em espera"),
+        ("par", "Parcialmente entregue"),
         ("con", "Concluída")
     )
     status = models.CharField(max_length=3, choices=status_tipo, default="esp")
@@ -27,6 +28,10 @@ class ItemOrdem(models.Model):
 
     def __str__(self):
         return f"{self.ordem_entrega.codigo} - {self.item_empenho}"
+
+    @property
+    def quantidade_pendente(self):
+        return max(0, self.quantidade_solicitada - self.quantidade_entregue)
 
     
 # Create your models here.

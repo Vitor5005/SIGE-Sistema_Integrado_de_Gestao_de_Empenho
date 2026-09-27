@@ -9,6 +9,7 @@ import { EnderecoService } from '../../service/endereco.service';
 
 import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 import { FornecedorInsert } from '../../model/fornecedor_insert';
+import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
@@ -17,6 +18,9 @@ import { FornecedorInsert } from '../../model/fornecedor_insert';
   styleUrl: './visualizar-fornecedor.scss',
 })
 export class VisualizarFornecedor {
+  readonly pode = pode;
+  readonly Acao = Acao;
+  readonly Recurso = Recurso;
 
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild("myInput") input!: ElementRef;

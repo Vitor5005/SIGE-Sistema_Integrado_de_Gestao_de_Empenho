@@ -1,0 +1,22 @@
+<section class="estoque-pagina">
+  <div class="estoque-topo"><div><h3>REGISTRAR RECEBIMENTO</h3><p>Somente a quantidade aceita entra no estoque. O restante continua pendente para outra entrega.</p></div>
+    <a class="btn btn-outline-primary" routerLink="/visualizar-entregas">Voltar às entregas</a></div>
+  @if(erro){<div class="alert alert-danger">{{erro}}</div>}
+  @if(ordem){
+    <div class="card p-4 mb-4"><div class="row">
+      <div class="col-md-3"><strong>Ordem</strong><br>{{ordem.codigo}}</div>
+      <div class="col-md-3"><strong>Empenho</strong><br>{{ordem.empenho.codigo}}</div>
+      <div class="col-md-3"><strong>Fornecedor</strong><br>{{ordem.empenho.ata.fornecedor.nome_fantasia}}</div>
+      <div class="col-md-3"><label class="form-label"><strong>Data de entrada</strong></label><input class="form-control" type="datetime-local" [(ngModel)]="dataEntrada"></div>
+    </div></div>
+    <div class="table-responsive"><table class="table tabela-estoque"><thead><tr><th>Gênero</th><th>Unidade</th><th>Solicitado</th><th>Já recebido</th><th>Pendente</th><th>Receber agora</th><th>Valor unitário</th><th>Total desta entrada</th><th>Observação</th></tr></thead>
+      <tbody>@for(item of itens;track item.id){<tr><td>{{item.item_empenho.item_ata.item_generico.catmat}} - {{item.item_empenho.item_ata.item_generico.descricao}}</td>
+        <td>{{item.item_empenho.item_ata.item_generico.unidade_medida}}</td><td>{{item.quantidade_solicitada|number:'1.0-3'}}</td>
+        <td>{{item.quantidade_entregue|number:'1.0-3'}}</td><td>{{item.quantidade_pendente|number:'1.0-3'}}</td>
+        <td><input class="form-control" type="number" min="0" [max]="item.quantidade_pendente" step="0.001" [(ngModel)]="item.quantidade_receber" [disabled]="item.quantidade_pendente <= 0"></td>
+        <td>{{item.item_empenho.item_ata.valor_unitario|currency:'BRL'}}</td><td>{{total(item)|currency:'BRL'}}</td>
+        <td><input class="form-control" maxlength="255" placeholder="Obrigatória se permanecer pendência" [(ngModel)]="item.observacao"></td></tr>}</tbody></table></div>
+    <button class="btn btn-primary" [disabled]="processando||ordem.status==='con'" (click)="confirmar()">{{processando?'Registrando...':'Confirmar recebimento'}}</button>
+  }
+</section>
+

@@ -9,17 +9,20 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from usuario.models import Usuario, CodigoRedefiniçãoSenha 
-from usuario.serializers import UsuarioSerializer, CustomTokenObtainPairSerializer
+from usuario.models import Usuario, CodigoRedefiniçãoSenha, HistoricoAuditoria
+from usuario.serializers import UsuarioSerializer, CustomTokenObtainPairSerializer, HistoricoAuditoriaSerializer
 from licitacao.views import BaseFiltroMixin
 from utils.mail import get_email_client
-from utils.permissions import IsAdmin
+from utils.audit import AuditoriaRBACMixin
+from utils.permissions import RBACPermission
+from utils.rbac import Recurso
 signer = TimestampSigner()
 
-class UsuarioViewSet(BaseFiltroMixin, viewsets.ModelViewSet):
+class UsuarioViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.USUARIO
     
     search_fields = ['username', 'first_name', 'last_name', 'email']
     filterset_fields = {
@@ -29,6 +32,15 @@ class UsuarioViewSet(BaseFiltroMixin, viewsets.ModelViewSet):
     
     ordering_fields = ['username', 'first_name', 'date_joined']
     ordering = ['username']
+
+    def destroy(self, request, *args, **kwargs):
+        usuario = self.get_object()
+        if usuario.pk == request.user.pk:
+            return Response(
+                {'detail': 'Você não pode excluir a própria conta.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=False, methods=['post'], url_path='request-password-reset', permission_classes=[AllowAny])
     def request_password_reset(self, request):
@@ -113,3 +125,20 @@ class UsuarioViewSet(BaseFiltroMixin, viewsets.ModelViewSet):
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
     permission_classes = [AllowAny]
+
+
+class HistoricoAuditoriaViewSet(BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
+    queryset = HistoricoAuditoria.objects.select_related('usuario').all()
+    serializer_class = HistoricoAuditoriaSerializer
+    permission_classes = [RBACPermission]
+    rbac_resource = Recurso.HISTORICO
+    search_fields = ['usuario__username', 'papel', 'acao', 'recurso', 'entidade']
+    filterset_fields = {
+        'papel': ['exact'],
+        'acao': ['exact'],
+        'recurso': ['exact'],
+        'permitido': ['exact'],
+        'data_hora': ['exact', 'gte', 'lte'],
+    }
+    ordering_fields = ['data_hora', 'papel', 'recurso', 'acao']
+    ordering = ['-data_hora']

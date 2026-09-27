@@ -25,4 +25,5 @@ urlpatterns = [
     path('api/v1/', include('licitacao.urls')),
     path('api-auth/', include('rest_framework.urls')),
     path('api/v1/', include('usuario.urls')),
+    path('api/v1/', include('estoque.urls')),
 ]
