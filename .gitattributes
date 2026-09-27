@@ -1,0 +1,2 @@
+# Scripts shell precisam de LF para rodar no Linux (EC2/containers).
+*.sh text eol=lf

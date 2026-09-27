@@ -1,12 +1,14 @@
 #!/bin/sh
 set -e
 
-echo "Aguardando banco de dados e aplicando migracoes..."
+echo "Aguardando banco de dados..."
 
+# Espera apenas a conexão; erros de migração não devem ser repetidos, pois no
+# MySQL uma migração que falha no meio não é desfeita.
 attempt=1
-until python manage.py migrate; do
+until DJANGO_SETTINGS_MODULE=sige_api.settings python -c "import django; django.setup(); from django.db import connection; connection.ensure_connection()" 2>/dev/null; do
   if [ "$attempt" -ge 30 ]; then
-    echo "Nao foi possivel aplicar as migracoes apos $attempt tentativas."
+    echo "Banco indisponivel apos $attempt tentativas."
     exit 1
   fi
 
@@ -14,6 +16,9 @@ until python manage.py migrate; do
   attempt=$((attempt + 1))
   sleep 2
 done
+
+echo "Aplicando migracoes..."
+python manage.py migrate --noinput
 
 if [ "${CREATE_SUPERUSER:-False}" = "True" ]; then
   echo "Criando superusuario se nao existir..."

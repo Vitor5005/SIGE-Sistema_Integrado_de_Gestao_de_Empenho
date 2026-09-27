@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
-import { environment } from '../environments/environment.development';
+import { environment } from '../environments/environment';
 import { EstoqueConsolidado, EstoqueItem, ItemRecebimento, MovimentacaoEstoque } from '../model/estoque';
 import { normalizePaginatedResponse, PaginatedResponse } from '../model/pagination';
 

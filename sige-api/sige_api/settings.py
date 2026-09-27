@@ -113,8 +113,10 @@ CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS', 'http://localhost:4200')
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+# Cookies "Secure" só trafegam em HTTPS. Enquanto o servidor responder apenas
+# por HTTP (ex.: EC2 acessada pelo IP), defina SECURE_COOKIES=False.
+SESSION_COOKIE_SECURE = env_bool('SECURE_COOKIES', not DEBUG)
+CSRF_COOKIE_SECURE = env_bool('SECURE_COOKIES', not DEBUG)
 
 
 # Database

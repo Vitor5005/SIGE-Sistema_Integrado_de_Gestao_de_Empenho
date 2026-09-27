@@ -1,6 +1,9 @@
 services:
   db:
     image: mysql:8
+    # A migração estoque.0001 cria triggers; sem esta opção o MySQL (com binlog)
+    # só permite isso ao root, e a API usa um usuário comum.
+    command: --log-bin-trust-function-creators=1
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${DB_NAME:-sige}

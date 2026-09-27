@@ -1,5 +1,16 @@
+# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Variáveis lidas do arquivo .env (modelo em .env.production.example).
+
+# Limita os logs do Docker para não encher o disco da instância.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
+    logging: *logging
     environment:
       MYSQL_DATABASE: ${DB_NAME:?Defina DB_NAME}
       MYSQL_USER: ${DB_USER:?Defina DB_USER}
@@ -7,17 +18,23 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Defina DB_ROOT_PASSWORD}
 
   api:
-    command: gunicorn sige_api.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120
+    logging: *logging
+    # Sem "command": o entrypoint aplica as migrações e sobe o gunicorn
+    # com WEB_CONCURRENCY workers e GUNICORN_TIMEOUT segundos.
     environment:
       DEBUG: "False"
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Defina DJANGO_SECRET_KEY}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:?Defina ALLOWED_HOSTS}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      SECURE_COOKIES: ${SECURE_COOKIES:-True}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
       CREATE_SUPERUSER: "False"
       SEED_DATA: "False"
 
   app:
+    logging: *logging
     build:
       context: ./sige-app
       dockerfile: Dockerfile.prod
