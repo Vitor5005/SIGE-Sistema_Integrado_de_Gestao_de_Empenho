@@ -115,6 +115,7 @@ export class VisualizarEmpenho {
         next: () => {
           this.enviandoReforco = false;
           this.fecharSolicitacaoReforcoBtn?.nativeElement.click();
+          this.feedback.sucesso('Solicitação de reforço enviada ao Diretor.');
           this.getSolicitacoesReforco(this.empenho.id);
         },
         error: (erro) => {
