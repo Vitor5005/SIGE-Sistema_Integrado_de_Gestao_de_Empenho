@@ -1,12 +1,18 @@
 <div class="container-pesquisar">
-  <div class="pesquisarEfiltrar">
-    <label>Pesquisar:</label>
-    <input type="text" (input)="onPesquisar($event)" />
-  </div>
+  <label class="pesquisarEfiltrar">
+    <span>Pesquisar:</span>
+    <input
+      type="text"
+      [placeholder]="placeholder"
+      [value]="termoBusca"
+      (input)="onPesquisar($event)"
+    />
+  </label>
 
+  @if (filtros.length > 0) {
   <div class="dropdown">
-    <button class="filtro dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-      <i class="bi bi-funnel"></i> filtros
+    <button type="button" class="filtro dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+      <i class="bi bi-funnel" aria-hidden="true"></i> Filtros
     </button>
 
     <div class="dropdown-menu menu-filtros">
@@ -17,26 +23,46 @@
 
             <!-- CHECKBOX -->
             @if (filtro.tipo === 'checkbox') {
-              @for (op of filtro.opcoes; track op.id) {
+              @for (op of filtro.opcoes; track $index) {
                 <label class="filtro-opcao">
-                  <input type="checkbox" (change)="alterarFiltro(filtro.campo, op.id, $event)" />
-                  <span>{{ op.nome || op.numero }}</span>
+                  <input
+                    type="checkbox"
+                    [checked]="opcaoMarcada(filtro.campo, valorOpcao(op))"
+                    (change)="alterarFiltro(filtro.campo, valorOpcao(op), $event)"
+                  />
+                  <span>{{ rotuloOpcao(op) }}</span>
                 </label>
               }
             }
 
             <!-- RADIO -->
             @if (filtro.tipo === 'radio') {
-              @for (op of filtro.opcoes; track op.valor) {
+              @for (op of filtro.opcoes; track $index) {
                 <label class="filtro-opcao">
                   <input
                     type="radio"
                     name="{{ filtro.campo }}"
-                    (change)="alterarFiltro(filtro.campo, op.valor)"
+                    [checked]="mesmoValor(valorSelecionado(filtro.campo), valorOpcao(op))"
+                    (change)="alterarFiltro(filtro.campo, valorOpcao(op))"
                   />
-                  <span>{{ op.label }}</span>
+                  <span>{{ rotuloOpcao(op) }}</span>
                 </label>
               }
+            }
+
+            <!-- SELECT -->
+            @if (filtro.tipo === 'select') {
+              <select
+                class="filtro-select"
+                [attr.aria-label]="filtro.label"
+                [value]="valorSelecionado(filtro.campo)"
+                (change)="alterarFiltro(filtro.campo, $any($event.target).value)"
+              >
+                <option value="">Todos</option>
+                @for (op of filtro.opcoes; track $index) {
+                  <option [value]="valorOpcao(op)">{{ rotuloOpcao(op) }}</option>
+                }
+              </select>
             }
 
             <!-- RANGE -->
@@ -46,6 +72,7 @@
                   <span>Mín.</span>
                   <input
                     type="number"
+                    [value]="valorSelecionado(filtro.campo + '__gte')"
                     (change)="alterarFiltro(filtro.campo + '__gte', $any($event.target).value)"
                   />
                 </label>
@@ -53,6 +80,7 @@
                   <span>Máx.</span>
                   <input
                     type="number"
+                    [value]="valorSelecionado(filtro.campo + '__lte')"
                     (change)="alterarFiltro(filtro.campo + '__lte', $any($event.target).value)"
                   />
                 </label>
@@ -66,6 +94,7 @@
                   <span>De</span>
                   <input
                     type="date"
+                    [value]="valorSelecionado(filtro.campo + '__gte')"
                     (change)="alterarFiltro(filtro.campo + '__gte', $any($event.target).value)"
                   />
                 </label>
@@ -73,6 +102,7 @@
                   <span>Até</span>
                   <input
                     type="date"
+                    [value]="valorSelecionado(filtro.campo + '__lte')"
                     (change)="alterarFiltro(filtro.campo + '__lte', $any($event.target).value)"
                   />
                 </label>
@@ -82,9 +112,31 @@
         }
 
         <button type="button" class="limpar" (click)="formFiltros.reset(); limparFiltros()">
-          <i class="bi bi-x-circle"></i> Limpar filtros
+          <i class="bi bi-x-circle" aria-hidden="true"></i> Limpar filtros
         </button>
       </form>
     </div>
   </div>
+  }
+
+  @if (chipsAtivos.length > 0) {
+    <div class="filtros-ativos" aria-label="Filtros ativos">
+      @for (chip of chipsAtivos; track chip.id) {
+        <span class="filtro-chip">
+          {{ chip.label }}
+          <button
+            type="button"
+            class="filtro-chip__remover"
+            [attr.aria-label]="'Remover filtro ' + chip.label"
+            (click)="removerFiltro(chip)"
+          >
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </span>
+      }
+      <button type="button" class="limpar-filtros-ativos" (click)="limparFiltros()">
+        Limpar filtros
+      </button>
+    </div>
+  }
 </div>

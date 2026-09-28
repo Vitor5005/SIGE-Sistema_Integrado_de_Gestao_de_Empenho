@@ -16,5 +16,6 @@ router.register(r'empenhos/itensDoEmpenho', ItemDoEmpehoViewSet, basename='itens
 router.register(r'empenhos',EmpenhoViewSet)
 router.register(r'itemempenho', ItemEmpenhoViewSet)
 router.register(r'operacaoitens', OperacaoItemViewSet)
+router.register(r'solicitacoes-reforco', SolicitacaoReforcoViewSet, basename='solicitacao-reforco')
 
 urlpatterns = router.urls

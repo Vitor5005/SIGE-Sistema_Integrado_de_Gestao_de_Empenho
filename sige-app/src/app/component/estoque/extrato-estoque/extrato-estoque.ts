@@ -27,9 +27,24 @@ export class ExtratoEstoque {
   erro = '';
   sucesso = '';
 
+  private readonly tiposMovimentacao: Record<string, string> = {
+    ENTRADA_FORNECEDOR: 'Entrada de fornecedor',
+    CARGA_INICIAL: 'Carga inicial',
+    AJUSTE_POSITIVO: 'Ajuste positivo',
+    AJUSTE_NEGATIVO: 'Ajuste negativo',
+    SAIDA_PRODUCAO: 'Saída para produção',
+    SAIDA_DOACAO: 'Saída para doação',
+    SAIDA_PERDA: 'Saída por perda',
+    ESTORNO: 'Estorno',
+  };
+
   constructor(private estoqueService: EstoqueService) {}
 
   ngOnInit(): void { this.carregar(); }
+
+  textoTipoMovimentacao(tipo: string): string {
+    return this.tiposMovimentacao[tipo] ?? tipo;
+  }
 
   carregar(): void {
     this.estoqueService.extrato(this.generoId, this.dataInicio || undefined, this.dataFim || undefined).subscribe({

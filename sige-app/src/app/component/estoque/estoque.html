@@ -1,50 +1,65 @@
-<section class="estoque-pagina">
-  <div class="estoque-topo">
+<main class="sige-list-page estoque-pagina">
+  <header class="sige-list-header">
     <div>
-      <h3><i class="bi bi-box-seam"></i> ESTOQUE</h3>
-      <p>Acompanhe os saldos físicos dos gêneros alimentícios.</p>
+      <h1 class="sige-list-title"><i class="bi bi-box-seam" aria-hidden="true"></i> Estoque</h1>
+      <p class="sige-list-description">Acompanhe os saldos físicos dos gêneros alimentícios.</p>
     </div>
-    <div class="estoque-acoes">
+  </header>
+
+  <div class="sige-list-toolbar estoque-toolbar">
+    <div class="sige-list-toolbar__search estoque-toolbar__search">
+      <app-barra-pesquisa
+        [filtros]="filtros"
+        placeholder="Buscar por CATMAT, descrição, unidade ou categoria..."
+        [termoInicial]="termoBuscaAtual"
+        [valoresIniciais]="filtrosAtivos"
+        (pesquisar)="carregar($event)"
+        (filtrosAlterados)="aplicarFiltros($event)">
+      </app-barra-pesquisa>
+      <div class="form-check estoque-toolbar__grouping">
+        <input class="form-check-input" type="checkbox" id="agruparCategoria" [checked]="agruparPorCategoria" (change)="alternarAgrupamento()">
+        <label class="form-check-label" for="agruparCategoria">Agrupar por categoria</label>
+      </div>
+    </div>
+    <div class="sige-list-toolbar__actions estoque-acoes estoque-toolbar__actions">
       @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
-        <a class="btn btn-outline-primary" routerLink="/estoque/extrato">Extrato</a>
+        <a class="sige-button sige-button--primary" routerLink="/estoque/extrato" (click)="salvarEstadoListagem()"><i class="bi bi-clock-history" aria-hidden="true"></i> Extrato</a>
       }
       @if (pode(Recurso.ESTOQUE, Acao.REGISTRAR_SAIDA)) {
-        <a class="btn btn-primary" routerLink="/estoque/movimentacao">Nova movimentação</a>
+        <a class="sige-button sige-button--primary" routerLink="/estoque/movimentacao" (click)="salvarEstadoListagem()">Nova movimentação</a>
       }
     </div>
   </div>
 
-  <div class="filtros-estoque">
-    <input class="form-control" [(ngModel)]="busca" (keyup.enter)="carregar()" placeholder="Buscar por CATMAT, descrição, unidade ou categoria">
-    <select class="form-select" [(ngModel)]="categoria" (change)="carregar()">
-      <option value="">Todas as categorias</option>
-      <option value="tempS">Temperos Secos</option><option value="SM">Secos / Mercearia</option>
-      <option value="Lac">Lácteos e Derivados</option><option value="Oli">Óleos, Azeites e Vinagres</option>
-      <option value="MolCo">Molhos e Condimentos</option><option value="Fr">Frutas</option>
-      <option value="Le">Legumes</option><option value="Pr">Proteínas</option>
-    </select>
-    <button class="btn btn-primary" (click)="carregar()">Buscar</button>
+  @if (!carregando && !erro) {
+  <div class="sige-list-meta" aria-live="polite">
+    <strong>{{ totalItens }}</strong> {{ totalItens === 1 ? 'item encontrado' : 'itens encontrados' }}
   </div>
-  <div class="form-check mb-3">
-    <input class="form-check-input" type="checkbox" id="agruparCategoria" [checked]="agruparPorCategoria" (change)="alternarAgrupamento()">
-    <label class="form-check-label" for="agruparCategoria">Agrupar por categoria</label>
-  </div>
+  }
 
-  @if (erro) { <div class="alert alert-danger">{{ erro }}</div> }
-  @if (carregando) { <div class="estado">Carregando estoque...</div> }
+  @if (erro) { <div class="alert alert-danger" role="alert">{{ erro }}</div> }
+  @if (carregando) { <div class="estado" role="status" aria-live="polite">Carregando estoque...</div> }
 
-  <div class="table-responsive">
-    <table class="table tabela-estoque">
-      <thead><tr><th>CATMAT</th><th>Descrição</th><th>Unidade</th><th>Categoria</th><th>Saldo no estoque</th></tr></thead>
+  <div class="sige-list-table-wrap">
+    <table class="sige-list-table estoque-table">
+      <colgroup>
+        <col class="estoque-col-catmat">
+        <col class="estoque-col-descricao">
+        <col class="estoque-col-unidade">
+        <col class="estoque-col-categoria">
+        <col class="estoque-col-saldo">
+      </colgroup>
+      <caption class="visually-hidden">Saldos atuais do estoque</caption>
+      <thead><tr><th scope="col">CATMAT</th><th scope="col">Descrição</th><th scope="col">Unidade</th><th scope="col">Categoria</th><th scope="col" class="sige-cell--number">Saldo no estoque</th></tr></thead>
       <tbody>
         @for (item of itens; track item.id; let indice = $index) {
           @if (iniciaCategoria(indice)) {
             <tr class="grupo-categoria"><td colspan="5">{{ item.categoria_descricao }}</td></tr>
           }
           <tr>
-            <td>{{ item.catmat }}</td><td>{{ item.descricao }}</td>
-            <td>{{ item.unidade_medida }} @if(item.conteudo_embalagem){({{ item.conteudo_embalagem }} {{ item.unidade_embalagem }})}</td>
-            <td>{{ item.categoria_descricao }}</td><td><strong>{{ item.saldo_atual | number:'1.0-3' }}</strong></td>
+            <td>{{ item.catmat }}</td><td class="sige-cell--truncate" [attr.title]="item.descricao">{{ item.descricao }}</td>
+            <td class="estoque-cell-unidade">{{ item.unidade_medida }} @if(item.conteudo_embalagem){({{ item.conteudo_embalagem }} {{ item.unidade_embalagem }})}</td>
+            <td class="estoque-cell-categoria" [attr.title]="item.categoria_descricao">{{ item.categoria_descricao }}</td><td class="sige-cell--number"><strong>{{ item.saldo_atual | number:'1.0-3' }}</strong></td>
           </tr>
         } @empty {
           <tr><td colspan="5" class="estado">Nenhum saldo encontrado.</td></tr>
@@ -54,19 +69,20 @@
   </div>
 
   @if (pode(Recurso.ESTOQUE, Acao.CONSULTAR_CONSOLIDADO)) {
-    <h5 class="subtitulo">VISÃO CONSOLIDADA</h5>
-    <div class="table-responsive">
-      <table class="table tabela-estoque">
-        <thead><tr><th>Empenho</th><th>Código - Item - Unidade</th><th>Saldo em ATA/Contrato</th><th>Saldo do Empenho</th><th>Saldo no Estoque</th></tr></thead>
+    <h5 class="subtitulo">Visão consolidada</h5>
+    <div class="sige-list-table-wrap">
+      <table class="sige-list-table">
+        <caption class="visually-hidden">Visão consolidada do estoque</caption>
+        <thead><tr><th scope="col">Empenho</th><th scope="col">Código - Item - Unidade</th><th scope="col" class="sige-cell--number">Saldo em ATA/Contrato</th><th scope="col" class="sige-cell--number">Saldo do Empenho</th><th scope="col" class="sige-cell--number">Saldo no Estoque</th></tr></thead>
         <tbody>
           @for (item of consolidado; track $index) {
-            <tr><td>{{ item.empenho }}</td><td>{{ item.catmat }} - {{ item.descricao }} - {{ item.unidade_medida }}</td>
-              <td>{{ item.saldo_ata | number:'1.0-3' }}</td><td>{{ item.saldo_empenho | number:'1.0-3' }}</td>
-              <td>{{ item.saldo_estoque | number:'1.0-3' }}</td></tr>
+            <tr><td>{{ item.empenho }}</td><td class="sige-cell--truncate" [attr.title]="item.catmat + ' - ' + item.descricao + ' - ' + item.unidade_medida">{{ item.catmat }} - {{ item.descricao }} - {{ item.unidade_medida }}</td>
+              <td class="sige-cell--number">{{ item.saldo_ata | number:'1.0-3' }}</td><td class="sige-cell--number">{{ item.saldo_empenho | number:'1.0-3' }}</td>
+              <td class="sige-cell--number">{{ item.saldo_estoque | number:'1.0-3' }}</td></tr>
           } @empty { <tr><td colspan="5" class="estado">Nenhum empenho encontrado.</td></tr> }
         </tbody>
       </table>
     </div>
   }
-</section>
+</main>
 

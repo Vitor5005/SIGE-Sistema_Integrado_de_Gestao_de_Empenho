@@ -3,7 +3,6 @@
   [attr.aria-live]="tipo === 'loading' ? 'polite' : null">
   @if (tipo === 'loading') {
   <span class="spinner-border estado-conteudo__icone" aria-hidden="true"></span>
-  <span class="visually-hidden">Carregando</span>
   <strong>Carregando...</strong>
   @if (mensagem) {
   <p>{{ mensagem }}</p>
@@ -21,7 +20,7 @@
   }
   } @else {
   <i class="bi bi-inbox-fill estado-conteudo__icone" aria-hidden="true"></i>
-  <strong>{{ titulo || 'Nenhum registro encontrado' }}</strong>
+  <strong>{{ titulo || 'Nenhum resultado encontrado' }}</strong>
   @if (mensagem) {
   <p>{{ mensagem }}</p>
   }

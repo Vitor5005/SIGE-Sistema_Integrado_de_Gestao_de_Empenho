@@ -76,6 +76,7 @@
 
 .ata {
   display: grid;
+  width: 100%;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--sige-space-4);
@@ -83,13 +84,20 @@
   border: 1px solid var(--sige-border);
   border-radius: var(--sige-radius-md);
   background: var(--sige-surface-card);
+  color: inherit;
   cursor: pointer;
+  text-decoration: none;
   transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
     border-color: var(--sige-border-strong);
     background: var(--sige-surface-info);
     box-shadow: var(--sige-shadow-sm);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sige-color-primary);
+    outline-offset: 2px;
   }
 }
 
@@ -215,7 +223,7 @@
   .subtitulo-modal {
     margin-bottom: 12px;
 
-    h5 {
+    h3 {
       font-weight: 700;
       color: var(--font-cinza2);
       margin-bottom: 6px;
@@ -258,15 +266,6 @@
     }
   }
 
-  .linha-fornecedor {
-    cursor: pointer;
-    transition: background-color .15s ease;
-
-    &:hover {
-      background-color: #f4f8ff;
-    }
-  }
-
   .texto-ajuda-fornecedor {
     font-size: 12px;
     color: #6b7280;
@@ -299,6 +298,7 @@
   }
 
   .form-secao-titulo {
+    margin: 0 0 10px;
     margin-bottom: 10px;
     font-size: 12px;
     font-weight: 700;
@@ -340,8 +340,9 @@
       transition: border-color .15s ease, box-shadow .15s ease;
 
       &:focus {
-        outline: none;
-        border-color: var(--azul-claro);
+        outline: 2px solid var(--sige-color-primary);
+        outline-offset: 2px;
+        border-color: var(--sige-color-primary);
         box-shadow: 0 0 0 3px rgba(39, 140, 234, 0.15);
       }
     }
@@ -492,6 +493,169 @@
   @media (max-width: 992px) {
     .resumo-fornecedor {
       grid-template-columns: 1fr;
+    }
+  }
+}
+
+#editarLicitacaoModal {
+  .modal-edicao-licitacao {
+    max-width: min(720px, calc(100vw - 2rem));
+  }
+
+  .licitacao-edit-form {
+    display: contents;
+  }
+
+  .licitacao-edit-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sige-space-4);
+    background: var(--sige-surface-card);
+  }
+
+  .licitacao-edit-section {
+    padding: var(--sige-space-4);
+    border: 1px solid var(--sige-border);
+    border-radius: var(--sige-radius-md);
+    background: var(--sige-surface-subtle);
+  }
+
+  .licitacao-edit-section__title {
+    margin: 0 0 var(--sige-space-4);
+    color: var(--sige-text-secondary);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  .licitacao-edit-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(9rem, 1fr);
+    gap: var(--sige-space-4);
+    align-items: start;
+  }
+
+  .licitacao-edit-field--data {
+    grid-column: 1;
+  }
+
+  .licitacao-edit-field--descricao {
+    grid-column: 1 / -1;
+  }
+
+  .sige-field {
+    min-width: 0;
+  }
+
+  .sige-field label {
+    color: var(--sige-text-primary);
+    font-size: .8125rem;
+    font-weight: 700;
+  }
+
+  .sige-field input,
+  .sige-field textarea {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: .625rem .75rem;
+    color: var(--sige-text-primary);
+    background: var(--sige-surface-card);
+    border: 1px solid var(--sige-border);
+    border-radius: var(--sige-radius-md);
+    font: inherit;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+
+  .sige-field textarea {
+    min-height: 7rem;
+    line-height: 1.45;
+    resize: vertical;
+  }
+
+  .sige-field input:focus-visible,
+  .sige-field textarea:focus-visible {
+    border-color: var(--sige-color-primary);
+    outline: 2px solid var(--sige-color-primary);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 3px rgba(39, 140, 234, .12);
+  }
+
+  .sige-field input:disabled,
+  .sige-field textarea:disabled {
+    cursor: not-allowed;
+    background: var(--sige-surface-muted);
+    color: var(--sige-text-secondary);
+  }
+
+  .campo-invalido {
+    border-color: var(--sige-danger) !important;
+    background: var(--sige-surface-danger) !important;
+  }
+
+  .mensagem-campo-invalido {
+    display: block;
+    margin-top: var(--sige-space-1);
+    color: var(--sige-danger);
+    font-size: .75rem;
+    font-weight: 600;
+  }
+
+  .licitacao-edit-error {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sige-space-2);
+    padding: var(--sige-space-3) var(--sige-space-4);
+    color: var(--sige-danger);
+    background: var(--sige-surface-danger);
+    border: 1px solid var(--sige-danger);
+    border-radius: var(--sige-radius-md);
+    font-size: .875rem;
+    font-weight: 600;
+  }
+
+  .licitacao-edit-info {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sige-space-2);
+    padding: var(--sige-space-3) var(--sige-space-4);
+    color: var(--sige-text-secondary);
+    background: var(--sige-surface-info);
+    border: 1px solid var(--sige-border);
+    border-radius: var(--sige-radius-md);
+    font-size: .8125rem;
+    line-height: 1.45;
+
+    i {
+      flex: 0 0 auto;
+      margin-top: .1rem;
+      color: var(--sige-color-primary-strong);
+    }
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  #editarLicitacaoModal {
+    .modal-edicao-licitacao {
+      max-width: calc(100vw - 1rem);
+      margin-inline: auto;
+    }
+
+    .licitacao-edit-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .licitacao-edit-field--data,
+    .licitacao-edit-field--descricao {
+      grid-column: auto;
+    }
+
+    .sige-modal__footer {
+      flex-wrap: wrap;
     }
   }
 }

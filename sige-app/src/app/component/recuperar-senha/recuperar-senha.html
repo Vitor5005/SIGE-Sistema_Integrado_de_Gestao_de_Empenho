@@ -1,15 +1,14 @@
-<body>
-
-  <div class="cartao-recuperacao card shadow-sm p-4 border-0">
+<main class="auth-page">
+  <section class="cartao-recuperacao card shadow-sm p-4 border-0" aria-labelledby="recuperar-senha-title">
 
     <!-- ETAPA 1: Inserir E-mail -->
     @if (etapa() === 'email') {
     <div class="corpo-etapa text-center">
       <div class="icone-circulo mb-4 mx-auto">
-        <i class="bi bi-envelope-at fs-1"></i>
+        <i class="bi bi-envelope-at fs-1" aria-hidden="true"></i>
       </div>
 
-      <h2 class="titulo-sessao h4 fw-bold mb-2">Esqueceu a senha?</h2>
+      <h2 id="recuperar-senha-title" class="titulo-sessao h4 fw-bold mb-2">Esqueceu a senha?</h2>
       <p class="descricao-sessao text-muted mb-4">
         Não se preocupe! Insira seu e-mail abaixo para receber um código de recuperação.
       </p>
@@ -19,19 +18,19 @@
           <label for="email" class="form-label fw-semibold">E-mail cadastrado</label>
           <div class="input-group">
             <span class="input-group-text bg-white border-end-0">
-              <i class="bi bi-person text-muted"></i>
+              <i class="bi bi-person text-muted" aria-hidden="true"></i>
             </span>
             <input type="email" id="email" name="email" class="form-control border-start-0 ps-0 shadow-none"
-              placeholder="exemplo@email.com" required [(ngModel)]="email">
+              placeholder="exemplo@email.com" autocomplete="email" required [(ngModel)]="email">
           </div>
         </div>
 
         <button type="submit" class="botao-acao btn w-100 py-2 fw-bold mb-3">
-          Enviar Código
+          Enviar código
         </button>
 
         <a [routerLink]="['/login']" class="link-voltar d-block text-decoration-none text-muted small">
-          <i class="bi bi-arrow-left me-1"></i> Voltar para o login
+          <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Voltar para o login
         </a>
       </form>
     </div>
@@ -41,10 +40,10 @@
     @if (etapa() === 'codigo') {
     <div class="corpo-etapa text-center">
       <div class="icone-circulo mb-4 mx-auto bg-success bg-opacity-10 text-success">
-        <i class="bi bi-shield-lock fs-1"></i>
+        <i class="bi bi-shield-lock fs-1" aria-hidden="true"></i>
       </div>
 
-      <h2 class="titulo-sessao h4 fw-bold mb-2">Verifique seu e-mail</h2>
+      <h2 id="recuperar-senha-title" class="titulo-sessao h4 fw-bold mb-2">Verifique seu e-mail</h2>
       <p class="descricao-sessao text-muted mb-4">
         Enviamos um código de 6 dígitos para o seu e-mail. Digite-o abaixo.
       </p>
@@ -54,15 +53,16 @@
           <div class="d-flex justify-content-between gap-2 container-digitos">
 
             @for (item of ns; track $index) {
-            <input type="text" maxlength="1" class="form-control text-center fw-bold fs-4 campo-digito shadow-none" 
+            <input type="text" maxlength="1" inputmode="numeric" class="form-control text-center fw-bold fs-4 campo-digito shadow-none" 
             [(ngModel)]="ns[$index]" name="digito{{$index}}"
+              [attr.aria-label]="'Dígito ' + ($index + 1) + ' do código de recuperação'"
               style="height: 55px;">
             }
           </div>
         </div>
 
         <button type="submit" class="botao-acao btn btn-success w-100 py-2 fw-bold mb-3">
-          Confirmar Código
+          Confirmar código
         </button>
 
         <div class="links-auxiliares">
@@ -72,7 +72,7 @@
           </p>
           <button type="button" (click)="etapa.set('email')"
             class="btn btn-link text-muted p-0 text-decoration-none small">
-            <i class="bi bi-pencil-square me-1"></i> Alterar e-mail
+            <i class="bi bi-pencil-square me-1" aria-hidden="true"></i> Alterar e-mail
           </button>
         </div>
       </form>
@@ -82,10 +82,10 @@
     @if (etapa() === 'nova_senha') {
     <div class="corpo-etapa text-center">
       <div class="icone-circulo mb-4 mx-auto bg-success bg-opacity-10 text-success">
-        <i class="bi bi-shield-lock fs-1"></i>
+        <i class="bi bi-shield-lock fs-1" aria-hidden="true"></i>
       </div>
 
-      <h2 class="titulo-sessao h4 fw-bold mb-2">Definir nova senha</h2>
+      <h2 id="recuperar-senha-title" class="titulo-sessao h4 fw-bold mb-2">Definir nova senha</h2>
       <p class="descricao-sessao text-muted mb-4">
         Digite sua nova senha abaixo.
       </p>
@@ -97,26 +97,40 @@
             <label for="senha">Senha</label>
             <div class="campo-senha">
               <input [type]="mostrarSenha ? 'text' : 'password'" name="senha" id="senha"
-                [(ngModel)]="password" required>
-              <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'" (click)="toggleSenha()"></i>
+                [(ngModel)]="password" autocomplete="new-password" required>
+              <button
+                type="button"
+                class="senha-toggle"
+                [attr.aria-label]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'"
+                (click)="toggleSenha()"
+              >
+                <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+              </button>
             </div>
           </div>
 
           <div class="d-flex flex-column gap-2 senha-container">
             <label for="confirmar-senha">Confirmar senha</label>
             <div class="campo-senha">
-              <input [type]="mostrarConfirmar ? 'text' : 'password'" name="confirmar-senha" id="" required>
-              <i class="bi" [ngClass]="mostrarConfirmar ? 'bi-eye-slash' : 'bi-eye'"
-                (click)="toggleSenhaConfirmar()"></i>
+              <input [type]="mostrarConfirmar ? 'text' : 'password'" name="confirmar-senha" id="confirmar-senha"
+                autocomplete="new-password" required>
+              <button
+                type="button"
+                class="senha-toggle"
+                [attr.aria-label]="mostrarConfirmar ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'"
+                (click)="toggleSenhaConfirmar()"
+              >
+                <i class="bi" [ngClass]="mostrarConfirmar ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+              </button>
             </div>
           </div>
         </div>
 
         <button type="submit" class="botao-acao btn btn-success w-100 py-2 fw-bold mb-3">
-          Confirmar Código
+          Alterar senha
         </button>
       </form>
     </div>
     }
-  </div>
-</body>
+  </section>
+</main>

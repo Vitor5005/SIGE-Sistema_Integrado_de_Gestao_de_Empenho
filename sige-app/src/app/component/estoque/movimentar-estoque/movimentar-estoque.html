@@ -32,6 +32,6 @@
       <div class="col-md-4"><label class="form-label">Data e hora</label><input class="form-control" type="datetime-local" [(ngModel)]="dataHora" name="dataHora" required></div>
       <div class="col-12"><label class="form-label">Motivo/justificativa</label><textarea class="form-control" maxlength="255" [(ngModel)]="justificativa" name="justificativa" required></textarea></div>
     </div>
-    <div class="mt-4"><button class="btn btn-primary" [disabled]="processando">{{processando?'Registrando...':'Registrar movimentação'}}</button></div>
+    <div class="mt-4"><button type="submit" class="sige-button sige-button--primary" [disabled]="processando">{{processando?'Registrando...':'Registrar movimentação'}}</button></div>
   </form>
 </section>

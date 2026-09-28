@@ -14,8 +14,10 @@ export class Paginacao {
   @Input() totalItems: number = 0;
   @Input() totalLabel: string = 'Total de registros';
   @Input() showTotal: boolean = true;
+  @Input() pageSizeOptions: number[] = [5, 10, 20, 50, 100];
 
   @Output() pageChange = new EventEmitter<number>();
+  @Output() pageSizeChange = new EventEmitter<number>();
 
   get totalPages(): number {
     return Math.ceil(this.totalItems / this.pageSize);
@@ -63,6 +65,12 @@ export class Paginacao {
     return pages;
   }
 
+  get availablePageSizes(): number[] {
+    return [...new Set([...this.pageSizeOptions, this.pageSize])].sort(
+      (first, second) => first - second,
+    );
+  }
+
   irParaPagina(page: number): void {
     if (page < 1 || page > this.totalPages || page === this.currentPage) {
       return;
@@ -77,5 +85,20 @@ export class Paginacao {
 
   proximaPagina(): void {
     this.irParaPagina(this.currentPage + 1);
+  }
+
+  alterarTamanhoPagina(event: Event): void {
+    const pageSize = Number((event.target as HTMLSelectElement).value);
+
+    if (
+      !Number.isInteger(pageSize) ||
+      pageSize <= 0 ||
+      !this.availablePageSizes.includes(pageSize) ||
+      pageSize === this.pageSize
+    ) {
+      return;
+    }
+
+    this.pageSizeChange.emit(pageSize);
   }
 }

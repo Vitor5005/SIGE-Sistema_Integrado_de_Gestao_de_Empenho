@@ -1,44 +1,55 @@
-<body>
-  <div class="container-login">
+<main class="auth-page">
+  <section class="container-login" aria-labelledby="login-title">
     <div class="login-cabecalho">
-      <h1>Acessar conta</h1>
+      <h1 id="login-title">Acessar conta</h1>
     </div>
 
     <form (ngSubmit)="realizarLogin()">
-
       <div class="d-flex flex-column gap-2">
-        <label for="Usuario">Usuario</label>
-        <input type="text" name="Usuario" id="Usuario" [(ngModel)]="username">
+        <label for="Usuario">Usuário</label>
+        <input
+          type="text"
+          name="Usuario"
+          id="Usuario"
+          [(ngModel)]="username"
+          autocomplete="username"
+          required
+        >
       </div>
 
       <div>
-
         <div class="d-flex flex-column gap-2 senha-container">
           <label for="senha">Senha</label>
           <div class="campo-senha">
             <input
-            
               [type]="mostrarSenha ? 'text' : 'password'"
               name="senha"
               id="senha"
               [(ngModel)]="password"
+              autocomplete="current-password"
+              required
             >
-            <i
-              class="bi"
-              [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'"
+            <button
+              type="button"
+              class="senha-toggle"
+              [attr.aria-label]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'"
               (click)="toggleSenha()"
-            ></i>
+            >
+              <i
+                class="bi"
+                [ngClass]="mostrarSenha ? 'bi-eye-slash' : 'bi-eye'"
+                aria-hidden="true"
+              ></i>
+            </button>
           </div>
         </div>
 
         <a [routerLink]="['/recuperar-senha']">
           <small>Esqueceu a senha?</small>
         </a>
-
       </div>
 
       <button type="submit" class="submit">Entrar</button>
-
     </form>
-  </div>
-</body>
+  </section>
+</main>

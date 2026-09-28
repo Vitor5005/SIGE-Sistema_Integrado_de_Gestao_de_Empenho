@@ -51,6 +51,26 @@ textarea {
   outline-offset: 2px;
 }
 
+.sige-skip-link {
+  position: fixed;
+  top: var(--sige-space-3);
+  left: var(--sige-space-3);
+  z-index: 1100;
+  padding: var(--sige-space-2) var(--sige-space-3);
+  color: var(--sige-color-white);
+  font-weight: 700;
+  text-decoration: none;
+  background: var(--sige-color-primary-strong);
+  border: 1px solid var(--sige-color-white);
+  border-radius: var(--sige-radius-sm);
+  transform: translateY(-200%);
+  transition: transform 0.2s ease;
+}
+
+.sige-skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 // Tokens visuais do SIGE. Os aliases legados abaixo preservam os estilos existentes.
 :root {
   --sige-color-primary: #0067be;
@@ -69,7 +89,7 @@ textarea {
 
   --sige-text-primary: #1e293b;
   --sige-text-secondary: #667085;
-  --sige-text-muted: #9e9e9e;
+  --sige-text-muted: #667085;
 
   --sige-border: #dbe3ed;
   --sige-border-strong: #c8d3df;
@@ -103,7 +123,7 @@ textarea {
   // Aliases legados
   --azul-escuro: var(--sige-color-primary-strong);
   --font-cinza: #9e9e9e;
-  --font-cinza2: #7d7d7d;
+  --font-cinza2: #52657f;
   --hr-color: var(--sige-color-primary);
   --azul-claro: var(--sige-color-primary);
   --branco: var(--sige-color-white);
@@ -224,10 +244,203 @@ textarea {
   color: var(--sige-color-white);
 }
 
+.sige-button--danger-outline {
+  color: var(--sige-danger);
+  background: var(--sige-surface-card);
+  border-color: var(--sige-danger);
+}
+
+.sige-button--danger-outline:hover {
+  color: var(--sige-danger);
+  background: var(--sige-surface-danger);
+  border-color: var(--sige-danger);
+}
+
 .sige-button:disabled,
 .sige-button[aria-disabled="true"] {
   opacity: 0.6;
   pointer-events: none;
+}
+
+// Base reutilizável para as listagens administrativas.
+.sige-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sige-space-5);
+  width: min(
+    var(--sige-content-max-width),
+    calc(100% - var(--sige-content-gutter) - var(--sige-content-gutter))
+  );
+  min-width: 0;
+  margin-inline: auto;
+  padding-block: var(--sige-space-6) var(--sige-space-7);
+}
+
+.sige-list-header {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sige-space-4);
+  flex-wrap: wrap;
+  padding-bottom: var(--sige-space-4);
+  border-bottom: 1px solid var(--sige-border);
+}
+
+.sige-list-title {
+  margin: 0;
+  color: var(--sige-text-primary);
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-weight: 700;
+}
+
+.sige-list-description {
+  max-width: 72ch;
+  margin-top: var(--sige-space-2);
+  color: var(--sige-text-secondary);
+}
+
+.sige-list-toolbar {
+  width:100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sige-space-3);
+  flex-wrap: wrap;
+}
+
+.sige-list-toolbar__search {
+  flex: 1 1 22rem;
+  min-width: min(100%, 18rem);
+}
+
+.sige-list-toolbar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sige-space-3);
+  flex-wrap: wrap;
+}
+
+.sige-list-meta {
+  color: var(--sige-text-secondary);
+  font-size: 0.875rem;
+}
+
+.sige-list-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+  box-shadow: var(--sige-shadow-sm);
+}
+
+.sige-list-table {
+  width: 100%;
+  min-width: 48rem;
+  margin: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+  --bs-table-bg: var(--sige-surface-card);
+  --bs-table-color: var(--sige-text-primary);
+  --bs-table-border-color: var(--sige-border);
+}
+
+.sige-list-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--sige-space-3) var(--sige-space-4);
+  color: var(--sige-text-primary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  background: var(--sige-surface-muted);
+  border-bottom: 2px solid var(--sige-border-strong);
+}
+
+.sige-list-table th,
+.sige-list-table td {
+  padding: var(--sige-space-3) var(--sige-space-4);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--sige-border);
+}
+
+.sige-list-table tbody td {
+  color: var(--sige-text-primary);
+  background: var(--sige-surface-card);
+}
+
+.sige-list-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.sige-list-row--clickable {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.sige-list-row--clickable:hover > td {
+  background: var(--sige-surface-muted);
+}
+
+.sige-list-row--clickable:focus-visible {
+  outline: 2px solid var(--sige-color-primary);
+  outline-offset: -2px;
+}
+
+.sige-cell--number {
+  width: 10rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sige-cell--status {
+  width: 8.5rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sige-cell--actions {
+  width: 5rem;
+  text-align: right;
+  white-space: nowrap;
+  justify-items:baseline;
+}
+
+.sige-cell--validity {
+  width: 9rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sige-cell--truncate {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sige-table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sige-space-2);
+  white-space: nowrap;
+}
+
+.sige-button--sm {
+  min-height: 2rem;
+  padding: var(--sige-space-1) var(--sige-space-3);
+  font-size: 0.8125rem;
 }
 
 .listagem {
@@ -446,7 +659,6 @@ textarea {
 
             &:focus {
               border-color: var(--azul-claro);
-              outline: none;
             }
           }
         }
@@ -716,13 +928,13 @@ textarea {
 
 .sige-detail-table thead th {
   padding: 0.8rem 0.9rem;
-  color: var(--sige-color-white);
+  color: var(--sige-text-primary);
   font-weight: 600;
   text-align: left;
   vertical-align: middle;
   white-space: nowrap;
-  background: var(--sige-color-primary-strong);
-  border-bottom: 1px solid var(--sige-border);
+  background: var(--sige-surface-muted);
+  border-bottom: 2px solid var(--sige-border-strong);
 }
 
 .sige-detail-table th,
@@ -745,7 +957,153 @@ textarea {
   border-bottom: 0;
 }
 
+.sige-detail-table--compact th,
+.sige-detail-table--compact td {
+  padding: var(--sige-space-2) var(--sige-space-3);
+}
+
+.sige-detail-table .sige-cell--number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sige-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 2rem);
+  overflow: hidden;
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-lg);
+  box-shadow: var(--sige-shadow-md);
+}
+
+.sige-modal__header {
+  flex: 0 0 auto;
+  padding: var(--sige-space-4) var(--sige-space-5);
+  color: var(--sige-color-white);
+  background: var(--sige-color-primary-strong);
+  border: 0;
+}
+
+.sige-modal__header .modal-title,
+.sige-modal__header .modal-titulo {
+  margin: 0;
+  color: var(--sige-color-white);
+}
+
+.sige-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sige-space-5);
+}
+
+.sige-modal__footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sige-space-3);
+  padding: var(--sige-space-4) var(--sige-space-5);
+  background: var(--sige-surface-card);
+  border-top: 1px solid var(--sige-border);
+}
+
+.sige-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sige-space-4);
+}
+
+.sige-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sige-space-4);
+}
+
+.sige-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sige-space-1);
+  min-width: 0;
+}
+
+.sige-field label {
+  color: var(--sige-text-primary);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.sige-field input,
+.sige-field select,
+.sige-field textarea {
+  width: 100%;
+}
+
+.sige-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sige-space-3);
+  flex-wrap: wrap;
+}
+
+.sige-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--sige-space-1) var(--sige-space-2);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sige-callout {
+  padding: var(--sige-space-3) var(--sige-space-4);
+  color: var(--sige-text-secondary);
+  background: var(--sige-surface-subtle);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+}
+
+.sige-related-card {
+  display: block;
+  padding: var(--sige-space-4);
+  color: inherit;
+  text-decoration: none;
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+  box-shadow: var(--sige-shadow-sm);
+}
+
 @media (max-width: 767px) {
+  .sige-list-page {
+    gap: var(--sige-space-4);
+    padding-block: var(--sige-space-4) var(--sige-space-6);
+  }
+
+  .sige-list-header {
+    gap: var(--sige-space-3);
+  }
+
+  .sige-list-toolbar__search,
+  .sige-list-toolbar__actions {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .sige-list-toolbar__actions {
+    justify-content: flex-start;
+  }
+
+  .sige-list-table thead th,
+  .sige-list-table th,
+  .sige-list-table td {
+    padding: var(--sige-space-2) var(--sige-space-3);
+  }
+
   .sige-detail-page {
     gap: var(--sige-space-3);
     padding-block: var(--sige-space-3) var(--sige-space-6);
@@ -768,4 +1126,51 @@ textarea {
   .sige-metric-grid {
     grid-template-columns: 1fr;
   }
+
+  .sige-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.sige-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.5rem;
+  padding: var(--sige-space-1) var(--sige-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--sige-radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sige-badge--success {
+  color: var(--sige-success-strong);
+  background: var(--sige-surface-success);
+  border-color: var(--sige-success);
+}
+
+.sige-badge--danger {
+  color: var(--sige-danger);
+  background: var(--sige-surface-danger);
+  border-color: var(--sige-danger);
+}
+
+.sige-badge--info {
+  color: var(--sige-color-primary-strong);
+  background: var(--sige-surface-info);
+  border-color: var(--sige-color-primary);
 }

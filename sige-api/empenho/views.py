@@ -4,6 +4,7 @@ from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from empenho.models import Empenho, ItemEmpenho,  OperacaoItem, SolicitacaoReforco
 from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer, SolicitacaoReforcoSerializer
@@ -28,7 +29,14 @@ class EmpenhoViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin
     serializer_class_escrita = EmpenhoInsertSerializer
     rbac_resource = Recurso.EMPENHO
     rbac_action_map = {'resumo_financeiro': Acao.CONSULTAR}
-    search_fields = ['codigo', 'ata__numero_ata', 'ata__fornecedor__nome_fantasia']
+    search_fields = [
+        'codigo',
+        'ata__numero_ata',
+        'ata__licitacao__numero_licitacao',
+        'ata__fornecedor__razao_social',
+        'ata__fornecedor__nome_fantasia',
+        'ata__fornecedor__cnpj',
+    ]
     filterset_fields = {
         'ata__id': ['exact'], 
         'ata__licitacao__id': ['exact'],
@@ -52,7 +60,14 @@ class EmpenhoViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin
             'valor_utilizado': f'{valor_utilizado:.2f}',
             'valor_disponivel': f'{valor_disponivel:.2f}',
         })
-
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return EmpenhoInsertSerializer
+        if self.action in ['update', 'partial_update']:
+            return EmpenhoUpdateSerializer
+        return EmpenhoSerializer
+   
     ordering_fields = ['valor_total', 'saldo_utilizado', 'codigo']
     ordering = ['-id']  
 

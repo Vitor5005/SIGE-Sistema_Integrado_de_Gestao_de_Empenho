@@ -9,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
+import { EstadoListagemService } from '../../service/estado-listagem.service';
 
 @Component({
   selector: 'app-visualizar-gens-alimenticios',
@@ -46,7 +47,8 @@ filtrosAtivos: any = {};
   constructor(
     private ItemGenericoService: ItemGenericoService,
     private router: Router,
-    private feedback: FeedbackService
+    private feedback: FeedbackService,
+    private estadoListagem: EstadoListagemService
   ) { }
 
   registros: ItemGenerico[] = [];
@@ -98,6 +100,7 @@ filtrosAtivos: any = {};
     if (termobusca !== undefined) {
       this.termoBuscaAtual = termobusca;
       this.currentPage = 1;
+      this.salvarEstadoListagem();
     }
 
     this.isLoadingPage = true;
@@ -138,8 +141,6 @@ filtrosAtivos: any = {};
   }
 
   ngOnInit() {
-    this.getItens();
-
     this.filtros[0].opcoes = this.categoriasDisponiveis.map(cat => ({
       id: cat,
       nome: this.getCategoriaLabel(cat)
@@ -149,6 +150,9 @@ filtrosAtivos: any = {};
       id: un,
       nome: this.getUnidadeMedidaLabel(un)
     }));
+
+    this.restaurarEstadoListagem();
+    this.getItens();
   }
 
   proximaPagina(): void {
@@ -157,6 +161,7 @@ filtrosAtivos: any = {};
     }
 
     this.currentPage += 1;
+    this.salvarEstadoListagem();
     this.getItens();
   }
 
@@ -166,6 +171,7 @@ filtrosAtivos: any = {};
     }
 
     this.currentPage -= 1;
+    this.salvarEstadoListagem();
     this.getItens();
   }
 
@@ -175,6 +181,14 @@ filtrosAtivos: any = {};
     }
 
     this.currentPage = page;
+    this.salvarEstadoListagem();
+    this.getItens();
+  }
+
+  alterarPageSize(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.currentPage = 1;
+    this.salvarEstadoListagem();
     this.getItens();
   }
 
@@ -204,6 +218,8 @@ filtrosAtivos: any = {};
   }
 
   enviarPara(rota: string, id?: number) {
+    this.salvarEstadoListagem();
+
     if (id) {
       this.router.navigate([rota], { queryParams: { id } });
     }
@@ -322,6 +338,39 @@ filtrosAtivos: any = {};
     });
   }
 
+  excluirRegistro(): void {
+    if (!this.registroEditar.id || this.isSaving) {
+      return;
+    }
+
+    this.feedback.confirmar({
+      titulo: 'Excluir gênero?',
+      mensagem: `Esta ação removerá permanentemente o gênero alimentício "${this.registroEditar.descricao}".`,
+      textoConfirmar: 'Excluir',
+      textoCancelar: 'Cancelar',
+      destrutiva: true
+    }).then((confirmou) => {
+      if (!confirmou) {
+        return;
+      }
+
+      this.isSaving = true;
+      this.errorMessageModal = '';
+      this.ItemGenericoService.delete(this.registroEditar.id).subscribe({
+        next: () => {
+          this.isSaving = false;
+          this.fecharModalSemConfirmacao();
+          this.feedback.sucesso('Gênero alimentício excluído com sucesso.');
+          this.getItens();
+        },
+        error: (erro) => {
+          this.isSaving = false;
+          this.errorMessageModal = erro?.error?.detail || 'Não foi possível excluir o gênero alimentício. Tente novamente.';
+        }
+      });
+    });
+  }
+
   tentarFecharModal(): void {
     if (this.isSaving) {
       return;
@@ -357,9 +406,40 @@ filtrosAtivos: any = {};
   }
 
   aplicarFiltros(filtros: any) {
-    this.filtrosAtivos = filtros;
+    this.filtrosAtivos = { ...filtros };
     this.currentPage = 1;
+    this.salvarEstadoListagem();
     this.getItens();
+  }
+
+  private restaurarEstadoListagem(): void {
+    const estado = this.estadoListagem.obter('generos');
+    if (!estado) {
+      return;
+    }
+
+    this.termoBuscaAtual = estado.termoBuscaAtual;
+    this.filtrosAtivos = { ...estado.filtrosAtivos };
+    this.currentPage = estado.currentPage;
+
+    const pageSize = Number(estado.extras?.['pageSize']);
+    if (Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100) {
+      this.pageSize = pageSize;
+    }
+  }
+
+  salvarEstadoListagem(): void {
+    const estadoAtual = this.estadoListagem.obter('generos');
+
+    this.estadoListagem.salvar('generos', {
+      termoBuscaAtual: this.termoBuscaAtual,
+      filtrosAtivos: this.filtrosAtivos,
+      currentPage: this.currentPage,
+      extras: {
+        ...estadoAtual?.extras,
+        pageSize: this.pageSize
+      }
+    });
   }
 
 }

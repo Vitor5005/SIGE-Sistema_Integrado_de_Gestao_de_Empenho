@@ -42,6 +42,16 @@ export class VisualizarEmpenho {
   errorMessageItens: string = '';
   isLoadingOperacoes: boolean = false;
   errorMessageOperacoes: string = '';
+  empenhoEdicao = {
+    codigo: ''
+  };
+  formSubmittedEdicaoEmpenho: boolean = false;
+  isSavingEdicaoEmpenho: boolean = false;
+  errorMessageEdicaoEmpenho: string = '';
+  itemSolicitacaoReforco: ItemEmpenho | null = null;
+  quantidadeSolicitadaReforco: number = 0;
+  isSolicitandoReforco: boolean = false;
+  erroSolicitacaoReforco: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
   constructor(
     private router: Router,
@@ -324,6 +334,8 @@ export class VisualizarEmpenho {
   @ViewChild('arquivoSolicitacaoInput') arquivoSolicitacaoInput!: ElementRef<HTMLInputElement>;
   @ViewChild('fecharModalInternoBtn') fecharModalInternoBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('fecharOperacaoInternoBtn') fecharOperacaoInternoBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('fecharEdicaoEmpenhoBtn') fecharEdicaoEmpenhoBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('fecharSolicitacaoReforcoBtn') fecharSolicitacaoReforcoBtn!: ElementRef<HTMLButtonElement>;
 
   enviarPara(rota: string, id?: number) {
     if (id) {
@@ -344,6 +356,91 @@ export class VisualizarEmpenho {
     });
   }
 
+  get codigoEmpenhoEdicaoValido(): boolean {
+    return Boolean(this.empenhoEdicao.codigo?.trim());
+  }
+
+  get empenhoEdicaoValida(): boolean {
+    return this.codigoEmpenhoEdicaoValido;
+  }
+
+  get empenhoEdicaoAlterada(): boolean {
+    const codigoAtual = String(this.empenho?.codigo || '').trim().toUpperCase();
+    const codigoEdicao = String(this.empenhoEdicao.codigo || '').trim().toUpperCase();
+    return codigoEdicao !== codigoAtual;
+  }
+
+  abrirEdicaoEmpenho(): void {
+    this.empenhoEdicao = {
+      codigo: this.empenho?.codigo || ''
+    };
+    this.formSubmittedEdicaoEmpenho = false;
+    this.isSavingEdicaoEmpenho = false;
+    this.errorMessageEdicaoEmpenho = '';
+  }
+
+  salvarEdicaoEmpenho(): void {
+    this.formSubmittedEdicaoEmpenho = true;
+
+    if (
+      this.isSavingEdicaoEmpenho ||
+      !this.empenhoEdicaoValida ||
+      !this.empenhoEdicaoAlterada ||
+      !this.empenho.id
+    ) {
+      return;
+    }
+
+    const codigo = this.empenhoEdicao.codigo.trim().toUpperCase();
+    this.isSavingEdicaoEmpenho = true;
+    this.errorMessageEdicaoEmpenho = '';
+
+    this.empenhoService.patch(this.empenho.id, { codigo }).subscribe({
+      next: (resposta: Empenho) => {
+        this.empenho = {
+          ...this.empenho,
+          ...resposta
+        };
+        this.isSavingEdicaoEmpenho = false;
+        this.fecharEdicaoEmpenho();
+        this.feedback.sucesso('Empenho atualizado com sucesso.');
+      },
+      error: (erro) => {
+        this.isSavingEdicaoEmpenho = false;
+        this.errorMessageEdicaoEmpenho = erro?.error?.codigo
+          ? 'Já existe um empenho cadastrado com este código.'
+          : 'Não foi possível salvar as alterações do empenho.';
+      }
+    });
+  }
+
+  tentarFecharEdicaoEmpenho(): void {
+    if (this.isSavingEdicaoEmpenho) {
+      return;
+    }
+
+    if (!this.empenhoEdicaoAlterada) {
+      this.fecharEdicaoEmpenho();
+      return;
+    }
+
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'As alterações feitas no empenho serão perdidas.',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((confirmado) => {
+      if (confirmado) {
+        this.fecharEdicaoEmpenho();
+      }
+    });
+  }
+
+  private fecharEdicaoEmpenho(): void {
+    this.fecharEdicaoEmpenhoBtn?.nativeElement.click();
+  }
+
   prepararOperacao(tipoOperacao: 'reforco' | 'anulacao'): void {
     this.tipo = tipoOperacao;
     this.operacaoItem_insercao.valor = 0;
@@ -353,6 +450,76 @@ export class VisualizarEmpenho {
     this.prepararOperacao(tipoOperacao);
     this.carregarItemEmpenho(item);
     this.trocarOperacao(tipoOperacao === 'reforco' ? 'ref' : 'anl');
+  }
+
+  get limiteSolicitacaoReforco(): number {
+    return this.itemSolicitacaoReforco
+      ? this.getQuantidadeDisponivelAta(this.itemSolicitacaoReforco)
+      : 0;
+  }
+
+  get quantidadeSolicitadaReforcoValida(): boolean {
+    const quantidade = Number(this.quantidadeSolicitadaReforco) || 0;
+    return quantidade >= 1 && quantidade <= this.limiteSolicitacaoReforco;
+  }
+
+  abrirSolicitacaoReforco(item: ItemEmpenho): void {
+    this.itemSolicitacaoReforco = item;
+    this.quantidadeSolicitadaReforco = 1;
+    this.isSolicitandoReforco = false;
+    this.erroSolicitacaoReforco = '';
+  }
+
+  solicitarReforco(): void {
+    const item = this.itemSolicitacaoReforco;
+    if (!item?.id || this.isSolicitandoReforco || !this.quantidadeSolicitadaReforcoValida) {
+      return;
+    }
+
+    const payload: SolicitacaoReforcoInsert = {
+      item_empenho: item.id,
+      quantidade_solicitada: Number(this.quantidadeSolicitadaReforco)
+    };
+
+    this.isSolicitandoReforco = true;
+    this.erroSolicitacaoReforco = '';
+
+    this.solicitacaoReforcoService.solicitar(payload).subscribe({
+      next: () => {
+        this.isSolicitandoReforco = false;
+        this.feedback.sucesso('Solicitação de reforço enviada ao Diretor.');
+        this.fecharSolicitacaoReforco();
+      },
+      error: (erro) => {
+        this.isSolicitandoReforco = false;
+        this.erroSolicitacaoReforco = this.obterMensagemErroSolicitacaoReforco(erro);
+      }
+    });
+  }
+
+  private obterMensagemErroSolicitacaoReforco(erro: any): string {
+    if (erro?.error?.detail) {
+      return String(erro.error.detail);
+    }
+
+    const errosDeCampo = erro?.error;
+    if (errosDeCampo && typeof errosDeCampo === 'object') {
+      for (const campo of Object.keys(errosDeCampo)) {
+        const mensagem = errosDeCampo[campo];
+        if (Array.isArray(mensagem) && mensagem.length > 0) {
+          return String(mensagem[0]);
+        }
+        if (typeof mensagem === 'string' && mensagem) {
+          return mensagem;
+        }
+      }
+    }
+
+    return 'Não foi possível enviar a solicitação de reforço. Tente novamente.';
+  }
+
+  private fecharSolicitacaoReforco(): void {
+    this.fecharSolicitacaoReforcoBtn?.nativeElement.click();
   }
 
 

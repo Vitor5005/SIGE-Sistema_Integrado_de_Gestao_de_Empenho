@@ -1,86 +1,123 @@
-<body class="listagem">
-  <div class="container-titulo">
-    <h3><i class="bi bi-wallet"></i> EMPENHOS</h3>
-    <hr>
-  </div>
-    <app-barra-pesquisa [filtros]="filtros"
-  (pesquisar)="get($event)"
-  (filtrosAlterados)="aplicarFiltros($event)"></app-barra-pesquisa>
+<main class="sige-list-page">
+  <header class="sige-list-header">
+    <div>
+      <h1 class="sige-list-title">Empenhos</h1>
+      <p class="sige-list-description">Consulte os empenhos e acompanhe os valores empenhados e utilizados.</p>
+    </div>
+  </header>
 
-    <table class="tabela">
-        <thead>
-            <tr>
-                <th scope="col">Identificação</th>
-                <th scope="col">Fornecedor</th>
-                <th scope="col">Valor Utilizado</th>
-                <th scope="col">Valor Empenhado</th>
+  <section class="sige-list-toolbar" aria-label="Busca e filtros">
+    <app-barra-pesquisa
+      [filtros]="filtros"
+      [placeholder]="'Buscar por código, ARP, fornecedor, CNPJ ou licitação...'"
+      [termoInicial]="termoBuscaAtual"
+      [valoresIniciais]="filtrosAtivos"
+      (pesquisar)="get($event)"
+      (filtrosAlterados)="aplicarFiltros($event)">
+    </app-barra-pesquisa>
+  </section>
+
+  @if (!isLoadingPage && !errorMessagePage) {
+    <p class="sige-list-meta" aria-live="polite">
+      {{ total }} {{ total === 1 ? 'registro encontrado' : 'registros encontrados' }}
+    </p>
+  }
+
+  <div class="sige-list-table-wrap">
+    <table class="sige-list-table">
+      <caption class="visually-hidden">Lista de empenhos</caption>
+      <thead>
+        <tr>
+          <th scope="col">Identificação</th>
+          <th scope="col">Fornecedor</th>
+          <th scope="col" class="sige-cell--number">Valor utilizado</th>
+          <th scope="col" class="sige-cell--number">Valor empenhado</th>
+          <th scope="col" class="sige-cell--actions">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (isLoadingPage) {
+          <tr class="linha-vazia-tabela">
+            <td [attr.colspan]="5">
+              <app-estado-conteudo
+                tipo="loading"
+                mensagem="Carregando registros..."
+                [compacto]="true">
+              </app-estado-conteudo>
+            </td>
+          </tr>
+        } @else if (errorMessagePage) {
+          <tr class="linha-vazia-tabela">
+            <td [attr.colspan]="5">
+              <app-estado-conteudo
+                tipo="error"
+                titulo="Não foi possível carregar os dados"
+                [mensagem]="errorMessagePage"
+                [compacto]="true"
+                [mostrarAcao]="true"
+                (acao)="get()">
+              </app-estado-conteudo>
+            </td>
+          </tr>
+        } @else {
+          @for (item of empenhos; track item.id) {
+            <tr
+              class="sige-list-row--clickable"
+              tabindex="0"
+              role="link"
+              (click)="enviarPara('visualizar-empenho', item.id)"
+              (keydown.enter)="enviarPara('visualizar-empenho', item.id)">
+              <td><span>{{ item.codigo }}</span></td>
+              <td>
+                <span class="sige-cell--truncate" [title]="item.ata.fornecedor.nome_fantasia">
+                  {{ item.ata.fornecedor.nome_fantasia }}
+                </span>
+              </td>
+              <td class="sige-cell--number"><span>{{ item.saldo_utilizado }}</span></td>
+              <td class="sige-cell--number"><span>{{ item.valor_total }}</span></td>
+              <td
+                class="sige-cell--actions"
+                (click)="$event.stopPropagation()"
+                (keydown.enter)="$event.stopPropagation()">
+                <div class="sige-table-actions">
+                  <button
+                    type="button"
+                    class="sige-button sige-button--secondary sige-button--sm"
+                    (click)="enviarPara('visualizar-empenho', item.id)">
+                    Abrir
+                  </button>
+                </div>
+              </td>
             </tr>
-        </thead>
-        <tbody>
-            @if (isLoadingPage) {
-                <tr class="linha-vazia-tabela">
-                    <td [attr.colspan]="4">
-                        <app-estado-conteudo
-                            tipo="loading"
-                            mensagem="Carregando registros..."
-                            [compacto]="true">
-                        </app-estado-conteudo>
-                    </td>
-                </tr>
-            } @else if (errorMessagePage) {
-                <tr class="linha-vazia-tabela">
-                    <td [attr.colspan]="4">
-                        <app-estado-conteudo
-                            tipo="error"
-                            titulo="Não foi possível carregar os dados"
-                            [mensagem]="errorMessagePage"
-                            [compacto]="true"
-                            [mostrarAcao]="true"
-                            (acao)="get()">
-                        </app-estado-conteudo>
-                    </td>
-                </tr>
-            } @else {
-                @for (item of empenhos; track item.id) {
-                    <!-- Exemplo 1 -->
-                    <tr style="cursor: pointer;" (click)="enviarPara('visualizar-empenho', item.id)">
+          }
 
-                        <td>
-                            <span>{{ item.codigo }}</span>
-                        </td>
-                        <td>
-                            <span>{{ item.ata.fornecedor.nome_fantasia }}</span>
-                        </td>
-                        <td>
-                            <span> {{ item.saldo_utilizado }} </span>
-                        </td>
-                        <td>
-                            <span> {{ item.valor_total}} </span>
-                        </td>
-                    </tr>
-                }
-
-                @if (empenhos.length === 0) {
-                    <tr class="linha-vazia-tabela">
-                        <td [attr.colspan]="4">
-                            <app-estado-conteudo
-                                tipo="empty"
-                                titulo="Nenhum empenho encontrado"
-                                mensagem="Ajuste a busca ou os filtros para localizar um empenho."
-                                [compacto]="true">
-                            </app-estado-conteudo>
-                        </td>
-                    </tr>
-                }
-            }
-
-        </tbody>
-
+          @if (empenhos.length === 0) {
+            <tr class="linha-vazia-tabela">
+              <td [attr.colspan]="5">
+                <app-estado-conteudo
+                  tipo="empty"
+                  titulo="Nenhum empenho encontrado"
+                  mensagem="Ajuste a busca ou os filtros para localizar um empenho."
+                  [compacto]="true">
+                </app-estado-conteudo>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
     </table>
+  </div>
 
-    @if (!isLoadingPage && !errorMessagePage && total > 0) {
-        <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-            totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
-    }
-
-</body>
+  @if (!isLoadingPage && !errorMessagePage && total > 0) {
+    <app-paginacao
+      class="paginacao-lista"
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalItems]="total"
+      totalLabel="Total de registros"
+      [showTotal]="false"
+      (pageChange)="irParaPagina($event)"
+      (pageSizeChange)="alterarPageSize($event)">
+    </app-paginacao>
+  }
+</main>

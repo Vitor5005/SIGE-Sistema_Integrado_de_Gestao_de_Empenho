@@ -1,4 +1,6 @@
-from rest_framework import viewsets
+from django.db import transaction
+from rest_framework import status, viewsets
+from rest_framework.response import Response
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from cadastro.serializers import EnderecoSerializer, FornecedorSerializer, FornecedorCreateSerializer, ItemGenericoSerializer
 from utils.mixins import AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin
@@ -15,10 +17,12 @@ class FornecedorViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMi
     rbac_resource = Recurso.FORNECEDOR
 
     search_fields = [
-        'cnpj', 
-        #'razao_social', 
+        'cnpj',
+        'razao_social',
         'nome_fantasia',
-        'endereco__estado'
+        'email',
+        'endereco__municipio',
+        'endereco__estado',
     ]
 
    
@@ -30,7 +34,27 @@ class FornecedorViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMi
 
     ordering_fields = ['nome_fantasia', 'cnpj']
     ordering = ['nome_fantasia']
-class ItemGenericoViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet):
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        if instance.ata_set.exists():
+            return Response(
+                {'detail': 'Não é possível excluir este fornecedor porque existem ARPs vinculadas.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        with transaction.atomic():
+            endereco_id = instance.endereco_id
+            self.perform_destroy(instance)
+
+            if endereco_id and not Fornecedor.objects.filter(endereco_id=endereco_id).exists():
+                Endereco.objects.filter(id=endereco_id).delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ItemGenericoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = ItemGenerico.objects.all()
     serializer_class = ItemGenericoSerializer
     rbac_resource = Recurso.GENERO_ALIMENTICIO
@@ -42,10 +66,27 @@ class ItemGenericoViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelVie
     ]
     filterset_fields = {
         'catmat': ['exact'],               
-        'unidade_medida': ['exact'],      
-        'categoria': ['exact'],            
+        'unidade_medida': ['exact', 'in'],      
+        'categoria': ['exact', 'in'],            
     }
 
     ordering_fields = ['catmat', 'descricao', 'categoria']
     ordering = ['descricao']
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        possui_estoque = hasattr(instance, 'estoque')
+
+        if instance.itemata_set.exists() or possui_estoque:
+            return Response(
+                {
+                    'detail': (
+                        'Não é possível excluir este gênero alimentício porque ele já está sendo utilizado '
+                        'em uma ARP ou possui registro de estoque.'
+                    )
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return super().destroy(request, *args, **kwargs)
 

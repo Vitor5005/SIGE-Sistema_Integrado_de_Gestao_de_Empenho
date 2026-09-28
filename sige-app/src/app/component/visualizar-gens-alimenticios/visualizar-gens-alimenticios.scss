@@ -148,7 +148,6 @@
 
         &:focus {
             border-color: var(--azul-claro);
-            outline: none;
         }
     }
 
@@ -204,7 +203,7 @@
     .subtitulo-modal {
         margin-bottom: 8px;
 
-        h5 {
+        h3 {
             font-weight: 700;
             color: var(--font-cinza2);
             margin-bottom: 6px;
@@ -254,7 +253,6 @@
             transition: border-color .15s ease, box-shadow .15s ease;
 
             &:focus {
-                outline: none;
                 border-color: var(--azul-claro);
                 box-shadow: 0 0 0 3px rgba(39, 140, 234, 0.15);
             }
@@ -401,4 +399,52 @@
   h3 {
     margin: 0;
   }
+}
+
+.generos-table {
+  width: 100%;
+  min-width: 52rem;
+  table-layout: fixed;
+
+  col:nth-child(1) {
+    width: 12%;
+  }
+
+  col:nth-child(2) {
+    width: 23%;
+  }
+
+  col:nth-child(3) {
+    width: 22%;
+  }
+
+  col:nth-child(4) {
+    width: 29%;
+  }
+
+  col:nth-child(5) {
+    width: 14%;
+  }
+
+  td {
+    min-width: 0;
+  }
+
+  td:first-child {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sige-cell--actions {
+    width: auto;
+  }
+}
+
+.generos-cell-text {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

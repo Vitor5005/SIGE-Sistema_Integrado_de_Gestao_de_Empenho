@@ -7,6 +7,7 @@ import { AtaService } from '../../service/ata.service';
 import { Ata } from '../../model/ata';
 import { CommonModule } from '@angular/common';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
+import { EstadoListagemService } from '../../service/estado-listagem.service';
 
 @Component({
   selector: 'app-visualizar-atas',
@@ -17,6 +18,7 @@ import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 })
 export class VisualizarAtas {
   constructor(private router: Router, private ataService: AtaService,
+    private estadoListagemService: EstadoListagemService,
   ) {}
 
   atas: Ata[] = [];
@@ -32,7 +34,7 @@ export class VisualizarAtas {
   filtros: FiltroConfig[] = [
     {
       campo: 'ata_saldo_total',
-      label: 'Valor Total',
+      label: 'Saldo da ARP',
       tipo: 'range',
     },
     {
@@ -49,16 +51,57 @@ export class VisualizarAtas {
   filtrosAtivos: any = {};
 
   ngOnInit() {
+    this.restaurarEstadoListagem();
     this.get();
   }
 
+  private restaurarEstadoListagem(): void {
+    const estado = this.estadoListagemService.obter('atas');
+
+    if (!estado) {
+      return;
+    }
+
+    this.termoBuscaAtual = estado.termoBuscaAtual || '';
+    this.filtrosAtivos = estado.filtrosAtivos || {};
+    this.currentPage = estado.currentPage || 1;
+
+    const pageSize = estado.extras?.['pageSize'];
+    if (typeof pageSize === 'number' && Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100) {
+      this.pageSize = pageSize;
+    }
+  }
+
+  private salvarEstadoListagem(): void {
+    const estadoAtual = this.estadoListagemService.obter('atas');
+
+    this.estadoListagemService.salvar('atas', {
+      termoBuscaAtual: this.termoBuscaAtual,
+      filtrosAtivos: this.filtrosAtivos,
+      currentPage: this.currentPage,
+      extras: {
+        ...(estadoAtual?.extras ?? {}),
+        pageSize: this.pageSize,
+      },
+    });
+  }
+
   enviarPara(rota: string, id: number): void {
+    this.salvarEstadoListagem();
     this.router.navigate([rota], { queryParams: { id } });
   }
 
   aplicarFiltros(filtros: any) {
     this.filtrosAtivos = filtros;
     this.currentPage = 1;
+    this.salvarEstadoListagem();
+    this.get();
+  }
+
+  alterarPageSize(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.currentPage = 1;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -66,6 +109,7 @@ export class VisualizarAtas {
   if (termobusca !== undefined) {
     this.termoBuscaAtual = termobusca;
     this.currentPage = 1;
+    this.salvarEstadoListagem();
   }
 
   this.isLoadingPage = true;
@@ -143,6 +187,7 @@ export class VisualizarAtas {
     }
 
     this.currentPage += 1;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -152,6 +197,7 @@ export class VisualizarAtas {
     }
 
     this.currentPage -= 1;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -161,6 +207,7 @@ export class VisualizarAtas {
     }
 
     this.currentPage = page;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -178,8 +225,8 @@ export class VisualizarAtas {
 
   classValidade(ata: Ata): string {
     return this.verificarValidade(ata) === 'Expirado'
-      ? 'bg-danger text-white'
-      : 'bg-success text-white';
+      ? 'sige-badge--danger'
+      : 'sige-badge--success';
   }
 
   ordenarAtas(licitacoes: Ata[]): Ata[] {

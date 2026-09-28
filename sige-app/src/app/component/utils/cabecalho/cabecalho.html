@@ -46,6 +46,7 @@
     </div>
     }
 
+    @if (pode(Recurso.ORDEM_ENTREGA, Acao.CONSULTAR)) {
     <a
       class="nav-item"
       routerLink="/visualizar-entregas"
@@ -54,6 +55,7 @@
     >
       Entregas
     </a>
+    }
 
     @if (pode(Recurso.ESTOQUE, Acao.CONSULTAR)) {
     <a class="nav-item" routerLink="/estoque" routerLinkActive="is-active">
@@ -61,7 +63,7 @@
     </a>
     }
 
-    @if (pode(Recurso.FORNECEDOR, Acao.CONSULTAR) || pode(Recurso.GENERO_ALIMENTICIO, Acao.CONSULTAR)) {
+    @if (pode(Recurso.FORNECEDOR, Acao.CONSULTAR) && pode(Recurso.GENERO_ALIMENTICIO, Acao.CONSULTAR)) {
     <div class="dropdown">
       <button
         class="nav-item nav-dropdown dropdown-toggle"
@@ -92,6 +94,10 @@
         }
       </ul>
     </div>
+    } @else if (pode(Recurso.GENERO_ALIMENTICIO, Acao.CONSULTAR)) {
+    <a class="nav-item" routerLink="/visualizar-gens-alimenticios" routerLinkActive="is-active">
+      Gêneros
+    </a>
     }
   </nav>
 
@@ -103,7 +109,7 @@
     </a>
     }
 
-    @if (podeVerPendencias || podeVerReforcos || podeVerRespostasReforco) {
+    @if (pode(Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)) {
     <div class="dropdown">
       <button
         class="alertas-botao"

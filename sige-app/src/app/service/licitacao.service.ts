@@ -79,8 +79,8 @@ export class LicitacaoService implements ICrudService<Licitacao> {
     }
   }
 
-  patch(id: number, object: any): Observable<any> {
-    throw new Error('Method not implemented.');
+  patch(id: number, object: Partial<Licitacao>): Observable<Licitacao> {
+    return this.http.patch<Licitacao>(`${this.apiUrl}${id}/`, object);
   }
 
   delete(id: number): Observable<void> {

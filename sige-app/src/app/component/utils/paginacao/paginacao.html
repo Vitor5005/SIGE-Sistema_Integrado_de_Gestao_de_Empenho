@@ -1,33 +1,59 @@
-@if(totalPages > 1) {
-<nav class="paginacao-wrapper" aria-label="Paginação">
-  <ul class="pagination pagination-sm justify-content-center mb-0">
-    <li class="page-item" [class.disabled]="currentPage === 1">
-      <button class="page-link" type="button" (click)="paginaAnterior()" [disabled]="currentPage === 1" aria-label="Página anterior">
-        <span aria-hidden="true">&lsaquo;</span>
-      </button>
-    </li>
+@if (totalItems > 0) {
+<div class="paginacao-wrapper">
+  <div class="page-size-control">
+    <label>
+      Exibir
+      <select
+        [value]="pageSize"
+        (change)="alterarTamanhoPagina($event)"
+        aria-label="Quantidade de registros por página"
+      >
+        @for (size of availablePageSizes; track size) {
+        <option [value]="size">{{ size }}</option>
+        }
+      </select>
+      por página
+    </label>
+  </div>
 
-    @for(page of visiblePages; track $index) {
-      @if(page === '...') {
-      <li class="page-item disabled ellipsis-item">
-        <span class="page-link">&hellip;</span>
+  @if (totalPages > 1) {
+  <nav aria-label="Paginação">
+    <ul class="pagination pagination-sm justify-content-center mb-0">
+      <li class="page-item" [class.disabled]="currentPage === 1">
+        <button class="page-link" type="button" (click)="paginaAnterior()" [disabled]="currentPage === 1" aria-label="Página anterior">
+          <span aria-hidden="true">&lsaquo;</span>
+        </button>
       </li>
-      } @else {
-      <li class="page-item" [class.active]="page === currentPage">
-        <button class="page-link" type="button" (click)="irParaPagina(+page)">{{ page }}</button>
-      </li>
+
+      @for(page of visiblePages; track $index) {
+        @if(page === '...') {
+        <li class="page-item disabled ellipsis-item">
+          <span class="page-link" aria-hidden="true">&hellip;</span>
+        </li>
+        } @else {
+        <li class="page-item" [class.active]="page === currentPage">
+          <button
+            class="page-link"
+            type="button"
+            [attr.aria-label]="'Página ' + page"
+            [attr.aria-current]="page === currentPage ? 'page' : null"
+            (click)="irParaPagina(+page)"
+          >{{ page }}</button>
+        </li>
+        }
       }
-    }
 
-    <li class="page-item" [class.disabled]="currentPage === totalPages">
-      <button class="page-link" type="button" (click)="proximaPagina()" [disabled]="currentPage === totalPages" aria-label="Próxima página">
-        <span aria-hidden="true">&rsaquo;</span>
-      </button>
-    </li>
-  </ul>
+      <li class="page-item" [class.disabled]="currentPage === totalPages">
+        <button class="page-link" type="button" (click)="proximaPagina()" [disabled]="currentPage === totalPages" aria-label="Próxima página">
+          <span aria-hidden="true">&rsaquo;</span>
+        </button>
+      </li>
+    </ul>
+  </nav>
+  }
 
   @if(showTotal) {
   <small class="texto-total">{{ totalLabel }}: {{ totalItems }}</small>
   }
-</nav>
+</div>
 }

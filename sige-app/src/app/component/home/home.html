@@ -1,8 +1,8 @@
-<div class="sige-page-container home-operacional">
+<main class="sige-page-container home-operacional">
   <header class="sige-page-header home-cabecalho">
     <div>
       <h1 class="sige-page-title" id="home-title">Início</h1>
-      <p class="sige-page-description">Acompanhe os principais dados e pendências da operação.</p>
+      <p class="sige-page-description">{{ descricaoPerfil }}</p>
     </div>
   </header>
 
@@ -54,6 +54,76 @@
     }
   </section>
   }
+
+  <section class="sige-section acoes-rapidas" aria-labelledby="acoes-perfil-title">
+    <div class="home-bloco-cabecalho">
+      <div>
+        <h2 id="acoes-perfil-title">Ações do seu perfil</h2>
+        <p>Atalhos prioritários para a sua rotina.</p>
+      </div>
+    </div>
+
+    <div class="sige-actions home-acoes">
+      @switch (perfilOperacional) {
+        @case ('diretor') {
+          <a class="sige-button sige-button--primary" routerLink="/adicionar-licitacao">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Nova licitação
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/visualizar-usuarios">
+            <i class="bi bi-people" aria-hidden="true"></i> Gerenciar usuários
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/visualizar-fornecedores">
+            <i class="bi bi-building" aria-hidden="true"></i> Fornecedores
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/visualizar-entregas">
+            <i class="bi bi-truck" aria-hidden="true"></i> Acompanhar entregas
+          </a>
+        }
+        @case ('tecnico') {
+          <a class="sige-button sige-button--primary" routerLink="/visualizar-empenhos">
+            <i class="bi bi-clipboard-plus" aria-hidden="true"></i> Solicitar entrega
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/visualizar-fornecedores">
+            <i class="bi bi-building" aria-hidden="true"></i> Fornecedores
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/visualizar-entregas">
+            <i class="bi bi-truck" aria-hidden="true"></i> Acompanhar entregas
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/visualizar-gens-alimenticios">
+            <i class="bi bi-card-list" aria-hidden="true"></i> Gêneros
+          </a>
+        }
+        @case ('estoquista') {
+          <a class="sige-button sige-button--primary" routerLink="/estoque/movimentacao">
+            <i class="bi bi-arrow-left-right" aria-hidden="true"></i> Nova movimentação
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/visualizar-entregas">
+            <i class="bi bi-truck" aria-hidden="true"></i> Acompanhar entregas
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/estoque/extrato">
+            <i class="bi bi-journal-text" aria-hidden="true"></i> Extrato do estoque
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/visualizar-gens-alimenticios">
+            <i class="bi bi-card-list" aria-hidden="true"></i> Gêneros
+          </a>
+        }
+        @default {
+          <a class="sige-button sige-button--primary" routerLink="/visualizar-entregas">
+            <i class="bi bi-truck" aria-hidden="true"></i> Acompanhar entregas
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/estoque">
+            <i class="bi bi-box-seam" aria-hidden="true"></i> Consultar estoque
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/estoque/extrato">
+            <i class="bi bi-journal-text" aria-hidden="true"></i> Extrato do estoque
+          </a>
+          <a class="sige-button sige-button--secondary" routerLink="/visualizar-gens-alimenticios">
+            <i class="bi bi-card-list" aria-hidden="true"></i> Gêneros
+          </a>
+        }
+      }
+    </div>
+  </section>
 
   <section class="home-bloco" aria-labelledby="visao-geral-title">
     <div class="home-bloco-cabecalho">
@@ -219,7 +289,7 @@
           <div class="grafico-resumo" aria-label="Dados da situação das entregas">
             <div class="grafico-linha">
               <div>
-                <span class="grafico-linha-titulo">Concluídas</span>
+                <span class="grafico-linha-titulo"><span class="grafico-legenda-marcador grafico-legenda-marcador--concluido" aria-hidden="true"></span>Concluídas</span>
                 <span class="grafico-linha-valor">
                   {{ quantidadeEntregasConcluidasGrafico }}
                   {{ quantidadeEntregasConcluidasGrafico === 1 ? 'registro' : 'registros' }}
@@ -229,7 +299,7 @@
             </div>
             <div class="grafico-linha">
               <div>
-                <span class="grafico-linha-titulo">Em espera</span>
+                <span class="grafico-linha-titulo"><span class="grafico-legenda-marcador grafico-legenda-marcador--espera" aria-hidden="true"></span>Em espera</span>
                 <span class="grafico-linha-valor">
                   {{ quantidadeEntregasEmEsperaGrafico }}
                   {{ quantidadeEntregasEmEsperaGrafico === 1 ? 'registro' : 'registros' }}
@@ -312,14 +382,14 @@
           <div class="grafico-resumo" aria-label="Dados da utilização financeira dos empenhos">
             <div class="grafico-linha">
               <div>
-                <span class="grafico-linha-titulo">Utilizado</span>
+                <span class="grafico-linha-titulo"><span class="grafico-legenda-marcador grafico-legenda-marcador--utilizado" aria-hidden="true"></span>Utilizado</span>
                 <span class="grafico-linha-valor">{{ formatarMoeda(resumoFinanceiro?.valor_utilizado) }}</span>
               </div>
               <strong>{{ formatarPercentual(percentualUtilizado) }}</strong>
             </div>
             <div class="grafico-linha">
               <div>
-                <span class="grafico-linha-titulo">Disponível</span>
+                <span class="grafico-linha-titulo"><span class="grafico-legenda-marcador grafico-legenda-marcador--disponivel" aria-hidden="true"></span>Disponível</span>
                 <span class="grafico-linha-valor">{{ formatarMoeda(resumoFinanceiro?.valor_disponivel) }}</span>
               </div>
               <strong>{{ formatarPercentual(percentualDisponivel) }}</strong>

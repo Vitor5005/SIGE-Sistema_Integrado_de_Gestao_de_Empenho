@@ -48,6 +48,7 @@ export class VisualizarAta {
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild('myInput') input!: ElementRef;
   @ViewChild('fecharModalInternoBtn') fecharModalInternoBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('fecharModalEdicaoAtaBtn') fecharModalEdicaoAtaBtn!: ElementRef<HTMLButtonElement>;
 
   ata: Ata = <Ata>{};
   empenho: Empenho = <Empenho>{};
@@ -76,6 +77,12 @@ export class VisualizarAta {
   isSaving: boolean = false;
   errorMessageModal: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
+
+  ataEdicao = { numero_ata: '' };
+  formSubmittedEdicaoAta: boolean = false;
+  isSavingEdicaoAta: boolean = false;
+  isExcluindoAta: boolean = false;
+  errorMessageEdicaoAta: string = '';
 
   itemGenerico_insercao: ItemGenerico = <ItemGenerico>{
     unidade_medida: '',
@@ -171,6 +178,15 @@ export class VisualizarAta {
     return Boolean(this.empenho?.id);
   }
 
+  get ataEdicaoValida(): boolean {
+    return Boolean(this.ataEdicao.numero_ata?.trim());
+  }
+
+  get ataEdicaoAlterada(): boolean {
+    return (this.ataEdicao.numero_ata || '').trim().toUpperCase() !==
+      (this.ata.numero_ata || '').trim().toUpperCase();
+  }
+
   get possuiDadosModalPreenchidos(): boolean {
     return Boolean(
       this.itemGenerico_insercao.catmat ||
@@ -257,6 +273,101 @@ export class VisualizarAta {
     } else {
       this.router.navigate([rota]);
     }
+  }
+
+  abrirEdicaoAta(): void {
+    this.ataEdicao = { numero_ata: this.ata.numero_ata || '' };
+    this.formSubmittedEdicaoAta = false;
+    this.isSavingEdicaoAta = false;
+    this.errorMessageEdicaoAta = '';
+  }
+
+  salvarEdicaoAta(): void {
+    this.formSubmittedEdicaoAta = true;
+    this.errorMessageEdicaoAta = '';
+
+    if (this.isSavingEdicaoAta || !this.ataEdicaoValida || !this.ataEdicaoAlterada || !this.ata.id) {
+      return;
+    }
+
+    const numeroAta = this.ataEdicao.numero_ata.trim().toUpperCase();
+    this.isSavingEdicaoAta = true;
+
+    this.ataService.patch(this.ata.id, { numero_ata: numeroAta }).subscribe({
+      next: (resposta: Ata) => {
+        this.ata = { ...this.ata, ...resposta };
+        this.isSavingEdicaoAta = false;
+        this.fecharModalEdicaoAta();
+        this.feedback.sucesso('ARP atualizada com sucesso.');
+      },
+      error: (erro) => {
+        this.isSavingEdicaoAta = false;
+        this.errorMessageEdicaoAta = erro?.error?.numero_ata
+          ? 'Já existe uma ARP cadastrada com este número.'
+          : 'Não foi possível atualizar a ARP. Tente novamente.';
+      }
+    });
+  }
+
+  excluirAta(): void {
+    if (!this.ata.id || this.possuiEmpenhoRelacionado || this.itens.length !== 0 || this.isExcluindoAta) {
+      return;
+    }
+
+    this.feedback.confirmar({
+      titulo: 'Excluir ARP?',
+      mensagem: `Esta ação removerá permanentemente a ARP "${this.ata.numero_ata}".`,
+      textoConfirmar: 'Excluir',
+      textoCancelar: 'Cancelar',
+      destrutiva: true
+    }).then((confirmado) => {
+      if (!confirmado || !this.ata.id || this.possuiEmpenhoRelacionado || this.itens.length !== 0) {
+        return;
+      }
+
+      this.isExcluindoAta = true;
+      this.ataService.delete(this.ata.id).subscribe({
+        next: () => {
+          this.isExcluindoAta = false;
+          this.feedback.sucesso('ARP excluída com sucesso.');
+          this.router.navigate(['/visualizar-licitacao'], { queryParams: { id: this.ata.licitacao.id } });
+        },
+        error: (erro) => {
+          this.isExcluindoAta = false;
+          this.feedback.erro(
+            erro?.error?.detail || 'Não foi possível excluir a ARP. Tente novamente.',
+            'Erro ao excluir ARP'
+          );
+        }
+      });
+    });
+  }
+
+  tentarFecharEdicaoAta(): void {
+    if (this.isSavingEdicaoAta) {
+      return;
+    }
+
+    if (!this.ataEdicaoAlterada) {
+      this.fecharModalEdicaoAta();
+      return;
+    }
+
+    this.feedback.confirmar({
+      titulo: 'Descartar alterações?',
+      mensagem: 'As alterações feitas na ARP serão perdidas.',
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Continuar editando',
+      destrutiva: true
+    }).then((desejaDescartar) => {
+      if (desejaDescartar) {
+        this.fecharModalEdicaoAta();
+      }
+    });
+  }
+
+  private fecharModalEdicaoAta(): void {
+    this.fecharModalEdicaoAtaBtn?.nativeElement?.click();
   }
 
   get(id: number, controlarEstadoPagina: boolean = false): void {
@@ -381,6 +492,11 @@ export class VisualizarAta {
     }
 
     this.currentPageItemGenerico = page;
+  }
+
+  alterarPageSizeItemGenerico(pageSize: number): void {
+    this.pageSizeItemGenerico = pageSize;
+    this.currentPageItemGenerico = 1;
   }
 
   verificarValidade(ata: Ata): string {

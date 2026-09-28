@@ -80,8 +80,8 @@
   }
 
   .modal-custom {
-    border-radius: 18px;
-    border: none;
+    border-radius: var(--sige-radius-lg);
+    border: 1px solid var(--sige-border);
     overflow: hidden;
   }
 
@@ -104,13 +104,13 @@
     max-height: none;
     overflow: visible;
     padding: 14px 16px;
-    background-color: #f8f9fb;
+    background-color: var(--sige-surface-muted);
   }
 
   .form-fornecedor {
-    background-color: #ffffff;
-    border: 1px solid #e5eaf1;
-    border-radius: 12px;
+    background-color: var(--sige-surface-card);
+    border: 1px solid var(--sige-border);
+    border-radius: var(--sige-radius-md);
     padding: 12px;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -120,15 +120,15 @@
   .texto-orientacao-modal {
     margin: 0;
     font-size: 13px;
-    color: #5f6b7a;
+    color: var(--sige-text-secondary);
     grid-column: 1 / -1;
   }
 
   .form-secao {
-    border: 1px solid #e6edf6;
-    border-radius: 12px;
+    border: 1px solid var(--sige-border);
+    border-radius: var(--sige-radius-md);
     padding: 10px;
-    background: #fbfcfe;
+    background: var(--sige-surface-muted);
   }
 
   .form-secao-titulo {
@@ -137,7 +137,7 @@
     font-weight: 700;
     letter-spacing: .03em;
     text-transform: uppercase;
-    color: #475569;
+    color: var(--sige-text-secondary);
   }
 
   .form-row {
@@ -160,20 +160,19 @@
     label {
       font-size: 11px;
       font-weight: 700;
-      color: #475569;
+      color: var(--sige-text-secondary);
       margin-bottom: 4px;
       letter-spacing: .02em;
     }
 
     input {
-      border: 1px solid #d4dce6;
-      border-radius: 10px;
+      border: 1px solid var(--sige-border);
+      border-radius: var(--sige-radius-sm);
       padding: 8px 10px;
       font-size: 13px;
       transition: border-color .15s ease, box-shadow .15s ease;
 
       &:focus {
-        outline: none;
         border-color: var(--azul-claro);
         box-shadow: 0 0 0 3px rgba(39, 140, 234, 0.15);
       }

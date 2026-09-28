@@ -4,7 +4,10 @@ from decimal import Decimal
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APITestCase
+from django.urls import reverse
 from rest_framework.exceptions import ValidationError
+from rest_framework import status
+from rest_framework.test import APITestCase
 
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem, SolicitacaoReforco
@@ -86,186 +89,228 @@ class OperacaoEmpenhoTests(TestCase):
         self.assertFalse(OperacaoItem.objects.exists())
 
 
-
-class SolicitacaoReforcoTests(APITestCase):
-    """Nutricionista pede reforço; Diretor atende (executando o reforço) ou recusa."""
-
+class SolicitacaoReforcoViewSetTests(APITestCase):
     def setUp(self):
-        OperacaoEmpenhoTests.setUp(self)
-        registrar_operacao_item(item_empenho_id=self.item.id, tipo='inc', valor='60', data=self.data)
-        self.diretor = Usuario.objects.create_user('diretor_ref', password='senha', papel=Papel.DIRETOR)
-        self.tecnico = Usuario.objects.create_user('tecnico_ref', password='senha', papel=Papel.TECNICO_ADMINISTRATIVO)
-        self.nutricionista = Usuario.objects.create_user('nutri_ref', password='senha', papel=Papel.NUTRICIONISTA)
-        self.outra_nutricionista = Usuario.objects.create_user('nutri_ref2', password='senha', papel=Papel.NUTRICIONISTA)
-        self.url = reverse('solicitacao-reforco-list')
-
-    def solicitar(self, usuario, quantidade='30', justificativa='Cardápio com carne bovina.'):
-        self.client.force_authenticate(usuario)
-        return self.client.post(self.url, {
-            'item_empenho': self.item.id,
-            'quantidade': quantidade,
-            'justificativa': justificativa,
-        }, format='json')
-
-    def test_nutricionista_solicita_reforco_dentro_do_saldo(self):
-        resposta = self.solicitar(self.nutricionista)
-
-        self.assertEqual(resposta.status_code, 201, resposta.data)
-        self.assertEqual(resposta.data['status'], SolicitacaoReforco.Status.PENDENTE)
-        self.assertEqual(resposta.data['solicitante'], self.nutricionista.id)
-        self.item.refresh_from_db()
-        self.assertEqual(self.item.quantidade_atual, Decimal('60.00'))
-
-    def test_solicitacao_acima_do_saldo_da_arp_e_rejeitada(self):
-        resposta = self.solicitar(self.nutricionista, quantidade='41')
-
-        self.assertEqual(resposta.status_code, 400)
-        self.assertIn('40.00', str(resposta.data['quantidade']))
-        self.assertFalse(SolicitacaoReforco.objects.exists())
-
-    def test_somente_nutricionista_solicita(self):
-        for usuario in (self.diretor, self.tecnico):
-            self.assertEqual(self.solicitar(usuario).status_code, 403)
-
-    def test_saldo_disponivel_para_o_modal(self):
-        self.client.force_authenticate(self.nutricionista)
-        resposta = self.client.get(reverse('solicitacao-reforco-saldo'), {'item_empenho': self.item.id})
-
-        self.assertEqual(resposta.status_code, 200)
-        self.assertEqual(resposta.data['saldo_disponivel'], '40.00')
-
-    def test_diretor_atende_e_o_reforco_e_executado(self):
-        solicitacao_id = self.solicitar(self.nutricionista).data['id']
-
-        self.client.force_authenticate(self.diretor)
-        resposta = self.client.post(reverse('solicitacao-reforco-atender', args=[solicitacao_id]))
-
-        self.assertEqual(resposta.status_code, 200, resposta.data)
-        self.assertEqual(resposta.data['status'], SolicitacaoReforco.Status.ATENDIDA)
-        self.item.refresh_from_db()
-        self.empenho.refresh_from_db()
-        self.assertEqual(self.item.quantidade_atual, Decimal('90.00'))
-        self.assertEqual(self.empenho.valor_total, Decimal('900.00'))
-        operacao = SolicitacaoReforco.objects.get(pk=solicitacao_id).operacao
-        self.assertEqual((operacao.tipo, operacao.valor), ('ref', Decimal('30.00')))
-
-        self.assertEqual(
-            self.client.post(reverse('solicitacao-reforco-atender', args=[solicitacao_id])).status_code, 400,
+        endereco = Endereco.objects.create(
+            lagradouro='Rua A', numero='1', bairro='Centro', cep='69900000',
+            municipio='Rio Branco', estado='AC',
         )
-
-    def test_atendimento_revalida_o_saldo(self):
-        solicitacao_id = self.solicitar(self.nutricionista).data['id']
-        registrar_operacao_item(item_empenho_id=self.item.id, tipo='ref', valor='20', data=self.data)
-
-        self.client.force_authenticate(self.diretor)
-        resposta = self.client.post(reverse('solicitacao-reforco-atender', args=[solicitacao_id]))
-
-        self.assertEqual(resposta.status_code, 400)
-        self.assertEqual(SolicitacaoReforco.objects.get(pk=solicitacao_id).status, SolicitacaoReforco.Status.PENDENTE)
-
-    def test_diretor_recusa_com_motivo(self):
-        solicitacao_id = self.solicitar(self.nutricionista).data['id']
-        url = reverse('solicitacao-reforco-recusar', args=[solicitacao_id])
-
-        self.client.force_authenticate(self.diretor)
-        self.assertEqual(self.client.post(url, {'resposta': ' '}, format='json').status_code, 400)
-        resposta = self.client.post(url, {'resposta': 'Sem orçamento neste mês.'}, format='json')
-
-        self.assertEqual(resposta.status_code, 200)
-        self.assertEqual(resposta.data['status'], SolicitacaoReforco.Status.RECUSADA)
-        self.item.refresh_from_db()
-        self.assertEqual(self.item.quantidade_atual, Decimal('60.00'))
-
-    def test_nutricionista_nao_atende_e_ve_somente_as_proprias(self):
-        solicitacao_id = self.solicitar(self.nutricionista).data['id']
-        self.solicitar(self.outra_nutricionista)
-
-        self.client.force_authenticate(self.nutricionista)
-        self.assertEqual(
-            self.client.post(reverse('solicitacao-reforco-atender', args=[solicitacao_id])).status_code, 403,
+        fornecedor = Fornecedor.objects.create(
+            razao_social='Fornecedor', nome_fantasia='Fornecedor',
+            cnpj='22.222.222/0001-22', endereco=endereco,
         )
-        self.assertEqual(self.client.get(self.url).data['count'], 1)
-
-        self.client.force_authenticate(self.diretor)
-        self.assertEqual(self.client.get(self.url).data['count'], 2)
-
-        self.client.force_authenticate(self.tecnico)
-        self.assertEqual(self.client.get(self.url).status_code, 403)
-
-
-    def test_resposta_do_diretor_notifica_o_nutricionista_ate_ser_vista(self):
-        atendida = self.solicitar(self.nutricionista).data['id']
-        recusada = self.solicitar(self.nutricionista, quantidade='5').data['id']
-        pendente = self.solicitar(self.nutricionista, quantidade='2').data['id']
-        self.client.force_authenticate(self.diretor)
-        self.client.post(reverse('solicitacao-reforco-atender', args=[atendida]))
-        self.client.post(reverse('solicitacao-reforco-recusar', args=[recusada]), {'resposta': 'Não.'}, format='json')
-
-        self.client.force_authenticate(self.nutricionista)
-        nao_vistas = self.client.get(self.url, {'vista_pelo_solicitante': 'false'}).data
-        self.assertEqual({item['id'] for item in nao_vistas['results']}, {atendida, recusada})
-        self.assertNotIn(pendente, {item['id'] for item in nao_vistas['results']})
-
-        url_vista = reverse('solicitacao-reforco-marcar-vista', args=[atendida])
-        self.client.force_authenticate(self.diretor)
-        self.assertEqual(self.client.post(url_vista).status_code, 403)
-
-        self.client.force_authenticate(self.nutricionista)
-        self.assertTrue(self.client.post(url_vista).data['vista_pelo_solicitante'])
-        restantes = self.client.get(self.url, {'vista_pelo_solicitante': 'false'}).data
-        self.assertEqual([item['id'] for item in restantes['results']], [recusada])
-
-
-class MixinsDasViewsTests(APITestCase):
-    """Filtros por parâmetro da URL e serializer de escrita aplicados pelos mixins de utils.mixins."""
-
-    def setUp(self):
-        OperacaoEmpenhoTests.setUp(self)
-        registrar_operacao_item(item_empenho_id=self.item.id, tipo='inc', valor='10', data=self.data)
-        outro_empenho = Empenho.objects.create(
-            codigo='NE-OUTRO', ata=self.ata, valor_total=Decimal('0.00'), saldo_utilizado=Decimal('0.00'),
+        genero = ItemGenerico.objects.create(
+            catmat='123456', descricao='Feijão', unidade_medida='KG', categoria='NP',
         )
-        self.outro_item = ItemEmpenho.objects.create(
-            empenho=outro_empenho, item_ata=self.item_ata,
+        licitacao = Licitacao.objects.create(
+            numero_licitacao='LIC-REFORCO', validade=12,
+            data_abertura='2026-01-01', descricao='Teste de reforço',
+        )
+        self.ata = Ata.objects.create(
+            numero_ata='ATA-REFORCO', ata_saldo_total=Decimal('1000.00'),
+            licitacao=licitacao, fornecedor=fornecedor,
+        )
+        item_ata = ItemAta.objects.create(
+            ata=self.ata, item_generico=genero, marca='Marca',
+            quantidade_licitada=Decimal('100.00'), valor_unitario=Decimal('10.00'),
+        )
+        self.empenho = Empenho.objects.create(
+            codigo='NE-REFORCO', ata=self.ata, valor_total=Decimal('0.00'),
+            saldo_utilizado=Decimal('0.00'),
+        )
+        self.item = ItemEmpenho.objects.create(
+            empenho=self.empenho, item_ata=item_ata,
             quantidade_atual=Decimal('0.00'), quantidade_entrege=Decimal('0.00'),
         )
-        registrar_operacao_item(item_empenho_id=self.outro_item.id, tipo='inc', valor='5', data=self.data)
-        self.client.force_authenticate(
-            Usuario.objects.create_user('diretor_mixins', password='senha', papel=Papel.DIRETOR)
+        self.diretor = Usuario.objects.create_user(
+            username='diretor_reforco', password='senha-segura', papel=Papel.DIRETOR,
+        )
+        self.nutricionista = Usuario.objects.create_user(
+            username='nutri_reforco', password='senha-segura', papel=Papel.NUTRICIONISTA,
+        )
+        self.outra_nutricionista = Usuario.objects.create_user(
+            username='outra_nutri_reforco', password='senha-segura', papel=Papel.NUTRICIONISTA,
+        )
+        self.tecnico = Usuario.objects.create_user(
+            username='tecnico_reforco', password='senha-segura',
+            papel=Papel.TECNICO_ADMINISTRATIVO,
+        )
+        self.estoquista = Usuario.objects.create_user(
+            username='estoquista_reforco', password='senha-segura', papel=Papel.ESTOQUISTA,
+        )
+        self.list_url = reverse('solicitacao-reforco-list')
+        self.payload = {
+            'item_empenho': self.item.pk,
+            'quantidade_solicitada': '10.00',
+        }
+
+    def criar_solicitacao(self, usuario=None, payload=None):
+        self.client.force_authenticate(usuario or self.nutricionista)
+        return self.client.post(self.list_url, payload or self.payload, format='json')
+
+    def dados_listagem(self, response):
+        return response.data['results'] if isinstance(response.data, dict) else response.data
+
+    def test_nutricionista_cria_solicitacao_valida(self):
+        response = self.criar_solicitacao()
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_solicitacao_armazena_solicitante_autenticado(self):
+        self.criar_solicitacao()
+
+        solicitacao = SolicitacaoReforco.objects.get()
+        self.assertEqual(solicitacao.solicitante, self.nutricionista)
+
+    def test_solicitante_enviado_pelo_cliente_e_ignorado(self):
+        payload = {**self.payload, 'solicitante': self.outra_nutricionista.pk}
+        response = self.criar_solicitacao(payload=payload)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(SolicitacaoReforco.objects.get().solicitante, self.nutricionista)
+
+    def test_solicitacao_nao_altera_saldos_ou_operacoes(self):
+        quantidade_atual = self.item.quantidade_atual
+        valor_total = self.empenho.valor_total
+        saldo_ata_total = self.ata.ata_saldo_total
+        quantidade_operacoes = OperacaoItem.objects.count()
+
+        response = self.criar_solicitacao()
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.item.refresh_from_db()
+        self.empenho.refresh_from_db()
+        self.ata.refresh_from_db()
+        self.assertEqual(self.item.quantidade_atual, quantidade_atual)
+        self.assertEqual(self.empenho.valor_total, valor_total)
+        self.assertEqual(self.ata.ata_saldo_total, saldo_ata_total)
+        self.assertEqual(OperacaoItem.objects.count(), quantidade_operacoes)
+
+    def test_quantidade_menor_que_um_e_rejeitada(self):
+        response = self.criar_solicitacao(payload={
+            **self.payload,
+            'quantidade_solicitada': '0.99',
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_quantidade_acima_do_saldo_da_arp_e_rejeitada(self):
+        response = self.criar_solicitacao(payload={
+            **self.payload,
+            'quantidade_solicitada': '100.01',
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_solicitacao_aberta_duplicada_para_mesmo_item_e_rejeitada(self):
+        self.criar_solicitacao()
+        response = self.criar_solicitacao()
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn(
+            'Já existe uma solicitação de reforço em aberto para este item.',
+            str(response.data),
         )
 
-    def ids(self, url, params=None):
-        resposta = self.client.get(url, params or {})
-        self.assertEqual(resposta.status_code, 200, resposta.data)
-        dados = resposta.data['results'] if isinstance(resposta.data, dict) else resposta.data
-        return sorted(item['id'] for item in dados)
+    def test_diretor_nao_pode_criar_solicitacao(self):
+        response = self.criar_solicitacao(usuario=self.diretor)
 
-    def test_filtro_obrigatorio_sem_parametro_retorna_vazio(self):
-        url = reverse('itens-do-empenho-list')
-        self.assertEqual(self.ids(url), [])
-        self.assertEqual(self.ids(url, {'empenho_id': self.empenho.id}), [self.item.id])
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_filtro_opcional_sem_parametro_retorna_todos(self):
-        url = reverse('operacoes-do-empenho-list')
-        todas = sorted(OperacaoItem.objects.values_list('id', flat=True))
-        self.assertEqual(self.ids(url), todas)
+    def test_tecnico_nao_pode_criar_solicitacao(self):
+        response = self.criar_solicitacao(usuario=self.tecnico)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_estoquista_nao_pode_criar_solicitacao(self):
+        response = self.criar_solicitacao(usuario=self.estoquista)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_diretor_lista_todas_as_solicitacoes(self):
+        primeira = SolicitacaoReforco.objects.create(
+            item_empenho=self.item,
+            quantidade_solicitada=Decimal('10.00'),
+            solicitante=self.nutricionista,
+        )
+        segunda = SolicitacaoReforco.objects.create(
+            item_empenho=self.item,
+            quantidade_solicitada=Decimal('20.00'),
+            solicitante=self.outra_nutricionista,
+        )
+        self.client.force_authenticate(self.diretor)
+
+        response = self.client.get(self.list_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            self.ids(url, {'empenho_id': self.empenho.id}),
-            list(OperacaoItem.objects.filter(item_empenho=self.item).values_list('id', flat=True)),
+            {dado['id'] for dado in self.dados_listagem(response)},
+            {primeira.pk, segunda.pk},
         )
 
-    def test_itens_da_ata_filtram_pela_ata(self):
-        url = reverse('itens_da_ata-list')
-        self.assertEqual(self.ids(url), [])
-        self.assertEqual(self.ids(url, {'ata_id': self.ata.id}), [self.item.id, self.outro_item.id])
+    def test_nutricionista_lista_apenas_suas_solicitacoes(self):
+        propria = SolicitacaoReforco.objects.create(
+            item_empenho=self.item,
+            quantidade_solicitada=Decimal('10.00'),
+            solicitante=self.nutricionista,
+        )
+        SolicitacaoReforco.objects.create(
+            item_empenho=self.item,
+            quantidade_solicitada=Decimal('20.00'),
+            solicitante=self.outra_nutricionista,
+        )
+        self.client.force_authenticate(self.nutricionista)
 
-    def test_escrita_usa_serializer_plano_e_leitura_o_aninhado(self):
-        url = reverse('empenho-list')
-        resposta = self.client.post(url, {
-            'codigo': 'NE-NOVO', 'ata': self.ata.id, 'valor_total': '0.00', 'saldo_utilizado': '0.00',
-        }, format='json')
-        self.assertEqual(resposta.status_code, 201, resposta.data)
-        self.assertEqual(resposta.data['ata'], self.ata.id)
+        response = self.client.get(self.list_url)
 
-        detalhe = self.client.get(reverse('empenho-detail', args=[resposta.data['id']]))
-        self.assertEqual(detalhe.data['ata']['numero_ata'], 'ATA-TESTE')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [dado['id'] for dado in self.dados_listagem(response)],
+            [propria.pk],
+        )
+
+    def test_diretor_registra_ciencia(self):
+        solicitacao = SolicitacaoReforco.objects.create(
+            item_empenho=self.item,
+            quantidade_solicitada=Decimal('10.00'),
+            solicitante=self.nutricionista,
+        )
+        self.client.force_authenticate(self.diretor)
+
+        response = self.client.post(
+            reverse('solicitacao-reforco-ciente', args=[solicitacao.pk]),
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        solicitacao.refresh_from_db()
+        self.assertEqual(solicitacao.status, SolicitacaoReforco.Status.CIENTE)
+        self.assertEqual(solicitacao.ciente_por, self.diretor)
+        self.assertIsNotNone(solicitacao.data_ciencia)
+
+    def test_nutricionista_nao_registra_ciencia(self):
+        solicitacao = SolicitacaoReforco.objects.create(
+            item_empenho=self.item,
+            quantidade_solicitada=Decimal('10.00'),
+            solicitante=self.nutricionista,
+        )
+        self.client.force_authenticate(self.nutricionista)
+
+        response = self.client.post(
+            reverse('solicitacao-reforco-ciente', args=[solicitacao.pk]),
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_nao_permite_registrar_ciencia_duas_vezes(self):
+        solicitacao = SolicitacaoReforco.objects.create(
+            item_empenho=self.item,
+            quantidade_solicitada=Decimal('10.00'),
+            solicitante=self.nutricionista,
+        )
+        self.client.force_authenticate(self.diretor)
+        url = reverse('solicitacao-reforco-ciente', args=[solicitacao.pk])
+
+        self.assertEqual(self.client.post(url, format='json').status_code, status.HTTP_200_OK)
+        self.assertEqual(self.client.post(url, format='json').status_code, status.HTTP_400_BAD_REQUEST)

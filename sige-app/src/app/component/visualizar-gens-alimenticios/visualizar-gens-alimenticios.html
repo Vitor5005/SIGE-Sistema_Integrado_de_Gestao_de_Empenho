@@ -1,7 +1,21 @@
-<body class="listagem">
-  <div class="container-titulo">
-    <div class="titulo-com-acao">
-      <h3><i class="bi bi-card-list"></i> GÊNEROS ALIMENTÍCIOS</h3>
+<main class="sige-list-page">
+  <header class="sige-list-header">
+    <div>
+      <h1 class="sige-list-title"><i class="bi bi-card-list" aria-hidden="true"></i> Gêneros alimentícios</h1>
+      <p class="sige-list-description">Consulte e mantenha o catálogo de gêneros alimentícios do SIGE.</p>
+    </div>
+  </header>
+
+  <div class="sige-list-toolbar">
+    <div class="sige-list-toolbar__search">
+      <app-barra-pesquisa [filtros]="filtros"
+        placeholder="Buscar por CATMAT ou descrição..."
+        [termoInicial]="termoBuscaAtual"
+        [valoresIniciais]="filtrosAtivos"
+        (pesquisar)="getItens($event)"
+        (filtrosAlterados)="aplicarFiltros($event)"></app-barra-pesquisa>
+    </div>
+    <div class="sige-list-toolbar__actions">
       @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.CADASTRAR)) {
       <button type="button" class="sige-button sige-button--primary" data-bs-toggle="modal"
         data-bs-target="#editarItemGenerico" (click)="novoRegistro()">
@@ -9,20 +23,31 @@
       </button>
       }
     </div>
-    <hr>
   </div>
-  <app-barra-pesquisa [filtros]="filtros"
-  (pesquisar)="getItens($event)"
-  (filtrosAlterados)="aplicarFiltros($event)"></app-barra-pesquisa>
 
-  <table class="tabela">
+  @if (!isLoadingPage && !errorMessagePage) {
+  <div class="sige-list-meta" aria-live="polite">
+    <strong>{{ total }}</strong> {{ total === 1 ? 'resultado' : 'resultados' }}
+  </div>
+  }
+
+  <div class="sige-list-table-wrap">
+  <table class="sige-list-table generos-table">
+    <colgroup>
+      <col class="generos-col-catmat">
+      <col class="generos-col-categoria">
+      <col class="generos-col-unidade">
+      <col class="generos-col-descricao">
+      <col class="generos-col-acoes">
+    </colgroup>
+    <caption class="visually-hidden">Catálogo de gêneros alimentícios</caption>
     <thead>
       <tr>
         <th scope="col">CATMAT</th>
         <th scope="col">Categoria</th>
-        <th scope="col">Unidades de Medida</th>
+        <th scope="col">Unidade de medida</th>
         <th scope="col">Descrição</th>
-        <th scope="col">Ações</th>
+        <th scope="col" class="sige-cell--actions">Ações</th>
       </tr>
     </thead>
     <tbody>
@@ -54,27 +79,25 @@
 
       <tr>
 
+        <td>{{ item.catmat }}</td>
         <td>
-          <div class="teste">
-            <p>{{ item.catmat }}</p>
-          </div>
+          <span class="generos-cell-text" [attr.title]="getCategoria(item)">{{ getCategoria(item) }}</span>
         </td>
         <td>
-          <p>{{ getCategoria(item) }}</p>
+          <span class="generos-cell-text" [attr.title]="getUnidadeMedida(item)">{{ getUnidadeMedida(item) }}</span>
         </td>
         <td>
-          <p>{{ getUnidadeMedida(item) }}</p>
+          <span class="generos-cell-text" [attr.title]="item.descricao">{{ item.descricao }}</span>
         </td>
-        <td>
-          <p class="descricao">{{ item.descricao }}</p>
-        </td>
-        <td>
-          @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.EDITAR)) {
-          <button class="btn btn-primary" title="Editar usuário" data-bs-toggle="modal"
+        <td class="sige-cell--actions">
+          <div class="sige-table-actions">
+            @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.EDITAR)) {
+          <button type="button" class="sige-button sige-button--secondary sige-button--sm" title="Editar gênero alimentício" data-bs-toggle="modal"
             data-bs-target="#editarItemGenerico" (click)="carregarRegistro(item)">
-            <i class="bi bi-pencil"></i>
+            <i class="bi bi-pencil" aria-hidden="true"></i> Editar
           </button>
-          }
+            }
+          </div>
 
         </td>
 
@@ -96,21 +119,23 @@
       }
     </tbody>
   </table>
+  </div>
 
   @if (!isLoadingPage && !errorMessagePage && total > 0) {
   <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-    totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+    [showTotal]="false" totalLabel="Total de registros" (pageChange)="irParaPagina($event)"
+    (pageSizeChange)="alterarPageSize($event)"></app-paginacao>
   }
 
 
-  <div #myModal class="modal fade" id="editarItemGenerico" tabindex="-1" aria-hidden="true">
+  <div #myModal class="modal fade" id="editarItemGenerico" tabindex="-1" aria-labelledby="editarItemGenericoLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content modal-custom">
 
         <div class="modal-header-azul">
-          <h2 class="modal-titulo" id="editarItemGenericoLabel">{{ modoCadastro ? 'NOVO' : 'EDITAR' }} GÊNERO ALIMENTÍCIO</h2>
+          <h2 class="modal-titulo" id="editarItemGenericoLabel">{{ modoCadastro ? 'Novo gênero alimentício' : 'Editar gênero alimentício' }}</h2>
           <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()"
-            aria-label="Close"></button>
+            aria-label="Fechar"></button>
           <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
         </div>
 
@@ -118,7 +143,7 @@
           <form class="form-fornecedor" (submit)="salvarRegistro(); $event.preventDefault()">
 
             <div class="subtitulo subtitulo-modal">
-              <h5>{{ modoCadastro ? 'ADICIONAR NOVO ITEM' : 'ALTERAR ITEM' }}</h5>
+              <h3>{{ modoCadastro ? 'Adicionar novo item' : 'Alterar item' }}</h3>
               <hr>
             </div>
 
@@ -127,14 +152,14 @@
             </p>
 
             @if(isSaving) {
-            <div class="status-processamento-modal">
+            <div class="status-processamento-modal" role="status" aria-live="polite">
               <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
               <small>Processando atualização. Aguarde a finalização para continuar.</small>
             </div>
             }
 
             @if(errorMessageModal) {
-            <div class="mensagem-erro-modal">
+            <div class="mensagem-erro-modal" role="alert">
               <small>{{ errorMessageModal }}</small>
             </div>
             }
@@ -144,17 +169,19 @@
                 <label for="catmat">CATMAT</label>
                 <input #myInput type="text" id="catmat" name="catmat" [disabled]="isSaving"
                   [(ngModel)]="registroEditar.catmat" maxlength="6" inputmode="numeric" placeholder="Ex.: 123456"
-                  (input)="onCatmatInput()" [class.campo-invalido]="formSubmitted && !catmatValido" required>
+                  (input)="onCatmatInput()" [class.campo-invalido]="formSubmitted && !catmatValido"
+                  [attr.aria-invalid]="formSubmitted && !catmatValido ? 'true' : null" required>
                 @if(formSubmitted && !catmatValido) {
                 <small class="mensagem-campo-invalido">CATMAT deve conter exatamente 6 dígitos.</small>
                 }
               </div>
 
               <div class="form-group">
-                <label for="descricao">DESCRIÇÃO</label>
+                <label for="descricao">Descrição</label>
                 <textarea id="descricao" name="descricao" [(ngModel)]="registroEditar.descricao" [disabled]="isSaving"
                   maxlength="300" placeholder="Ex.: Arroz tipo 1" (input)="onDescricaoInput()"
-                  [class.campo-invalido]="formSubmitted && !descricaoValida" required></textarea>
+                  [class.campo-invalido]="formSubmitted && !descricaoValida"
+                  [attr.aria-invalid]="formSubmitted && !descricaoValida ? 'true' : null" required></textarea>
                 <small class="texto-apoio-input">{{ 300 - (registroEditar.descricao || '').length }} caracteres restantes.</small>
                 @if(formSubmitted && !descricaoValida) {
                 <small class="mensagem-campo-invalido">Descrição é obrigatória (até 300 caracteres).</small>
@@ -164,9 +191,10 @@
 
             <div class="form-row">
               <div class="form-group flex-2">
-                <label for="unidade">Unidade de Medida</label>
+                <label for="unidade">Unidade de medida</label>
                 <select id="unidade" name="unidade" [(ngModel)]="registroEditar.unidade_medida" [disabled]="isSaving"
-                  [class.campo-invalido]="formSubmitted && !unidadeValida" required>
+                  [class.campo-invalido]="formSubmitted && !unidadeValida"
+                  [attr.aria-invalid]="formSubmitted && !unidadeValida ? 'true' : null" required>
                   <option value="" disabled>Selecione uma unidade</option>
                   @for(uni of unidadesDisponiveis; track $index) {
                   <option [value]="uni">{{ getUnidadeMedidaLabel(uni) }}</option>
@@ -178,9 +206,10 @@
               </div>
 
               <div class="form-group flex-1">
-                <label for="categoria">CATEGORIA</label>
+                <label for="categoria">Categoria</label>
                 <select id="categoria" name="categoria" [(ngModel)]="registroEditar.categoria" [disabled]="isSaving"
-                  [class.campo-invalido]="formSubmitted && !categoriaValida" required>
+                  [class.campo-invalido]="formSubmitted && !categoriaValida"
+                  [attr.aria-invalid]="formSubmitted && !categoriaValida ? 'true' : null" required>
                   <option value="" disabled>Selecione uma categoria</option>
                   @for(cat of categoriasDisponiveis; track $index) {
                   <option [value]="cat">{{ getCategoriaLabel(cat) }}</option>
@@ -196,14 +225,25 @@
               <small><b>Obrigatório:</b> preencher CATMAT válido, categoria, unidade de medida e descrição.</small>
             </div>
 
-            <div class="form-footer">
-              <button class="btn-confirmar" type="submit" [disabled]="isSaving || !formularioValido"
-                [class.btn-confirmar-desabilitado]="isSaving || !formularioValido">
-                @if(isSaving) {
-                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-                }
-                <i class="bi bi-check-lg"></i> {{ modoCadastro ? 'CADASTRAR' : 'SALVAR' }}
+            <div class="form-footer d-flex justify-content-between gap-2">
+              @if (!modoCadastro && pode(Recurso.GENERO_ALIMENTICIO, Acao.EXCLUIR)) {
+              <button type="button" class="sige-button sige-button--danger-outline" [disabled]="isSaving"
+                (click)="excluirRegistro()">
+                <i class="bi bi-trash3" aria-hidden="true"></i> Excluir gênero
               </button>
+              }
+              <div class="d-flex gap-2 ms-auto">
+                <button type="button" class="sige-button sige-button--secondary" [disabled]="isSaving"
+                  (click)="tentarFecharModal()">
+                  Cancelar
+                </button>
+                <button class="sige-button sige-button--primary" type="submit" [disabled]="isSaving || !formularioValido">
+                  @if(isSaving) {
+                  <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                  }
+                  <i class="bi bi-check-lg" aria-hidden="true"></i> {{ modoCadastro ? 'Cadastrar' : 'Salvar' }}
+                </button>
+              </div>
             </div>
 
           </form>
@@ -214,4 +254,4 @@
     </div>
   </div>
 
-</body>
+</main>

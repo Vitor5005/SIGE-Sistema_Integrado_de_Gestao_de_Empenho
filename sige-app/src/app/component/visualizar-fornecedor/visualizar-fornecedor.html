@@ -16,12 +16,20 @@
           <p class="sige-detail-subtitle">{{ fornecedor.nome_fantasia || fornecedor.cnpj }}</p>
         </div>
 
-        @if (pode(Recurso.FORNECEDOR, Acao.EDITAR)) {
+        @if (pode(Recurso.FORNECEDOR, Acao.EDITAR) || pode(Recurso.FORNECEDOR, Acao.EXCLUIR)) {
         <div class="sige-detail-actions fornecedor-actions">
-          <button class="sige-button sige-button--primary fornecedor-editar" data-bs-toggle="modal"
+          @if (pode(Recurso.FORNECEDOR, Acao.EDITAR)) {
+          <button type="button" class="sige-button sige-button--primary fornecedor-editar" data-bs-toggle="modal"
             data-bs-target="#fornecedorModal" (click)="carregar_Fornecedor()">
-            <i class="bi bi-pencil-square"></i> Editar informações
+            <i class="bi bi-pencil-square" aria-hidden="true"></i> Editar informações
           </button>
+          }
+          @if (pode(Recurso.FORNECEDOR, Acao.EXCLUIR)) {
+          <button type="button" class="sige-button sige-button--danger-outline" [disabled]="isSaving"
+            (click)="excluirFornecedor()">
+            <i class="bi bi-trash3" aria-hidden="true"></i> Excluir fornecedor
+          </button>
+          }
         </div>
         }
       </header>
@@ -83,13 +91,13 @@
     }
   </div>
 
-  <div #myModal class="modal fade" id="fornecedorModal" tabindex="-1" aria-hidden="true">
+  <div #myModal class="modal fade" id="fornecedorModal" tabindex="-1" aria-labelledby="editarFornecedorLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content modal-custom">
         <div class="modal-header-azul">
-          <h2 class="modal-titulo">EDIÇÃO DE FORNECEDOR</h2>
+          <h2 id="editarFornecedorLabel" class="modal-titulo">Editar fornecedor</h2>
           <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()"
-            aria-label="Close"></button>
+            aria-label="Fechar"></button>
           <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
         </div>
         <div class="modal-body">
@@ -98,27 +106,28 @@
             <p class="texto-orientacao-modal">Revise e atualize os dados abaixo. Campos com validação exibem alerta em vermelho quando inválidos.</p>
 
             @if(isSaving) {
-            <div class="status-processamento-modal">
+            <div class="status-processamento-modal" role="status" aria-live="polite">
               <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
               <small>Processando atualização. Aguarde a finalização para continuar.</small>
             </div>
             }
 
             @if(errorMessageModal) {
-            <div class="mensagem-erro-modal">
+            <div class="mensagem-erro-modal" role="alert">
               <small>{{ errorMessageModal }}</small>
             </div>
             }
 
             <section class="form-secao">
-              <div class="form-secao-titulo">Dados do fornecedor</div>
+              <h3 class="form-secao-titulo">Dados do fornecedor</h3>
 
               <div class="form-row">
                 <div class="form-group flex-2">
-                  <label>RAZÂO SOCIAL</label>
-                  <input #myInput type="text" [(ngModel)]="fornecedor_editar.razao_social" name="razao_social"
+                  <label for="editarFornecedorRazaoSocial">Razão social</label>
+                  <input #myInput id="editarFornecedorRazaoSocial" type="text" [(ngModel)]="fornecedor_editar.razao_social" name="razao_social"
                     [disabled]="isSaving" maxlength="255" placeholder="Ex.: Empresa LTDA" (input)="onRazaoSocialInput()"
-                    [class.campo-invalido]="formSubmitted && !fornecedor_editar.razao_social.trim()">
+                    [class.campo-invalido]="formSubmitted && !fornecedor_editar.razao_social.trim()"
+                    [attr.aria-invalid]="formSubmitted && !fornecedor_editar.razao_social.trim() ? 'true' : null">
                   @if(formSubmitted && !fornecedor_editar.razao_social.trim()) {
                   <small class="mensagem-campo-invalido">Razão social é obrigatória.</small>
                   }
@@ -127,19 +136,21 @@
 
               <div class="form-row">
                 <div class="form-group flex-2">
-                  <label>NOME FANTASIA</label>
-                  <input type="text" [(ngModel)]="fornecedor_editar.nome_fantasia" name="nome_fantasia" [disabled]="isSaving"
+                  <label for="editarFornecedorNomeFantasia">Nome fantasia</label>
+                  <input id="editarFornecedorNomeFantasia" type="text" [(ngModel)]="fornecedor_editar.nome_fantasia" name="nome_fantasia" [disabled]="isSaving"
                     maxlength="255" placeholder="Ex.: Empresa" (input)="onNomeFantasiaInput()"
-                    [class.campo-invalido]="formSubmitted && !fornecedor_editar.nome_fantasia.trim()">
+                    [class.campo-invalido]="formSubmitted && !fornecedor_editar.nome_fantasia.trim()"
+                    [attr.aria-invalid]="formSubmitted && !fornecedor_editar.nome_fantasia.trim() ? 'true' : null">
                   @if(formSubmitted && !fornecedor_editar.nome_fantasia.trim()) {
                   <small class="mensagem-campo-invalido">Nome fantasia é obrigatório.</small>
                   }
                 </div>
                 <div class="form-group flex-1">
-                  <label>CNPJ</label>
-                  <input type="text" [(ngModel)]="fornecedor_editar.cnpj" name="cnpj" [disabled]="isSaving"
+                  <label for="editarFornecedorCnpj">CNPJ</label>
+                  <input id="editarFornecedorCnpj" type="text" [(ngModel)]="fornecedor_editar.cnpj" name="cnpj" [disabled]="isSaving"
                     maxlength="18" placeholder="00.000.000/0000-00" inputmode="numeric" (input)="onCnpjInput()"
-                    [class.campo-invalido]="formSubmitted && !cnpjValido">
+                    [class.campo-invalido]="formSubmitted && !cnpjValido"
+                    [attr.aria-invalid]="formSubmitted && !cnpjValido ? 'true' : null">
                   @if(formSubmitted && !cnpjValido) {
                   <small class="mensagem-campo-invalido">CNPJ inválido.</small>
                   }
@@ -148,19 +159,21 @@
 
               <div class="form-row">
                 <div class="form-group flex-1">
-                  <label>TELEFONE</label>
-                  <input type="text" [(ngModel)]="fornecedor_editar.telefone" name="telefone" [disabled]="isSaving"
+                  <label for="editarFornecedorTelefone">Telefone</label>
+                  <input id="editarFornecedorTelefone" type="text" [(ngModel)]="fornecedor_editar.telefone" name="telefone" [disabled]="isSaving"
                     maxlength="15" placeholder="(00) 00000-0000" inputmode="numeric" (input)="onTelefoneInput()"
-                    [class.campo-invalido]="formSubmitted && !telefoneValido">
+                    [class.campo-invalido]="formSubmitted && !telefoneValido"
+                    [attr.aria-invalid]="formSubmitted && !telefoneValido ? 'true' : null">
                   @if(formSubmitted && !telefoneValido) {
                   <small class="mensagem-campo-invalido">Telefone inválido.</small>
                   }
                 </div>
                 <div class="form-group flex-2">
-                  <label>E-MAIL</label>
-                  <input type="email" [(ngModel)]="fornecedor_editar.email" name="email" [disabled]="isSaving" maxlength="255"
+                  <label for="editarFornecedorEmail">E-mail</label>
+                  <input id="editarFornecedorEmail" type="email" [(ngModel)]="fornecedor_editar.email" name="email" [disabled]="isSaving" maxlength="255"
                     placeholder="contato@empresa.com.br" (input)="onEmailInput()"
-                    [class.campo-invalido]="formSubmitted && !emailValido">
+                    [class.campo-invalido]="formSubmitted && !emailValido"
+                    [attr.aria-invalid]="formSubmitted && !emailValido ? 'true' : null">
                   @if(formSubmitted && !emailValido) {
                   <small class="mensagem-campo-invalido">E-mail inválido.</small>
                   }
@@ -169,14 +182,15 @@
             </section>
 
             <section class="form-secao">
-              <div class="form-secao-titulo">Endereço</div>
+              <h3 class="form-secao-titulo">Endereço</h3>
 
               <div class="form-row">
                 <div class="form-group flex-2">
-                  <label>RUA</label>
-                  <input type="text" [(ngModel)]="endereco_editar.lagradouro" name="logradouro" [disabled]="isSaving"
+                  <label for="editarFornecedorLogradouro">Rua</label>
+                  <input id="editarFornecedorLogradouro" type="text" [(ngModel)]="endereco_editar.lagradouro" name="logradouro" [disabled]="isSaving"
                     maxlength="255" placeholder="Ex.: Rua Exemplo" (input)="onLogradouroInput()"
-                    [class.campo-invalido]="formSubmitted && !endereco_editar.lagradouro.trim()">
+                    [class.campo-invalido]="formSubmitted && !endereco_editar.lagradouro.trim()"
+                    [attr.aria-invalid]="formSubmitted && !endereco_editar.lagradouro.trim() ? 'true' : null">
                   @if(formSubmitted && !endereco_editar.lagradouro.trim()) {
                   <small class="mensagem-campo-invalido">Rua é obrigatória.</small>
                   }
@@ -185,19 +199,21 @@
 
               <div class="form-row">
                 <div class="form-group flex-2">
-                  <label>CEP</label>
-                  <input type="text" [(ngModel)]="endereco_editar.cep" name="cep" [disabled]="isSaving" maxlength="9"
+                  <label for="editarFornecedorCep">CEP</label>
+                  <input id="editarFornecedorCep" type="text" [(ngModel)]="endereco_editar.cep" name="cep" [disabled]="isSaving" maxlength="9"
                     placeholder="00000-000" inputmode="numeric" (input)="onCepInput()"
-                    [class.campo-invalido]="formSubmitted && !cepValido">
+                    [class.campo-invalido]="formSubmitted && !cepValido"
+                    [attr.aria-invalid]="formSubmitted && !cepValido ? 'true' : null">
                   @if(formSubmitted && !cepValido) {
                   <small class="mensagem-campo-invalido">CEP inválido.</small>
                   }
                 </div>
                 <div class="form-group flex-1">
-                  <label>NÚMERO</label>
-                  <input type="text" [(ngModel)]="endereco_editar.numero" name="numero" [disabled]="isSaving"
+                  <label for="editarFornecedorNumero">Número</label>
+                  <input id="editarFornecedorNumero" type="text" [(ngModel)]="endereco_editar.numero" name="numero" [disabled]="isSaving"
                     maxlength="20" placeholder="Ex.: 123" (input)="onNumeroEnderecoInput()"
-                    [class.campo-invalido]="formSubmitted && !endereco_editar.numero.trim()">
+                    [class.campo-invalido]="formSubmitted && !endereco_editar.numero.trim()"
+                    [attr.aria-invalid]="formSubmitted && !endereco_editar.numero.trim() ? 'true' : null">
                   @if(formSubmitted && !endereco_editar.numero.trim()) {
                   <small class="mensagem-campo-invalido">Número é obrigatório.</small>
                   }
@@ -206,27 +222,30 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label>BAIRRO</label>
-                  <input type="text" [(ngModel)]="endereco_editar.bairro" name="bairro" [disabled]="isSaving" maxlength="100"
+                  <label for="editarFornecedorBairro">Bairro</label>
+                  <input id="editarFornecedorBairro" type="text" [(ngModel)]="endereco_editar.bairro" name="bairro" [disabled]="isSaving" maxlength="100"
                     placeholder="Ex.: Centro" (input)="onBairroInput()"
-                    [class.campo-invalido]="formSubmitted && !endereco_editar.bairro.trim()">
+                    [class.campo-invalido]="formSubmitted && !endereco_editar.bairro.trim()"
+                    [attr.aria-invalid]="formSubmitted && !endereco_editar.bairro.trim() ? 'true' : null">
                   @if(formSubmitted && !endereco_editar.bairro.trim()) {
                   <small class="mensagem-campo-invalido">Bairro é obrigatório.</small>
                   }
                 </div>
                 <div class="form-group">
-                  <label>MUNICÍPIO</label>
-                  <input type="text" [(ngModel)]="endereco_editar.municipio" name="municipio" [disabled]="isSaving"
+                  <label for="editarFornecedorMunicipio">Município</label>
+                  <input id="editarFornecedorMunicipio" type="text" [(ngModel)]="endereco_editar.municipio" name="municipio" [disabled]="isSaving"
                     maxlength="100" placeholder="Ex.: São Paulo" (input)="onMunicipioInput()"
-                    [class.campo-invalido]="formSubmitted && !endereco_editar.municipio.trim()">
+                    [class.campo-invalido]="formSubmitted && !endereco_editar.municipio.trim()"
+                    [attr.aria-invalid]="formSubmitted && !endereco_editar.municipio.trim() ? 'true' : null">
                   @if(formSubmitted && !endereco_editar.municipio.trim()) {
                   <small class="mensagem-campo-invalido">Município é obrigatório.</small>
                   }
                 </div>
                 <div class="form-group">
-                  <label>ESTADO</label>
-                  <input type="text" [(ngModel)]="endereco_editar.estado" name="estado" [disabled]="isSaving" maxlength="2"
-                    placeholder="UF" (input)="onEstadoInput()" [class.campo-invalido]="formSubmitted && !estadoValido">
+                  <label for="editarFornecedorEstado">Estado</label>
+                  <input id="editarFornecedorEstado" type="text" [(ngModel)]="endereco_editar.estado" name="estado" [disabled]="isSaving" maxlength="2"
+                    placeholder="UF" (input)="onEstadoInput()" [class.campo-invalido]="formSubmitted && !estadoValido"
+                    [attr.aria-invalid]="formSubmitted && !estadoValido ? 'true' : null">
                   @if(formSubmitted && !estadoValido) {
                   <small class="mensagem-campo-invalido">Use a UF com 2 letras.</small>
                   }
@@ -244,7 +263,7 @@
                 @if(isSaving) {
                 <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
                 }
-                <i class="bi bi-check-lg"></i> CONFIRMAR ALTERAÇÕES
+                <i class="bi bi-check-lg" aria-hidden="true"></i> Confirmar alterações
               </button>
             </div>
 

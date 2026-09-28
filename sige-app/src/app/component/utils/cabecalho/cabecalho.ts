@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from "@angular/router";
 import { filter } from 'rxjs';
 import { PendenciaFornecedor } from '../../../model/pendencia_fornecedor';
+import { SolicitacaoReforco } from '../../../model/solicitacao_reforco';
 import { Auth } from '../../../service/auth';
 import { PendenciaFornecedorService } from '../../../service/pendencia-fornecedor.service';
 import { SolicitacaoReforco } from '../../../model/solicitacao_reforco';
@@ -122,6 +123,10 @@ export class Cabecalho {
   totalPendencias = 0;
   erroPendencias = false;
   marcandoCiente: number | null = null;
+  solicitacoesReforco: SolicitacaoReforco[] = [];
+  totalSolicitacoesReforco = 0;
+  erroSolicitacoesReforco = false;
+  marcandoSolicitacaoCiente: number | null = null;
 
   readonly rotasAquisicoes = [
     '/visualizar-licitacoes',
@@ -167,12 +172,16 @@ export class Cabecalho {
   ngOnInit() {
     this.getPapel();
     this.getUser();
-    this.carregarAlertas();
+    this.carregarNotificacoes();
+  }
 
-    // O cabeçalho vive durante toda a sessão: atualiza as notificações a cada troca de tela.
-    this.router.events
-      .pipe(filter(evento => evento instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.carregarAlertas());
+  get totalNotificacoes(): number {
+    return this.totalPendencias + this.totalSolicitacoesReforco;
+  }
+
+  carregarNotificacoes(): void {
+    this.carregarPendencias();
+    this.carregarSolicitacoesReforco();
   }
 
   private readonly destroyRef = inject(DestroyRef);
@@ -204,6 +213,40 @@ export class Cabecalho {
       error: () => {
         this.marcandoCiente = null;
         this.erroPendencias = true;
+      },
+    });
+  }
+
+  carregarSolicitacoesReforco(): void {
+    if (!pode(Recurso.SOLICITACAO_REFORCO, Acao.ALTERAR_STATUS)) {
+      return;
+    }
+
+    this.solicitacaoReforcoService.listar('ABERTA', 1, 5).subscribe({
+      next: (resposta) => {
+        this.solicitacoesReforco = resposta.results;
+        this.totalSolicitacoesReforco = resposta.count;
+        this.erroSolicitacoesReforco = false;
+      },
+      error: () => {
+        this.erroSolicitacoesReforco = true;
+      },
+    });
+  }
+
+  marcarSolicitacaoCiente(solicitacao: SolicitacaoReforco): void {
+    this.marcandoSolicitacaoCiente = solicitacao.id;
+
+    this.solicitacaoReforcoService.marcarCiente(solicitacao.id).subscribe({
+      next: () => {
+        this.marcandoSolicitacaoCiente = null;
+        this.carregarSolicitacoesReforco();
+        this.router.navigate(['/visualizar-empenho'], { queryParams: { id: solicitacao.empenho_id } });
+      },
+      error: () => {
+        this.marcandoSolicitacaoCiente = null;
+        this.erroSolicitacoesReforco = true;
+        this.router.navigate(['/visualizar-empenho'], { queryParams: { id: solicitacao.empenho_id } });
       },
     });
   }

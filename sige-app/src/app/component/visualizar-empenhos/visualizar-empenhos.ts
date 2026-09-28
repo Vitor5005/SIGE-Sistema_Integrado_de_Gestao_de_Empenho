@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { EmpenhoService } from '../../service/empenho.service';
 import { Empenho } from '../../model/empenho';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
+import { EstadoListagemService } from '../../service/estado-listagem.service';
 
 @Component({
   selector: 'app-visualizar-empenhos',
@@ -21,6 +22,11 @@ export class VisualizarEmpenhos {
     campo: 'valor_total',
     label: 'Valor empenhado',
     tipo: 'range'
+  },
+  {
+    campo: 'saldo_utilizado',
+    label: 'Valor utilizado',
+    tipo: 'range'
   }
 ];
 
@@ -29,7 +35,8 @@ filtrosAtivos: any = {};
 
   constructor(
     private router: Router,
-    private empenhoService: EmpenhoService
+    private empenhoService: EmpenhoService,
+    private estadoListagemService: EstadoListagemService,
   ) { }
 
   empenhos = Array<Empenho>();
@@ -43,10 +50,43 @@ filtrosAtivos: any = {};
   errorMessagePage: string = '';
 
   ngOnInit() {
+    this.restaurarEstadoListagem();
     this.get();
   }
 
+  private restaurarEstadoListagem(): void {
+    const estado = this.estadoListagemService.obter('empenhos');
+
+    if (!estado) {
+      return;
+    }
+
+    this.termoBuscaAtual = estado.termoBuscaAtual || '';
+    this.filtrosAtivos = estado.filtrosAtivos || {};
+    this.currentPage = estado.currentPage || 1;
+
+    const pageSize = estado.extras?.['pageSize'];
+    if (typeof pageSize === 'number' && Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100) {
+      this.pageSize = pageSize;
+    }
+  }
+
+  private salvarEstadoListagem(): void {
+    const estadoAtual = this.estadoListagemService.obter('empenhos');
+
+    this.estadoListagemService.salvar('empenhos', {
+      termoBuscaAtual: this.termoBuscaAtual,
+      filtrosAtivos: this.filtrosAtivos,
+      currentPage: this.currentPage,
+      extras: {
+        ...(estadoAtual?.extras ?? {}),
+        pageSize: this.pageSize,
+      },
+    });
+  }
+
   enviarPara(rota: string, id?: number) {
+    this.salvarEstadoListagem();
     if (id) {
       this.router.navigate([rota], { queryParams: { id } });
     }
@@ -59,6 +99,7 @@ filtrosAtivos: any = {};
   if (termobusca !== undefined) {
     this.termoBuscaAtual = termobusca;
     this.currentPage = 1;
+    this.salvarEstadoListagem();
   }
 
   this.isLoadingPage = true;
@@ -81,8 +122,16 @@ filtrosAtivos: any = {};
   aplicarFiltros(filtros: any) {
   this.filtrosAtivos = filtros;
   this.currentPage = 1;
+  this.salvarEstadoListagem();
   this.get();
 }
+
+  alterarPageSize(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.currentPage = 1;
+    this.salvarEstadoListagem();
+    this.get();
+  }
 
   proximaPagina(): void {
     if (!this.hasNext) {
@@ -90,6 +139,7 @@ filtrosAtivos: any = {};
     }
 
     this.currentPage += 1;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -99,6 +149,7 @@ filtrosAtivos: any = {};
     }
 
     this.currentPage -= 1;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -108,6 +159,7 @@ filtrosAtivos: any = {};
     }
 
     this.currentPage = page;
+    this.salvarEstadoListagem();
     this.get();
   }
 }

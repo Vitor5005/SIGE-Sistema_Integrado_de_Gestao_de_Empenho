@@ -1,8 +1,8 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from licitacao.models import Licitacao, Ata, ItemAta
-from licitacao.serializers import AtaInsertSerializer, ItemAtaInsertSerializer, LicitacaoSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
+from licitacao.serializers import AtaInsertSerializer, AtaUpdateSerializer, ItemAtaInsertSerializer, LicitacaoSerializer, LicitacaoUpdateSerializer, AtaSerializer, ItemAtaSerializer, ItensEmpenhoDaAtaSerializer
 from empenho.serializers import ValorEmpenhoSerializer
 from empenho.models import Empenho, ItemEmpenho
 from utils.mixins import AuditoriaRBACMixin, BaseFiltroMixin, FiltroQueryParamMixin, SerializerEscritaMixin
@@ -23,6 +23,20 @@ class LicitacaoViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSe
     ordering_fields = ['data_abertura','validade']
     ordering = ['-data_abertura']
 
+    def get_serializer_class(self):
+        if self.action in ['update', 'partial_update']:
+            return LicitacaoUpdateSerializer
+        return LicitacaoSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.ata_set.exists():
+            return Response(
+                {'detail': 'Não é possível excluir esta licitação porque existem ARPs vinculadas.'},
+                status=status.HTTP_409_CONFLICT
+            )
+        return super().destroy(request, *args, **kwargs)
+
     @action(detail=True, methods=['post'], url_path='definir-atual')
     def definir_atual(self, request, pk=None):
         licitacao = self.get_object()
@@ -35,7 +49,20 @@ class AtaViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin, vi
     serializer_class_escrita = AtaInsertSerializer
     rbac_resource = Recurso.ATA
 
-    search_fields = ['numero_ata']
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return AtaInsertSerializer
+        if self.action in ['update', 'partial_update']:
+            return AtaUpdateSerializer
+        return AtaSerializer
+
+    search_fields = [
+        'numero_ata',
+        'licitacao__numero_licitacao',
+        'fornecedor__razao_social',
+        'fornecedor__nome_fantasia',
+        'fornecedor__cnpj',
+    ]
     filterset_fields = {
         'licitacao__id': ['exact'],
         'fornecedor__id': ['exact'],
@@ -44,7 +71,16 @@ class AtaViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin, vi
     ordering_fields = ['ata_saldo_total', 'numero_ata']
     ordering = ['-ata_saldo_total']
 
-class ItemAtaViewSet(AuditoriaRBACMixin, SerializerEscritaMixin, viewsets.ModelViewSet):
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.empenho_set.exists() or instance.itemata_set.exists():
+            return Response(
+                {'detail': 'Não é possível excluir esta ARP porque existem itens ou empenho vinculados.'},
+                status=status.HTTP_409_CONFLICT
+            )
+        return super().destroy(request, *args, **kwargs)
+
+class ItemAtaViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = ItemAta.objects.all()
     serializer_class = ItemAtaSerializer
     serializer_class_escrita = ItemAtaInsertSerializer

@@ -32,7 +32,14 @@ class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin
     def perform_create(self, serializer):
         serializer.save(solicitante=self.request.user)
 
-    search_fields = ['codigo', 'empenho__codigo']
+    search_fields = [
+        'codigo',
+        'empenho__codigo',
+        'empenho__ata__numero_ata',
+        'empenho__ata__fornecedor__razao_social',
+        'empenho__ata__fornecedor__nome_fantasia',
+        'empenho__ata__fornecedor__cnpj',
+    ]
     filterset_fields = {
         'status': ['exact'],
         'empenho__id': ['exact'],

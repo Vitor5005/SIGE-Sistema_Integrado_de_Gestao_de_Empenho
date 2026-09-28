@@ -7,6 +7,7 @@ import { Licitacao } from '../../model/licitacao';
 import { LicitacaoService } from '../../service/licitacao.service';
 import { CommonModule } from '@angular/common';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
+import { EstadoListagemService } from '../../service/estado-listagem.service';
 
 @Component({
   selector: 'app-licitacoes',
@@ -19,6 +20,7 @@ export class VisualizarLicitacoes {
   constructor(
     private router: Router,
     private licitacaoService: LicitacaoService,
+    private estadoListagemService: EstadoListagemService,
   ) {}
 
   registro: Licitacao[] = [];
@@ -50,14 +52,46 @@ export class VisualizarLicitacoes {
   filtrosAtivos: any = {};
 
   ngOnInit() {
+    this.restaurarEstadoListagem();
     this.get();
-    this.filtrosAtivos = {};
+  }
+
+  private restaurarEstadoListagem(): void {
+    const estado = this.estadoListagemService.obter('licitacoes');
+
+    if (!estado) {
+      return;
+    }
+
+    this.termoBuscaAtual = estado.termoBuscaAtual || '';
+    this.filtrosAtivos = estado.filtrosAtivos || {};
+    this.currentPage = estado.currentPage || 1;
+
+    const pageSize = estado.extras?.['pageSize'];
+    if (typeof pageSize === 'number' && Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100) {
+      this.pageSize = pageSize;
+    }
+  }
+
+  private salvarEstadoListagem(): void {
+    const estadoAtual = this.estadoListagemService.obter('licitacoes');
+
+    this.estadoListagemService.salvar('licitacoes', {
+      termoBuscaAtual: this.termoBuscaAtual,
+      filtrosAtivos: this.filtrosAtivos,
+      currentPage: this.currentPage,
+      extras: {
+        ...(estadoAtual?.extras ?? {}),
+        pageSize: this.pageSize,
+      },
+    });
   }
 
   get(termobusca?: string): void {
   if (termobusca !== undefined) {
     this.termoBuscaAtual = termobusca;
     this.currentPage = 1;
+    this.salvarEstadoListagem();
   }
 
   this.isLoadingPage = true;
@@ -143,14 +177,23 @@ export class VisualizarLicitacoes {
   }
 
   enviarPara(rota: string, id: number): void {
+    this.salvarEstadoListagem();
     this.router.navigate([rota], { queryParams: { id } });
   }
 
   aplicarFiltros(filtrosAtivos: any) {
   this.filtrosAtivos = filtrosAtivos || {};
   this.currentPage = 1;
+  this.salvarEstadoListagem();
   this.get();
 }
+
+  alterarPageSize(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.currentPage = 1;
+    this.salvarEstadoListagem();
+    this.get();
+  }
 
   proximaPagina(): void {
     if (!this.hasNext) {
@@ -158,6 +201,7 @@ export class VisualizarLicitacoes {
     }
 
     this.currentPage += 1;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -167,6 +211,7 @@ export class VisualizarLicitacoes {
     }
 
     this.currentPage -= 1;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -176,6 +221,7 @@ export class VisualizarLicitacoes {
     }
 
     this.currentPage = page;
+    this.salvarEstadoListagem();
     this.get();
   }
 
@@ -194,9 +240,9 @@ export class VisualizarLicitacoes {
 
   classValidade(licitacao: Licitacao): string {
     if (this.verificarValidade(licitacao) === 'Expirado') {
-      return 'bg-danger text-white';
+      return 'sige-badge--danger';
     } else {
-      return 'bg-success text-white';
+      return 'sige-badge--success';
     }
   }
 

@@ -344,6 +344,40 @@ export class VisualizarFornecedor {
     )
   }
 
+  excluirFornecedor(): void {
+    if (!this.fornecedor.id || this.isSaving) {
+      return;
+    }
+
+    this.feedback.confirmar({
+      titulo: 'Excluir fornecedor?',
+      mensagem: `Esta ação removerá permanentemente o fornecedor "${this.fornecedor.razao_social}".`,
+      textoConfirmar: 'Excluir',
+      textoCancelar: 'Cancelar',
+      destrutiva: true
+    }).then((confirmou) => {
+      if (!confirmou) {
+        return;
+      }
+
+      this.isSaving = true;
+      this.fornecedorService.delete(this.fornecedor.id).subscribe({
+        next: () => {
+          this.isSaving = false;
+          this.feedback.sucesso('Fornecedor excluído com sucesso.');
+          this.router.navigate(['/visualizar-fornecedores']);
+        },
+        error: (erro) => {
+          this.isSaving = false;
+          this.feedback.erro(
+            erro?.error?.detail || 'Não foi possível excluir o fornecedor. Tente novamente.',
+            'Erro ao excluir fornecedor'
+          );
+        }
+      });
+    });
+  }
+
   tentarFecharModal(): void {
     if (this.isSaving) {
       return;

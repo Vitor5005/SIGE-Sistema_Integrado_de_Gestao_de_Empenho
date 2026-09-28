@@ -1,89 +1,130 @@
-<body class="listagem">
-  <div class="container-titulo">
-    <h3><i class="bi bi-file-earmark-text"></i> LICITAÇÕES</h3>
-    <hr>
-  </div>
-  <app-barra-pesquisa [filtros]="filtros"
-  (pesquisar)="get($event)"
-  (filtrosAlterados)="aplicarFiltros($event)"></app-barra-pesquisa>
-  <!-- Tabela da licitações cadastradas no sistema -->
+<main class="sige-list-page">
+  <header class="sige-list-header">
+    <div>
+      <h1 class="sige-list-title">Licitações</h1>
+      <p class="sige-list-description">Consulte as licitações cadastradas e acompanhe sua vigência.</p>
+    </div>
+  </header>
 
-  <table class="tabela">
-    <thead>
-      <tr>
-        <th scope="col">Identificação</th>
-        <th scope="col">Status</th>
-        <th scope="col">Validade</th>
-        <th scope="col">Descricao</th>
-      </tr>
-    </thead>
-    <tbody>
-      @if (isLoadingPage) {
-        <tr class="linha-vazia-tabela">
-          <td [attr.colspan]="4">
-            <app-estado-conteudo
-              tipo="loading"
-              mensagem="Carregando registros..."
-              [compacto]="true">
-            </app-estado-conteudo>
-          </td>
-        </tr>
-      } @else if (errorMessagePage) {
-        <tr class="linha-vazia-tabela">
-          <td [attr.colspan]="4">
-            <app-estado-conteudo
-              tipo="error"
-              titulo="Não foi possível carregar os dados"
-              [mensagem]="errorMessagePage"
-              [compacto]="true"
-              [mostrarAcao]="true"
-              (acao)="get()">
-            </app-estado-conteudo>
-          </td>
-        </tr>
-      } @else {
-        @for (item of registro; track item.id) {
-          <tr (click)="enviarPara('/visualizar-licitacao', item.id)" style="cursor: pointer;">
-            <!-- Modificando o cursor temporariamente (Remover quando tiver classe apropriada) -->
-            <td>
-              <div>
-                <p>
-                  LIC-{{item.numero_licitacao}}
-                  @if (item.atual) {
-                  <span class="badge text-bg-primary ms-2">Atual</span>
-                  }
-                </p>
-                <small>cadastrada: {{item.data_abertura}}</small>
-              </div>
-            </td>
-            <td ><span [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span></td>
-            <td><i class="bi bi-clock"></i> {{item.validade}} Meses </td>
-            <td>{{item.descricao}}</td>
-          </tr>
-        }
+  <section class="sige-list-toolbar" aria-label="Busca e filtros">
+    <app-barra-pesquisa
+      [filtros]="filtros"
+      [placeholder]="'Buscar por número ou descrição...'"
+      [termoInicial]="termoBuscaAtual"
+      [valoresIniciais]="filtrosAtivos"
+      (pesquisar)="get($event)"
+      (filtrosAlterados)="aplicarFiltros($event)">
+    </app-barra-pesquisa>
+  </section>
 
-        @if (registro.length === 0) {
+  @if (!isLoadingPage && !errorMessagePage) {
+    <p class="sige-list-meta" aria-live="polite">
+      {{ total }} {{ total === 1 ? 'registro encontrado' : 'registros encontrados' }}
+    </p>
+  }
+
+  <div class="sige-list-table-wrap">
+    <table class="sige-list-table">
+      <caption class="visually-hidden">Lista de licitações cadastradas</caption>
+      <thead>
+        <tr>
+          <th scope="col">Identificação</th>
+          <th scope="col" class="sige-cell--status">Status</th>
+          <th scope="col" class="sige-cell--validity">Validade</th>
+          <th scope="col">Descrição</th>
+          <th scope="col" class="sige-cell--actions">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (isLoadingPage) {
           <tr class="linha-vazia-tabela">
-            <td [attr.colspan]="4">
+            <td [attr.colspan]="5">
               <app-estado-conteudo
-                tipo="empty"
-                titulo="Nenhuma licitação encontrada"
-                mensagem="Ajuste a busca ou os filtros, ou cadastre uma nova licitação."
+                tipo="loading"
+                mensagem="Carregando registros..."
                 [compacto]="true">
               </app-estado-conteudo>
             </td>
           </tr>
+        } @else if (errorMessagePage) {
+          <tr class="linha-vazia-tabela">
+            <td [attr.colspan]="5">
+              <app-estado-conteudo
+                tipo="error"
+                titulo="Não foi possível carregar os dados"
+                [mensagem]="errorMessagePage"
+                [compacto]="true"
+                [mostrarAcao]="true"
+                (acao)="get()">
+              </app-estado-conteudo>
+            </td>
+          </tr>
+        } @else {
+          @for (item of registro; track item.id) {
+            <tr
+              class="sige-list-row--clickable"
+              tabindex="0"
+              role="link"
+              (click)="enviarPara('/visualizar-licitacao', item.id)"
+              (keydown.enter)="enviarPara('/visualizar-licitacao', item.id)">
+              <td>
+                <div>
+                  <p>
+                    LIC-{{ item.numero_licitacao }}
+                    @if (item.atual) {
+                      <span class="sige-badge sige-badge--info ms-2">Atual</span>
+                    }
+                  </p>
+                  <small>cadastrada: {{ item.data_abertura }}</small>
+                </div>
+              </td>
+              <td class="sige-cell--status">
+                <span class="sige-badge" [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span>
+              </td>
+              <td class="sige-cell--validity"><i class="bi bi-clock" aria-hidden="true"></i> {{ item.validade }} meses</td>
+              <td>
+                <span class="sige-cell--truncate" [title]="item.descricao">{{ item.descricao }}</span>
+              </td>
+              <td class="sige-cell--actions" (click)="$event.stopPropagation()">
+                <div class="sige-table-actions">
+                  <button
+                    type="button"
+                    class="sige-button sige-button--secondary sige-button--sm"
+                    (click)="enviarPara('/visualizar-licitacao', item.id)">
+                    Abrir
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+
+          @if (registro.length === 0) {
+            <tr class="linha-vazia-tabela">
+              <td [attr.colspan]="5">
+                <app-estado-conteudo
+                  tipo="empty"
+                  titulo="Nenhuma licitação encontrada"
+                  mensagem="Ajuste a busca ou os filtros, ou cadastre uma nova licitação."
+                  [compacto]="true">
+                </app-estado-conteudo>
+              </td>
+            </tr>
+          }
         }
-      }
-
-    </tbody>
-
-  </table>
+      </tbody>
+    </table>
+  </div>
 
   @if (!isLoadingPage && !errorMessagePage && total > 0) {
-    <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-      totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+    <app-paginacao
+      class="paginacao-lista"
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalItems]="total"
+      totalLabel="Total de registros"
+      [showTotal]="false"
+      (pageChange)="irParaPagina($event)"
+      (pageSizeChange)="alterarPageSize($event)">
+    </app-paginacao>
   }
-
-
-</body>
+</main>

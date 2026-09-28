@@ -1,16 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { FiltroConfig } from '../../model/filtro-config';
 import { EstoqueConsolidado, EstoqueItem } from '../../model/estoque';
 import { EstoqueService } from '../../service/estoque.service';
+import { EstadoListagemService } from '../../service/estado-listagem.service';
 import { Acao, pode, Recurso } from '../../security/rbac';
+import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 
 @Component({
   selector: 'app-estoque',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [BarraPesquisa, CommonModule, RouterLink],
   templateUrl: './estoque.html',
   styleUrl: './estoque.scss',
 })
@@ -21,15 +23,37 @@ export class Estoque {
 
   itens: EstoqueItem[] = [];
   consolidado: EstoqueConsolidado[] = [];
-  busca = '';
-  categoria = '';
+  termoBuscaAtual = '';
+  filtrosAtivos: Record<string, any> = {};
+  filtros: FiltroConfig[] = [
+    {
+      campo: 'item_generico__categoria',
+      label: 'Categoria',
+      tipo: 'select',
+      opcoes: [
+        { valor: 'tempS', label: 'Temperos Secos' },
+        { valor: 'SM', label: 'Secos / Mercearia' },
+        { valor: 'Lac', label: 'Lácteos e Derivados' },
+        { valor: 'Oli', label: 'Óleos, Azeites e Vinagres' },
+        { valor: 'MolCo', label: 'Molhos e Condimentos' },
+        { valor: 'Fr', label: 'Frutas' },
+        { valor: 'Le', label: 'Legumes' },
+        { valor: 'Pr', label: 'Proteínas' }
+      ]
+    }
+  ];
   agruparPorCategoria = false;
   carregando = false;
   erro = '';
+  totalItens = 0;
 
-  constructor(private estoqueService: EstoqueService) {}
+  constructor(
+    private estoqueService: EstoqueService,
+    private estadoListagem: EstadoListagemService
+  ) {}
 
   ngOnInit(): void {
+    this.restaurarEstadoListagem();
     this.carregar();
     if (pode(Recurso.ESTOQUE, Acao.CONSULTAR_CONSOLIDADO)) {
       this.estoqueService.consolidado().subscribe({
@@ -39,11 +63,21 @@ export class Estoque {
     }
   }
 
-  carregar(): void {
+  carregar(termobusca?: string): void {
+    if (termobusca !== undefined) {
+      this.termoBuscaAtual = termobusca;
+      this.salvarEstadoListagem();
+    }
+
+    const categoria = this.filtrosAtivos['item_generico__categoria'] || '';
     this.carregando = true;
-    this.estoqueService.listar(this.busca, 1, 100, this.categoria).subscribe({
+    this.estoqueService.listar(this.termoBuscaAtual, 1, 100, categoria).subscribe({
       next: resposta => {
         this.itens = resposta.results;
+        this.totalItens = resposta.count;
+        if (this.agruparPorCategoria) {
+          this.ordenarItensPorCategoria();
+        }
         this.carregando = false;
       },
       error: () => {
@@ -56,11 +90,44 @@ export class Estoque {
   alternarAgrupamento(): void {
     this.agruparPorCategoria = !this.agruparPorCategoria;
     if (this.agruparPorCategoria) {
-      this.itens = [...this.itens].sort((a, b) =>
-        a.categoria_descricao.localeCompare(b.categoria_descricao)
-        || a.descricao.localeCompare(b.descricao)
-      );
+      this.ordenarItensPorCategoria();
     }
+    this.salvarEstadoListagem();
+  }
+
+  aplicarFiltros(filtros: Record<string, any>): void {
+    this.filtrosAtivos = { ...filtros };
+    this.salvarEstadoListagem();
+    this.carregar();
+  }
+
+  salvarEstadoListagem(): void {
+    this.estadoListagem.salvar('estoque', {
+      termoBuscaAtual: this.termoBuscaAtual,
+      filtrosAtivos: this.filtrosAtivos,
+      currentPage: 1,
+      extras: {
+        agruparPorCategoria: this.agruparPorCategoria
+      }
+    });
+  }
+
+  private restaurarEstadoListagem(): void {
+    const estado = this.estadoListagem.obter('estoque');
+    if (!estado) {
+      return;
+    }
+
+    this.termoBuscaAtual = estado.termoBuscaAtual;
+    this.filtrosAtivos = { ...estado.filtrosAtivos };
+    this.agruparPorCategoria = Boolean(estado.extras?.['agruparPorCategoria']);
+  }
+
+  private ordenarItensPorCategoria(): void {
+    this.itens = [...this.itens].sort((a, b) =>
+      a.categoria_descricao.localeCompare(b.categoria_descricao)
+      || a.descricao.localeCompare(b.descricao)
+    );
   }
 
   iniciaCategoria(index: number): boolean {

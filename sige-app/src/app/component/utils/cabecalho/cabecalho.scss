@@ -260,6 +260,20 @@
     width: min(24rem, calc(100vw - 2rem));
   }
 
+  .alertas-secao {
+    & + .alertas-secao {
+      border-top: 1px solid var(--sige-border);
+    }
+  }
+
+  .alertas-secao-titulo {
+    margin: 0;
+    padding: var(--sige-space-2) var(--sige-space-3);
+    color: var(--sige-text-primary);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
   .alertas-vazio {
     padding: var(--sige-space-2) var(--sige-space-3);
     color: var(--sige-text-secondary);
@@ -300,6 +314,22 @@
   .alerta-motivo {
     color: var(--sige-text-secondary);
     font-style: italic;
+  }
+
+  .alerta-empenho,
+  .alerta-solicitante,
+  .alerta-resumo,
+  .alerta-motivo {
+    margin: 0;
+  }
+
+  .alerta-empenho {
+    color: var(--sige-text-primary);
+    font-weight: 600;
+  }
+
+  .alerta-solicitante {
+    color: var(--sige-text-secondary);
   }
 
   .alerta-ciente {
