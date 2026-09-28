@@ -10,7 +10,10 @@ Pode ser executado mais de uma vez: usuários existentes mantêm a senha atual e
 apenas têm o papel e o acesso garantidos. Nenhum outro dado é alterado.
 """
 import os
-import secrets
+import random
+import sys
+from datetime import timedelta
+from decimal import Decimal, ROUND_HALF_UP
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sige_api.settings')
 
@@ -24,7 +27,8 @@ from django.utils import timezone
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from licitacao.models import Licitacao, Ata, ItemAta
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
-from entrega.models import OrdemEntrega, ItemOrdem
+from empenho.services import registrar_operacao_item
+from entrega.models import OrdemEntrega, ItemOrdem, PendenciaFornecedor
 from estoque.models import (
     Estoque,
     Inventario,
@@ -32,6 +36,7 @@ from estoque.models import (
     MovimentacaoEstoque,
 )
 from usuario.models import Usuario
+from utils.estoque_services import registrar_recebimento
 from utils.rbac import Papel
 
 
@@ -733,46 +738,3 @@ if __name__ == '__main__':
         print('Catálogo da seed válido.')
     else:
         seed_all()
-
-
-USUARIOS = (
-    {'username': 'diretor', 'first_name': 'Diretor', 'papel': Papel.DIRETOR, 'admin': True},
-    {'username': 'tecnico', 'first_name': 'Técnico Administrativo', 'papel': Papel.TECNICO_ADMINISTRATIVO},
-    {'username': 'nutricionista', 'first_name': 'Nutricionista', 'papel': Papel.NUTRICIONISTA},
-    {'username': 'estoquista', 'first_name': 'Estoquista', 'papel': Papel.ESTOQUISTA},
-)
-
-
-def criar_usuarios_por_papel():
-    senha_padrao = os.getenv('SEED_SENHA', '').strip()
-
-    for dados in USUARIOS:
-        # O Diretor também acessa o /admin do Django.
-        eh_admin = dados.get('admin', False)
-        usuario, criado = Usuario.objects.get_or_create(
-            username=dados['username'],
-            defaults={
-                'first_name': dados['first_name'],
-                'email': f"{dados['username']}@sige.local",
-            },
-        )
-        usuario.papel = dados['papel']
-        usuario.is_active = True
-        usuario.is_staff = eh_admin
-        usuario.is_superuser = eh_admin
-
-        if criado:
-            senha = senha_padrao or secrets.token_urlsafe(9)
-            usuario.set_password(senha)
-            usuario.save()
-            origem = 'SEED_SENHA' if senha_padrao else senha
-            print(f"  + {usuario.username:<14} ({usuario.get_papel_display()}) senha: {origem}")
-        else:
-            usuario.save(update_fields=['papel', 'is_active', 'is_staff', 'is_superuser'])
-            print(f"  = {usuario.username:<14} ({usuario.get_papel_display()}) já existia; senha mantida")
-
-
-if __name__ == '__main__':
-    print('Criando usuários por papel...')
-    criar_usuarios_por_papel()
-    print('Concluído. Troque as senhas após o primeiro acesso.')

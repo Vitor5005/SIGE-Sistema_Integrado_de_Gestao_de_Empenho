@@ -63,9 +63,10 @@ No ambiente Docker, o sistema sobe com 3 serviços:
 Na raiz do repositório:
 
 ```bash
-cp .env.development.example .env.development
-docker compose --env-file .env.development -f docker-compose.yml -f docker-compose.dev.yml up --build
+docker compose up --build
 ```
+
+O Docker Compose aplica automaticamente o `docker-compose.override.yml` no ambiente local.
 
 ### Endereços
 
@@ -192,7 +193,7 @@ Para executar sem Docker, crie `sige-api/.env`. O backend lê esse arquivo autom
 ├── sige-api/
 ├── sige-app/
 ├── docker-compose.yml
-├── docker-compose.dev.yml
+├── docker-compose.override.yml
 ├── docker-compose.prod.yml
 └── README.md
 ```

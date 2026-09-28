@@ -1,14 +1,28 @@
 #!/bin/sh
 set -e
 
+echo "Validando configuracao do Django..."
+DJANGO_SETTINGS_MODULE=sige_api.settings python -c "import django; django.setup()"
+
 echo "Aguardando banco de dados..."
+echo "Banco configurado:"
+echo "  host=${DB_HOST:-localhost}"
+echo "  port=${DB_PORT:-3306}"
+echo "  database=${DB_NAME:-sige}"
+echo "  user=${DB_USER:-sige}"
 
 # Espera apenas a conexão; erros de migração não devem ser repetidos, pois no
 # MySQL uma migração que falha no meio não é desfeita.
 attempt=1
-until DJANGO_SETTINGS_MODULE=sige_api.settings python -c "import django; django.setup(); from django.db import connection; connection.ensure_connection()" 2>/dev/null; do
+while :; do
+  if DJANGO_SETTINGS_MODULE=sige_api.settings python -c "import django; django.setup(); from django.db import connection; connection.ensure_connection()" >/dev/null 2>&1; then
+    break
+  fi
+
   if [ "$attempt" -ge 30 ]; then
-    echo "Banco indisponivel apos $attempt tentativas."
+    echo "Nao foi possivel conectar ao banco apos $attempt tentativas."
+    echo "Erro real da conexao:"
+    DJANGO_SETTINGS_MODULE=sige_api.settings python -c "import django; django.setup(); from django.db import connection; connection.ensure_connection()" || true
     exit 1
   fi
 

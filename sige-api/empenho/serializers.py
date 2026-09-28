@@ -1,8 +1,5 @@
-from decimal import Decimal
-
 from rest_framework import serializers
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem, SolicitacaoReforco
-from empenho.services import calcular_saldo_disponivel_item_ata
 from licitacao.serializers import AtaSerializer, ItemAtaSerializer, itemAtaSemAtaSerializer
 
 class EmpenhoSerializer(serializers.ModelSerializer):
@@ -86,9 +83,15 @@ class SolicitacaoReforcoSerializer(serializers.ModelSerializer):
         source='item_empenho.item_ata.item_generico.unidade_medida',
         read_only=True,
     )
+    quantidade_atual_item = serializers.DecimalField(
+        source='item_empenho.quantidade_atual',
+        max_digits=10,
+        decimal_places=2,
+        read_only=True,
+    )
     solicitante_nome = serializers.CharField(source='solicitante.username', read_only=True)
-    ciente_por_nome = serializers.CharField(
-        source='ciente_por.username',
+    respondida_por_nome = serializers.CharField(
+        source='respondida_por.username',
         read_only=True,
         allow_null=True,
     )
@@ -97,19 +100,24 @@ class SolicitacaoReforcoSerializer(serializers.ModelSerializer):
         model = SolicitacaoReforco
         fields = [
             'id',
-            'status',
             'item_empenho',
-            'quantidade_solicitada',
+            'quantidade',
+            'justificativa',
+            'status',
             'empenho_id',
             'empenho_codigo',
             'genero',
             'unidade_medida',
+            'quantidade_atual_item',
             'solicitante',
             'solicitante_nome',
-            'ciente_por',
-            'ciente_por_nome',
+            'respondida_por',
+            'respondida_por_nome',
+            'resposta',
+            'operacao',
             'data_solicitacao',
-            'data_ciencia',
+            'data_resposta',
+            'vista_pelo_solicitante',
         ]
         read_only_fields = [
             'id',
@@ -118,44 +126,15 @@ class SolicitacaoReforcoSerializer(serializers.ModelSerializer):
             'empenho_codigo',
             'genero',
             'unidade_medida',
+            'quantidade_atual_item',
             'solicitante',
             'solicitante_nome',
-            'ciente_por',
-            'ciente_por_nome',
+            'respondida_por',
+            'respondida_por_nome',
+            'resposta',
+            'operacao',
             'data_solicitacao',
-            'data_ciencia',
+            'data_resposta',
+            'vista_pelo_solicitante',
         ]
-
-    def validate_quantidade_solicitada(self, value):
-        if value < Decimal('1.00'):
-            raise serializers.ValidationError(
-                'A quantidade solicitada deve ser de, no mínimo, 1,00.'
-            )
-        return value
-
-    def validate(self, attrs):
-        item_empenho = attrs['item_empenho']
-        quantidade_solicitada = attrs['quantidade_solicitada']
-        saldo_disponivel = calcular_saldo_disponivel_item_ata(item_empenho.item_ata)
-
-        if quantidade_solicitada > saldo_disponivel:
-            raise serializers.ValidationError({
-                'quantidade_solicitada': (
-                    'A quantidade solicitada excede o saldo disponível na ARP.'
-                )
-            })
-
-        solicitante = self.context['request'].user
-        if SolicitacaoReforco.objects.filter(
-            item_empenho=item_empenho,
-            solicitante=solicitante,
-            status=SolicitacaoReforco.Status.ABERTA,
-        ).exists():
-            raise serializers.ValidationError({
-                'item_empenho': (
-                    'Já existe uma solicitação de reforço em aberto para este item.'
-                )
-            })
-
-        return attrs
     

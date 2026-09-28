@@ -31,7 +31,6 @@ class Recurso:
     MOVIMENTACAO_ESTOQUE = 'movimentacao_estoque'
     INVENTARIO = 'inventario'
     PENDENCIA_FORNECEDOR = 'pendencia_fornecedor'
-    SOLICITACAO_REFORCO = 'solicitacao_reforco'
     PAINEL_NUTRICIONISTA = 'painel_nutricionista'
 
 
@@ -45,7 +44,6 @@ class Acao:
     ALTERAR_STATUS = 'alterar_status'
     INCLUIR_EMPENHO = 'incluir_empenho'
     REFORCAR_EMPENHO = 'reforcar_empenho'
-    SOLICITAR_REFORCO = 'solicitar_reforco'
     ANULAR_EMPENHO = 'anular_empenho'
     GERAR_ORDEM = 'gerar_ordem'
     EMITIR_ORDEM = 'emitir_ordem'
@@ -132,11 +130,6 @@ MATRIZ_PERMISSOES = {
         Acao.INCLUIR_EMPENHO: DIRETOR,
         Acao.REFORCAR_EMPENHO: DIRETOR,
         Acao.ANULAR_EMPENHO: DIRETOR,
-    },
-    Recurso.SOLICITACAO_REFORCO: {
-        Acao.CONSULTAR: frozenset({Papel.DIRETOR, Papel.NUTRICIONISTA}),
-        Acao.SOLICITAR_REFORCO: frozenset({Papel.NUTRICIONISTA}),
-        Acao.ALTERAR_STATUS: DIRETOR,
     },
     Recurso.ORDEM_ENTREGA: {
         # TODO: limitar a Nutricionista às ordens de suas solicitações quando

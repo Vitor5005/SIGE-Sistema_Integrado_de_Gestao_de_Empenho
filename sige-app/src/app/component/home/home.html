@@ -412,33 +412,6 @@
     </div>
   </section>
 
-  <section class="sige-section acoes-rapidas" aria-labelledby="acoes-rapidas-title">
-    <div class="home-bloco-cabecalho">
-      <div>
-        <h2 id="acoes-rapidas-title">Ações rápidas</h2>
-        <p>Atalhos para as tarefas mais frequentes.</p>
-      </div>
-    </div>
-    <div class="sige-actions home-acoes">
-      @if (pode(Recurso.LICITACAO, Acao.CADASTRAR)) {
-      <a class="sige-button sige-button--primary" routerLink="/adicionar-licitacao">
-        <i class="bi bi-plus-lg" aria-hidden="true"></i>
-        Nova licitação
-      </a>
-      }
-      @if (podeVerEmpenhos) {
-      <a class="sige-button sige-button--secondary" routerLink="/visualizar-empenhos">
-        <i class="bi bi-receipt" aria-hidden="true"></i>
-        Consultar empenhos
-      </a>
-      }
-      <a class="sige-button sige-button--secondary" routerLink="/visualizar-entregas">
-        <i class="bi bi-truck" aria-hidden="true"></i>
-        Acompanhar entregas
-      </a>
-    </div>
-  </section>
-
   @if (podeVerPainelNutricionista) {
   <app-painel-nutricionista />
   } @else {
@@ -501,4 +474,4 @@
     }
   </section>
   }
-</div>
+</main>

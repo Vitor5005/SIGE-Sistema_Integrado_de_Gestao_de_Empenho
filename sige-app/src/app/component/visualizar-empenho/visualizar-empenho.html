@@ -251,7 +251,7 @@
                 }
               @if (pode(Recurso.SOLICITACAO_REFORCO, Acao.CADASTRAR)) {
               <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" data-bs-toggle="modal"
-                data-bs-target="#modalSolicitarReforco" (click)="abrirSolicitacaoReforco(item)"
+                data-bs-target="#solicitarReforcoModal" (click)="abrirSolicitacaoReforco(item)"
                 title="Pedir ao Diretor um reforço deste item">
                 <i class="bi bi-plus-circle" aria-hidden="true"></i> Solicitar reforço
               </button>
@@ -814,15 +814,15 @@
       <div class="modal-content sige-modal solicitacao-reforco-modal">
         <div class="modal-header modal-header-azul sige-modal__header">
           <h2 class="modal-title modal-titulo" id="solicitarReforcoModalLabel">Solicitar reforço</h2>
-          <button type="button" class="btn-close btn-close-white" [disabled]="isSolicitandoReforco"
+          <button type="button" class="btn-close btn-close-white" [disabled]="enviandoReforco"
             data-bs-dismiss="modal" aria-label="Fechar"></button>
           <button #fecharSolicitacaoReforcoBtn type="button" class="d-none" data-bs-dismiss="modal"
             aria-hidden="true"></button>
         </div>
 
-        <form class="sige-modal-form solicitacao-reforco-form" (ngSubmit)="solicitarReforco()" novalidate>
+        <form class="sige-modal-form solicitacao-reforco-form" (ngSubmit)="enviarSolicitacaoReforco()" novalidate>
           <div class="modal-body sige-modal__body">
-            @if (itemSolicitacaoReforco; as item) {
+            @if (itemReforco; as item) {
             <div class="solicitacao-reforco-item">
               <span class="sige-detail-label">Item</span>
               <strong>{{ item.item_ata.item_generico.descricao }}</strong>
@@ -840,26 +840,36 @@
 
               <div>
                 <span>Saldo disponível na ARP</span>
+                @if (saldoReforco === null) {
+                <span>Consultando...</span>
+                } @else {
                 <strong>
-                  {{ limiteSolicitacaoReforco | number:'1.2-2' }}
+                  {{ saldoReforco | number:'1.2-2' }}
                   {{ item.item_ata.item_generico.unidade_medida }}
                 </strong>
+                }
               </div>
             </div>
 
             <div class="solicitacao-reforco-campo">
-              <label for="quantidadeSolicitadaReforco">
-                Quantidade solicitada ({{ item.item_ata.item_generico.unidade_medida }})
+              <label for="quantidadeReforco">
+                Quantidade solicitada
+                ({{ item.item_ata.item_generico.unidade_medida }})
               </label>
-              <input id="quantidadeSolicitadaReforco" name="quantidadeSolicitadaReforco" type="number"
-                class="form-control" min="1" [max]="limiteSolicitacaoReforco" step="0.01"
-                [disabled]="isSolicitandoReforco" [(ngModel)]="quantidadeSolicitadaReforco"
-                [attr.aria-invalid]="!quantidadeSolicitadaReforcoValida"
-                aria-describedby="quantidadeSolicitadaReforcoAjuda">
-              <small id="quantidadeSolicitadaReforcoAjuda">
-                A solicitação será enviada ao Diretor. Nenhum saldo será alterado até que o reforço seja efetivamente
-                registrado.
+              <input id="quantidadeReforco" name="quantidadeReforco" type="number" class="form-control" min="1"
+                step="0.01" [attr.max]="saldoReforco" [disabled]="enviandoReforco || saldoReforco === null"
+                [(ngModel)]="quantidadeReforco">
+              <small>
+                O pedido será enviado ao Diretor. Nenhum saldo será alterado até que o reforço seja efetivamente
+                atendido.
               </small>
+            </div>
+
+            <div class="solicitacao-reforco-campo">
+              <label for="justificativaReforco">Justificativa</label>
+              <textarea id="justificativaReforco" name="justificativaReforco" class="form-control" rows="3"
+                maxlength="1000" [disabled]="enviandoReforco" [(ngModel)]="justificativaReforco"
+                placeholder="Informe por que este reforço é necessário"></textarea>
             </div>
 
             @if (erroSolicitacaoReforco) {
@@ -869,11 +879,11 @@
           </div>
 
           <div class="modal-footer sige-modal__footer">
-            <button type="button" class="sige-button sige-button--secondary" [disabled]="isSolicitandoReforco"
+            <button type="button" class="sige-button sige-button--secondary" [disabled]="enviandoReforco"
               data-bs-dismiss="modal">Cancelar</button>
             <button type="submit" class="sige-button sige-button--primary"
-              [disabled]="isSolicitandoReforco || !quantidadeSolicitadaReforcoValida">
-              @if (isSolicitandoReforco) {
+              [disabled]="!podeEnviarSolicitacaoReforco">
+              @if (enviandoReforco) {
               <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
               Enviando...
               } @else {
