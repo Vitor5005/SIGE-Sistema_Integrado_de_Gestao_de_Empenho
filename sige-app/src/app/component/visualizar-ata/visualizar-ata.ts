@@ -81,6 +81,7 @@ export class VisualizarAta {
   ataEdicao = { numero_ata: '' };
   formSubmittedEdicaoAta: boolean = false;
   isSavingEdicaoAta: boolean = false;
+  isExcluindoAta: boolean = false;
   errorMessageEdicaoAta: string = '';
 
   itemGenerico_insercao: ItemGenerico = <ItemGenerico>{
@@ -308,6 +309,40 @@ export class VisualizarAta {
     });
   }
 
+  excluirAta(): void {
+    if (!this.ata.id || this.possuiEmpenhoRelacionado || this.itens.length !== 0 || this.isExcluindoAta) {
+      return;
+    }
+
+    this.feedback.confirmar({
+      titulo: 'Excluir ARP?',
+      mensagem: `Esta ação removerá permanentemente a ARP "${this.ata.numero_ata}".`,
+      textoConfirmar: 'Excluir',
+      textoCancelar: 'Cancelar',
+      destrutiva: true
+    }).then((confirmado) => {
+      if (!confirmado || !this.ata.id || this.possuiEmpenhoRelacionado || this.itens.length !== 0) {
+        return;
+      }
+
+      this.isExcluindoAta = true;
+      this.ataService.delete(this.ata.id).subscribe({
+        next: () => {
+          this.isExcluindoAta = false;
+          this.feedback.sucesso('ARP excluída com sucesso.');
+          this.router.navigate(['/visualizar-licitacao'], { queryParams: { id: this.ata.licitacao.id } });
+        },
+        error: (erro) => {
+          this.isExcluindoAta = false;
+          this.feedback.erro(
+            erro?.error?.detail || 'Não foi possível excluir a ARP. Tente novamente.',
+            'Erro ao excluir ARP'
+          );
+        }
+      });
+    });
+  }
+
   tentarFecharEdicaoAta(): void {
     if (this.isSavingEdicaoAta) {
       return;
@@ -457,6 +492,11 @@ export class VisualizarAta {
     }
 
     this.currentPageItemGenerico = page;
+  }
+
+  alterarPageSizeItemGenerico(pageSize: number): void {
+    this.pageSizeItemGenerico = pageSize;
+    this.currentPageItemGenerico = 1;
   }
 
   verificarValidade(ata: Ata): string {

@@ -45,6 +45,7 @@ export class Estoque {
   agruparPorCategoria = false;
   carregando = false;
   erro = '';
+  totalItens = 0;
 
   constructor(
     private estoqueService: EstoqueService,
@@ -73,6 +74,7 @@ export class Estoque {
     this.estoqueService.listar(this.termoBuscaAtual, 1, 100, categoria).subscribe({
       next: resposta => {
         this.itens = resposta.results;
+        this.totalItens = resposta.count;
         if (this.agruparPorCategoria) {
           this.ordenarItensPorCategoria();
         }

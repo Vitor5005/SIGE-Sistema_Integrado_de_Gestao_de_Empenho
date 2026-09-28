@@ -30,7 +30,7 @@
         <tr>
           <th scope="col">Identificação</th>
           <th scope="col" class="sige-cell--status">Status</th>
-          <th scope="col" class="sige-cell--number">Validade</th>
+          <th scope="col" class="sige-cell--validity">Validade</th>
           <th scope="col">Descrição</th>
           <th scope="col" class="sige-cell--actions">Ações</th>
         </tr>
@@ -61,26 +61,31 @@
           </tr>
         } @else {
           @for (item of registro; track item.id) {
-            <tr>
+            <tr
+              class="sige-list-row--clickable"
+              tabindex="0"
+              role="link"
+              (click)="enviarPara('/visualizar-licitacao', item.id)"
+              (keydown.enter)="enviarPara('/visualizar-licitacao', item.id)">
               <td>
                 <div>
                   <p>
                     LIC-{{ item.numero_licitacao }}
                     @if (item.atual) {
-                      <span class="badge text-bg-primary ms-2">Atual</span>
+                      <span class="sige-badge sige-badge--info ms-2">Atual</span>
                     }
                   </p>
                   <small>cadastrada: {{ item.data_abertura }}</small>
                 </div>
               </td>
               <td class="sige-cell--status">
-                <span [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span>
+                <span class="sige-badge" [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span>
               </td>
-              <td class="sige-cell--number"><i class="bi bi-clock" aria-hidden="true"></i> {{ item.validade }} meses</td>
+              <td class="sige-cell--validity"><i class="bi bi-clock" aria-hidden="true"></i> {{ item.validade }} meses</td>
               <td>
                 <span class="sige-cell--truncate" [title]="item.descricao">{{ item.descricao }}</span>
               </td>
-              <td class="sige-cell--actions">
+              <td class="sige-cell--actions" (click)="$event.stopPropagation()">
                 <div class="sige-table-actions">
                   <button
                     type="button"
@@ -118,7 +123,8 @@
       [totalItems]="total"
       totalLabel="Total de registros"
       [showTotal]="false"
-      (pageChange)="irParaPagina($event)">
+      (pageChange)="irParaPagina($event)"
+      (pageSizeChange)="alterarPageSize($event)">
     </app-paginacao>
   }
 </main>

@@ -31,6 +31,12 @@ def _total_operacoes(queryset):
     )['total'] or Decimal('0.00')
 
 
+def calcular_saldo_disponivel_item_ata(item_ata):
+    operacoes = OperacaoItem.objects.filter(item_empenho__item_ata=item_ata)
+    comprometido = _total_operacoes(operacoes)
+    return (item_ata.quantidade_licitada - comprometido).quantize(Decimal('0.01'))
+
+
 @transaction.atomic
 def registrar_operacao_item(*, item_empenho_id, tipo, valor, data):
     if tipo not in {'inc', 'ref', 'anl'}:
@@ -49,9 +55,7 @@ def registrar_operacao_item(*, item_empenho_id, tipo, valor, data):
     empenho = Empenho.objects.select_for_update().get(pk=item_empenho.empenho_id)
     ata = Ata.objects.select_for_update().get(pk=item_ata.ata_id)
 
-    operacoes_ata = OperacaoItem.objects.filter(item_empenho__item_ata=item_ata)
-    comprometido_ata = _total_operacoes(operacoes_ata)
-    saldo_ata = item_ata.quantidade_licitada - comprometido_ata
+    saldo_ata = calcular_saldo_disponivel_item_ata(item_ata)
 
     if tipo in {'inc', 'ref'}:
         if tipo == 'inc' and OperacaoItem.objects.filter(

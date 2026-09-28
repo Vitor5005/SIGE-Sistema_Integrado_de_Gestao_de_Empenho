@@ -327,9 +327,30 @@ button.contexto-opcao--ativa:hover {
 }
 
 .grafico-linha-titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sige-space-2);
   color: var(--sige-text-primary);
   font-size: 0.875rem;
   font-weight: 700;
+}
+
+.grafico-legenda-marcador {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+}
+
+.grafico-legenda-marcador--concluido,
+.grafico-legenda-marcador--disponivel {
+  background: var(--sige-success);
+}
+
+.grafico-legenda-marcador--espera,
+.grafico-legenda-marcador--utilizado {
+  background: var(--sige-color-primary);
 }
 
 .grafico-linha-valor {

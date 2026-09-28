@@ -23,6 +23,7 @@ class Recurso:
     EMPENHO = 'empenho'
     ITEM_EMPENHO = 'item_empenho'
     OPERACAO_EMPENHO = 'operacao_empenho'
+    SOLICITACAO_REFORCO = 'solicitacao_reforco'
     ORDEM_ENTREGA = 'ordem_entrega'
     ITEM_ORDEM = 'item_ordem'
     HISTORICO = 'historico'
@@ -42,6 +43,7 @@ class Acao:
     ALTERAR_STATUS = 'alterar_status'
     INCLUIR_EMPENHO = 'incluir_empenho'
     REFORCAR_EMPENHO = 'reforcar_empenho'
+    SOLICITAR_REFORCO = 'solicitar_reforco'
     ANULAR_EMPENHO = 'anular_empenho'
     GERAR_ORDEM = 'gerar_ordem'
     EMITIR_ORDEM = 'emitir_ordem'
@@ -84,16 +86,19 @@ MATRIZ_PERMISSOES = {
         Acao.CONSULTAR: DIRETOR_TECNICO,
         Acao.CADASTRAR: DIRETOR,
         Acao.EDITAR: DIRETOR,
+        Acao.EXCLUIR: DIRETOR,
     },
     Recurso.GENERO_ALIMENTICIO: {
         Acao.CONSULTAR: TODOS_COM_ESTOQUISTA,
         Acao.CADASTRAR: DIRETOR_TECNICO_ESTOQUISTA,
         Acao.EDITAR: DIRETOR_TECNICO_ESTOQUISTA,
+        Acao.EXCLUIR: DIRETOR,
     },
     Recurso.LICITACAO: {
         Acao.CONSULTAR: TODOS,
         Acao.CADASTRAR: DIRETOR,
         Acao.EDITAR: DIRETOR,
+        Acao.EXCLUIR: DIRETOR,
         Acao.DEFINIR_ATUAL: DIRETOR,
     },
     Recurso.ATA: {
@@ -101,6 +106,7 @@ MATRIZ_PERMISSOES = {
         # TODO: tornar a geração automática após a licitação.
         Acao.CADASTRAR: DIRETOR,
         Acao.EDITAR: DIRETOR,
+        Acao.EXCLUIR: DIRETOR,
     },
     Recurso.ITEM_ATA: {
         Acao.CONSULTAR: TODOS,
@@ -124,6 +130,11 @@ MATRIZ_PERMISSOES = {
         Acao.INCLUIR_EMPENHO: DIRETOR,
         Acao.REFORCAR_EMPENHO: DIRETOR,
         Acao.ANULAR_EMPENHO: DIRETOR,
+    },
+    Recurso.SOLICITACAO_REFORCO: {
+        Acao.CONSULTAR: frozenset({Papel.DIRETOR, Papel.NUTRICIONISTA}),
+        Acao.SOLICITAR_REFORCO: frozenset({Papel.NUTRICIONISTA}),
+        Acao.ALTERAR_STATUS: DIRETOR,
     },
     Recurso.ORDEM_ENTREGA: {
         # TODO: limitar a Nutricionista às ordens de suas solicitações quando

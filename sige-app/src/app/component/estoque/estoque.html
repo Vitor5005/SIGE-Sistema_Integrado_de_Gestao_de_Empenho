@@ -6,8 +6,8 @@
     </div>
   </header>
 
-  <div class="sige-list-toolbar">
-    <div class="sige-list-toolbar__search">
+  <div class="sige-list-toolbar estoque-toolbar">
+    <div class="sige-list-toolbar__search estoque-toolbar__search">
       <app-barra-pesquisa
         [filtros]="filtros"
         placeholder="Buscar por CATMAT, descrição, unidade ou categoria..."
@@ -16,14 +16,14 @@
         (pesquisar)="carregar($event)"
         (filtrosAlterados)="aplicarFiltros($event)">
       </app-barra-pesquisa>
-      <div class="form-check mb-3">
+      <div class="form-check estoque-toolbar__grouping">
         <input class="form-check-input" type="checkbox" id="agruparCategoria" [checked]="agruparPorCategoria" (change)="alternarAgrupamento()">
         <label class="form-check-label" for="agruparCategoria">Agrupar por categoria</label>
       </div>
     </div>
-    <div class="sige-list-toolbar__actions estoque-acoes">
+    <div class="sige-list-toolbar__actions estoque-acoes estoque-toolbar__actions">
       @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
-        <a class="sige-button sige-button--secondary" routerLink="/estoque/extrato" (click)="salvarEstadoListagem()">Extrato</a>
+        <a class="sige-button sige-button--primary" routerLink="/estoque/extrato" (click)="salvarEstadoListagem()"><i class="bi bi-clock-history" aria-hidden="true"></i> Extrato</a>
       }
       @if (pode(Recurso.ESTOQUE, Acao.REGISTRAR_SAIDA)) {
         <a class="sige-button sige-button--primary" routerLink="/estoque/movimentacao" (click)="salvarEstadoListagem()">Nova movimentação</a>
@@ -33,7 +33,7 @@
 
   @if (!carregando && !erro) {
   <div class="sige-list-meta" aria-live="polite">
-    <strong>{{ itens.length }}</strong> {{ itens.length === 1 ? 'item exibido' : 'itens exibidos' }}
+    <strong>{{ totalItens }}</strong> {{ totalItens === 1 ? 'item encontrado' : 'itens encontrados' }}
   </div>
   }
 
@@ -41,9 +41,16 @@
   @if (carregando) { <div class="estado" role="status" aria-live="polite">Carregando estoque...</div> }
 
   <div class="sige-list-table-wrap">
-    <table class="sige-list-table">
+    <table class="sige-list-table estoque-table">
+      <colgroup>
+        <col class="estoque-col-catmat">
+        <col class="estoque-col-descricao">
+        <col class="estoque-col-unidade">
+        <col class="estoque-col-categoria">
+        <col class="estoque-col-saldo">
+      </colgroup>
       <caption class="visually-hidden">Saldos atuais do estoque</caption>
-      <thead><tr><th scope="col">CATMAT</th><th scope="col">Descrição</th><th scope="col">Unidade</th><th scope="col">Categoria</th><th scope="col">Saldo no estoque</th></tr></thead>
+      <thead><tr><th scope="col">CATMAT</th><th scope="col">Descrição</th><th scope="col">Unidade</th><th scope="col">Categoria</th><th scope="col" class="sige-cell--number">Saldo no estoque</th></tr></thead>
       <tbody>
         @for (item of itens; track item.id; let indice = $index) {
           @if (iniciaCategoria(indice)) {
@@ -51,8 +58,8 @@
           }
           <tr>
             <td>{{ item.catmat }}</td><td class="sige-cell--truncate" [attr.title]="item.descricao">{{ item.descricao }}</td>
-            <td>{{ item.unidade_medida }} @if(item.conteudo_embalagem){({{ item.conteudo_embalagem }} {{ item.unidade_embalagem }})}</td>
-            <td>{{ item.categoria_descricao }}</td><td class="sige-cell--number"><strong>{{ item.saldo_atual | number:'1.0-3' }}</strong></td>
+            <td class="estoque-cell-unidade">{{ item.unidade_medida }} @if(item.conteudo_embalagem){({{ item.conteudo_embalagem }} {{ item.unidade_embalagem }})}</td>
+            <td class="estoque-cell-categoria" [attr.title]="item.categoria_descricao">{{ item.categoria_descricao }}</td><td class="sige-cell--number"><strong>{{ item.saldo_atual | number:'1.0-3' }}</strong></td>
           </tr>
         } @empty {
           <tr><td colspan="5" class="estado">Nenhum saldo encontrado.</td></tr>
@@ -66,7 +73,7 @@
     <div class="sige-list-table-wrap">
       <table class="sige-list-table">
         <caption class="visually-hidden">Visão consolidada do estoque</caption>
-        <thead><tr><th scope="col">Empenho</th><th scope="col">Código - Item - Unidade</th><th scope="col">Saldo em ATA/Contrato</th><th scope="col">Saldo do Empenho</th><th scope="col">Saldo no Estoque</th></tr></thead>
+        <thead><tr><th scope="col">Empenho</th><th scope="col">Código - Item - Unidade</th><th scope="col" class="sige-cell--number">Saldo em ATA/Contrato</th><th scope="col" class="sige-cell--number">Saldo do Empenho</th><th scope="col" class="sige-cell--number">Saldo no Estoque</th></tr></thead>
         <tbody>
           @for (item of consolidado; track $index) {
             <tr><td>{{ item.empenho }}</td><td class="sige-cell--truncate" [attr.title]="item.catmat + ' - ' + item.descricao + ' - ' + item.unidade_medida">{{ item.catmat }} - {{ item.descricao }} - {{ item.unidade_medida }}</td>

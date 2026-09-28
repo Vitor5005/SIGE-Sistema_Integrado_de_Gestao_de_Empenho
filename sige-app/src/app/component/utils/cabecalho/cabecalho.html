@@ -46,6 +46,7 @@
     </div>
     }
 
+    @if (pode(Recurso.ORDEM_ENTREGA, Acao.CONSULTAR)) {
     <a
       class="nav-item"
       routerLink="/visualizar-entregas"
@@ -54,6 +55,7 @@
     >
       Entregas
     </a>
+    }
 
     @if (pode(Recurso.ESTOQUE, Acao.CONSULTAR)) {
     <a class="nav-item" routerLink="/estoque" routerLinkActive="is-active">
@@ -61,7 +63,7 @@
     </a>
     }
 
-    @if (pode(Recurso.FORNECEDOR, Acao.CONSULTAR) || pode(Recurso.GENERO_ALIMENTICIO, Acao.CONSULTAR)) {
+    @if (pode(Recurso.FORNECEDOR, Acao.CONSULTAR) && pode(Recurso.GENERO_ALIMENTICIO, Acao.CONSULTAR)) {
     <div class="dropdown">
       <button
         class="nav-item nav-dropdown dropdown-toggle"
@@ -92,6 +94,10 @@
         }
       </ul>
     </div>
+    } @else if (pode(Recurso.GENERO_ALIMENTICIO, Acao.CONSULTAR)) {
+    <a class="nav-item" routerLink="/visualizar-gens-alimenticios" routerLinkActive="is-active">
+      Gêneros
+    </a>
     }
   </nav>
 
@@ -101,9 +107,19 @@
       <i class="bi bi-plus-lg" aria-hidden="true"></i>
       <span>Nova licitação</span>
     </a>
+    } @else if (pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
+    <a class="nova-licitacao" routerLink="/visualizar-empenhos">
+      <i class="bi bi-truck" aria-hidden="true"></i>
+      <span>Solicitar entrega</span>
+    </a>
+    } @else if (pode(Recurso.ESTOQUE, Acao.REGISTRAR_SAIDA)) {
+    <a class="nova-licitacao" routerLink="/estoque/movimentacao">
+      <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+      <span>Nova movimentação</span>
+    </a>
     }
-
-    @if (pode(Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)) {
+    
+    @if (pode(Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS) || pode(Recurso.SOLICITACAO_REFORCO, Acao.ALTERAR_STATUS)) {
     <div class="dropdown">
       <button
         class="alertas-botao"
@@ -112,50 +128,95 @@
         data-bs-toggle="dropdown"
         data-bs-auto-close="outside"
         aria-expanded="false"
-        [attr.aria-label]="pendencias.length ? pendencias.length + ' pendências de fornecedores' : 'Pendências de fornecedores'"
-        (click)="carregarPendencias()"
+        [attr.aria-label]="totalNotificacoes ? totalNotificacoes + ' notificações' : 'Notificações'"
+        (click)="carregarNotificacoes()"
       >
         <i class="bi bi-bell" aria-hidden="true"></i>
-        @if (pendencias.length) {
-        <span class="alertas-contador">{{ totalPendencias > 9 ? '9+' : totalPendencias }}</span>
+        @if (totalNotificacoes) {
+        <span class="alertas-contador">{{ totalNotificacoes > 9 ? '9+' : totalNotificacoes }}</span>
         }
       </button>
 
       <div class="dropdown-menu dropdown-menu-end dropdown-menu--sige alertas-dropdown" aria-labelledby="menuAlertas">
-        <span class="dropdown-header">Pendências de fornecedores</span>
+        <span class="dropdown-header">Notificações</span>
 
-        @if (erroPendencias) {
-        <p class="alertas-vazio">Não foi possível carregar as pendências.</p>
-        } @else if (!pendencias.length) {
-        <p class="alertas-vazio">Nenhuma pendência em aberto.</p>
-        } @else {
-        <ul class="alertas-lista">
-          @for (pendencia of pendencias; track pendencia.id) {
-          <li class="alerta-item">
-            <div class="alerta-topo">
-              <strong>{{ pendencia.fornecedor }}</strong>
-              <span>{{ pendencia.data_atualizacao | date: 'dd/MM/yyyy HH:mm' }}</span>
-            </div>
-            <p class="alerta-resumo">
-              Faltam <b>{{ pendencia.quantidade_pendente | number: '1.0-3' }} {{ pendencia.unidade_medida }}</b>
-              de {{ pendencia.genero }}
-              ({{ pendencia.quantidade_entregue | number: '1.0-3' }} de
-              {{ pendencia.quantidade_solicitada | number: '1.0-3' }} recebidos)
-            </p>
-            <p class="alerta-motivo">"{{ pendencia.motivo }}"</p>
-            <div class="alerta-rodape">
-              <span>Ordem {{ pendencia.ordem_codigo }} · por {{ pendencia.registrada_por_nome }}</span>
-              <button type="button" class="alerta-ciente" [disabled]="marcandoCiente === pendencia.id"
-                (click)="marcarCiente(pendencia)">
-                <i class="bi bi-check2" aria-hidden="true"></i> Ciente
-              </button>
-            </div>
-          </li>
+        @if (pode(Recurso.SOLICITACAO_REFORCO, Acao.ALTERAR_STATUS)) {
+        <section class="alertas-secao" aria-labelledby="solicitacoes-reforco-titulo">
+          <h2 id="solicitacoes-reforco-titulo" class="alertas-secao-titulo">Solicitações de reforço</h2>
+
+          @if (erroSolicitacoesReforco) {
+          <p class="alertas-vazio">Não foi possível carregar as solicitações de reforço.</p>
+          } @else if (!solicitacoesReforco.length) {
+          <p class="alertas-vazio">Nenhuma solicitação de reforço em aberto.</p>
+          } @else {
+          <ul class="alertas-lista">
+            @for (solicitacao of solicitacoesReforco; track solicitacao.id) {
+            <li class="alerta-item">
+              <div class="alerta-topo">
+                <strong>{{ solicitacao.genero }}</strong>
+                <span>{{ solicitacao.data_solicitacao | date: 'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <p class="alerta-empenho">Empenho {{ solicitacao.empenho_codigo }}</p>
+              <p class="alerta-resumo">
+                Solicitação: <b>{{ solicitacao.quantidade_solicitada | number: '1.0-3' }} {{ solicitacao.unidade_medida }}</b>
+              </p>
+              <p class="alerta-solicitante">Solicitado por {{ solicitacao.solicitante_nome }}</p>
+              <div class="alerta-rodape">
+                <span>Solicitação pendente de ciência.</span>
+                <button type="button" class="alerta-ciente alerta-ver-empenho"
+                  [disabled]="marcandoSolicitacaoCiente === solicitacao.id"
+                  (click)="marcarSolicitacaoCiente(solicitacao)">
+                  <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Ver empenho
+                </button>
+              </div>
+            </li>
+            }
+          </ul>
+          @if (totalSolicitacoesReforco > solicitacoesReforco.length) {
+          <p class="alertas-vazio">E mais {{ totalSolicitacoesReforco - solicitacoesReforco.length }} solicitação(ões).</p>
           }
-        </ul>
-        @if (totalPendencias > pendencias.length) {
-        <p class="alertas-vazio">E mais {{ totalPendencias - pendencias.length }} pendência(s).</p>
+          }
+        </section>
         }
+
+        @if (pode(Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)) {
+        <section class="alertas-secao" aria-labelledby="pendencias-fornecedor-titulo">
+          <h2 id="pendencias-fornecedor-titulo" class="alertas-secao-titulo">Pendências de fornecedores</h2>
+
+          @if (erroPendencias) {
+          <p class="alertas-vazio">Não foi possível carregar as pendências.</p>
+          } @else if (!pendencias.length) {
+          <p class="alertas-vazio">Nenhuma pendência em aberto.</p>
+          } @else {
+          <ul class="alertas-lista">
+            @for (pendencia of pendencias; track pendencia.id) {
+            <li class="alerta-item">
+              <div class="alerta-topo">
+                <strong>{{ pendencia.fornecedor }}</strong>
+                <span>{{ pendencia.data_atualizacao | date: 'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <p class="alerta-resumo">
+                Faltam <b>{{ pendencia.quantidade_pendente | number: '1.0-3' }} {{ pendencia.unidade_medida }}</b>
+                de {{ pendencia.genero }}
+                ({{ pendencia.quantidade_entregue | number: '1.0-3' }} de
+                {{ pendencia.quantidade_solicitada | number: '1.0-3' }} recebidos)
+              </p>
+              <p class="alerta-motivo">"{{ pendencia.motivo }}"</p>
+              <div class="alerta-rodape">
+                <span>Ordem {{ pendencia.ordem_codigo }} · por {{ pendencia.registrada_por_nome }}</span>
+                <button type="button" class="alerta-ciente" [disabled]="marcandoCiente === pendencia.id"
+                  (click)="marcarCiente(pendencia)">
+                  <i class="bi bi-check2" aria-hidden="true"></i> Ciente
+                </button>
+              </div>
+            </li>
+            }
+          </ul>
+          @if (totalPendencias > pendencias.length) {
+          <p class="alertas-vazio">E mais {{ totalPendencias - pendencias.length }} pendência(s).</p>
+          }
+          }
+        </section>
         }
       </div>
     </div>

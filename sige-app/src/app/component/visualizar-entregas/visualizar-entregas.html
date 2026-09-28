@@ -184,7 +184,8 @@
 
     @if (!isLoadingEntregas && !errorMessagePage && total > 0) {
     <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-      [showTotal]="false" totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+      [showTotal]="false" totalLabel="Total de registros" (pageChange)="irParaPagina($event)"
+      (pageSizeChange)="alterarPageSize($event)"></app-paginacao>
     }
   </div>
 

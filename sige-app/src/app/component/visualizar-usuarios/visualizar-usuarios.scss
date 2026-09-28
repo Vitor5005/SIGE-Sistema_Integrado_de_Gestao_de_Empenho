@@ -35,6 +35,76 @@
     color: #64748b;
 }
 
+.usuarios-table {
+    width: 100%;
+    min-width: 68rem;
+    table-layout: fixed;
+
+    td {
+        min-width: 0;
+        overflow: hidden;
+
+        &.sige-cell--actions {
+            overflow: visible;
+        }
+    }
+
+    .usuarios-col-usuario {
+        width: 9%;
+    }
+
+    .usuarios-col-papel {
+        width: 16%;
+    }
+
+    .usuarios-col-nome {
+        width: 13%;
+    }
+
+    .usuarios-col-sobrenome {
+        width: 13%;
+    }
+
+    .usuarios-col-email {
+        width: 20%;
+    }
+
+    .usuarios-col-status {
+        width: 9%;
+    }
+
+    .usuarios-col-acoes {
+        width: 20%;
+    }
+
+    .sige-cell--status {
+        width: auto;
+        text-align: left;
+    }
+
+    .sige-cell--actions {
+        width: auto;
+        justify-items: flex-start;
+    }
+}
+
+.usuario-cell-text {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.usuarios-table-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--sige-space-2);
+    white-space: nowrap;
+}
+
 .estado-vazio-usuarios {
     background-color: #ffffff;
     border: 1px solid #e5eaf1;

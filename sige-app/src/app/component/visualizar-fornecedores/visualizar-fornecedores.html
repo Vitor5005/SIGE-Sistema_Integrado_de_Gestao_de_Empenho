@@ -62,7 +62,12 @@
           </tr>
         } @else {
           @for (item of fornecedores; track item.id) {
-            <tr>
+            <tr
+              class="sige-list-row--clickable"
+              tabindex="0"
+              role="link"
+              (click)="enviarPara('/visualizar-fornecedor', item.id)"
+              (keydown.enter)="enviarPara('/visualizar-fornecedor', item.id)">
               <td>
                 <span class="sige-cell--truncate" [title]="item.razao_social">{{ item.razao_social }}</span>
               </td>
@@ -74,7 +79,10 @@
               <td>
                 <span class="sige-cell--truncate" [title]="item.email">{{ item.email }}</span>
               </td>
-              <td class="sige-cell--actions">
+              <td
+                class="sige-cell--actions"
+                (click)="$event.stopPropagation()"
+                (keydown.enter)="$event.stopPropagation()">
                 <div class="sige-table-actions">
                   <button
                     type="button"
@@ -112,7 +120,8 @@
       [totalItems]="total"
       totalLabel="Total de registros"
       [showTotal]="false"
-      (pageChange)="irParaPagina($event)">
+      (pageChange)="irParaPagina($event)"
+      (pageSizeChange)="alterarPageSize($event)">
     </app-paginacao>
   }
 </main>

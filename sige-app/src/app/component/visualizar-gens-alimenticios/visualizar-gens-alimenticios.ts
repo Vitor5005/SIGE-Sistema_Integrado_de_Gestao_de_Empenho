@@ -185,6 +185,13 @@ filtrosAtivos: any = {};
     this.getItens();
   }
 
+  alterarPageSize(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.currentPage = 1;
+    this.salvarEstadoListagem();
+    this.getItens();
+  }
+
   ngAfterViewInit() {
     const modalElement = this.modal.nativeElement;
 
@@ -331,6 +338,39 @@ filtrosAtivos: any = {};
     });
   }
 
+  excluirRegistro(): void {
+    if (!this.registroEditar.id || this.isSaving) {
+      return;
+    }
+
+    this.feedback.confirmar({
+      titulo: 'Excluir gênero?',
+      mensagem: `Esta ação removerá permanentemente o gênero alimentício "${this.registroEditar.descricao}".`,
+      textoConfirmar: 'Excluir',
+      textoCancelar: 'Cancelar',
+      destrutiva: true
+    }).then((confirmou) => {
+      if (!confirmou) {
+        return;
+      }
+
+      this.isSaving = true;
+      this.errorMessageModal = '';
+      this.ItemGenericoService.delete(this.registroEditar.id).subscribe({
+        next: () => {
+          this.isSaving = false;
+          this.fecharModalSemConfirmacao();
+          this.feedback.sucesso('Gênero alimentício excluído com sucesso.');
+          this.getItens();
+        },
+        error: (erro) => {
+          this.isSaving = false;
+          this.errorMessageModal = erro?.error?.detail || 'Não foi possível excluir o gênero alimentício. Tente novamente.';
+        }
+      });
+    });
+  }
+
   tentarFecharModal(): void {
     if (this.isSaving) {
       return;
@@ -381,13 +421,24 @@ filtrosAtivos: any = {};
     this.termoBuscaAtual = estado.termoBuscaAtual;
     this.filtrosAtivos = { ...estado.filtrosAtivos };
     this.currentPage = estado.currentPage;
+
+    const pageSize = Number(estado.extras?.['pageSize']);
+    if (Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100) {
+      this.pageSize = pageSize;
+    }
   }
 
   salvarEstadoListagem(): void {
+    const estadoAtual = this.estadoListagem.obter('generos');
+
     this.estadoListagem.salvar('generos', {
       termoBuscaAtual: this.termoBuscaAtual,
       filtrosAtivos: this.filtrosAtivos,
-      currentPage: this.currentPage
+      currentPage: this.currentPage,
+      extras: {
+        ...estadoAtual?.extras,
+        pageSize: this.pageSize
+      }
     });
   }
 

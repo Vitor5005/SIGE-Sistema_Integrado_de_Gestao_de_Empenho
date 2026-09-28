@@ -66,13 +66,24 @@ export class VisualizarLicitacoes {
     this.termoBuscaAtual = estado.termoBuscaAtual || '';
     this.filtrosAtivos = estado.filtrosAtivos || {};
     this.currentPage = estado.currentPage || 1;
+
+    const pageSize = estado.extras?.['pageSize'];
+    if (typeof pageSize === 'number' && Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100) {
+      this.pageSize = pageSize;
+    }
   }
 
   private salvarEstadoListagem(): void {
+    const estadoAtual = this.estadoListagemService.obter('licitacoes');
+
     this.estadoListagemService.salvar('licitacoes', {
       termoBuscaAtual: this.termoBuscaAtual,
       filtrosAtivos: this.filtrosAtivos,
       currentPage: this.currentPage,
+      extras: {
+        ...(estadoAtual?.extras ?? {}),
+        pageSize: this.pageSize,
+      },
     });
   }
 
@@ -177,6 +188,13 @@ export class VisualizarLicitacoes {
   this.get();
 }
 
+  alterarPageSize(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.currentPage = 1;
+    this.salvarEstadoListagem();
+    this.get();
+  }
+
   proximaPagina(): void {
     if (!this.hasNext) {
       return;
@@ -222,9 +240,9 @@ export class VisualizarLicitacoes {
 
   classValidade(licitacao: Licitacao): string {
     if (this.verificarValidade(licitacao) === 'Expirado') {
-      return 'bg-danger text-white';
+      return 'sige-badge--danger';
     } else {
-      return 'bg-success text-white';
+      return 'sige-badge--success';
     }
   }
 

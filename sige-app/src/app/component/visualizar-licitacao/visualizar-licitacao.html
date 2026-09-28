@@ -33,6 +33,14 @@
           </button>
           }
 
+          @if (pode(Recurso.LICITACAO, Acao.EXCLUIR) && totalAtas === 0) {
+          <button type="button" class="sige-button sige-button--danger-outline" [disabled]="isExcluindoLicitacao"
+            (click)="excluirLicitacao()">
+            <i class="bi bi-trash" aria-hidden="true"></i>
+            Excluir
+          </button>
+          }
+
           @if (licitacao.atual) {
           <span class="licitacao-status">Licitação atual</span>
           } @else if (licitacao.id && pode(Recurso.LICITACAO, Acao.DEFINIR_ATUAL)) {
@@ -125,7 +133,8 @@
       </div>
 
       <app-paginacao class="paginacao-lista" *ngIf="totalAtas > 0" [currentPage]="currentPageAtas" [pageSize]="pageSizeAtas"
-        [totalItems]="totalAtas" totalLabel="Total de atas" (pageChange)="irParaPaginaAtas($event)"></app-paginacao>
+        [totalItems]="totalAtas" totalLabel="Total de atas" (pageChange)="irParaPaginaAtas($event)"
+        (pageSizeChange)="alterarPageSizeAtas($event)"></app-paginacao>
 
       @if (atas.length === 0) {
       <app-estado-conteudo tipo="empty" titulo="Nenhuma ARP vinculada"
@@ -213,7 +222,8 @@
 
             <app-paginacao class="paginacao-lista paginacao-modal" [currentPage]="currentPageFornecedores"
               [pageSize]="pageSizeFornecedores" [totalItems]="totalFornecedores" totalLabel="Total de fornecedores"
-              (pageChange)="irParaPaginaFornecedores($event)"></app-paginacao>
+              (pageChange)="irParaPaginaFornecedores($event)"
+              (pageSizeChange)="alterarPageSizeFornecedores($event)"></app-paginacao>
 
             <p class="texto-ajuda-fornecedor">Caso o fornecedor não esteja registrado no sistema, selecione Adicionar novo fornecedor.</p>
             <div class="form-footer">
@@ -480,9 +490,9 @@
 
   <div class="modal fade" id="editarLicitacaoModal" tabindex="-1" data-bs-backdrop="static"
     data-bs-keyboard="false" aria-labelledby="editarLicitacaoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content modal-custom">
-        <div class="modal-header-azul">
+    <div class="modal-dialog modal-dialog-centered modal-edicao-licitacao">
+      <div class="modal-content modal-custom sige-modal">
+        <div class="modal-header-azul sige-modal__header">
           <h2 class="modal-titulo" id="editarLicitacaoModalLabel">Editar licitação</h2>
           <button type="button" class="btn-close btn-close-white" [disabled]="isSavingEdicao"
             (click)="tentarFecharEdicaoLicitacao()" aria-label="Fechar"></button>
@@ -490,65 +500,66 @@
             aria-hidden="true"></button>
         </div>
 
-        <form (ngSubmit)="salvarEdicaoLicitacao()" novalidate>
-          <div class="modal-body modal-body-ata">
+        <form class="licitacao-edit-form" (ngSubmit)="salvarEdicaoLicitacao()" novalidate>
+          <div class="sige-modal__body licitacao-edit-body">
             @if (errorMessageEdicao) {
-            <div class="mensagem-erro-modal" role="alert">
-              <small>{{ errorMessageEdicao }}</small>
+            <div class="licitacao-edit-error" role="alert">
+              <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+              <span>{{ errorMessageEdicao }}</span>
             </div>
             }
 
-            <div class="form-row">
-              <div class="form-group flex-2">
-                <label for="numeroLicitacaoEdicao">Número da licitação *</label>
-                <input id="numeroLicitacaoEdicao" type="text" [(ngModel)]="licitacaoEdicao.numero_licitacao"
-                  name="numeroLicitacaoEdicao" maxlength="50" [disabled]="isSavingEdicao"
-                  [class.campo-invalido]="formSubmittedEdicao && !numeroLicitacaoEdicaoValido"
-                  [attr.aria-invalid]="formSubmittedEdicao && !numeroLicitacaoEdicaoValido">
-                @if (formSubmittedEdicao && !numeroLicitacaoEdicaoValido) {
-                <small class="mensagem-campo-invalido">Informe o número da licitação.</small>
-                }
-              </div>
+            <section class="licitacao-edit-section">
+              <h3 class="licitacao-edit-section__title">Dados da licitação</h3>
+              <div class="licitacao-edit-grid">
+                <div class="sige-field licitacao-edit-field--numero">
+                  <label for="numeroLicitacaoEdicao">Número da licitação *</label>
+                  <input id="numeroLicitacaoEdicao" type="text" [(ngModel)]="licitacaoEdicao.numero_licitacao"
+                    name="numeroLicitacaoEdicao" maxlength="50" [disabled]="isSavingEdicao"
+                    [class.campo-invalido]="formSubmittedEdicao && !numeroLicitacaoEdicaoValido"
+                    [attr.aria-invalid]="formSubmittedEdicao && !numeroLicitacaoEdicaoValido">
+                  @if (formSubmittedEdicao && !numeroLicitacaoEdicaoValido) {
+                  <small class="mensagem-campo-invalido">Informe o número da licitação.</small>
+                  }
+                </div>
 
-              <div class="form-group flex-1">
-                <label for="validadeLicitacaoEdicao">Validade (meses) *</label>
-                <input id="validadeLicitacaoEdicao" type="number" [(ngModel)]="licitacaoEdicao.validade"
-                  name="validadeLicitacaoEdicao" min="1" max="120" step="1" [disabled]="isSavingEdicao"
-                  [class.campo-invalido]="formSubmittedEdicao && !validadeEdicaoValida"
-                  [attr.aria-invalid]="formSubmittedEdicao && !validadeEdicaoValida">
-                @if (formSubmittedEdicao && !validadeEdicaoValida) {
-                <small class="mensagem-campo-invalido">Informe uma validade inteira entre 1 e 120 meses.</small>
-                }
+                <div class="sige-field licitacao-edit-field--validade">
+                  <label for="validadeLicitacaoEdicao">Validade (meses) *</label>
+                  <input id="validadeLicitacaoEdicao" type="number" [(ngModel)]="licitacaoEdicao.validade"
+                    name="validadeLicitacaoEdicao" min="1" max="120" step="1" [disabled]="isSavingEdicao"
+                    [class.campo-invalido]="formSubmittedEdicao && !validadeEdicaoValida"
+                    [attr.aria-invalid]="formSubmittedEdicao && !validadeEdicaoValida">
+                  @if (formSubmittedEdicao && !validadeEdicaoValida) {
+                  <small class="mensagem-campo-invalido">Informe uma validade inteira entre 1 e 120 meses.</small>
+                  }
+                </div>
+
+                <div class="sige-field licitacao-edit-field--data">
+                  <label for="dataAberturaLicitacaoEdicao">Data de abertura *</label>
+                  <input id="dataAberturaLicitacaoEdicao" type="date" [(ngModel)]="licitacaoEdicao.data_abertura"
+                    name="dataAberturaLicitacaoEdicao" [max]="todayDate" [disabled]="isSavingEdicao"
+                    [class.campo-invalido]="formSubmittedEdicao && !dataAberturaEdicaoValida"
+                    [attr.aria-invalid]="formSubmittedEdicao && !dataAberturaEdicaoValida">
+                  @if (formSubmittedEdicao && !dataAberturaEdicaoValida) {
+                  <small class="mensagem-campo-invalido">Informe uma data de abertura válida, que não seja futura.</small>
+                  }
+                </div>
+
+                <div class="sige-field licitacao-edit-field--descricao">
+                  <label for="descricaoLicitacaoEdicao">Descrição</label>
+                  <textarea id="descricaoLicitacaoEdicao" [(ngModel)]="licitacaoEdicao.descricao"
+                    name="descricaoLicitacaoEdicao" maxlength="500" rows="4" [disabled]="isSavingEdicao"></textarea>
+                </div>
               </div>
+            </section>
+
+            <div class="licitacao-edit-info">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+              <p>A definição de <strong>“Licitação atual”</strong> é controlada separadamente pela ação <strong>“Definir como atual”</strong>.</p>
             </div>
-
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label for="dataAberturaLicitacaoEdicao">Data de abertura *</label>
-                <input id="dataAberturaLicitacaoEdicao" type="date" [(ngModel)]="licitacaoEdicao.data_abertura"
-                  name="dataAberturaLicitacaoEdicao" [max]="todayDate" [disabled]="isSavingEdicao"
-                  [class.campo-invalido]="formSubmittedEdicao && !dataAberturaEdicaoValida"
-                  [attr.aria-invalid]="formSubmittedEdicao && !dataAberturaEdicaoValida">
-                @if (formSubmittedEdicao && !dataAberturaEdicaoValida) {
-                <small class="mensagem-campo-invalido">Informe uma data de abertura válida, que não seja futura.</small>
-                }
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label for="descricaoLicitacaoEdicao">Descrição</label>
-                <textarea id="descricaoLicitacaoEdicao" [(ngModel)]="licitacaoEdicao.descricao"
-                  name="descricaoLicitacaoEdicao" maxlength="500" rows="4" [disabled]="isSavingEdicao"></textarea>
-              </div>
-            </div>
-
-            <p class="texto-orientacao-modal mb-0">
-              A definição de “Licitação atual” é controlada separadamente pela ação “Definir como atual”.
-            </p>
           </div>
 
-          <div class="form-footer">
+          <div class="sige-modal__footer">
             <button type="button" class="sige-button sige-button--secondary" [disabled]="isSavingEdicao"
               (click)="tentarFecharEdicaoLicitacao()">
               Cancelar

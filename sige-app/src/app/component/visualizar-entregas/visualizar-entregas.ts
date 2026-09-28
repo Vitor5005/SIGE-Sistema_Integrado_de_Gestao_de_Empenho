@@ -298,6 +298,13 @@ export class VisualizarEntregas {
     this.getEntregas();
   }
 
+  alterarPageSize(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.currentPage = 1;
+    this.salvarEstadoListagem();
+    this.getEntregas();
+  }
+
   getItensOrdem(id: number, index: number) {
     this.ordemSelecionada = index;
     this.etapaConfirmacao = 1;
@@ -613,11 +620,16 @@ export class VisualizarEntregas {
   salvarEstadoListagem(): void {
     const filtrosVisuais = { ...this.filtrosAtivos };
     delete filtrosVisuais['empenho__id'];
+    const estadoAtual = this.estadoListagem.obter(this.chaveEstadoListagem);
 
     this.estadoListagem.salvar(this.chaveEstadoListagem, {
       termoBuscaAtual: this.termoBuscaAtual,
       filtrosAtivos: filtrosVisuais,
-      currentPage: this.currentPage
+      currentPage: this.currentPage,
+      extras: {
+        ...estadoAtual?.extras,
+        pageSize: this.pageSize
+      }
     });
   }
 
@@ -630,6 +642,11 @@ export class VisualizarEntregas {
     this.termoBuscaAtual = estado.termoBuscaAtual;
     this.filtrosAtivos = { ...estado.filtrosAtivos };
     this.currentPage = estado.currentPage;
+
+    const pageSize = Number(estado.extras?.['pageSize']);
+    if (Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100) {
+      this.pageSize = pageSize;
+    }
   }
 
   limparContextoEmpenho(): void {

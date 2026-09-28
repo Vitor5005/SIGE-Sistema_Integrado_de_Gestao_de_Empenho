@@ -36,6 +36,13 @@
                         Editar ARP
                     </button>
                     }
+                    @if (pode(Recurso.ATA, Acao.EXCLUIR) && !possuiEmpenhoRelacionado && itens.length === 0) {
+                    <button type="button" class="sige-button sige-button--danger-outline" [disabled]="isExcluindoAta"
+                        (click)="excluirAta()">
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                        Excluir ARP
+                    </button>
+                    }
                     @if (pode(Recurso.ITEM_ATA, Acao.CADASTRAR)) {
                     <button #myInput class="sige-button sige-button--primary" data-bs-toggle="modal"
                         data-bs-target="#adicionarItemModal" [disabled]="isSaving" (click)="reiniciar_Modal()">
@@ -62,13 +69,13 @@
                 </article>
 
                 <article class="sige-metric-card ata-metric-card card-valor-total">
-                    <span class="sige-metric-label">Valor total</span>
-                    <span class="sige-metric-value">R$ {{ ata.ata_saldo_total }}</span>
+                    <span class="sige-metric-label">Saldo da ARP</span>
+                    <span class="sige-metric-value">R$ {{ ata.ata_saldo_total | number:'1.2-2' }}</span>
                 </article>
 
                 <article class="sige-metric-card ata-metric-card card-utilizado">
-                    <span class="sige-metric-label">Utilizado</span>
-                    <span class="sige-metric-value">R$ {{ empenho.valor_total }}</span>
+                    <span class="sige-metric-label">Empenhado</span>
+                    <span class="sige-metric-value">R$ {{ empenho.valor_total | number:'1.2-2' }}</span>
                 </article>
             </div>
         </section>
@@ -283,7 +290,8 @@
 
                         <app-paginacao class="paginacao-modal-selecao" [currentPage]="currentPageItemGenerico"
                             [pageSize]="pageSizeItemGenerico" [totalItems]="totalItensGenericosDisponiveis"
-                            totalLabel="Itens disponíveis" (pageChange)="irParaPaginaItemGenerico($event)"></app-paginacao>
+                            totalLabel="Itens disponíveis" (pageChange)="irParaPaginaItemGenerico($event)"
+                            (pageSizeChange)="alterarPageSizeItemGenerico($event)"></app-paginacao>
 
                         <p class="texto-ajuda-item">Caso o item não esteja registrado no sistema, selecione Adicionar novo item.</p>
                         <div class="form-footer">
@@ -494,8 +502,8 @@
 
     <div class="modal fade" id="editarAtaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="editarAtaModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content modal-custom">
-                <div class="modal-header-azul">
+            <div class="modal-content modal-custom sige-modal">
+                <div class="modal-header-azul sige-modal__header">
                     <h2 class="modal-titulo" id="editarAtaModalLabel">Editar ARP</h2>
                     <button type="button" class="btn-close btn-close-white" [disabled]="isSavingEdicaoAta"
                         (click)="tentarFecharEdicaoAta()" aria-label="Fechar"></button>
@@ -503,7 +511,7 @@
                         aria-hidden="true"></button>
                 </div>
                 <form (ngSubmit)="salvarEdicaoAta()">
-                    <div class="modal-body">
+                    <div class="modal-body sige-modal__body">
                         @if (errorMessageEdicaoAta) {
                         <div class="mensagem-erro-modal" role="alert">
                             <small>{{ errorMessageEdicaoAta }}</small>
@@ -525,7 +533,7 @@
                             <small>Licitação, fornecedor e saldo da ARP não podem ser alterados por esta edição.</small>
                         </div>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer sige-modal__footer">
                         <button type="button" class="sige-button sige-button--secondary" [disabled]="isSavingEdicaoAta"
                             (click)="tentarFecharEdicaoAta()">
                             Cancelar

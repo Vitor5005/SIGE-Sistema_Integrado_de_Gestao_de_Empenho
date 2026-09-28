@@ -33,7 +33,16 @@
     }
 
     <div class="sige-list-table-wrap">
-    <table class="sige-list-table">
+    <table class="sige-list-table usuarios-table">
+        <colgroup>
+            <col class="usuarios-col-usuario">
+            <col class="usuarios-col-papel">
+            <col class="usuarios-col-nome">
+            <col class="usuarios-col-sobrenome">
+            <col class="usuarios-col-email">
+            <col class="usuarios-col-status">
+            <col class="usuarios-col-acoes">
+        </colgroup>
         <caption class="visually-hidden">Lista de usuários</caption>
         <thead>
             <tr>
@@ -73,15 +82,16 @@
             } @else {
             @for(usuario of usuarios; track $index) {
             <tr>
-                <td> {{usuario.username}} </td>
-                <td> {{ verificarPapel(usuario.papel) }} </td>
-                <td> {{usuario.first_name}} </td>
-                <td> {{usuario.last_name}} </td>
-                <td class="sige-cell--truncate" [attr.title]="usuario.email"> {{usuario.email}} </td>
+                <td><span class="usuario-cell-text" [attr.title]="usuario.username">{{ usuario.username }}</span></td>
+                <td><span class="usuario-cell-text" [attr.title]="verificarPapel(usuario.papel)">{{ verificarPapel(usuario.papel) }}</span></td>
+                <td><span class="usuario-cell-text" [attr.title]="usuario.first_name">{{ usuario.first_name }}</span></td>
+                <td><span class="usuario-cell-text" [attr.title]="usuario.last_name">{{ usuario.last_name }}</span></td>
+                <td><span class="usuario-cell-text" [attr.title]="usuario.email">{{ usuario.email }}</span></td>
                 <td class="sige-cell--status">
-                    <span [ngClass]="classStatus(usuario.is_active)">{{ verificarStatus(usuario.is_active) }}</span>
+                    <span class="sige-badge" [ngClass]="classStatus(usuario.is_active)">{{ verificarStatus(usuario.is_active) }}</span>
                 </td>
                 <td class="sige-cell--actions">
+                    <div class="sige-table-actions usuarios-table-actions">
                     <button type="button" class="sige-button sige-button--secondary sige-button--sm" title="Editar usuário" data-bs-toggle="modal"
                         data-bs-target="#adicionarUsuario" (click)="carregarRegistro(usuario)">
                         <i class="bi bi-pencil" aria-hidden="true"></i> Editar
@@ -104,6 +114,7 @@
                         <i class="bi bi-check-circle" aria-hidden="true"></i> Ativar
                     </button>
                     }
+                    </div>
                 </td>
             </tr>
             }
@@ -127,7 +138,8 @@
 
     @if (!isLoadingUsuarios && !errorMessagePage && total > 0) {
     <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-        [showTotal]="false" totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+        [showTotal]="false" totalLabel="Total de registros" (pageChange)="irParaPagina($event)"
+        (pageSizeChange)="alterarPageSize($event)"></app-paginacao>
     }
 
     <div #myModal class="modal fade" id="adicionarUsuario" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="adicionarUsuarioLabel" aria-hidden="true">

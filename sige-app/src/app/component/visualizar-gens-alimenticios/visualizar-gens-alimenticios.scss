@@ -400,3 +400,51 @@
     margin: 0;
   }
 }
+
+.generos-table {
+  width: 100%;
+  min-width: 52rem;
+  table-layout: fixed;
+
+  col:nth-child(1) {
+    width: 12%;
+  }
+
+  col:nth-child(2) {
+    width: 23%;
+  }
+
+  col:nth-child(3) {
+    width: 22%;
+  }
+
+  col:nth-child(4) {
+    width: 29%;
+  }
+
+  col:nth-child(5) {
+    width: 14%;
+  }
+
+  td {
+    min-width: 0;
+  }
+
+  td:first-child {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sige-cell--actions {
+    width: auto;
+  }
+}
+
+.generos-cell-text {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

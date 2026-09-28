@@ -32,7 +32,14 @@
   }
 
   <div class="sige-list-table-wrap">
-  <table class="sige-list-table">
+  <table class="sige-list-table generos-table">
+    <colgroup>
+      <col class="generos-col-catmat">
+      <col class="generos-col-categoria">
+      <col class="generos-col-unidade">
+      <col class="generos-col-descricao">
+      <col class="generos-col-acoes">
+    </colgroup>
     <caption class="visually-hidden">Catálogo de gêneros alimentícios</caption>
     <thead>
       <tr>
@@ -74,21 +81,23 @@
 
         <td>{{ item.catmat }}</td>
         <td>
-          <p>{{ getCategoria(item) }}</p>
+          <span class="generos-cell-text" [attr.title]="getCategoria(item)">{{ getCategoria(item) }}</span>
         </td>
         <td>
-          <p>{{ getUnidadeMedida(item) }}</p>
+          <span class="generos-cell-text" [attr.title]="getUnidadeMedida(item)">{{ getUnidadeMedida(item) }}</span>
         </td>
         <td>
-          <span class="sige-cell--truncate" [attr.title]="item.descricao">{{ item.descricao }}</span>
+          <span class="generos-cell-text" [attr.title]="item.descricao">{{ item.descricao }}</span>
         </td>
         <td class="sige-cell--actions">
-          @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.EDITAR)) {
+          <div class="sige-table-actions">
+            @if (pode(Recurso.GENERO_ALIMENTICIO, Acao.EDITAR)) {
           <button type="button" class="sige-button sige-button--secondary sige-button--sm" title="Editar gênero alimentício" data-bs-toggle="modal"
             data-bs-target="#editarItemGenerico" (click)="carregarRegistro(item)">
             <i class="bi bi-pencil" aria-hidden="true"></i> Editar
           </button>
-          }
+            }
+          </div>
 
         </td>
 
@@ -114,7 +123,8 @@
 
   @if (!isLoadingPage && !errorMessagePage && total > 0) {
   <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
-    [showTotal]="false" totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
+    [showTotal]="false" totalLabel="Total de registros" (pageChange)="irParaPagina($event)"
+    (pageSizeChange)="alterarPageSize($event)"></app-paginacao>
   }
 
 
@@ -215,14 +225,25 @@
               <small><b>Obrigatório:</b> preencher CATMAT válido, categoria, unidade de medida e descrição.</small>
             </div>
 
-            <div class="form-footer">
-              <button class="btn-confirmar" type="submit" [disabled]="isSaving || !formularioValido"
-                [class.btn-confirmar-desabilitado]="isSaving || !formularioValido">
-                @if(isSaving) {
-                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-                }
-                <i class="bi bi-check-lg" aria-hidden="true"></i> {{ modoCadastro ? 'Cadastrar' : 'Salvar' }}
+            <div class="form-footer d-flex justify-content-between gap-2">
+              @if (!modoCadastro && pode(Recurso.GENERO_ALIMENTICIO, Acao.EXCLUIR)) {
+              <button type="button" class="sige-button sige-button--danger-outline" [disabled]="isSaving"
+                (click)="excluirRegistro()">
+                <i class="bi bi-trash3" aria-hidden="true"></i> Excluir gênero
               </button>
+              }
+              <div class="d-flex gap-2 ms-auto">
+                <button type="button" class="sige-button sige-button--secondary" [disabled]="isSaving"
+                  (click)="tentarFecharModal()">
+                  Cancelar
+                </button>
+                <button class="sige-button sige-button--primary" type="submit" [disabled]="isSaving || !formularioValido">
+                  @if(isSaving) {
+                  <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                  }
+                  <i class="bi bi-check-lg" aria-hidden="true"></i> {{ modoCadastro ? 'Cadastrar' : 'Salvar' }}
+                </button>
+              </div>
             </div>
 
           </form>

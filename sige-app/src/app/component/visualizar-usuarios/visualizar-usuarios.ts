@@ -163,13 +163,24 @@ export class VisualizarUsuarios {
     this.termoBuscaAtual = estado.termoBuscaAtual || '';
     this.filtrosAtivos = estado.filtrosAtivos || {};
     this.currentPage = estado.currentPage || 1;
+
+    const pageSize = Number(estado.extras?.['pageSize']);
+    if (Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100) {
+      this.pageSize = pageSize;
+    }
   }
 
   private salvarEstadoListagem(): void {
+    const estadoAtual = this.estadoListagemService.obter(this.chaveEstadoListagem);
+
     this.estadoListagemService.salvar(this.chaveEstadoListagem, {
       termoBuscaAtual: this.termoBuscaAtual,
       filtrosAtivos: this.filtrosAtivos,
       currentPage: this.currentPage,
+      extras: {
+        ...estadoAtual?.extras,
+        pageSize: this.pageSize
+      }
     });
   }
 
@@ -274,6 +285,13 @@ export class VisualizarUsuarios {
     this.getUsuarios();
   }
 
+  alterarPageSize(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.currentPage = 1;
+    this.salvarEstadoListagem();
+    this.getUsuarios();
+  }
+
   aplicarFiltros(filtros: Record<string, any>): void {
     this.filtrosAtivos = filtros;
     this.currentPage = 1;
@@ -303,11 +321,10 @@ export class VisualizarUsuarios {
 
   classStatus(status: boolean): string {
     if (!status) {
-      return "bg-danger text-white";
+      return 'sige-badge--danger';
     }
-    else {
-      return "bg-success text-white";
-    }
+
+    return 'sige-badge--success';
   }
 
   toggleSenha() {

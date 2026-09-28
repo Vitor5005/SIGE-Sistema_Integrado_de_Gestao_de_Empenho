@@ -147,6 +147,13 @@ export class VisualizarFornecedores {
     this.get();
   }
 
+  alterarPageSize(pageSize: number): void {
+    this.pageSize = pageSize;
+    this.currentPage = 1;
+    this.salvarEstadoListagem();
+    this.get();
+  }
+
   private restaurarEstadoListagem(): void {
     const estado = this.estadoListagem.obter(this.chaveEstadoListagem);
 
@@ -157,13 +164,24 @@ export class VisualizarFornecedores {
     this.termoBuscaAtual = estado.termoBuscaAtual || '';
     this.filtrosAtivos = estado.filtrosAtivos || {};
     this.currentPage = estado.currentPage || 1;
+
+    const pageSize = estado.extras?.['pageSize'];
+    if (typeof pageSize === 'number' && Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100) {
+      this.pageSize = pageSize;
+    }
   }
 
   private salvarEstadoListagem(): void {
+    const estadoAtual = this.estadoListagem.obter(this.chaveEstadoListagem);
+
     this.estadoListagem.salvar(this.chaveEstadoListagem, {
       termoBuscaAtual: this.termoBuscaAtual,
       filtrosAtivos: this.filtrosAtivos,
       currentPage: this.currentPage,
+      extras: {
+        ...(estadoAtual?.extras ?? {}),
+        pageSize: this.pageSize,
+      },
     });
   }
 

@@ -1,4 +1,6 @@
-from rest_framework import viewsets
+from django.db import transaction
+from rest_framework import status, viewsets
+from rest_framework.response import Response
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from cadastro.serializers import EnderecoSerializer, FornecedorSerializer, FornecedorCreateSerializer, ItemGenericoSerializer
 from licitacao.views import BaseFiltroMixin
@@ -43,6 +45,26 @@ class FornecedorViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSe
 
     ordering_fields = ['nome_fantasia', 'cnpj']
     ordering = ['nome_fantasia']
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        if instance.ata_set.exists():
+            return Response(
+                {'detail': 'Não é possível excluir este fornecedor porque existem ARPs vinculadas.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        with transaction.atomic():
+            endereco_id = instance.endereco_id
+            self.perform_destroy(instance)
+
+            if endereco_id and not Fornecedor.objects.filter(endereco_id=endereco_id).exists():
+                Endereco.objects.filter(id=endereco_id).delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class ItemGenericoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     queryset = ItemGenerico.objects.all()
     serializer_class = ItemGenericoSerializer
@@ -62,4 +84,21 @@ class ItemGenericoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelView
 
     ordering_fields = ['catmat', 'descricao', 'categoria']
     ordering = ['descricao']
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        possui_estoque = hasattr(instance, 'estoque')
+
+        if instance.itemata_set.exists() or possui_estoque:
+            return Response(
+                {
+                    'detail': (
+                        'Não é possível excluir este gênero alimentício porque ele já está sendo utilizado '
+                        'em uma ARP ou possui registro de estoque.'
+                    )
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return super().destroy(request, *args, **kwargs)
 

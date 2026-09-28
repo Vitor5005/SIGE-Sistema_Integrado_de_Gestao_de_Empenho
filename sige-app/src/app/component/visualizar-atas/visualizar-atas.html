@@ -31,7 +31,7 @@
           <th scope="col">Identificação</th>
           <th scope="col">Fornecedor</th>
           <th scope="col" class="sige-cell--status">Status</th>
-          <th scope="col" class="sige-cell--number">Validade</th>
+          <th scope="col" class="sige-cell--validity">Validade</th>
           <th scope="col" class="sige-cell--number">Saldo da ARP</th>
           <th scope="col" class="sige-cell--actions">Ações</th>
         </tr>
@@ -62,7 +62,12 @@
           </tr>
         } @else {
           @for (item of atas; track item.id) {
-            <tr>
+            <tr
+              class="sige-list-row--clickable"
+              tabindex="0"
+              role="link"
+              (click)="enviarPara('/visualizar-ata', item.id)"
+              (keydown.enter)="enviarPara('/visualizar-ata', item.id)">
               <td>
                 <p>{{ item.numero_ata }}</p>
                 <small>cadastrado: {{ item.licitacao.data_abertura }}</small>
@@ -76,14 +81,14 @@
                 <small>{{ item.fornecedor.cnpj }}</small>
               </td>
               <td class="sige-cell--status">
-                <span [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span>
+                <span class="sige-badge" [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span>
               </td>
-              <td class="sige-cell--number">
+              <td class="sige-cell--validity">
                 <i class="bi bi-clock" aria-hidden="true"></i>
                 {{ item.licitacao.validade }} meses
               </td>
               <td class="sige-cell--number">R$ {{ item.ata_saldo_total }}</td>
-              <td class="sige-cell--actions">
+              <td class="sige-cell--actions" (click)="$event.stopPropagation()">
                 <div class="sige-table-actions">
                   <button
                     type="button"
@@ -121,7 +126,8 @@
       [totalItems]="total"
       totalLabel="Total de registros"
       [showTotal]="false"
-      (pageChange)="irParaPagina($event)">
+      (pageChange)="irParaPagina($event)"
+      (pageSizeChange)="alterarPageSize($event)">
     </app-paginacao>
   }
 </main>

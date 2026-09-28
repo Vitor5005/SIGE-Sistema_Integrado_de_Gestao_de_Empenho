@@ -93,6 +93,7 @@ export class VisualizarLicitacao {
   };
   formSubmittedEdicao: boolean = false;
   isSavingEdicao: boolean = false;
+  isExcluindoLicitacao: boolean = false;
   errorMessageEdicao: string = '';
   private permitirFecharModalSemConfirmacao: boolean = false;
 
@@ -498,6 +499,44 @@ export class VisualizarLicitacao {
     });
   }
 
+  excluirLicitacao(): void {
+    if (!this.licitacao.id || this.totalAtas !== 0 || this.isExcluindoLicitacao) {
+      return;
+    }
+
+    const mensagemAtual = this.licitacao.atual
+      ? ' Esta é a licitação atual. Após a exclusão, nenhuma licitação ficará definida como atual até que outra seja selecionada.'
+      : '';
+
+    this.feedback.confirmar({
+      titulo: 'Excluir licitação?',
+      mensagem: `Esta ação removerá permanentemente a licitação "${this.licitacao.numero_licitacao}".${mensagemAtual}`,
+      textoConfirmar: 'Excluir',
+      textoCancelar: 'Cancelar',
+      destrutiva: true
+    }).then((confirmado) => {
+      if (!confirmado || !this.licitacao.id || this.totalAtas !== 0) {
+        return;
+      }
+
+      this.isExcluindoLicitacao = true;
+      this.licitacaoService.delete(this.licitacao.id).subscribe({
+        next: () => {
+          this.isExcluindoLicitacao = false;
+          this.feedback.sucesso('Licitação excluída com sucesso.');
+          this.router.navigate(['/visualizar-licitacoes']);
+        },
+        error: (erro) => {
+          this.isExcluindoLicitacao = false;
+          this.feedback.erro(
+            erro?.error?.detail || 'Não foi possível excluir a licitação. Tente novamente.',
+            'Erro ao excluir licitação'
+          );
+        }
+      });
+    });
+  }
+
   tentarFecharEdicaoLicitacao(): void {
     if (this.isSavingEdicao) {
       return;
@@ -653,6 +692,12 @@ export class VisualizarLicitacao {
     this.getAtas(this.licitacao.id);
   }
 
+  alterarPageSizeAtas(pageSize: number): void {
+    this.pageSizeAtas = pageSize;
+    this.currentPageAtas = 1;
+    this.getAtas(this.licitacao.id);
+  }
+
   proximaPaginaFornecedores(): void {
     if (!this.hasNextFornecedores) {
       return;
@@ -677,6 +722,12 @@ export class VisualizarLicitacao {
     }
 
     this.currentPageFornecedores = page;
+    this.getFornecedores();
+  }
+
+  alterarPageSizeFornecedores(pageSize: number): void {
+    this.pageSizeFornecedores = pageSize;
+    this.currentPageFornecedores = 1;
     this.getFornecedores();
   }
 

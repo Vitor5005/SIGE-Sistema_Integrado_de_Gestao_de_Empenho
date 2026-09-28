@@ -90,6 +90,7 @@
 .feedback-confirmacao {
   z-index: 2200;
   width: min(31rem, calc(100vw - 2rem));
+  margin: auto;
   padding: 0;
   border: 0;
   border-radius: var(--sige-radius-lg, 1rem);

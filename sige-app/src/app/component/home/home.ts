@@ -15,6 +15,7 @@ import { Acao, pode, Recurso } from '../../security/rbac';
 
 type IndicadorKey = 'licitacoes' | 'arps' | 'empenhos' | 'entregasEmEspera';
 type ContextoDados = 'atual' | 'todas';
+type PerfilOperacional = 'diretor' | 'tecnico' | 'nutricionista' | 'estoquista';
 
 interface EstadoIndicador {
   valor: number | null;
@@ -111,6 +112,35 @@ export class Home implements OnInit {
 
   get usandoLicitacaoAtual(): boolean {
     return this.contextoDados === 'atual' && this.licitacaoAtual !== null;
+  }
+
+  get perfilOperacional(): PerfilOperacional {
+    if (this.pode(Recurso.LICITACAO, Acao.CADASTRAR)) {
+      return 'diretor';
+    }
+
+    if (this.pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
+      return 'tecnico';
+    }
+
+    if (this.pode(Recurso.ESTOQUE, Acao.REGISTRAR_SAIDA)) {
+      return 'estoquista';
+    }
+
+    return 'nutricionista';
+  }
+
+  get descricaoPerfil(): string {
+    switch (this.perfilOperacional) {
+      case 'diretor':
+        return 'Acompanhe aquisições, empenhos, entregas e atividades administrativas.';
+      case 'tecnico':
+        return 'Acompanhe empenhos, ordens de entrega e pendências operacionais.';
+      case 'estoquista':
+        return 'Acompanhe recebimentos, movimentações e disponibilidade do estoque.';
+      default:
+        return 'Consulte aquisições, entregas e disponibilidade dos gêneros alimentícios.';
+    }
   }
 
   get atrasosOutrasLicitacoes(): number {

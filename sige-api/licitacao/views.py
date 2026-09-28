@@ -3,7 +3,7 @@ from urllib import request
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from licitacao.models import Licitacao, Ata, ItemAta
@@ -50,6 +50,15 @@ class LicitacaoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet
             return LicitacaoUpdateSerializer
         return LicitacaoSerializer
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.ata_set.exists():
+            return Response(
+                {'detail': 'Não é possível excluir esta licitação porque existem ARPs vinculadas.'},
+                status=status.HTTP_409_CONFLICT
+            )
+        return super().destroy(request, *args, **kwargs)
+
     @action(detail=True, methods=['post'], url_path='definir-atual')
     def definir_atual(self, request, pk=None):
         licitacao = self.get_object()
@@ -83,6 +92,15 @@ class AtaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     }
     ordering_fields = ['ata_saldo_total', 'numero_ata']
     ordering = ['-ata_saldo_total']
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.empenho_set.exists() or instance.itemata_set.exists():
+            return Response(
+                {'detail': 'Não é possível excluir esta ARP porque existem itens ou empenho vinculados.'},
+                status=status.HTTP_409_CONFLICT
+            )
+        return super().destroy(request, *args, **kwargs)
 
 class ItemAtaViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = ItemAta.objects.all()

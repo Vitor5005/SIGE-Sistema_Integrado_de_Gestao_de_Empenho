@@ -11,7 +11,7 @@
   </section>
   @if(erro){<div class="alert alert-danger" role="alert">{{erro}}</div>} @if(sucesso){<div class="alert alert-success" role="status" aria-live="polite">{{sucesso}}</div>}
   <div class="table-responsive"><table class="table tabela-estoque"><caption class="visually-hidden">Movimentações do estoque</caption><thead><tr><th scope="col">Data/hora</th><th scope="col">Gênero</th><th scope="col">Tipo</th><th scope="col">Entrada</th><th scope="col">Saída</th><th scope="col">Saldo</th><th scope="col">Motivo/observação</th><th scope="col">Ações</th></tr></thead>
-    <tbody>@for(m of movimentos; track m.id){<tr><td>{{m.data_hora|date:'dd/MM/yyyy HH:mm'}}</td><td>{{m.genero}}</td><td>{{m.tipo}}</td>
+    <tbody>@for(m of movimentos; track m.id){<tr><td>{{m.data_hora|date:'dd/MM/yyyy HH:mm'}}</td><td>{{m.genero}}</td><td>{{textoTipoMovimentacao(m.tipo)}}</td>
       <td>{{m.sentido==='E'?(m.quantidade|number:'1.0-3'):'—'}}</td><td>{{m.sentido==='S'?(m.quantidade|number:'1.0-3'):'—'}}</td>
       <td>{{m.saldo_resultante|number:'1.0-3'}}</td><td>{{m.observacao||'—'}}</td><td>
       @if(pode(Recurso.ESTOQUE,Acao.ESTORNAR)&&m.tipo!=='ESTORNO'){<button type="button" class="btn btn-sm btn-outline-danger" (click)="estornar(m)">Estornar</button>}</td></tr>}

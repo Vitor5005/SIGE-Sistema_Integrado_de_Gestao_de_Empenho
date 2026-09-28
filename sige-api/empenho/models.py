@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from licitacao.models import Ata, ItemAta
 
@@ -35,5 +36,40 @@ class OperacaoItem(models.Model):
 
     def __str__(self):
         return f"Operação: {self.tipo} \n Valor: {self.valor} \n Data: {self.data} \n Item Empenho: {self.item_empenho.id}"
+
+
+class SolicitacaoReforco(models.Model):
+    class Status(models.TextChoices):
+        ABERTA = 'ABERTA', 'Aberta'
+        CIENTE = 'CIENTE', 'Ciente'
+
+    item_empenho = models.ForeignKey(
+        ItemEmpenho,
+        on_delete=models.PROTECT,
+        related_name='solicitacoes_reforco',
+    )
+    quantidade_solicitada = models.DecimalField(max_digits=10, decimal_places=2)
+    solicitante = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='solicitacoes_reforco',
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.ABERTA,
+    )
+    ciente_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='solicitacoes_reforco_cientes',
+    )
+    data_solicitacao = models.DateTimeField(auto_now_add=True)
+    data_ciencia = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-data_solicitacao', '-id']
 
 # Create your models here.
