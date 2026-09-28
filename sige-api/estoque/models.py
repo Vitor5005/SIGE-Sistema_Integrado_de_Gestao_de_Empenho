@@ -89,11 +89,11 @@ class MovimentacaoEstoque(models.Model):
     class Tipo(models.TextChoices):
         ENTRADA_FORNECEDOR = 'ENTRADA_FORNECEDOR', 'Entrada de fornecedor'
         CARGA_INICIAL = 'CARGA_INICIAL', 'Carga inicial'
-        AJUSTE_POSITIVO = 'AJUSTE_POSITIVO', 'Ajuste positivo'
-        AJUSTE_NEGATIVO = 'AJUSTE_NEGATIVO', 'Ajuste negativo'
-        SAIDA_PRODUCAO = 'SAIDA_PRODUCAO', 'Saída para produção'
-        SAIDA_DOACAO = 'SAIDA_DOACAO', 'Saída para doação'
-        SAIDA_PERDA = 'SAIDA_PERDA', 'Saída por perda'
+        AJUSTE_POSITIVO = 'AJUSTE_POSITIVO', 'Inventário (sobra)'
+        AJUSTE_NEGATIVO = 'AJUSTE_NEGATIVO', 'Inventário (falta)'
+        SAIDA_PRODUCAO = 'SAIDA_PRODUCAO', 'Consumo no preparo de refeições'
+        SAIDA_DOACAO = 'SAIDA_DOACAO', 'Doação'
+        SAIDA_PERDA = 'SAIDA_PERDA', 'Perda ou vencimento'
         ESTORNO = 'ESTORNO', 'Estorno'
 
     class Sentido(models.TextChoices):

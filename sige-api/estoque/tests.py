@@ -296,3 +296,63 @@ class PermissoesEstoqueTests(EstoqueBaseMixin, APITestCase):
             self.client.force_authenticate(usuario)
             self.assertEqual(self.client.post(reverse('estoque-saidas'), payload, format='json').status_code, 403)
 
+
+
+class InventarioTests(EstoqueBaseMixin, APITestCase):
+    """Inventário recebe a quantidade contada; carga inicial só vale uma vez por gênero."""
+
+    def setUp(self):
+        self.criar_cenario()
+        registrar_carga_inicial(
+            item_generico_id=self.genero.id, quantidade='50', justificativa='Implantação',
+            usuario=self.estoquista,
+        )
+        self.client.force_authenticate(self.estoquista)
+
+    def inventariar(self, quantidade_contada):
+        return self.client.post(reverse('estoque-ajustes'), {
+            'item_generico_id': self.genero.id,
+            'quantidade_contada': quantidade_contada,
+            'justificativa': 'Contagem mensal',
+        }, format='json')
+
+    def test_contagem_menor_lanca_falta_pela_diferenca(self):
+        resposta = self.inventariar('47')
+
+        self.assertEqual(resposta.status_code, 201, resposta.data)
+        self.assertEqual(resposta.data['tipo'], MovimentacaoEstoque.Tipo.AJUSTE_NEGATIVO)
+        self.assertEqual(resposta.data['tipo_descricao'], 'Inventário (falta)')
+        self.assertEqual(Decimal(resposta.data['quantidade']), Decimal('3'))
+        self.assertEqual(Estoque.objects.get(item_generico=self.genero).saldo_atual, Decimal('47.000'))
+
+    def test_contagem_maior_lanca_sobra(self):
+        resposta = self.inventariar('52.5')
+
+        self.assertEqual(resposta.status_code, 201, resposta.data)
+        self.assertEqual(resposta.data['tipo'], MovimentacaoEstoque.Tipo.AJUSTE_POSITIVO)
+        self.assertEqual(Estoque.objects.get(item_generico=self.genero).saldo_atual, Decimal('52.500'))
+
+    def test_contagem_igual_ao_saldo_nao_gera_movimentacao(self):
+        quantidade_antes = MovimentacaoEstoque.objects.count()
+        resposta = self.inventariar('50')
+
+        self.assertEqual(resposta.status_code, 400)
+        self.assertEqual(MovimentacaoEstoque.objects.count(), quantidade_antes)
+
+    def test_contagem_zero_zera_o_estoque_e_negativa_e_rejeitada(self):
+        self.assertEqual(self.inventariar('-1').status_code, 400)
+        self.assertEqual(self.inventariar('0').status_code, 201)
+        self.assertEqual(Estoque.objects.get(item_generico=self.genero).saldo_atual, Decimal('0.000'))
+
+    def test_listagem_indica_generos_que_ja_tem_carga_inicial(self):
+        sem_carga = ItemGenerico.objects.create(
+            catmat='654321', descricao='Feijão', unidade_medida='KG', categoria='NP',
+        )
+        dados = {
+            item['item_generico_id']: item['possui_carga_inicial']
+            for item in self.client.get(reverse('estoque-list'), {'page_size': 100}).data['results']
+        }
+
+        self.assertTrue(dados[self.genero.id])
+        self.assertFalse(dados[sem_carga.id])
+

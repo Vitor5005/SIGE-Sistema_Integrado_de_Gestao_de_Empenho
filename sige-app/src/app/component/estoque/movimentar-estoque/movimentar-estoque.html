@@ -1,23 +1,37 @@
 <section class="estoque-pagina">
-  <div class="estoque-topo"><div><h3>NOVA MOVIMENTAÇÃO</h3><p>Registre saída, carga inicial ou ajuste de inventário.</p></div>
+  <div class="estoque-topo"><div><h3>NOVA MOVIMENTAÇÃO</h3><p>Registre saídas e contagens de inventário do estoque.</p></div>
     <a class="btn btn-outline-primary" routerLink="/estoque">Voltar ao estoque</a></div>
   @if(erro){<div class="alert alert-danger">{{erro}}</div>} @if(sucesso){<div class="alert alert-success">{{sucesso}}</div>}
   <form class="card p-4" (ngSubmit)="salvar()">
     <div class="row g-3">
-      <div class="col-md-4"><label class="form-label">Operação</label><select class="form-select" [(ngModel)]="operacao" name="operacao">
-        <option value="SAIDA">Saída</option><option value="CARGA_INICIAL">Carga inicial</option><option value="AJUSTE">Ajuste de inventário</option>
-      </select></div>
-      <div class="col-md-8"><label class="form-label">Gênero alimentício</label><select class="form-select" [(ngModel)]="itemGenericoId" name="genero" required>
-        <option [ngValue]="undefined">Selecione</option>@for(item of itens;track item.id){<option [ngValue]="item.item_generico_id">{{item.catmat}} - {{item.descricao}} (saldo {{item.saldo_atual}})</option>}
-      </select></div>
-      @if(operacao==='SAIDA'){<div class="col-md-4"><label class="form-label">Tipo de saída</label><select class="form-select" [(ngModel)]="tipoSaida" name="tipoSaida">
-        <option value="PRODUCAO">Produção</option><option value="DOACAO">Doação</option><option value="PERDA">Perda</option></select></div>}
-      <div class="col-md-4"><label class="form-label">{{operacao==='AJUSTE'?'Quantidade do ajuste (+/-)':'Quantidade'}}</label>
-        <input class="form-control" type="number" step="0.001" [(ngModel)]="quantidade" name="quantidade" required></div>
+      <div class="col-md-4"><label class="form-label">Operação</label>
+        <select class="form-select" [ngModel]="operacao" (ngModelChange)="trocarOperacao($event)" name="operacao">
+          <option value="SAIDA">Saída</option>
+          <option value="INVENTARIO">Inventário (contagem)</option>
+          @if(itensSemCargaInicial.length){<option value="CARGA_INICIAL">Carga inicial (implantação)</option>}
+        </select></div>
+      <div class="col-md-8"><label class="form-label">Gênero alimentício</label>
+        <select class="form-select" [(ngModel)]="itemGenericoId" name="genero" required>
+          <option [ngValue]="undefined">Selecione</option>
+          @for(item of itensDaOperacao;track item.id){<option [ngValue]="item.item_generico_id">{{item.catmat}} - {{item.descricao}}</option>}
+        </select></div>
+      <div class="col-12"><p class="text-muted small mb-0">{{descricaoOperacao}}</p></div>
+      @if(operacao==='SAIDA'){<div class="col-md-4"><label class="form-label">Motivo da saída</label>
+        <select class="form-select" [(ngModel)]="tipoSaida" name="tipoSaida">
+          <option value="PRODUCAO">Consumo no preparo de refeições</option><option value="DOACAO">Doação</option><option value="PERDA">Perda ou vencimento</option>
+        </select></div>}
+      <div class="col-md-4"><label class="form-label">{{rotuloQuantidade}}</label>
+        <input class="form-control" type="number" step="0.001" min="0" [(ngModel)]="quantidade" name="quantidade" required>
+        @if(itemSelecionado){<small class="text-muted d-block mt-1">Saldo no sistema: <b>{{itemSelecionado.saldo_atual|number:'1.0-3'}} {{itemSelecionado.unidade_medida}}</b></small>}
+        @if(operacao==='INVENTARIO' && diferencaInventario!==null){
+        <small class="d-block" [class.text-success]="diferencaInventario>0" [class.text-danger]="diferencaInventario<0" [class.text-muted]="diferencaInventario===0">
+          @if(diferencaInventario===0){Contagem confere com o sistema; nada a ajustar.}
+          @else{{{diferencaInventario>0?'Sobra':'Falta'}} de {{diferencaAbsoluta|number:'1.0-3'}} {{itemSelecionado?.unidade_medida}} será lançada.}
+        </small>}
+      </div>
       <div class="col-md-4"><label class="form-label">Data e hora</label><input class="form-control" type="datetime-local" [(ngModel)]="dataHora" name="dataHora" required></div>
       <div class="col-12"><label class="form-label">Motivo/justificativa</label><textarea class="form-control" maxlength="255" [(ngModel)]="justificativa" name="justificativa" required></textarea></div>
     </div>
     <div class="mt-4"><button class="btn btn-primary" [disabled]="processando">{{processando?'Registrando...':'Registrar movimentação'}}</button></div>
   </form>
 </section>
-

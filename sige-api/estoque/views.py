@@ -1,7 +1,7 @@
 from collections import defaultdict
 from decimal import Decimal
 
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -29,7 +29,11 @@ from utils.rbac import Acao, Recurso
 
 
 class EstoqueViewSet(RBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
-    queryset = Estoque.objects.select_related('item_generico').all()
+    queryset = Estoque.objects.select_related('item_generico').annotate(
+        possui_carga_inicial=Exists(MovimentacaoEstoque.objects.filter(
+            estoque=OuterRef('pk'), tipo=MovimentacaoEstoque.Tipo.CARGA_INICIAL,
+        )),
+    )
     serializer_class = EstoqueSerializer
     rbac_resource = Recurso.ESTOQUE
     rbac_action_map = {

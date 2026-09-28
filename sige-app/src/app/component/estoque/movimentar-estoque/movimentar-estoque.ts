@@ -6,6 +6,14 @@ import { RouterLink } from '@angular/router';
 import { EstoqueItem } from '../../../model/estoque';
 import { EstoqueService } from '../../../service/estoque.service';
 
+type Operacao = 'SAIDA' | 'INVENTARIO' | 'CARGA_INICIAL';
+
+const DESCRICOES: Record<Operacao, string> = {
+  SAIDA: 'Retira do estoque o que foi consumido, doado ou perdido.',
+  INVENTARIO: 'Informe o que foi contado na prateleira; o sistema lança a diferença para o saldo atual.',
+  CARGA_INICIAL: 'Registra o saldo que já existia antes do sistema. Feita uma única vez por gênero.',
+};
+
 @Component({
   selector: 'app-movimentar-estoque',
   standalone: true,
@@ -14,7 +22,7 @@ import { EstoqueService } from '../../../service/estoque.service';
   styleUrl: '../estoque.scss',
 })
 export class MovimentarEstoque {
-  operacao: 'SAIDA' | 'CARGA_INICIAL' | 'AJUSTE' = 'SAIDA';
+  operacao: Operacao = 'SAIDA';
   itens: EstoqueItem[] = [];
   itemGenericoId?: number;
   quantidade?: number;
@@ -28,16 +36,57 @@ export class MovimentarEstoque {
   constructor(private estoqueService: EstoqueService) {}
 
   ngOnInit(): void {
-    this.estoqueService.listar('', 1, 100).subscribe(resposta => this.itens = resposta.results);
+    this.carregarItens();
+  }
+
+  get itensSemCargaInicial(): EstoqueItem[] {
+    return this.itens.filter(item => !item.possui_carga_inicial);
+  }
+
+  get itensDaOperacao(): EstoqueItem[] {
+    return this.operacao === 'CARGA_INICIAL' ? this.itensSemCargaInicial : this.itens;
+  }
+
+  get itemSelecionado(): EstoqueItem | undefined {
+    return this.itens.find(item => item.item_generico_id === this.itemGenericoId);
+  }
+
+  get descricaoOperacao(): string {
+    return DESCRICOES[this.operacao];
+  }
+
+  get rotuloQuantidade(): string {
+    return this.operacao === 'INVENTARIO' ? 'Quantidade contada' : 'Quantidade';
+  }
+
+  get diferencaInventario(): number | null {
+    if (!this.itemSelecionado || this.quantidade === undefined || this.quantidade === null) {
+      return null;
+    }
+    return Number(this.quantidade) - Number(this.itemSelecionado.saldo_atual);
+  }
+
+  get diferencaAbsoluta(): number {
+    return Math.abs(this.diferencaInventario ?? 0);
+  }
+
+  trocarOperacao(operacao: Operacao): void {
+    this.operacao = operacao;
+    this.erro = '';
+    this.sucesso = '';
+    if (!this.itensDaOperacao.some(item => item.item_generico_id === this.itemGenericoId)) {
+      this.itemGenericoId = undefined;
+    }
   }
 
   salvar(): void {
-    if (!this.itemGenericoId || !this.quantidade || !this.justificativa.trim()) {
+    if (!this.itemGenericoId || this.quantidade === undefined || this.quantidade === null || !this.justificativa.trim()) {
       this.erro = 'Preencha gênero, quantidade e justificativa.';
       return;
     }
     this.processando = true;
     this.erro = '';
+    this.sucesso = '';
     const base = {
       item_generico_id: this.itemGenericoId,
       justificativa: this.justificativa,
@@ -47,19 +96,30 @@ export class MovimentarEstoque {
       ? this.estoqueService.registrarSaida({ ...base, quantidade: this.quantidade, tipo_saida: this.tipoSaida })
       : this.operacao === 'CARGA_INICIAL'
         ? this.estoqueService.registrarCargaInicial({ ...base, quantidade: this.quantidade })
-        : this.estoqueService.registrarAjuste({ ...base, quantidade_ajuste: this.quantidade });
-
+        : this.estoqueService.registrarAjuste({ ...base, quantidade_contada: this.quantidade });
     requisicao.subscribe({
       next: () => {
         this.sucesso = 'Movimentação registrada com sucesso.';
         this.processando = false;
         this.quantidade = undefined;
         this.justificativa = '';
+        this.carregarItens();
       },
       error: erro => {
         this.erro = this.mensagemErro(erro.error);
         this.processando = false;
       },
+    });
+  }
+
+  private carregarItens(): void {
+    this.estoqueService.listar('', 1, 100).subscribe(resposta => {
+      this.itens = resposta.results;
+      if (this.operacao === 'CARGA_INICIAL' && !this.itensSemCargaInicial.length) {
+        this.trocarOperacao('SAIDA');
+      } else if (!this.itensDaOperacao.some(item => item.item_generico_id === this.itemGenericoId)) {
+        this.itemGenericoId = undefined;
+      }
     });
   }
 
@@ -76,8 +136,6 @@ export class MovimentarEstoque {
     const dia = String(agora.getDate()).padStart(2, '0');
     const hora = String(agora.getHours()).padStart(2, '0');
     const minuto = String(agora.getMinutes()).padStart(2, '0');
-
     return `${ano}-${mes}-${dia}T${hora}:${minuto}`;
   }
 }
-
