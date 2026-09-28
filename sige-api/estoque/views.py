@@ -1,7 +1,7 @@
 from collections import defaultdict
 from decimal import Decimal
 
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -17,22 +17,25 @@ from estoque.serializers import (
     RecebimentoSerializer,
     SaidaSerializer,
 )
-from estoque.services import (
+from utils.estoque_services import (
     estornar_movimentacao,
     registrar_ajuste,
     registrar_carga_inicial,
     registrar_recebimento,
     registrar_saida,
 )
-from licitacao.views import BaseFiltroMixin
-from utils.permissions import RBACPermission
+from utils.mixins import BaseFiltroMixin, FiltroQueryParamMixin, RBACMixin
+from utils.painel_nutricionista import montar_painel
 from utils.rbac import Acao, Recurso
 
 
-class EstoqueViewSet(BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
-    queryset = Estoque.objects.select_related('item_generico').all()
+class EstoqueViewSet(RBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
+    queryset = Estoque.objects.select_related('item_generico').annotate(
+        possui_carga_inicial=Exists(MovimentacaoEstoque.objects.filter(
+            estoque=OuterRef('pk'), tipo=MovimentacaoEstoque.Tipo.CARGA_INICIAL,
+        )),
+    )
     serializer_class = EstoqueSerializer
-    permission_classes = [RBACPermission]
     rbac_resource = Recurso.ESTOQUE
     rbac_action_map = {
         'consolidado': Acao.CONSULTAR_CONSOLIDADO,
@@ -124,28 +127,26 @@ class EstoqueViewSet(BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
         return self._executar(EstornoSerializer, estornar_movimentacao, request)
 
 
-class MovimentacaoEstoqueViewSet(BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
+class MovimentacaoEstoqueViewSet(RBACMixin, BaseFiltroMixin, FiltroQueryParamMixin, viewsets.ReadOnlyModelViewSet):
     queryset = MovimentacaoEstoque.objects.select_related(
         'estoque__item_generico', 'usuario', 'item_ordem__ordem_entrega'
     ).all()
     serializer_class = MovimentacaoEstoqueSerializer
-    permission_classes = [RBACPermission]
     rbac_resource = Recurso.MOVIMENTACAO_ESTOQUE
     rbac_action_map = {'list': Acao.CONSULTAR_EXTRATO, 'retrieve': Acao.CONSULTAR_EXTRATO}
     search_fields = ['estoque__item_generico__catmat', 'estoque__item_generico__descricao', 'observacao']
     ordering_fields = ['data_hora', 'quantidade', 'saldo_resultante']
     ordering = ['-data_hora', '-id']
+    filtros_query_param = {
+        'genero_id': 'estoque__item_generico_id',
+        'data_inicio': 'data_hora__gte',
+        'data_fim': 'data_hora__lte',
+    }
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        genero_id = self.request.query_params.get('genero_id')
-        data_inicio = self.request.query_params.get('data_inicio')
-        data_fim = self.request.query_params.get('data_fim')
-        if genero_id:
-            queryset = queryset.filter(estoque__item_generico_id=genero_id)
-        if data_inicio:
-            queryset = queryset.filter(data_hora__gte=data_inicio)
-        if data_fim:
-            queryset = queryset.filter(data_hora__lte=data_fim)
-        return queryset
 
+class PainelNutricionistaViewSet(RBACMixin, viewsets.ViewSet):
+    """Resumo de estoque, movimentação, empenhos e ARPs para a Home do Nutricionista."""
+    rbac_resource = Recurso.PAINEL_NUTRICIONISTA
+
+    def list(self, request):
+        return Response(montar_painel())

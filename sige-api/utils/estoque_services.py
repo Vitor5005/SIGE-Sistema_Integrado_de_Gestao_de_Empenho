@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 
 from empenho.models import Empenho, ItemEmpenho
 from entrega.models import ItemOrdem, OrdemEntrega
-from entrega.pendencias import sincronizar_pendencias
+from utils.pendencias import sincronizar_pendencias
 from estoque.models import Estoque, Inventario, ItemInventario, MovimentacaoEstoque
 
 
@@ -126,15 +126,18 @@ def registrar_carga_inicial(*, item_generico_id, quantidade, justificativa, usua
 
 
 @transaction.atomic
-def registrar_ajuste(*, item_generico_id, quantidade_ajuste, justificativa, usuario, data_hora=None):
-    ajuste = _decimal(quantidade_ajuste, 'quantidade_ajuste')
-    if ajuste == ZERO:
-        raise ValidationError({'quantidade_ajuste': 'O ajuste não pode ser zero.'})
+def registrar_ajuste(*, item_generico_id, quantidade_contada, justificativa, usuario, data_hora=None):
+    """Inventário: recebe o que foi contado na prateleira e lança a diferença para o saldo do sistema."""
+    quantidade_contada = _decimal(quantidade_contada, 'quantidade_contada')
+    if quantidade_contada < ZERO:
+        raise ValidationError({'quantidade_contada': 'A quantidade contada não pode ser negativa.'})
 
     estoque = _estoque_bloqueado(item_generico_id)
-    quantidade_contada = estoque.saldo_atual + ajuste
-    if quantidade_contada < ZERO:
-        raise ValidationError({'quantidade_ajuste': 'O ajuste deixaria o estoque negativo.'})
+    ajuste = quantidade_contada - estoque.saldo_atual
+    if ajuste == ZERO:
+        raise ValidationError({
+            'quantidade_contada': 'A contagem confere com o saldo do sistema; não há diferença a ajustar.'
+        })
 
     momento = data_hora or timezone.now()
     inventario = Inventario.objects.create(

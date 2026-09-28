@@ -11,44 +11,41 @@ from django.utils import timezone
 
 from entrega.models import OrdemEntrega, ItemOrdem, PendenciaFornecedor
 from entrega.serializers import OrdemEntregaInsertSerializer, OrdemEntregaSerializer, ItemOrdemSerializer, itemOrdemInsertSerializer, PendenciaFornecedorSerializer
-from licitacao.views import BaseFiltroMixin
 from utils.mail import get_email_client
-from utils.audit import AuditoriaRBACMixin
-from utils.permissions import RBACPermission
+from utils.mixins import (
+    AuditoriaRBACMixin,
+    BaseFiltroMixin,
+    EscopoPorPapelMixin,
+    FiltroQueryParamMixin,
+    SerializerEscritaMixin,
+)
 from utils.rbac import Acao, Papel, Recurso
 
-class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
+class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin, viewsets.ModelViewSet):
     queryset = OrdemEntrega.objects.all()
     serializer_class = OrdemEntregaSerializer
+    serializer_class_escrita = OrdemEntregaInsertSerializer
     parser_classes = [JSONParser, MultiPartParser, FormParser]
-    permission_classes = [RBACPermission]
     rbac_resource = Recurso.ORDEM_ENTREGA
     rbac_action_map = {'EnviarPedidoPorEmail': Acao.EMITIR_ORDEM}
-
-    def get_serializer_class(self):
-        
-        if self.action in ['create', 'update']:
-            return OrdemEntregaInsertSerializer
-
-        return OrdemEntregaSerializer
 
     def perform_create(self, serializer):
         serializer.save(solicitante=self.request.user)
 
     search_fields = ['codigo', 'empenho__codigo']
     filterset_fields = {
-        'status': ['exact'],                         
-        'empenho__id': ['exact'],                    
+        'status': ['exact'],
+        'empenho__id': ['exact'],
         'empenho__ata__licitacao__id': ['exact'],
-        'data_emissao': ['exact', 'gte', 'lte'],     
+        'data_emissao': ['exact', 'gte', 'lte'],
         'data_entrega_prevista': ['exact', 'gte', 'lte'],
-        'data_entrega': ['exact', 'gte', 'lte', 'isnull'],  
+        'data_entrega': ['exact', 'gte', 'lte', 'isnull'],
         'valor_total_executado': ['exact', 'gte', 'lte']
     }
 
     ordering_fields = ['data_emissao', 'data_entrega', 'valor_total_executado']
     ordering = ['-data_emissao']
-    
+
     @action(
         detail=True,
         methods=['post'],
@@ -57,7 +54,7 @@ class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
     )
     def EnviarPedidoPorEmail(self, request, pk=None):
         """
-        Envia um e-mail com um Pedido de Entrega em anexo 
+        Envia um e-mail com um Pedido de Entrega em anexo
         para o fornecedor associado a esta Ordem de Entrega.
         """
         try:
@@ -67,7 +64,7 @@ class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
             return Response({'erro': 'Ordem de Entrega não encontrada'},status=status.HTTP_404_NOT_FOUND)
         except AttributeError:
             return Response({'erro': 'Não foi possível encontrar o fornecedor associado a esta ordem de entrega.'},status=status.HTTP_404_NOT_FOUND)
-        
+
         if not fornecedor.email:
             return Response({'erro': f'O fornecedor "{fornecedor.nome_fantasia}" não possui um e-mail cadastrado.'}, status=status.HTTP_400_BAD_REQUEST)
         assunto = request.data.get('assunto', f'Pedido de Entrega: {ordem_de_entrega.codigo}')
@@ -105,37 +102,22 @@ class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
         finally:
             if caminho_temporario_anexo and os.path.exists(caminho_temporario_anexo):
                 os.remove(caminho_temporario_anexo)
-                
+
         return Response({'sucesso': f'Pedido de entrega enviado com sucesso para {fornecedor.email}.'}, status=status.HTTP_200_OK)
 
-    
-class PedidosDaOrdemViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
+
+class PedidosDaOrdemViewSet(AuditoriaRBACMixin, FiltroQueryParamMixin, viewsets.ModelViewSet):
     queryset = ItemOrdem.objects.all()
     serializer_class = ItemOrdemSerializer
     pagination_class = None
-    permission_classes = [RBACPermission]
     rbac_resource = Recurso.ITEM_ORDEM
-    
-    def get_queryset(self):
-            queryset = super().get_queryset()
-            ordem_id = self.request.query_params.get('ordem_id')
-            if ordem_id is not None:
-                queryset = queryset.filter(ordem_entrega__id=ordem_id)
-            return queryset
-    
-class ItemEntregaViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
+    filtros_query_param = {'ordem_id': 'ordem_entrega__id'}
+
+class ItemEntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet):
     queryset = ItemOrdem.objects.all()
-    serializer_class = ItemOrdemSerializer
-    permission_classes = [RBACPermission]
+    serializer_class = itemOrdemInsertSerializer
     rbac_resource = Recurso.ITEM_ORDEM
 
-    def get_serializer_class(self):
-        
-        if self.action in ['create', 'update']:
-            return itemOrdemInsertSerializer
-        
-        return itemOrdemInsertSerializer
-    
     search_fields = ['observacao', 'ordem_entrega__codigo', 'item_empenho__item_ata__item_generico__descricao']
 
     filterset_fields = {
@@ -149,7 +131,9 @@ class ItemEntregaViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     ordering = ['id']
 
 
-class PendenciaFornecedorViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
+class PendenciaFornecedorViewSet(
+    AuditoriaRBACMixin, BaseFiltroMixin, EscopoPorPapelMixin, viewsets.ReadOnlyModelViewSet
+):
     """
     Pendências de fornecedores geradas em recebimentos parciais.
     O Técnico vê as pendências das ordens que solicitou (ou sem solicitante
@@ -161,9 +145,11 @@ class PendenciaFornecedorViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.R
         'registrada_por', 'destinatario', 'ciente_por',
     )
     serializer_class = PendenciaFornecedorSerializer
-    permission_classes = [RBACPermission]
     rbac_resource = Recurso.PENDENCIA_FORNECEDOR
     rbac_action_map = {'ciente': Acao.ALTERAR_STATUS}
+    escopo_por_papel = {
+        Papel.TECNICO_ADMINISTRATIVO: lambda usuario: Q(destinatario=usuario) | Q(destinatario__isnull=True),
+    }
 
     filterset_fields = {
         'status': ['exact', 'in'],
@@ -176,13 +162,6 @@ class PendenciaFornecedorViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.R
     ]
     ordering_fields = ['data_registro', 'data_atualizacao', 'quantidade_pendente']
     ordering = ['-data_atualizacao', '-id']
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        usuario = self.request.user
-        if getattr(usuario, 'papel', None) == Papel.TECNICO_ADMINISTRATIVO:
-            queryset = queryset.filter(Q(destinatario=usuario) | Q(destinatario__isnull=True))
-        return queryset
 
     @action(detail=True, methods=['post'])
     def ciente(self, request, pk=None):

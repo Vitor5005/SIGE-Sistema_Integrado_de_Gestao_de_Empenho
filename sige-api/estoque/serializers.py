@@ -16,13 +16,14 @@ class EstoqueSerializer(serializers.ModelSerializer):
         source='item_generico.conteudo_embalagem', max_digits=10, decimal_places=3, read_only=True
     )
     unidade_embalagem = serializers.CharField(source='item_generico.unidade_embalagem', read_only=True)
+    possui_carga_inicial = serializers.BooleanField(read_only=True, default=False)
 
     class Meta:
         model = Estoque
         fields = (
             'id', 'item_generico_id', 'catmat', 'descricao', 'unidade_medida',
             'categoria', 'categoria_descricao', 'conteudo_embalagem',
-            'unidade_embalagem', 'saldo_atual', 'data_atualizacao',
+            'unidade_embalagem', 'saldo_atual', 'data_atualizacao', 'possui_carga_inicial',
         )
 
 
@@ -30,12 +31,13 @@ class MovimentacaoEstoqueSerializer(serializers.ModelSerializer):
     item_generico_id = serializers.IntegerField(source='estoque.item_generico_id', read_only=True)
     genero = serializers.CharField(source='estoque.item_generico.descricao', read_only=True)
     usuario_nome = serializers.CharField(source='usuario.username', read_only=True)
+    tipo_descricao = serializers.CharField(source='get_tipo_display', read_only=True)
     ordem_codigo = serializers.CharField(source='item_ordem.ordem_entrega.codigo', read_only=True, allow_null=True)
 
     class Meta:
         model = MovimentacaoEstoque
         fields = (
-            'id', 'item_generico_id', 'genero', 'tipo', 'sentido', 'quantidade',
+            'id', 'item_generico_id', 'genero', 'tipo', 'tipo_descricao', 'sentido', 'quantidade',
             'saldo_resultante', 'data_hora', 'data_registro', 'observacao',
             'item_ordem', 'ordem_codigo', 'item_inventario', 'movimentacao_estornada',
             'usuario', 'usuario_nome', 'papel',
@@ -60,7 +62,7 @@ class CargaInicialSerializer(serializers.Serializer):
 
 class AjusteSerializer(serializers.Serializer):
     item_generico_id = serializers.IntegerField(min_value=1)
-    quantidade_ajuste = serializers.DecimalField(max_digits=12, decimal_places=3)
+    quantidade_contada = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0'))
     justificativa = serializers.CharField(allow_blank=False, trim_whitespace=True)
     data_hora = serializers.DateTimeField(required=False)
 

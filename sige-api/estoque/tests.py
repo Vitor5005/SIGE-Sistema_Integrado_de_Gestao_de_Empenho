@@ -13,7 +13,7 @@ from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
 from entrega.models import ItemOrdem, OrdemEntrega
 from estoque.models import Estoque, MovimentacaoEstoque
-from estoque.services import (
+from utils.estoque_services import (
     estornar_movimentacao,
     registrar_carga_inicial,
     registrar_recebimento,
@@ -188,7 +188,7 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
         self.assertEqual(self.item_ordem.quantidade_entregue, Decimal('0.00'))
 
     def test_falha_na_entrada_desfaz_conclusao_da_ordem(self):
-        with patch('estoque.services._registrar_movimentacao', side_effect=RuntimeError('falha simulada')):
+        with patch('utils.estoque_services._registrar_movimentacao', side_effect=RuntimeError('falha simulada')):
             with self.assertRaises(RuntimeError):
                 registrar_recebimento(
                     ordem_id=self.ordem.id,
@@ -296,3 +296,114 @@ class PermissoesEstoqueTests(EstoqueBaseMixin, APITestCase):
             self.client.force_authenticate(usuario)
             self.assertEqual(self.client.post(reverse('estoque-saidas'), payload, format='json').status_code, 403)
 
+
+
+class InventarioTests(EstoqueBaseMixin, APITestCase):
+    """Inventário recebe a quantidade contada; carga inicial só vale uma vez por gênero."""
+
+    def setUp(self):
+        self.criar_cenario()
+        registrar_carga_inicial(
+            item_generico_id=self.genero.id, quantidade='50', justificativa='Implantação',
+            usuario=self.estoquista,
+        )
+        self.client.force_authenticate(self.estoquista)
+
+    def inventariar(self, quantidade_contada):
+        return self.client.post(reverse('estoque-ajustes'), {
+            'item_generico_id': self.genero.id,
+            'quantidade_contada': quantidade_contada,
+            'justificativa': 'Contagem mensal',
+        }, format='json')
+
+    def test_contagem_menor_lanca_falta_pela_diferenca(self):
+        resposta = self.inventariar('47')
+
+        self.assertEqual(resposta.status_code, 201, resposta.data)
+        self.assertEqual(resposta.data['tipo'], MovimentacaoEstoque.Tipo.AJUSTE_NEGATIVO)
+        self.assertEqual(resposta.data['tipo_descricao'], 'Inventário (falta)')
+        self.assertEqual(Decimal(resposta.data['quantidade']), Decimal('3'))
+        self.assertEqual(Estoque.objects.get(item_generico=self.genero).saldo_atual, Decimal('47.000'))
+
+    def test_contagem_maior_lanca_sobra(self):
+        resposta = self.inventariar('52.5')
+
+        self.assertEqual(resposta.status_code, 201, resposta.data)
+        self.assertEqual(resposta.data['tipo'], MovimentacaoEstoque.Tipo.AJUSTE_POSITIVO)
+        self.assertEqual(Estoque.objects.get(item_generico=self.genero).saldo_atual, Decimal('52.500'))
+
+    def test_contagem_igual_ao_saldo_nao_gera_movimentacao(self):
+        quantidade_antes = MovimentacaoEstoque.objects.count()
+        resposta = self.inventariar('50')
+
+        self.assertEqual(resposta.status_code, 400)
+        self.assertEqual(MovimentacaoEstoque.objects.count(), quantidade_antes)
+
+    def test_contagem_zero_zera_o_estoque_e_negativa_e_rejeitada(self):
+        self.assertEqual(self.inventariar('-1').status_code, 400)
+        self.assertEqual(self.inventariar('0').status_code, 201)
+        self.assertEqual(Estoque.objects.get(item_generico=self.genero).saldo_atual, Decimal('0.000'))
+
+    def test_listagem_indica_generos_que_ja_tem_carga_inicial(self):
+        sem_carga = ItemGenerico.objects.create(
+            catmat='654321', descricao='Feijão', unidade_medida='KG', categoria='NP',
+        )
+        dados = {
+            item['item_generico_id']: item['possui_carga_inicial']
+            for item in self.client.get(reverse('estoque-list'), {'page_size': 100}).data['results']
+        }
+
+        self.assertTrue(dados[self.genero.id])
+        self.assertFalse(dados[sem_carga.id])
+
+
+class PainelNutricionistaTests(EstoqueBaseMixin, APITestCase):
+    """Home do Nutricionista: disponibilidade por gênero, movimentação semanal e saldos."""
+
+    def setUp(self):
+        self.criar_cenario()
+        registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id, 'quantidade_recebida': '200',
+                'observacao': 'Restante na próxima semana',
+            }],
+            usuario=self.estoquista,
+        )
+        registrar_saida(
+            item_generico_id=self.genero.id, quantidade='50', tipo_saida='PRODUCAO',
+            justificativa='Almoço', usuario=self.estoquista,
+        )
+        self.url = reverse('painel-nutricionista-list')
+
+    def test_somente_nutricionista_acessa(self):
+        for usuario in (self.diretor, self.tecnico, self.estoquista):
+            self.client.force_authenticate(usuario)
+            self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_disponibilidade_do_genero_do_estoque_ate_a_arp(self):
+        self.client.force_authenticate(self.nutricionista)
+        dados = self.client.get(self.url).data
+
+        genero = next(g for g in dados['generos'] if g['item_generico_id'] == self.genero.id)
+        self.assertEqual(genero['em_estoque'], Decimal('150.000'))
+        self.assertEqual(genero['a_caminho'], Decimal('300.00'))
+        self.assertEqual(genero['empenhado'], Decimal('2000.00'))
+        self.assertEqual(genero['na_arp'], Decimal('5500.00'))
+
+    def test_movimentacao_da_semana_atual_e_saldos_financeiros(self):
+        self.client.force_authenticate(self.nutricionista)
+        dados = self.client.get(self.url).data
+
+        serie = dados['movimentacao']['por_genero'][self.genero.id]
+        self.assertEqual(len(dados['movimentacao']['semanas']), 8)
+        self.assertEqual(serie['entradas'][-1], Decimal('200.000'))
+        self.assertEqual(serie['saidas'][-1], Decimal('50.000'))
+        self.assertEqual(sum(serie['entradas'][:-1]), 0)
+
+        empenho = dados['empenhos'][0]
+        self.assertEqual(empenho['valor_utilizado'], Decimal('780.00'))
+        self.assertEqual(empenho['saldo_disponivel'], Decimal('8970.00'))
+        arp = dados['arps'][0]
+        self.assertEqual(arp['valor_registrado'], Decimal('31200.00'))
+        self.assertEqual(arp['saldo_disponivel'], Decimal('31200.00'))

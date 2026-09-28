@@ -82,7 +82,7 @@ class PendenciaFornecedor(models.Model):
     data_resolucao = models.DateTimeField(null=True, blank=True)
 
     # Há no máximo uma pendência não resolvida por item; a regra é garantida em
-    # entrega.pendencias (MySQL não suporta UniqueConstraint condicional).
+    # utils.pendencias (MySQL não suporta UniqueConstraint condicional).
     class Meta:
         ordering = ['-data_atualizacao', '-id']
 

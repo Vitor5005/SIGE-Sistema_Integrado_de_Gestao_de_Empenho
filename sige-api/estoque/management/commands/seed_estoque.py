@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from cadastro.models import ItemGenerico
-from estoque.services import registrar_carga_inicial
+from utils.estoque_services import registrar_carga_inicial
 from usuario.models import Usuario
 from utils.rbac import Papel
 

@@ -24,6 +24,7 @@ export enum Recurso {
   INVENTARIO = 'inventario',
   PENDENCIA_FORNECEDOR = 'pendencia_fornecedor',
   SOLICITACAO_REFORCO = 'solicitacao_reforco',
+  PAINEL_NUTRICIONISTA = 'painel_nutricionista',
 }
 
 export enum Acao {
@@ -155,6 +156,9 @@ export const MATRIZ_PERMISSOES: Matriz = {
     [Acao.CADASTRAR]: [Papel.NUTRICIONISTA],
     [Acao.REFORCAR_EMPENHO]: DIRETOR,
     [Acao.ALTERAR_STATUS]: DIRETOR,
+  },
+  [Recurso.PAINEL_NUTRICIONISTA]: {
+    [Acao.CONSULTAR]: [Papel.NUTRICIONISTA],
   },
 };
 

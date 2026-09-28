@@ -12,6 +12,7 @@ import { EmpenhoService, ResumoFinanceiroEmpenhos } from '../../service/empenho.
 import { LicitacaoService } from '../../service/licitacao.service';
 import { OrdemEntregaService } from '../../service/ordem-entrega.service';
 import { Acao, pode, Recurso } from '../../security/rbac';
+import { PainelNutricionista } from './painel-nutricionista/painel-nutricionista';
 
 type IndicadorKey = 'licitacoes' | 'arps' | 'empenhos' | 'entregasEmEspera';
 type ContextoDados = 'atual' | 'todas';
@@ -24,7 +25,7 @@ interface EstadoIndicador {
 
 @Component({
   selector: 'app-home',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, PainelNutricionista],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
@@ -36,6 +37,7 @@ export class Home implements OnInit {
   readonly podeVerLicitacoes = pode(Recurso.LICITACAO, Acao.CONSULTAR);
   readonly podeVerAtas = pode(Recurso.ATA, Acao.CONSULTAR);
   readonly podeVerEmpenhos = pode(Recurso.EMPENHO, Acao.CONSULTAR);
+  readonly podeVerPainelNutricionista = pode(Recurso.PAINEL_NUTRICIONISTA, Acao.CONSULTAR);
 
   indicadores: Record<IndicadorKey, EstadoIndicador> = {
     licitacoes: { valor: null, carregando: true, erro: false },

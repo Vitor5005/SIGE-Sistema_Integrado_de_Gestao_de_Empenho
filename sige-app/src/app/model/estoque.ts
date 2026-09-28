@@ -10,6 +10,7 @@ export interface EstoqueItem {
   unidade_embalagem: string | null;
   saldo_atual: number;
   data_atualizacao: string;
+  possui_carga_inicial: boolean;
 }
 
 export interface MovimentacaoEstoque {
@@ -17,6 +18,7 @@ export interface MovimentacaoEstoque {
   item_generico_id: number;
   genero: string;
   tipo: string;
+  tipo_descricao: string;
   sentido: 'E' | 'S';
   quantidade: number;
   saldo_resultante: number;

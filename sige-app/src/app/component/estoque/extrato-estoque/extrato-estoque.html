@@ -9,7 +9,7 @@
   </div>
   @if(erro){<div class="alert alert-danger">{{erro}}</div>} @if(sucesso){<div class="alert alert-success">{{sucesso}}</div>}
   <div class="table-responsive"><table class="table tabela-estoque"><thead><tr><th>Data/hora</th><th>Gênero</th><th>Tipo</th><th>Entrada</th><th>Saída</th><th>Saldo</th><th>Motivo/observação</th><th>Ações</th></tr></thead>
-    <tbody>@for(m of movimentos; track m.id){<tr><td>{{m.data_hora|date:'dd/MM/yyyy HH:mm'}}</td><td>{{m.genero}}</td><td>{{m.tipo}}</td>
+    <tbody>@for(m of movimentos; track m.id){<tr><td>{{m.data_hora|date:'dd/MM/yyyy HH:mm'}}</td><td>{{m.genero}}</td><td>{{m.tipo_descricao}}</td>
       <td>{{m.sentido==='E'?(m.quantidade|number:'1.0-3'):'—'}}</td><td>{{m.sentido==='S'?(m.quantidade|number:'1.0-3'):'—'}}</td>
       <td>{{m.saldo_resultante|number:'1.0-3'}}</td><td>{{m.observacao||'—'}}</td><td>
       @if(pode(Recurso.ESTOQUE,Acao.ESTORNAR)&&m.tipo!=='ESTORNO'){<button class="btn btn-sm btn-outline-danger" (click)="estornar(m)">Estornar</button>}</td></tr>}

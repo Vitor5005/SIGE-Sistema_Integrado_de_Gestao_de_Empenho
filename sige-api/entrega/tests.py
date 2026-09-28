@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from entrega.models import PendenciaFornecedor
-from estoque.services import registrar_recebimento
+from utils.estoque_services import registrar_recebimento
 from estoque.tests import EstoqueBaseMixin
 from usuario.models import HistoricoAuditoria, Usuario
 from utils.rbac import Acao, Papel, Recurso

@@ -31,6 +31,7 @@ class Recurso:
     INVENTARIO = 'inventario'
     PENDENCIA_FORNECEDOR = 'pendencia_fornecedor'
     SOLICITACAO_REFORCO = 'solicitacao_reforco'
+    PAINEL_NUTRICIONISTA = 'painel_nutricionista'
 
 
 class Acao:
@@ -172,6 +173,10 @@ MATRIZ_PERMISSOES = {
         Acao.CADASTRAR: frozenset({Papel.NUTRICIONISTA}),
         Acao.REFORCAR_EMPENHO: DIRETOR,
         Acao.ALTERAR_STATUS: DIRETOR,
+    },
+    # Visão de estoque, empenhos e ARPs para o planejamento de cardápios.
+    Recurso.PAINEL_NUTRICIONISTA: {
+        Acao.CONSULTAR: frozenset({Papel.NUTRICIONISTA}),
     },
 }
 

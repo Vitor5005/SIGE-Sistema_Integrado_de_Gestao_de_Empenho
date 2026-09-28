@@ -1,0 +1,420 @@
+// Cores dos gráficos (validadas contra o fundo branco dos cards).
+// Etapas: rampa ordinal de um só azul, do mais imediato (escuro) ao mais distante (claro).
+.painel-nutri {
+  --etapa-estoque: #104281;
+  --etapa-caminho: #256abf;
+  --etapa-empenhado: #5598e7;
+  --etapa-arp: #86b6ef;
+  --serie-entrada: #2a78d6;
+  --serie-saida: #eb6834;
+  --medidor-trilha: #cde2fb;
+  --medidor-preenchido: #2a78d6;
+  --grade: #e1e0d9;
+  --linha-base: #c3c2b7;
+  --status-bom: #0ca30c;
+  --status-critico: #d03b3b;
+
+  display: block;
+  margin-bottom: var(--sige-space-6);
+}
+
+.painel-cabecalho {
+  margin-bottom: var(--sige-space-4);
+
+  h2 {
+    margin: 0;
+    color: var(--sige-text-primary);
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: var(--sige-space-1) 0 0;
+    color: var(--sige-text-secondary);
+    font-size: 0.875rem;
+  }
+}
+
+.painel-conteudo {
+  display: grid;
+  gap: var(--sige-space-5);
+  transition: opacity 0.2s ease;
+}
+
+.painel-conteudo--atualizando {
+  opacity: 0.6;
+}
+
+.painel-estado {
+  padding: var(--sige-space-4);
+  color: var(--sige-text-secondary);
+  text-align: center;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--sige-space-4);
+}
+
+.kpi {
+  display: grid;
+  gap: var(--sige-space-1);
+  padding: var(--sige-space-4);
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+}
+
+.kpi-rotulo {
+  color: var(--sige-text-secondary);
+  font-size: 0.875rem;
+}
+
+.kpi-valor {
+  color: var(--sige-text-primary);
+  font-size: 1.5rem;
+  font-weight: 650;
+
+  small {
+    color: var(--sige-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+}
+
+.painel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: var(--sige-space-5);
+}
+
+.painel-card {
+  min-width: 0;
+}
+
+.painel-card-cabecalho {
+  margin-bottom: var(--sige-space-4);
+
+  h3 {
+    margin: 0;
+    color: var(--sige-text-primary);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: var(--sige-space-1) 0 0;
+    color: var(--sige-text-secondary);
+    font-size: 0.875rem;
+  }
+
+  &--com-filtro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--sige-space-3);
+
+    .form-select {
+      width: auto;
+      max-width: 16rem;
+    }
+  }
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sige-space-3);
+  margin-bottom: var(--sige-space-3);
+
+  .form-control {
+    flex: 1 1 16rem;
+  }
+
+  .form-select {
+    flex: 0 1 16rem;
+  }
+}
+
+.legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sige-space-2) var(--sige-space-4);
+  margin: 0 0 var(--sige-space-3);
+  padding: 0;
+  list-style: none;
+  color: var(--sige-text-primary);
+  font-size: 0.8125rem;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sige-space-1);
+  }
+
+  small,
+  .legenda-unidade {
+    color: var(--sige-text-secondary);
+  }
+}
+
+.chave-retangulo {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+}
+
+.chave-linha {
+  width: 0.875rem;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.etapa-em_estoque { background: var(--etapa-estoque); }
+.etapa-a_caminho { background: var(--etapa-caminho); }
+.etapa-empenhado { background: var(--etapa-empenhado); }
+.etapa-na_arp { background: var(--etapa-arp); }
+.serie-entradas,
+span.serie-entrada { background: var(--serie-entrada); }
+.serie-saidas,
+span.serie-saida { background: var(--serie-saida); }
+
+.tabela-cardapio {
+  width: 100%;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: var(--sige-space-2) var(--sige-space-3);
+    border-bottom: 1px solid var(--sige-border);
+    vertical-align: middle;
+  }
+
+  thead th {
+    color: var(--sige-text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody th {
+    min-width: 9rem;
+    font-weight: 600;
+
+    small {
+      display: block;
+      color: var(--sige-text-secondary);
+      font-weight: 400;
+    }
+  }
+
+  .numero {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .coluna-barra {
+    width: 28%;
+    min-width: 10rem;
+  }
+}
+
+.barra-etapas {
+  display: flex;
+  gap: 2px;
+  height: 0.75rem;
+  cursor: default;
+
+  &:focus-visible {
+    outline: 2px solid var(--sige-color-primary);
+    outline-offset: 3px;
+  }
+}
+
+.segmento {
+  min-width: 2px;
+
+  &:first-child { border-radius: 4px 0 0 4px; }
+  &:last-child { border-radius: 0 4px 4px 0; }
+  &:only-child { border-radius: 4px; }
+}
+
+.sem-saldo {
+  color: var(--sige-text-secondary);
+}
+
+.situacao {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sige-space-1);
+  color: var(--sige-text-primary);
+  white-space: nowrap;
+
+  i { color: var(--sige-text-secondary); }
+  &--bom i { color: var(--status-bom); }
+  &--critico i { color: var(--status-critico); }
+}
+
+.grupo-unidade + .grupo-unidade {
+  margin-top: var(--sige-space-4);
+}
+
+.grupo-unidade h4 {
+  margin: 0 0 var(--sige-space-2);
+  color: var(--sige-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.barras-estoque {
+  display: grid;
+  gap: var(--sige-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(6rem, 10rem) 1fr auto;
+    align-items: center;
+    gap: var(--sige-space-2);
+  }
+}
+
+.barra-rotulo {
+  overflow: hidden;
+  color: var(--sige-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barra-trilha {
+  display: block;
+  border-left: 1px solid var(--linha-base);
+}
+
+.barra-valor {
+  display: block;
+  height: 0.75rem;
+  background: var(--serie-entrada);
+  border-radius: 0 4px 4px 0;
+}
+
+.barra-numero {
+  color: var(--sige-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.link-botao {
+  padding: 0;
+  margin-top: var(--sige-space-2);
+  color: var(--sige-color-primary);
+  background: none;
+  border: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.grafico-colunas {
+  display: block;
+  width: 100%;
+  height: auto;
+
+  .grade { stroke: var(--grade); stroke-width: 1; }
+  .grade.base { stroke: var(--linha-base); }
+  .eixo { fill: var(--sige-text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+  path.serie-entrada { fill: var(--serie-entrada); }
+  path.serie-saida { fill: var(--serie-saida); }
+  .alvo { fill: transparent; outline: none; }
+  .alvo:hover,
+  .alvo:focus-visible { fill: rgba(15, 23, 42, 0.04); }
+}
+
+.tabela-dados {
+  margin-top: var(--sige-space-2);
+  font-size: 0.8125rem;
+
+  summary {
+    color: var(--sige-color-primary);
+    cursor: pointer;
+  }
+
+  table { width: 100%; margin-top: var(--sige-space-2); }
+  td, th { padding: 2px var(--sige-space-2); border-bottom: 1px solid var(--sige-border); }
+  .numero { text-align: right; font-variant-numeric: tabular-nums; }
+}
+
+.medidores {
+  display: grid;
+  gap: var(--sige-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.medidor-topo {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sige-space-2);
+  font-size: 0.875rem;
+
+  small {
+    margin-left: var(--sige-space-1);
+    color: var(--sige-text-secondary);
+  }
+}
+
+.medidor-valor {
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.medidor-trilha {
+  height: 0.625rem;
+  margin: var(--sige-space-1) 0;
+  background: var(--medidor-trilha);
+  border-radius: 4px;
+}
+
+.medidor-preenchido {
+  display: block;
+  height: 100%;
+  background: var(--medidor-preenchido);
+  border-radius: 4px;
+}
+
+.medidor-rodape {
+  color: var(--sige-text-secondary);
+}
+
+.dica {
+  position: fixed;
+  z-index: 1080;
+  display: grid;
+  gap: 2px;
+  padding: var(--sige-space-2) var(--sige-space-3);
+  color: var(--sige-text-primary);
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-sm);
+  box-shadow: var(--sige-shadow-md);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+}
+
+.dica-titulo {
+  color: var(--sige-text-secondary);
+}
+
+.dica-linha {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sige-space-1);
+}
