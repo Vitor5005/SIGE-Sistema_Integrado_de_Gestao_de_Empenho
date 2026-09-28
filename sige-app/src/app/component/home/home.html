@@ -369,6 +369,9 @@
     </div>
   </section>
 
+  @if (podeVerPainelNutricionista) {
+  <app-painel-nutricionista />
+  } @else {
   <section class="sige-section entregas-recentes" aria-labelledby="entregas-recentes-title">
     <div class="home-bloco-cabecalho entregas-recentes-cabecalho">
       <div>
@@ -427,4 +430,5 @@
       </div>
     }
   </section>
+  }
 </div>

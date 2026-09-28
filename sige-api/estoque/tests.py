@@ -356,3 +356,54 @@ class InventarioTests(EstoqueBaseMixin, APITestCase):
         self.assertTrue(dados[self.genero.id])
         self.assertFalse(dados[sem_carga.id])
 
+
+class PainelNutricionistaTests(EstoqueBaseMixin, APITestCase):
+    """Home do Nutricionista: disponibilidade por gênero, movimentação semanal e saldos."""
+
+    def setUp(self):
+        self.criar_cenario()
+        registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id, 'quantidade_recebida': '200',
+                'observacao': 'Restante na próxima semana',
+            }],
+            usuario=self.estoquista,
+        )
+        registrar_saida(
+            item_generico_id=self.genero.id, quantidade='50', tipo_saida='PRODUCAO',
+            justificativa='Almoço', usuario=self.estoquista,
+        )
+        self.url = reverse('painel-nutricionista-list')
+
+    def test_somente_nutricionista_acessa(self):
+        for usuario in (self.diretor, self.tecnico, self.estoquista):
+            self.client.force_authenticate(usuario)
+            self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_disponibilidade_do_genero_do_estoque_ate_a_arp(self):
+        self.client.force_authenticate(self.nutricionista)
+        dados = self.client.get(self.url).data
+
+        genero = next(g for g in dados['generos'] if g['item_generico_id'] == self.genero.id)
+        self.assertEqual(genero['em_estoque'], Decimal('150.000'))
+        self.assertEqual(genero['a_caminho'], Decimal('300.00'))
+        self.assertEqual(genero['empenhado'], Decimal('2000.00'))
+        self.assertEqual(genero['na_arp'], Decimal('5500.00'))
+
+    def test_movimentacao_da_semana_atual_e_saldos_financeiros(self):
+        self.client.force_authenticate(self.nutricionista)
+        dados = self.client.get(self.url).data
+
+        serie = dados['movimentacao']['por_genero'][self.genero.id]
+        self.assertEqual(len(dados['movimentacao']['semanas']), 8)
+        self.assertEqual(serie['entradas'][-1], Decimal('200.000'))
+        self.assertEqual(serie['saidas'][-1], Decimal('50.000'))
+        self.assertEqual(sum(serie['entradas'][:-1]), 0)
+
+        empenho = dados['empenhos'][0]
+        self.assertEqual(empenho['valor_utilizado'], Decimal('780.00'))
+        self.assertEqual(empenho['saldo_disponivel'], Decimal('8970.00'))
+        arp = dados['arps'][0]
+        self.assertEqual(arp['valor_registrado'], Decimal('31200.00'))
+        self.assertEqual(arp['saldo_disponivel'], Decimal('31200.00'))

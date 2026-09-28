@@ -25,6 +25,7 @@ from utils.estoque_services import (
     registrar_saida,
 )
 from utils.mixins import BaseFiltroMixin, FiltroQueryParamMixin, RBACMixin
+from utils.painel_nutricionista import montar_painel
 from utils.rbac import Acao, Recurso
 
 
@@ -142,3 +143,10 @@ class MovimentacaoEstoqueViewSet(RBACMixin, BaseFiltroMixin, FiltroQueryParamMix
         'data_fim': 'data_hora__lte',
     }
 
+
+class PainelNutricionistaViewSet(RBACMixin, viewsets.ViewSet):
+    """Resumo de estoque, movimentação, empenhos e ARPs para a Home do Nutricionista."""
+    rbac_resource = Recurso.PAINEL_NUTRICIONISTA
+
+    def list(self, request):
+        return Response(montar_painel())

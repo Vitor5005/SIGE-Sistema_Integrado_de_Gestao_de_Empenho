@@ -1,0 +1,257 @@
+<section class="painel-nutri" aria-labelledby="painel-nutri-title">
+  <div class="painel-cabecalho">
+    <div>
+      <h2 id="painel-nutri-title">Planejamento de cardápio</h2>
+      <p>O que há no estoque, o que está chegando e quanto ainda pode ser pedido.</p>
+    </div>
+  </div>
+
+  @if (carregando && !dados) {
+    <div class="painel-estado" role="status">Carregando dados do planejamento...</div>
+  } @else if (erro && !dados) {
+    <div class="painel-estado">
+      Não foi possível carregar o planejamento.
+      <button type="button" class="sige-button sige-button--secondary" (click)="carregar()">Tentar novamente</button>
+    </div>
+  } @else if (dados) {
+    <div class="painel-conteudo" [class.painel-conteudo--atualizando]="carregando">
+
+      <div class="kpi-grid">
+        <div class="kpi">
+          <span class="kpi-rotulo">Gêneros em estoque</span>
+          <span class="kpi-valor">{{ quantidadeEmEstoque }} <small>de {{ generos.length }}</small></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-rotulo">Gêneros chegando</span>
+          <span class="kpi-valor">{{ quantidadeACaminho }}</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-rotulo">Saldo nos empenhos</span>
+          <span class="kpi-valor">{{ formatarMoeda(saldoEmpenhos) }}</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-rotulo">Saldo nas ARPs</span>
+          <span class="kpi-valor">{{ formatarMoeda(saldoArps) }}</span>
+        </div>
+      </div>
+
+      <article class="sige-section painel-card" aria-labelledby="cardapio-title">
+        <header class="painel-card-cabecalho">
+          <h3 id="cardapio-title">O que posso usar no cardápio</h3>
+          <p>Para cada gênero, quanto existe em cada etapa, da mais imediata à mais distante.</p>
+        </header>
+
+        <div class="filtros">
+          <input class="form-control" type="search" placeholder="Buscar gênero ou CATMAT" aria-label="Buscar gênero"
+            [(ngModel)]="busca">
+          <select class="form-select" aria-label="Filtrar por categoria" [(ngModel)]="categoria">
+            <option value="">Todas as categorias</option>
+            @for (item of categorias; track item.valor) {
+              <option [value]="item.valor">{{ item.rotulo }}</option>
+            }
+          </select>
+        </div>
+
+        <ul class="legenda" aria-label="Legenda das etapas">
+          @for (etapa of etapas; track etapa.chave) {
+            <li><span class="chave-retangulo etapa-{{ etapa.chave }}"></span>{{ etapa.rotulo }}
+              <small>— {{ etapa.descricao }}</small></li>
+          }
+        </ul>
+
+        <div class="table-responsive">
+          <table class="tabela-cardapio">
+            <thead>
+              <tr>
+                <th scope="col">Gênero</th>
+                <th scope="col" class="coluna-barra">Distribuição</th>
+                @for (etapa of etapas; track etapa.chave) {
+                  <th scope="col" class="numero">{{ etapa.rotulo }}</th>
+                }
+                <th scope="col">Situação</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (genero of generosVisiveis; track genero.item_generico_id) {
+                <tr>
+                  <th scope="row">
+                    {{ genero.descricao }}
+                    <small>{{ genero.categoria_descricao }} · {{ genero.unidade_medida }}</small>
+                  </th>
+                  <td class="coluna-barra">
+                    @if (totalDisponivel(genero) > 0) {
+                      <div class="barra-etapas" tabindex="0" role="img"
+                        [attr.aria-label]="'Distribuição de ' + genero.descricao + ' por etapa'"
+                        (pointermove)="dicaGenero($event, genero)" (pointerleave)="esconderDica()"
+                        (focus)="dicaGenero($event, genero)" (blur)="esconderDica()">
+                        @for (etapa of etapas; track etapa.chave) {
+                          @if (percentualEtapa(genero, etapa.chave) > 0) {
+                            <span class="segmento etapa-{{ etapa.chave }}"
+                              [style.flex-grow]="percentualEtapa(genero, etapa.chave)"></span>
+                          }
+                        }
+                      </div>
+                    } @else {
+                      <span class="sem-saldo">—</span>
+                    }
+                  </td>
+                  @for (etapa of etapas; track etapa.chave) {
+                    <td class="numero">{{ valorEtapa(genero, etapa.chave) > 0 ? formatarNumero(valorEtapa(genero, etapa.chave)) : '—' }}</td>
+                  }
+                  <td>
+                    @let s = situacao(genero);
+                    <span class="situacao situacao--{{ s.tipo }}"><i class="bi {{ s.icone }}" aria-hidden="true"></i>{{ s.rotulo }}</span>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="painel-estado">Nenhum gênero encontrado.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (generosOcultos > 0) {
+          <button type="button" class="link-botao" (click)="tabelaCompleta = !tabelaCompleta">
+            {{ tabelaCompleta ? 'Mostrar menos' : 'Ver todos os ' + generosFiltrados.length + ' gêneros' }}
+          </button>
+        }
+      </article>
+
+      <div class="painel-grid">
+        <article class="sige-section painel-card" aria-labelledby="estoque-atual-title">
+          <header class="painel-card-cabecalho">
+            <h3 id="estoque-atual-title">Estoque atual</h3>
+            <p>Quantidade de cada gênero disponível agora, separada por unidade de medida.</p>
+          </header>
+          @for (grupo of gruposEstoque; track grupo.unidade) {
+            <div class="grupo-unidade">
+              <h4>Em {{ grupo.unidade }}</h4>
+              <ul class="barras-estoque">
+                @for (genero of itensVisiveis(grupo); track genero.item_generico_id) {
+                  <li>
+                    <span class="barra-rotulo">{{ genero.descricao }}</span>
+                    <span class="barra-trilha">
+                      <span class="barra-valor" [style.width.%]="larguraEstoque(genero, grupo)"></span>
+                    </span>
+                    <span class="barra-numero">{{ formatarNumero(genero.em_estoque) }}</span>
+                  </li>
+                }
+              </ul>
+              @if (grupo.itens.length > 8) {
+                <button type="button" class="link-botao" (click)="alternarUnidade(grupo.unidade)">
+                  {{ unidadesExpandidas.has(grupo.unidade) ? 'Mostrar menos' : 'Ver todos os ' + grupo.itens.length }}
+                </button>
+              }
+            </div>
+          } @empty {
+            <p class="painel-estado">Nenhum gênero com saldo em estoque no momento.</p>
+          }
+        </article>
+
+        <article class="sige-section painel-card" aria-labelledby="movimentacao-title">
+          <header class="painel-card-cabecalho painel-card-cabecalho--com-filtro">
+            <div>
+              <h3 id="movimentacao-title">Entradas e saídas</h3>
+              <p>Últimas 8 semanas, por gênero.</p>
+            </div>
+            @if (generosComMovimento.length) {
+              <select class="form-select" aria-label="Gênero do gráfico de movimentação" [(ngModel)]="generoMovimentoId">
+                @for (genero of generosComMovimento; track genero.item_generico_id) {
+                  <option [value]="'' + genero.item_generico_id">{{ genero.descricao }}</option>
+                }
+              </select>
+            }
+          </header>
+
+          @if (generosComMovimento.length) {
+            <ul class="legenda">
+              <li><span class="chave-retangulo serie-entrada"></span>Entradas</li>
+              <li><span class="chave-retangulo serie-saida"></span>Saídas</li>
+              <li class="legenda-unidade">em {{ generoMovimento?.unidade_medida }}</li>
+            </ul>
+            <svg class="grafico-colunas" [attr.viewBox]="'0 0 ' + largura + ' ' + altura" role="img"
+              [attr.aria-label]="'Entradas e saídas semanais de ' + generoMovimento?.descricao">
+              @for (tick of ticksMovimento; track $index) {
+                <line class="grade" [attr.x1]="margem.esquerda" [attr.x2]="largura - margem.direita"
+                  [attr.y1]="yValor(tick)" [attr.y2]="yValor(tick)" [class.base]="$index === 0" />
+                <text class="eixo" [attr.x]="margem.esquerda - 8" [attr.y]="yValor(tick) + 4" text-anchor="end">
+                  {{ formatarNumero(tick) }}</text>
+              }
+              @for (semana of semanas; track semana; let i = $index) {
+                <path class="serie-entrada" [attr.d]="caminhoColuna(i, entradas[i], 0)" />
+                <path class="serie-saida" [attr.d]="caminhoColuna(i, saidas[i], 1)" />
+                <text class="eixo" [attr.x]="xGrupo(i) + larguraGrupo / 2" [attr.y]="altura - 8" text-anchor="middle">
+                  {{ rotuloSemana(semana) }}</text>
+                <rect class="alvo" [attr.x]="xGrupo(i)" [attr.y]="margem.topo" [attr.width]="larguraGrupo"
+                  [attr.height]="altura - margem.topo - margem.base" tabindex="0"
+                  [attr.aria-label]="'Semana de ' + rotuloSemana(semana) + ': entradas ' + formatarNumero(entradas[i]) + ', saídas ' + formatarNumero(saidas[i])"
+                  (pointermove)="dicaSemana($event, i)" (pointerleave)="esconderDica()"
+                  (focus)="dicaSemana($event, i)" (blur)="esconderDica()" />
+              }
+            </svg>
+            <details class="tabela-dados">
+              <summary>Ver dados em tabela</summary>
+              <table>
+                <thead><tr><th scope="col">Semana</th><th scope="col" class="numero">Entradas</th><th scope="col" class="numero">Saídas</th></tr></thead>
+                <tbody>
+                  @for (semana of semanas; track semana; let i = $index) {
+                    <tr><td>{{ rotuloSemana(semana) }}</td><td class="numero">{{ formatarNumero(entradas[i]) }}</td>
+                      <td class="numero">{{ formatarNumero(saidas[i]) }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </details>
+          } @else {
+            <p class="painel-estado">Nenhuma movimentação de estoque nas últimas 8 semanas.</p>
+          }
+        </article>
+      </div>
+
+      <div class="painel-grid">
+        @for (bloco of [
+          { id: 'empenhos', titulo: 'Saldo dos empenhos', descricao: 'Valor que ainda pode virar ordem de entrega.', itens: medidoresEmpenho, link: '/visualizar-empenhos', vazio: 'Nenhum empenho cadastrado.' },
+          { id: 'arps', titulo: 'Saldo das ARPs', descricao: 'Valor registrado nas atas que ainda pode ser empenhado.', itens: medidoresArp, link: '/visualizar-atas', vazio: 'Nenhuma ARP cadastrada.' }
+        ]; track bloco.id) {
+          <article class="sige-section painel-card" [attr.aria-labelledby]="'saldo-' + bloco.id + '-title'">
+            <header class="painel-card-cabecalho painel-card-cabecalho--com-filtro">
+              <div>
+                <h3 [id]="'saldo-' + bloco.id + '-title'">{{ bloco.titulo }}</h3>
+                <p>{{ bloco.descricao }}</p>
+              </div>
+              <a class="link-botao" [routerLink]="bloco.link">Ver todos</a>
+            </header>
+            <ul class="medidores">
+              @for (medidor of bloco.itens; track medidor.id) {
+                <li>
+                  <div class="medidor-topo">
+                    <span><strong>{{ medidor.titulo }}</strong> <small>{{ medidor.subtitulo }}</small></span>
+                    <span class="medidor-valor">{{ formatarMoeda(medidor.disponivel) }}</span>
+                  </div>
+                  <div class="medidor-trilha" role="meter" aria-valuemin="0" aria-valuemax="100"
+                    [attr.aria-valuenow]="percentualMedidor(medidor)"
+                    [attr.aria-label]="medidor.titulo + ': saldo disponível'">
+                    <span class="medidor-preenchido" [style.width.%]="percentualMedidor(medidor)"></span>
+                  </div>
+                  <small class="medidor-rodape">
+                    {{ percentualMedidor(medidor) | number: '1.0-0' }}% disponível de {{ formatarMoeda(medidor.total) }}
+                  </small>
+                </li>
+              } @empty {
+                <li class="painel-estado">{{ bloco.vazio }}</li>
+              }
+            </ul>
+          </article>
+        }
+      </div>
+    </div>
+  }
+
+  @if (dica) {
+    <div class="dica" role="tooltip" [style.left.px]="dica.x" [style.top.px]="dica.y">
+      <span class="dica-titulo">{{ dica.titulo }}</span>
+      @for (linha of dica.linhas; track linha.chave) {
+        <span class="dica-linha"><span class="chave-linha" [ngClass]="'etapa-' + linha.chave + ' serie-' + linha.chave"></span>
+          <strong>{{ linha.valor }}</strong> {{ linha.rotulo }}</span>
+      }
+    </div>
+  }
+</section>
