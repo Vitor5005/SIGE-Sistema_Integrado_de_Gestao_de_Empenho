@@ -10,11 +10,17 @@
     @for(page of visiblePages; track $index) {
       @if(page === '...') {
       <li class="page-item disabled ellipsis-item">
-        <span class="page-link">&hellip;</span>
+        <span class="page-link" aria-hidden="true">&hellip;</span>
       </li>
       } @else {
       <li class="page-item" [class.active]="page === currentPage">
-        <button class="page-link" type="button" (click)="irParaPagina(+page)">{{ page }}</button>
+        <button
+          class="page-link"
+          type="button"
+          [attr.aria-label]="'Página ' + page"
+          [attr.aria-current]="page === currentPage ? 'page' : null"
+          (click)="irParaPagina(+page)"
+        >{{ page }}</button>
       </li>
       }
     }

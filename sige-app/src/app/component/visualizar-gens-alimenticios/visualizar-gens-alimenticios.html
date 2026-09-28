@@ -33,11 +33,12 @@
 
   <div class="sige-list-table-wrap">
   <table class="sige-list-table">
+    <caption class="visually-hidden">Catálogo de gêneros alimentícios</caption>
     <thead>
       <tr>
-        <th>CATMAT</th>
+        <th scope="col">CATMAT</th>
         <th scope="col">Categoria</th>
-        <th scope="col">Unidades de Medida</th>
+        <th scope="col">Unidade de medida</th>
         <th scope="col">Descrição</th>
         <th scope="col" class="sige-cell--actions">Ações</th>
       </tr>
@@ -117,14 +118,14 @@
   }
 
 
-  <div #myModal class="modal fade" id="editarItemGenerico" tabindex="-1" aria-hidden="true">
+  <div #myModal class="modal fade" id="editarItemGenerico" tabindex="-1" aria-labelledby="editarItemGenericoLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content modal-custom">
 
         <div class="modal-header-azul">
-          <h2 class="modal-titulo" id="editarItemGenericoLabel">{{ modoCadastro ? 'NOVO' : 'EDITAR' }} GÊNERO ALIMENTÍCIO</h2>
+          <h2 class="modal-titulo" id="editarItemGenericoLabel">{{ modoCadastro ? 'Novo gênero alimentício' : 'Editar gênero alimentício' }}</h2>
           <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()"
-            aria-label="Close"></button>
+            aria-label="Fechar"></button>
           <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
         </div>
 
@@ -132,7 +133,7 @@
           <form class="form-fornecedor" (submit)="salvarRegistro(); $event.preventDefault()">
 
             <div class="subtitulo subtitulo-modal">
-              <h5>{{ modoCadastro ? 'ADICIONAR NOVO ITEM' : 'ALTERAR ITEM' }}</h5>
+              <h3>{{ modoCadastro ? 'Adicionar novo item' : 'Alterar item' }}</h3>
               <hr>
             </div>
 
@@ -141,14 +142,14 @@
             </p>
 
             @if(isSaving) {
-            <div class="status-processamento-modal">
+            <div class="status-processamento-modal" role="status" aria-live="polite">
               <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
               <small>Processando atualização. Aguarde a finalização para continuar.</small>
             </div>
             }
 
             @if(errorMessageModal) {
-            <div class="mensagem-erro-modal">
+            <div class="mensagem-erro-modal" role="alert">
               <small>{{ errorMessageModal }}</small>
             </div>
             }
@@ -158,17 +159,19 @@
                 <label for="catmat">CATMAT</label>
                 <input #myInput type="text" id="catmat" name="catmat" [disabled]="isSaving"
                   [(ngModel)]="registroEditar.catmat" maxlength="6" inputmode="numeric" placeholder="Ex.: 123456"
-                  (input)="onCatmatInput()" [class.campo-invalido]="formSubmitted && !catmatValido" required>
+                  (input)="onCatmatInput()" [class.campo-invalido]="formSubmitted && !catmatValido"
+                  [attr.aria-invalid]="formSubmitted && !catmatValido ? 'true' : null" required>
                 @if(formSubmitted && !catmatValido) {
                 <small class="mensagem-campo-invalido">CATMAT deve conter exatamente 6 dígitos.</small>
                 }
               </div>
 
               <div class="form-group">
-                <label for="descricao">DESCRIÇÃO</label>
+                <label for="descricao">Descrição</label>
                 <textarea id="descricao" name="descricao" [(ngModel)]="registroEditar.descricao" [disabled]="isSaving"
                   maxlength="300" placeholder="Ex.: Arroz tipo 1" (input)="onDescricaoInput()"
-                  [class.campo-invalido]="formSubmitted && !descricaoValida" required></textarea>
+                  [class.campo-invalido]="formSubmitted && !descricaoValida"
+                  [attr.aria-invalid]="formSubmitted && !descricaoValida ? 'true' : null" required></textarea>
                 <small class="texto-apoio-input">{{ 300 - (registroEditar.descricao || '').length }} caracteres restantes.</small>
                 @if(formSubmitted && !descricaoValida) {
                 <small class="mensagem-campo-invalido">Descrição é obrigatória (até 300 caracteres).</small>
@@ -178,9 +181,10 @@
 
             <div class="form-row">
               <div class="form-group flex-2">
-                <label for="unidade">Unidade de Medida</label>
+                <label for="unidade">Unidade de medida</label>
                 <select id="unidade" name="unidade" [(ngModel)]="registroEditar.unidade_medida" [disabled]="isSaving"
-                  [class.campo-invalido]="formSubmitted && !unidadeValida" required>
+                  [class.campo-invalido]="formSubmitted && !unidadeValida"
+                  [attr.aria-invalid]="formSubmitted && !unidadeValida ? 'true' : null" required>
                   <option value="" disabled>Selecione uma unidade</option>
                   @for(uni of unidadesDisponiveis; track $index) {
                   <option [value]="uni">{{ getUnidadeMedidaLabel(uni) }}</option>
@@ -192,9 +196,10 @@
               </div>
 
               <div class="form-group flex-1">
-                <label for="categoria">CATEGORIA</label>
+                <label for="categoria">Categoria</label>
                 <select id="categoria" name="categoria" [(ngModel)]="registroEditar.categoria" [disabled]="isSaving"
-                  [class.campo-invalido]="formSubmitted && !categoriaValida" required>
+                  [class.campo-invalido]="formSubmitted && !categoriaValida"
+                  [attr.aria-invalid]="formSubmitted && !categoriaValida ? 'true' : null" required>
                   <option value="" disabled>Selecione uma categoria</option>
                   @for(cat of categoriasDisponiveis; track $index) {
                   <option [value]="cat">{{ getCategoriaLabel(cat) }}</option>
@@ -216,7 +221,7 @@
                 @if(isSaving) {
                 <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
                 }
-                <i class="bi bi-check-lg"></i> {{ modoCadastro ? 'CADASTRAR' : 'SALVAR' }}
+                <i class="bi bi-check-lg" aria-hidden="true"></i> {{ modoCadastro ? 'Cadastrar' : 'Salvar' }}
               </button>
             </div>
 

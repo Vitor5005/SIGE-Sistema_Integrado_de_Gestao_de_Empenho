@@ -25,6 +25,7 @@
 
   <div class="sige-list-table-wrap">
     <table class="sige-list-table">
+      <caption class="visually-hidden">Lista de empenhos</caption>
       <thead>
         <tr>
           <th scope="col">Identificação</th>
@@ -60,7 +61,7 @@
           </tr>
         } @else {
           @for (item of empenhos; track item.id) {
-            <tr class="sige-list-row--clickable" (click)="enviarPara('visualizar-empenho', item.id)">
+            <tr>
               <td><span>{{ item.codigo }}</span></td>
               <td>
                 <span class="sige-cell--truncate" [title]="item.ata.fornecedor.nome_fantasia">
@@ -74,7 +75,7 @@
                   <button
                     type="button"
                     class="sige-button sige-button--secondary sige-button--sm"
-                    (click)="$event.stopPropagation(); enviarPara('visualizar-empenho', item.id)">
+                    (click)="enviarPara('visualizar-empenho', item.id)">
                     Abrir
                   </button>
                 </div>

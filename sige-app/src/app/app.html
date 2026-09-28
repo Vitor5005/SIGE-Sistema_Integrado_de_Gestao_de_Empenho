@@ -1,6 +1,13 @@
+@if (mostrarLayout) {
+  <a class="sige-skip-link" href="#conteudo-principal">Pular para o conteúdo principal</a>
+}
 <app-cabecalho *ngIf="mostrarLayout"></app-cabecalho>
-<div class="sige-app-main" [class.sige-app-main--authenticated]="mostrarLayout"
-  [attr.role]="mostrarLayout ? 'main' : null">
+<div
+  id="conteudo-principal"
+  class="sige-app-main"
+  [class.sige-app-main--authenticated]="mostrarLayout"
+  tabindex="-1"
+>
   <router-outlet></router-outlet>
 </div>
 <app-feedback-global></app-feedback-global>

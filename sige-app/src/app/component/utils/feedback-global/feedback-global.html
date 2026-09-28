@@ -14,7 +14,8 @@
 </section>
 
 <dialog #dialogConfirmacao class="feedback-confirmacao" (cancel)="cancelarDialog($event)" (close)="aoFecharDialog()"
-  (click)="aoClicarDialog($event)" aria-labelledby="feedback-confirmacao-titulo">
+  (click)="aoClicarDialog($event)" aria-labelledby="feedback-confirmacao-titulo"
+  aria-describedby="feedback-confirmacao-mensagem">
   @if (feedback.confirmacaoAtiva(); as confirmacao) {
   <div class="feedback-confirmacao__content">
     <div class="feedback-confirmacao__icon" [class.feedback-confirmacao__icon--destrutiva]="confirmacao.destrutiva">
@@ -22,7 +23,7 @@
     </div>
     <div>
       <h2 id="feedback-confirmacao-titulo">{{ confirmacao.titulo }}</h2>
-      <p>{{ confirmacao.mensagem }}</p>
+      <p id="feedback-confirmacao-mensagem">{{ confirmacao.mensagem }}</p>
     </div>
   </div>
   <div class="feedback-confirmacao__actions">

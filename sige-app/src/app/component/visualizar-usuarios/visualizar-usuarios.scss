@@ -52,14 +52,6 @@
 }
 
 
-main {
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--cabecalho);
-}
-
 .corpo-cadastro {
     background: #fff;
     border-radius: 20px;
@@ -76,19 +68,11 @@ main {
     gap: 20px;
 }
 
-h1 {
-    color: var(--azul-claro);
-}
-
 .form-cadastro {
     width: 100%;
     display: flex;
     flex-direction: column;
     gap: 18px;
-}
-
-.campo {
-    width: 100%;
 }
 
 label {
@@ -104,49 +88,26 @@ input {
     font-size: 15px;
 }
 
-.input-senha {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
 .toggle-senha {
     position: absolute;
-    right: 10px;
+    right: var(--sige-space-2);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
     background: none;
     border: none;
     cursor: pointer;
-    color: #666;
+    color: var(--sige-text-secondary);
     font-size: 1.1em;
     transition: color .3s;
 }
 
 .toggle-senha:hover {
-    color: #000;
-}
-
-.submit {
-    width: 100%;
-    height: 45px;
-    border: none;
-    border-radius: 10px;
-    background: var(--azul-escuro);
-    color: #fff;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.submit:disabled {
-    opacity: .6;
-    cursor: not-allowed;
-}
-
-.erro {
-    background: #ffefef;
-    color: #c0392b;
-    padding: .75rem 1rem;
-    border-radius: 8px;
-    font-size: .9rem;
+    color: var(--sige-text-primary);
 }
 
 .campo-senha {
@@ -158,12 +119,7 @@ input {
     padding-right: 40px;
 }
 
-.campo-senha i {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
+.campo-senha .toggle-senha i {
     font-size: 18px;
 }
 
@@ -182,7 +138,6 @@ input {
 }
 
 .campo-select:focus {
-    outline: none;
     border-color: var(--azul-claro);
     box-shadow: 0 0 0 2px rgba(0, 103, 190, 0.15);
 }
@@ -302,14 +257,13 @@ input {
             transition: border-color .15s ease, box-shadow .15s ease;
 
             &:focus {
-                outline: none;
                 border-color: var(--azul-claro);
                 box-shadow: 0 0 0 3px rgba(39, 140, 234, 0.15);
             }
         }
     }
 
-    .campo-senha i {
+    .campo-senha .toggle-senha i {
         color: #64748b;
     }
 

@@ -34,14 +34,15 @@
 
     <div class="sige-list-table-wrap">
     <table class="sige-list-table">
+        <caption class="visually-hidden">Lista de usuários</caption>
         <thead>
             <tr>
-                <th scope="col"> Username </th>
+                <th scope="col"> Usuário </th>
                 <th scope="col"> Papel </th>
                 <th scope="col"> Nome </th>
                 <th scope="col"> Sobrenome </th>
-                <th scope="col"> Email </th>
-                <th scope="col" class="sige-cell--status"> status </th>
+                <th scope="col"> E-mail </th>
+                <th scope="col" class="sige-cell--status"> Status </th>
                 <th scope="col" class="sige-cell--actions"> Ações </th>
             </tr>
         </thead>
@@ -129,14 +130,14 @@
         [showTotal]="false" totalLabel="Total de registros" (pageChange)="irParaPagina($event)"></app-paginacao>
     }
 
-    <div #myModal class="modal fade" id="adicionarUsuario" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div #myModal class="modal fade" id="adicionarUsuario" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="adicionarUsuarioLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content modal-custom">
 
                 <div class="modal-header-azul">
                     <h2 class="modal-titulo" id="adicionarUsuarioLabel">{{ tituloModal }}</h2>
                     <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()"
-                        aria-label="Close"></button>
+                        aria-label="Fechar"></button>
                     <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
                 </div>
 
@@ -146,36 +147,38 @@
                         <p class="texto-orientacao-modal">Preencha os dados do usuário. Campos inválidos são destacados em vermelho.</p>
 
                         @if(isSaving) {
-                        <div class="status-processamento-modal">
+                        <div class="status-processamento-modal" role="status" aria-live="polite">
                             <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
                             <small>Processando cadastro. Aguarde a finalização para continuar.</small>
                         </div>
                         }
 
                         @if(errorMessageModal) {
-                        <div class="mensagem-erro-modal">
+                        <div class="mensagem-erro-modal" role="alert">
                             <small>{{ errorMessageModal }}</small>
                         </div>
                         }
 
                         <section class="form-secao">
-                            <div class="form-secao-titulo">Dados de acesso</div>
+                            <h3 class="form-secao-titulo">Dados de acesso</h3>
 
                                 <div class="form-row form-row-compacta">
                                     <div class="form-group flex-1">
-                                        <label for="user">USUÁRIO</label>
+                                        <label for="user">Usuário</label>
                                         <input #myInput type="text" id="user" name="user" [(ngModel)]="registro.username"
                                             [disabled]="isSaving" maxlength="150" placeholder="Ex.: joao.silva" (input)="onUsernameInput()"
-                                            [class.campo-invalido]="formSubmitted && !usernameValido" required>
+                                            [class.campo-invalido]="formSubmitted && !usernameValido"
+                                            [attr.aria-invalid]="formSubmitted && !usernameValido ? 'true' : null" required>
                                         @if(formSubmitted && !usernameValido) {
                                         <small class="mensagem-campo-invalido">Use de 3 a 150 caracteres (letras, números, ponto, traço ou underscore).</small>
                                         }
                                     </div>
                                     <div class="form-group flex-2">
-                                        <label for="email">EMAIL</label>
+                                        <label for="email">E-mail</label>
                                         <input type="email" id="email" name="email" [(ngModel)]="registro.email" [disabled]="isSaving"
                                             maxlength="255" placeholder="usuario@dominio.com" (input)="onEmailInput()"
-                                            [class.campo-invalido]="formSubmitted && !emailValido" required>
+                                            [class.campo-invalido]="formSubmitted && !emailValido"
+                                            [attr.aria-invalid]="formSubmitted && !emailValido ? 'true' : null" required>
                                         @if(formSubmitted && !emailValido) {
                                         <small class="mensagem-campo-invalido">Informe um e-mail válido.</small>
                                         }
@@ -184,9 +187,10 @@
 
                                 <div class="form-row form-row-compacta">
                                     <div class="form-group flex-1">
-                                        <label for="papel">PAPEL</label>
+                                        <label for="papel">Papel</label>
                                         <select class="campo-select" name="papel" id="papel" [(ngModel)]="registro.papel"
-                                            [disabled]="isSaving" [class.campo-invalido]="formSubmitted && !papelValido" required>
+                                            [disabled]="isSaving" [class.campo-invalido]="formSubmitted && !papelValido"
+                                            [attr.aria-invalid]="formSubmitted && !papelValido ? 'true' : null" required>
                                             <option value="" disabled>Selecione um papel</option>
                                             <option value="DIRET">Diretor</option>
                                             <option value="TECAD">Técnico Administrativo</option>
@@ -201,23 +205,25 @@
                         </section>
 
                         <section class="form-secao">
-                            <div class="form-secao-titulo">Dados pessoais</div>
+                            <h3 class="form-secao-titulo">Dados pessoais</h3>
 
                                 <div class="form-row form-row-compacta">
                                     <div class="form-group flex-1">
-                                        <label for="nome">NOME</label>
+                                        <label for="nome">Nome</label>
                                         <input type="text" id="nome" name="nome" [(ngModel)]="registro.first_name" [disabled]="isSaving"
                                             maxlength="150" placeholder="Ex.: João" (input)="onNomeInput()"
-                                            [class.campo-invalido]="formSubmitted && !nomeValido" required>
+                                            [class.campo-invalido]="formSubmitted && !nomeValido"
+                                            [attr.aria-invalid]="formSubmitted && !nomeValido ? 'true' : null" required>
                                         @if(formSubmitted && !nomeValido) {
                                         <small class="mensagem-campo-invalido">Informe o nome com 2 a 150 caracteres.</small>
                                         }
                                     </div>
                                     <div class="form-group flex-1">
-                                        <label for="sobrenome">SOBRENOME</label>
+                                        <label for="sobrenome">Sobrenome</label>
                                         <input type="text" id="sobrenome" name="sobrenome" [(ngModel)]="registro.last_name"
                                             [disabled]="isSaving" maxlength="150" placeholder="Ex.: Silva" (input)="onSobrenomeInput()"
-                                            [class.campo-invalido]="formSubmitted && !sobrenomeValido" required>
+                                            [class.campo-invalido]="formSubmitted && !sobrenomeValido"
+                                            [attr.aria-invalid]="formSubmitted && !sobrenomeValido ? 'true' : null" required>
                                         @if(formSubmitted && !sobrenomeValido) {
                                         <small class="mensagem-campo-invalido">Informe o sobrenome com 2 a 150 caracteres.</small>
                                         }
@@ -226,18 +232,22 @@
                         </section>
 
                         <section class="form-secao">
-                            <div class="form-secao-titulo">Segurança</div>
+                            <h3 class="form-secao-titulo">Segurança</h3>
 
                                 <div class="form-row form-row-compacta">
                                     <div class="form-group flex-1">
-                                        <label for="senha">SENHA @if(senhaObrigatoria){<span>*</span>}</label>
+                                        <label for="senha">Senha @if(senhaObrigatoria){<span>*</span>}</label>
                                         <div class="campo-senha">
                                             <input [type]="mostrarSenha ? 'text' : 'password'" name="senha" id="senha"
                                                 [(ngModel)]="registro.password" [disabled]="isSaving" maxlength="128"
                                                 placeholder="Mínimo de 6 caracteres" (input)="onSenhaInput()"
-                                                [class.campo-invalido]="formSubmitted && !senhaValida">
-                                            <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye' : 'bi-eye-slash'"
-                                                (click)="toggleSenha()"></i>
+                                                [class.campo-invalido]="formSubmitted && !senhaValida"
+                                                [attr.aria-invalid]="formSubmitted && !senhaValida ? 'true' : null"
+                                                autocomplete="new-password">
+                                            <button type="button" class="toggle-senha" [disabled]="isSaving" (click)="toggleSenha()"
+                                                [attr.aria-label]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'">
+                                                <i class="bi" [ngClass]="mostrarSenha ? 'bi-eye' : 'bi-eye-slash'" aria-hidden="true"></i>
+                                            </button>
                                         </div>
                                         <small class="texto-apoio-input">
                                             @if(senhaObrigatoria) {
@@ -269,7 +279,7 @@
                                 @if(isSaving) {
                                 <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
                                 }
-                                <i class="bi bi-check-lg"></i>  {{ mensagemBotao }}
+                                <i class="bi bi-check-lg" aria-hidden="true"></i>  {{ mensagemBotao }}
                             </button>
                         </div>
 

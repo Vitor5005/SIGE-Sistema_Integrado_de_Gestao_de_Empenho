@@ -152,6 +152,7 @@
 
       <div class="sige-detail-table-wrap tabela-empenho-wrap">
         <table class="table sige-detail-table">
+          <caption class="visually-hidden">Itens do empenho</caption>
           <thead>
             <tr>
               <th scope="col">
@@ -179,7 +180,7 @@
             } @else if (errorMessageItens) {
             <tr class="linha-vazia-tabela">
               <td [attr.colspan]="7">
-                <app-estado-conteudo tipo="error" titulo="Não foi possível carregar os dados" [mensagem]="errorMessageItens"
+                <app-estado-conteudo tipo="error" titulo="Não foi possível carregar os itens do empenho" [mensagem]="errorMessageItens"
                   [compacto]="true" [mostrarAcao]="true" (acao)="getItensEmpenho(empenho.id)"></app-estado-conteudo>
               </td>
             </tr>
@@ -264,7 +265,7 @@
       <div class="historico-operacoes-cabecalho">
         <button class="btn-toggle-historico" type="button" data-bs-toggle="collapse"
           data-bs-target="#historicoOperacoesCollapse" aria-expanded="false" aria-controls="historicoOperacoesCollapse">
-          <i class="bi bi-clock-history"></i> Histórico de Operações
+          <i class="bi bi-clock-history" aria-hidden="true"></i> Histórico de Operações
         </button>
         <small>Total de registros: <b>{{ operacoesEmpenho.length }}</b></small>
       </div>
@@ -272,6 +273,7 @@
       <div class="collapse mt-3" id="historicoOperacoesCollapse">
         <div class="sige-detail-table-wrap historico-tabela-wrap">
           <table class="tabela tabela-historico sige-detail-table">
+            <caption class="visually-hidden">Histórico de operações do empenho</caption>
             <thead>
               <tr>
                 <th scope="col">Data/hora</th>
@@ -291,7 +293,7 @@
               } @else if (errorMessageOperacoes) {
               <tr class="linha-vazia-tabela">
                 <td [attr.colspan]="5">
-                  <app-estado-conteudo tipo="error" titulo="Não foi possível carregar os dados" [mensagem]="errorMessageOperacoes"
+                  <app-estado-conteudo tipo="error" titulo="Não foi possível carregar o histórico de operações" [mensagem]="errorMessageOperacoes"
                     [compacto]="true" [mostrarAcao]="true" (acao)="getOperacoesEmpenho(empenho.id)"></app-estado-conteudo>
                 </td>
               </tr>
@@ -639,15 +641,17 @@
 
           <div class="operacao-formulario">
             <span class="sige-detail-label">Tipo da operação</span>
-            <div class="btn-group w-100">
+            <div class="btn-group w-100" role="group" aria-label="Tipo da operação">
               @if (pode(Recurso.OPERACAO_EMPENHO, Acao.REFORCAR_EMPENHO)) {
               <button type="button" class="btn" [ngClass]="tipo === 'reforco' ? 'btn-primary' : 'btn-outline-secondary'"
+                [attr.aria-pressed]="tipo === 'reforco'"
                 (click)="prepararOperacao('reforco'); trocarOperacao('ref')">
               Reforço
               </button>
               }
               @if (pode(Recurso.OPERACAO_EMPENHO, Acao.ANULAR_EMPENHO)) {
               <button type="button" class="btn" [ngClass]="tipo === 'anulacao' ? 'btn-danger' : 'btn-outline-secondary'"
+                [attr.aria-pressed]="tipo === 'anulacao'"
                 (click)="prepararOperacao('anulacao'); trocarOperacao('anl')">
               Anulação
               </button>
@@ -657,9 +661,10 @@
             <label for="quantidadeOperacao">Quantidade ({{ itemEmpenhoModal.item_ata.item_generico.unidade_medida }})</label>
             <input id="quantidadeOperacao" name="quantidadeOperacao" type="number" class="form-control" min="1"
               step="0.01" [max]="limiteOperacaoAtual"
+              aria-describedby="quantidadeOperacaoAjuda"
               [placeholder]="tipo === 'anulacao' ? 'Qtd. para anular' : 'Qtd. para reforçar'"
               [(ngModel)]="operacaoItem_insercao.valor">
-            <small>Informe uma quantidade mínima de 1,00 e até o limite desta operação.</small>
+            <small id="quantidadeOperacaoAjuda">Informe uma quantidade mínima de 1,00 e até o limite desta operação.</small>
             @if (limiteOperacaoAtual < 1) {
             <small>Não há saldo suficiente para realizar uma operação mínima de 1,00.</small>
             }
@@ -685,9 +690,9 @@
         <div class="modal-footer operacao-acoes">
           <button type="button" class="btn w-100 text-white" [ngClass]="tipo === 'anulacao' ? 'bg-danger' : 'bg-primary'"
             [disabled]="!operacaoValida" (click)="salvarOperacaoItem()">
-            <i class="bi bi-check-lg"></i>
+            <i class="bi bi-check-lg" aria-hidden="true"></i>
             {{
-            tipo === 'reforco' ? 'Confirmar Reforço' : 'Confirmar Anulação'
+            tipo === 'reforco' ? 'Confirmar reforço' : 'Confirmar anulação'
             }}
           </button>
         </div>

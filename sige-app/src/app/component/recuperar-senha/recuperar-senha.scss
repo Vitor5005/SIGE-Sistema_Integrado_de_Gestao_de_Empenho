@@ -1,70 +1,126 @@
-body{
+.auth-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: var(--sige-space-4);
   background: var(--cabecalho);
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
 }
+
 .cartao-recuperacao {
-      width: 100%;
-      max-width: 420px;
-      border-radius: 20px;
-    }
+  width: min(100%, 26.25rem);
+  padding: var(--sige-space-6) !important;
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border) !important;
+  border-radius: var(--sige-radius-lg);
+  box-shadow: var(--sige-shadow-md) !important;
+}
 
-    .icone-circulo {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--font-cinza2);
-    }
+.icone-circulo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5rem;
+  height: 5rem;
+  color: var(--sige-text-secondary);
+  background: var(--sige-surface-muted);
+  border-radius: 50%;
+}
 
-    .campo-digito {
-      border: 2px solid #e9ecef;
-      transition: all 0.2s ease-in-out;
-    }
+.campo-digito {
+  border: 1px solid var(--sige-border);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
 
-    .campo-digito:focus {
-      border-color: #198754;
-      background-color: #f8fffb;
-    }
-    label{
-      color: var(--font-cinza2);
-    }
+.campo-digito:focus {
+  border-color: var(--sige-color-primary);
+  background-color: var(--sige-surface-info);
+}
 
-    .botao-acao {
-      border-radius: 10px;
-      transition: transform 0.2s;
-      background-color: var(--azul-claro);
-      color: #ffffff;
-    }
+label {
+  color: var(--sige-text-secondary);
+}
 
-    .botao-acao:active {
-      transform: scale(0.98);
-    }
+.botao-acao {
+  color: var(--sige-color-white);
+  background-color: var(--sige-color-primary);
+  border: 1px solid var(--sige-color-primary);
+  border-radius: var(--sige-radius-md);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
 
-    .form-control {
-      border-radius: 8px;
-    }
+.botao-acao:hover {
+  color: var(--sige-color-white);
+  background-color: var(--sige-color-primary-hover);
+  border-color: var(--sige-color-primary-hover);
+}
 
-    .input-group-text {
-      border-radius: 8px 0 0 8px;
-    }
+.botao-acao:active {
+  transform: scale(0.98);
+}
 
-    .form-control:focus {
-      border-color: var(--azul-claro);
-    }
+.form-control {
+  min-height: 2.5rem;
+  color: var(--sige-text-primary);
+  border-color: var(--sige-border);
+  border-radius: var(--sige-radius-md);
+}
 
-    .titulo-sessao {
-      color: #343a40;
-    }
+.input-group-text {
+  color: var(--sige-text-secondary);
+  background: var(--sige-surface-card);
+  border-color: var(--sige-border);
+  border-radius: var(--sige-radius-md) 0 0 var(--sige-radius-md);
+}
 
-    .descricao-sessao {
-      font-size: 0.95rem;
-    }
+.campo-senha {
+  position: relative;
+
+  .form-control,
+  input {
+    padding-right: 3rem;
+  }
+}
+
+.senha-toggle {
+  position: absolute;
+  top: 50%;
+  right: var(--sige-space-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--sige-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--sige-radius-sm);
+  cursor: pointer;
+  transform: translateY(-50%);
+
+  &:hover {
+    color: var(--sige-color-primary-strong);
+  }
+}
+
+.titulo-sessao {
+  color: var(--sige-text-primary);
+}
+
+.descricao-sessao {
+  color: var(--sige-text-secondary) !important;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 480px) {
+  .auth-page {
+    padding: var(--sige-space-3);
+  }
+
+  .cartao-recuperacao {
+    padding: var(--sige-space-5) !important;
+  }
+}
 
 

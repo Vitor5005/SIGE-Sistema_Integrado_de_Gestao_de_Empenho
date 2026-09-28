@@ -110,12 +110,12 @@
                 <app-estado-conteudo tipo="empty" titulo="Nenhum empenho vinculado"
                     mensagem="Ainda não existe um empenho relacionado a esta ARP." [compacto]="true"></app-estado-conteudo>
                 } @else {
-                <div class="ata-empenho-contexto" (click)="enviarPara('/visualizar-empenho', empenho.id)">
+                <a class="ata-empenho-contexto" [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: empenho.id }">
                     <span class="sige-detail-label">Empenho relacionado</span>
                     <span class="ata-empenho-codigo"><i class="bi bi-link-45deg" aria-hidden="true"></i> {{ empenho.codigo }}</span>
                     <span class="ata-empenho-acao">Ver detalhes <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
-                </div>
-                }
+                </a>
+            }
             </div>
         </section>
 
@@ -129,6 +129,7 @@
 
             <div class="sige-detail-table-wrap">
                 <table class="table sige-detail-table ata-tabela">
+                    <caption class="visually-hidden">Itens cadastrados nesta ARP</caption>
                     <thead>
                         <tr>
                             <th scope="col">Item</th>
@@ -182,32 +183,32 @@
         }
     </div>
 
-    <div #myModal class="modal fade" id="adicionarItemModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div #myModal class="modal fade" id="adicionarItemModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="adicionarItemModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content modal-custom">
                 <div class="modal-header-azul">
-                    <h2 class="modal-titulo">ADICIONAR ITEM À ATA</h2>
+                    <h2 class="modal-titulo" id="adicionarItemModalLabel">Adicionar item à ARP</h2>
                     <button type="button" class="btn-close btn-close-white" [disabled]="isSaving" (click)="tentarFecharModal()"
-                        aria-label="Close"></button>
+                        aria-label="Fechar"></button>
                     <button #fecharModalInternoBtn type="button" class="d-none" data-bs-dismiss="modal" aria-hidden="true"></button>
                 </div>
                 <div class="modal-body modal-body-item-ata">
                     @if(isSaving) {
-                    <div class="status-processamento-modal">
+                    <div class="status-processamento-modal" role="status" aria-live="polite">
                         <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
                         <small>Processando cadastro. Aguarde a finalização para continuar.</small>
                     </div>
                     }
 
                     @if(errorMessageModal) {
-                    <div class="mensagem-erro-modal">
+                    <div class="mensagem-erro-modal" role="alert">
                         <small>{{ errorMessageModal }}</small>
                     </div>
                     }
 
                     @if (modal_page === 0) {
                     <div class="subtitulo subtitulo-modal">
-                        <h5>SELECIONE UM ITEM</h5>
+                        <h3>Selecione um item</h3>
                         <hr>
                     </div>
 
@@ -219,19 +220,21 @@
                         <app-barra-pesquisa (pesquisar)="getItemGenerico($event)"></app-barra-pesquisa>
 
                         <table class="tabela tabela-itens">
+                            <caption class="visually-hidden">Itens disponíveis para inclusão na ARP</caption>
                             <thead>
                                 <tr>
                                     <th scope="col">CATMAT</th>
                                     <th scope="col">Categoria</th>
                                     <th scope="col">Unidade de Medida</th>
                                     <th scope="col">Descrição</th>
+                                    <th scope="col">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @if(isLoadingItemGenerico) {
                                 <tr class="linha-vazia-tabela">
-                                    <td colspan="4" class="mensagem-tabela-vazia">
-                                        <div class="conteudo-status-tabela">
+                                    <td colspan="5" class="mensagem-tabela-vazia">
+                                        <div class="conteudo-status-tabela" role="status" aria-live="polite">
                                             <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
                                             <small>Carregando itens disponíveis...</small>
                                         </div>
@@ -241,19 +244,25 @@
 
                                 @if(!isLoadingItemGenerico && errorMessageItemGenerico) {
                                 <tr class="linha-vazia-tabela">
-                                    <td colspan="4" class="mensagem-tabela-vazia">
-                                        <small>{{ errorMessageItemGenerico }}</small>
+                                    <td colspan="5" class="mensagem-tabela-vazia">
+                                        <small role="alert">{{ errorMessageItemGenerico }}</small>
                                     </td>
                                 </tr>
                                 }
 
                                 @if(!isLoadingItemGenerico && !errorMessageItemGenerico) {
                                 @for(item of itensGenericosPaginados; track item.id){
-                                    <tr class="linha-item" (click)="escolherItem(item)">
+                                    <tr>
                                         <td>{{ item.catmat }}</td>
                                         <td>{{ getCategoria(item) }}</td>
                                         <td>{{ getUnidadeMedida(item) }}</td>
                                         <td>{{ item.descricao }}</td>
+                                        <td>
+                                            <button type="button" class="sige-button sige-button--secondary sige-button--sm"
+                                                [disabled]="isSaving" (click)="escolherItem(item)">
+                                                Selecionar
+                                            </button>
+                                        </td>
 
                                     </tr>
                                 }
@@ -261,9 +270,9 @@
 
                                 @if(!isLoadingItemGenerico && !errorMessageItemGenerico && itensGenericosPaginados.length === 0) {
                                 <tr class="linha-vazia-tabela">
-                                    <td colspan="4" class="mensagem-tabela-vazia">
+                                    <td colspan="5" class="mensagem-tabela-vazia">
                                         <div class="estado-vazio-selecao">
-                                            <h6>Nenhum registro encontrado.</h6>
+                                            <p>Nenhum registro encontrado.</p>
                                             <small>Refine a busca ou cadastre um novo item para continuar.</small>
                                         </div>
                                     </td>
@@ -276,11 +285,10 @@
                             [pageSize]="pageSizeItemGenerico" [totalItems]="totalItensGenericosDisponiveis"
                             totalLabel="Itens disponíveis" (pageChange)="irParaPaginaItemGenerico($event)"></app-paginacao>
 
-                        <h6 class="texto-ajuda-item">* Caso o Item não esteja registrado no sistema, clique no botão "ADICIONAR NOVO
-                            ITEM"</h6>
+                        <p class="texto-ajuda-item">Caso o item não esteja registrado no sistema, selecione Adicionar novo item.</p>
                         <div class="form-footer">
                             <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="avanca_modal_page()">
-                                <i class="bi bi-box"></i> ADICIONAR NOVO ITEM
+                                <i class="bi bi-box" aria-hidden="true"></i> Adicionar novo item
                             </button>
                         </div>
 
@@ -289,31 +297,33 @@
 
                     @if (modal_page === 1){
                     <div class="subtitulo subtitulo-modal">
-                        <h5>ADICIONAR NOVO ITEM</h5>
+                        <h3>Adicionar novo item</h3>
                         <hr>
                     </div>
                     <p class="texto-orientacao-modal">Preencha os dados do item genérico para cadastro.</p>
                     <form class="form-fornecedor form-item-cadastro" #form="ngForm">
 
                         <div class="bloco-formulario">
-                            <div class="bloco-titulo">Dados principais</div>
+                            <h3 class="bloco-titulo">Dados principais</h3>
                             <div class="form-row">
                                 <div class="form-group flex-2">
-                                    <label>CATMAT</label>
-                                    <input type="text" name="catmat" maxlength="6" placeholder="Ex.: 123456" inputmode="numeric" [disabled]="isSaving"
+                                    <label for="catmatItemAta">CATMAT</label>
+                                    <input id="catmatItemAta" type="text" name="catmat" maxlength="6" placeholder="Ex.: 123456" inputmode="numeric" [disabled]="isSaving"
                                         [(ngModel)]="itemGenerico_insercao.catmat"
                                         (input)="onCatmatInput()"
-                                        [class.campo-invalido]="formSubmittedPage1 && !catmatValido">
+                                        [class.campo-invalido]="formSubmittedPage1 && !catmatValido"
+                                        [attr.aria-invalid]="formSubmittedPage1 && !catmatValido">
                                     @if(formSubmittedPage1 && !catmatValido) {
                                     <small class="mensagem-campo-invalido">CATMAT deve conter exatamente 6 dígitos.</small>
                                     }
                                 </div>
 
                                 <div class="form-group">
-                                    <label>DESCRIÇÃO</label>
-                                    <textarea type="text" style="resize: none;" name="descricao" maxlength="300" placeholder="Ex.: Arroz tipo 1"
+                                    <label for="descricaoItemAta">Descrição</label>
+                                    <textarea id="descricaoItemAta" type="text" style="resize: none;" name="descricao" maxlength="300" placeholder="Ex.: Arroz tipo 1"
                                         [disabled]="isSaving" [(ngModel)]="itemGenerico_insercao.descricao" (input)="onDescricaoInput()"
-                                        [class.campo-invalido]="formSubmittedPage1 && !descricaoValida"></textarea>
+                                        [class.campo-invalido]="formSubmittedPage1 && !descricaoValida"
+                                        [attr.aria-invalid]="formSubmittedPage1 && !descricaoValida"></textarea>
                                     <small class="texto-apoio-input">{{ 300 - (itemGenerico_insercao.descricao || '').length }} caracteres restantes.</small>
                                     @if(formSubmittedPage1 && !descricaoValida) {
                                     <small class="mensagem-campo-invalido">Descrição é obrigatória (até 300 caracteres).</small>
@@ -323,13 +333,14 @@
                         </div>
 
                         <div class="bloco-formulario">
-                            <div class="bloco-titulo">Classificação</div>
+                            <h3 class="bloco-titulo">Classificação</h3>
                             <div class="form-row">
                                 <div class="form-group flex-2">
-                                    <label>Unidade de Medida</label>
-                                    <select name="unidade_medida" id="unidade_medida"
+                                    <label for="unidadeMedidaItemAta">Unidade de medida</label>
+                                    <select name="unidade_medida" id="unidadeMedidaItemAta"
                                         [(ngModel)]="itemGenerico_insercao.unidade_medida" [disabled]="isSaving"
-                                        [class.campo-invalido]="formSubmittedPage1 && !unidadeMedidaValida">
+                                        [class.campo-invalido]="formSubmittedPage1 && !unidadeMedidaValida"
+                                        [attr.aria-invalid]="formSubmittedPage1 && !unidadeMedidaValida">
                                         <option value="" disabled selected>Selecione uma unidade</option>
                                         @for(item of unidade_medida | keyvalue; track item.key){
                                             <option [value]="item.key">{{ item.value }}</option>
@@ -342,9 +353,10 @@
                                 </div>
 
                                 <div class="form-group flex-1">
-                                    <label>CATEGORIA</label>
-                                    <select name="categoria" id="categoria" [(ngModel)]="itemGenerico_insercao.categoria"
-                                        [disabled]="isSaving" [class.campo-invalido]="formSubmittedPage1 && !categoriaValida">
+                                    <label for="categoriaItemAta">Categoria</label>
+                                    <select name="categoria" id="categoriaItemAta" [(ngModel)]="itemGenerico_insercao.categoria"
+                                        [disabled]="isSaving" [class.campo-invalido]="formSubmittedPage1 && !categoriaValida"
+                                        [attr.aria-invalid]="formSubmittedPage1 && !categoriaValida">
                                         <option value="" disabled selected>Selecione uma categoria</option>
                                         @for(item of categoria | keyvalue; track item.key){
                                             <option [value]="item.key">{{ item.value }}</option>
@@ -363,12 +375,12 @@
 
                         <div class="form-footer">
                             <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page()">
-                                <i class="bi bi-arrow-left"></i> VOLTAR
+                                <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar
                             </button>
 
                             <button type="button" class="btn-confirmar" [disabled]="isSaving || !itemGenericoFormValido"
                                 [class.btn-confirmar-desabilitado]="isSaving || !itemGenericoFormValido" (click)="avanca_modal_page()">
-                                <i class="bi bi-arrow-right"></i> PROSSEGUIR
+                                <i class="bi bi-arrow-right" aria-hidden="true"></i> Prosseguir
                             </button>
                         </div>
 
@@ -377,14 +389,14 @@
 
                     @if(modal_page === 2){
                     <div class="subtitulo subtitulo-modal">
-                        <h5>INFORMAÇÕES DO ITEM</h5>
+                        <h3>Informações do item</h3>
                         <hr>
                     </div>
 
                     <form class="form-fornecedor form-item-cadastro" #form="ngForm">
 
                         <div class="bloco-formulario">
-                            <div class="bloco-titulo">Dados principais</div>
+                            <h3 class="bloco-titulo">Dados principais</h3>
                             <div class="resumo-item-generico">
                                 <p><b>CATMAT: {{itemGenerico_insercao.catmat}}</b></p>
                                 <p><b>CATEGORIA: {{ getCategoria(itemGenerico_insercao) }}</b></p>
@@ -394,36 +406,39 @@
                         </div>
 
                         <div class="bloco-formulario">
-                            <div class="bloco-titulo">Dados da ata</div>
+                            <h3 class="bloco-titulo">Dados da ARP</h3>
                             <div class="form-row">
                                 <div class="form-group flex-1">
-                                    <label>QUANTIDADE LICITADA ({{ itemGenerico_insercao.unidade_medida }})</label>
-                                    <input type="number" min="0" step="0.01" [disabled]="isSaving"
+                                    <label for="quantidadeLicitadaItemAta">Quantidade licitada ({{ itemGenerico_insercao.unidade_medida }})</label>
+                                    <input id="quantidadeLicitadaItemAta" type="number" min="0" step="0.01" [disabled]="isSaving"
                                         [(ngModel)]="itemAta_insercao.quantidade_licitada" name="quantidade_licitada"
                                         placeholder="Ex.: 100.00"
                                         (change)="validarQuantidadeLicitada()"
-                                        [class.campo-invalido]="formSubmittedPage2 && !quantidadeLicitadaValida">
+                                        [class.campo-invalido]="formSubmittedPage2 && !quantidadeLicitadaValida"
+                                        [attr.aria-invalid]="formSubmittedPage2 && !quantidadeLicitadaValida">
                                     @if(formSubmittedPage2 && !quantidadeLicitadaValida) {
                                     <small class="mensagem-campo-invalido">Informe uma quantidade maior que zero.</small>
                                     }
                                 </div>
                                 <div class="form-group flex-2">
-                                    <label>VALOR UNITARIO (R$)</label>
-                                    <input type="number" min="0" step="0.01" [disabled]="isSaving"
+                                    <label for="valorUnitarioItemAta">Valor unitário (R$)</label>
+                                    <input id="valorUnitarioItemAta" type="number" min="0" step="0.01" [disabled]="isSaving"
                                         [(ngModel)]="itemAta_insercao.valor_unitario" name="valor_unitario"
                                         placeholder="Ex.: 12.50"
                                         (change)="validarValorUnitario()"
-                                        [class.campo-invalido]="formSubmittedPage2 && !valorUnitarioValido">
+                                        [class.campo-invalido]="formSubmittedPage2 && !valorUnitarioValido"
+                                        [attr.aria-invalid]="formSubmittedPage2 && !valorUnitarioValido">
                                     @if(formSubmittedPage2 && !valorUnitarioValido) {
                                     <small class="mensagem-campo-invalido">Informe um valor unitário maior que zero.</small>
                                     }
                                 </div>
                                 <div class="form-group flex-3">
-                                    <label>MARCA</label>
-                                    <input type="text" maxlength="255" [disabled]="isSaving" placeholder="Ex.: Marca Exemplo"
+                                    <label for="marcaItemAta">Marca</label>
+                                    <input id="marcaItemAta" type="text" maxlength="255" [disabled]="isSaving" placeholder="Ex.: Marca Exemplo"
                                         [(ngModel)]="itemAta_insercao.marca" name="marca"
                                         (input)="onMarcaInput()"
-                                        [class.campo-invalido]="formSubmittedPage2 && !marcaValida">
+                                        [class.campo-invalido]="formSubmittedPage2 && !marcaValida"
+                                        [attr.aria-invalid]="formSubmittedPage2 && !marcaValida">
                                     @if(formSubmittedPage2 && !marcaValida) {
                                     <small class="mensagem-campo-invalido">Informe a marca (até 255 caracteres).</small>
                                     }
@@ -436,14 +451,14 @@
                         </div>
 
                         <div class="bloco-formulario bloco-resultado-total">
-                            <div class="bloco-titulo">Resultado</div>
-                            <h5>VALOR TOTAL LICITADO (R$ / {{ itemGenerico_insercao.unidade_medida }}): {{ itemAta_insercao.valor_unitario * itemAta_insercao.quantidade_licitada | number:'1.2-2' }} </h5>
+                            <h3 class="bloco-titulo">Resultado</h3>
+                            <h3 class="valor-total-licitado">Valor total licitado (R$ / {{ itemGenerico_insercao.unidade_medida }}): {{ itemAta_insercao.valor_unitario * itemAta_insercao.quantidade_licitada | number:'1.2-2' }}</h3>
                         </div>
 
                         <div class="form-footer">
                             @if(jump_page == true){
                             <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page(0)">
-                                <i class="bi bi-arrow-left"></i> VOLTAR
+                                <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar
                             </button>
 
                             <button type="button" class="btn-confirmar" [disabled]="!podeConcluirCadastroItem"
@@ -451,13 +466,13 @@
                                 @if(isSaving) {
                                 <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
                                 }
-                                <i class="bi bi-arrow-right"></i> PROSSEGUIR
+                                <i class="bi bi-arrow-right" aria-hidden="true"></i> Prosseguir
                             </button>
                             }
 
                             @if(jump_page == false){
                             <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page()">
-                                <i class="bi bi-arrow-left"></i> VOLTAR
+                                <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar
                             </button>
 
 
@@ -466,7 +481,7 @@
                                 @if(isSaving) {
                                 <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
                                 }
-                                <i class="bi bi-arrow-right"></i> PROSSEGUIR
+                                <i class="bi bi-arrow-right" aria-hidden="true"></i> Prosseguir
                             </button>
                             }
                         </div>
@@ -477,11 +492,11 @@
         </div>
     </div>
 
-    <div class="modal fade" id="editarAtaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div class="modal fade" id="editarAtaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="editarAtaModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-custom">
                 <div class="modal-header-azul">
-                    <h2 class="modal-titulo">EDITAR ARP</h2>
+                    <h2 class="modal-titulo" id="editarAtaModalLabel">Editar ARP</h2>
                     <button type="button" class="btn-close btn-close-white" [disabled]="isSavingEdicaoAta"
                         (click)="tentarFecharEdicaoAta()" aria-label="Fechar"></button>
                     <button #fecharModalEdicaoAtaBtn type="button" class="d-none" data-bs-dismiss="modal"
@@ -490,16 +505,17 @@
                 <form (ngSubmit)="salvarEdicaoAta()">
                     <div class="modal-body">
                         @if (errorMessageEdicaoAta) {
-                        <div class="mensagem-erro-modal">
+                        <div class="mensagem-erro-modal" role="alert">
                             <small>{{ errorMessageEdicaoAta }}</small>
                         </div>
                         }
 
                         <div class="form-group">
-                            <label for="numeroAtaEdicao">NÚMERO DA ARP *</label>
+                            <label for="numeroAtaEdicao">Número da ARP *</label>
                             <input id="numeroAtaEdicao" type="text" name="numeroAtaEdicao" maxlength="50"
                                 [(ngModel)]="ataEdicao.numero_ata" [disabled]="isSavingEdicaoAta"
-                                [class.campo-invalido]="formSubmittedEdicaoAta && !ataEdicaoValida">
+                                [class.campo-invalido]="formSubmittedEdicaoAta && !ataEdicaoValida"
+                                [attr.aria-invalid]="formSubmittedEdicaoAta && !ataEdicaoValida">
                             @if (formSubmittedEdicaoAta && !ataEdicaoValida) {
                             <small class="mensagem-campo-invalido">Informe o número da ARP.</small>
                             }

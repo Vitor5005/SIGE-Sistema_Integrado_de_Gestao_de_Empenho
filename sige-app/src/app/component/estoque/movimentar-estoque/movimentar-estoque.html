@@ -1,23 +1,23 @@
-<section class="estoque-pagina">
-  <div class="estoque-topo"><div><h3>NOVA MOVIMENTAÇÃO</h3><p>Registre saída, carga inicial ou ajuste de inventário.</p></div>
-    <a class="btn btn-outline-primary" routerLink="/estoque">Voltar ao estoque</a></div>
-  @if(erro){<div class="alert alert-danger">{{erro}}</div>} @if(sucesso){<div class="alert alert-success">{{sucesso}}</div>}
+<main class="sige-page-container estoque-pagina estoque-subpagina">
+  <header class="estoque-topo"><div><h1>Nova movimentação</h1><p>Registre saída, carga inicial ou ajuste de inventário.</p></div>
+    <a class="sige-button sige-button--secondary" routerLink="/estoque">Voltar ao estoque</a></header>
+  @if(erro){<div class="alert alert-danger" role="alert">{{erro}}</div>} @if(sucesso){<div class="alert alert-success" role="status" aria-live="polite">{{sucesso}}</div>}
   <form class="card p-4" (ngSubmit)="salvar()">
     <div class="row g-3">
-      <div class="col-md-4"><label class="form-label">Operação</label><select class="form-select" [(ngModel)]="operacao" name="operacao">
+      <div class="col-md-4"><label class="form-label" for="operacaoEstoque">Operação</label><select id="operacaoEstoque" class="form-select" [(ngModel)]="operacao" name="operacao">
         <option value="SAIDA">Saída</option><option value="CARGA_INICIAL">Carga inicial</option><option value="AJUSTE">Ajuste de inventário</option>
       </select></div>
-      <div class="col-md-8"><label class="form-label">Gênero alimentício</label><select class="form-select" [(ngModel)]="itemGenericoId" name="genero" required>
+      <div class="col-md-8"><label class="form-label" for="generoEstoque">Gênero alimentício</label><select id="generoEstoque" class="form-select" [(ngModel)]="itemGenericoId" name="genero" required>
         <option [ngValue]="undefined">Selecione</option>@for(item of itens;track item.id){<option [ngValue]="item.item_generico_id">{{item.catmat}} - {{item.descricao}} (saldo {{item.saldo_atual}})</option>}
       </select></div>
-      @if(operacao==='SAIDA'){<div class="col-md-4"><label class="form-label">Tipo de saída</label><select class="form-select" [(ngModel)]="tipoSaida" name="tipoSaida">
+      @if(operacao==='SAIDA'){<div class="col-md-4"><label class="form-label" for="tipoSaidaEstoque">Tipo de saída</label><select id="tipoSaidaEstoque" class="form-select" [(ngModel)]="tipoSaida" name="tipoSaida">
         <option value="PRODUCAO">Produção</option><option value="DOACAO">Doação</option><option value="PERDA">Perda</option></select></div>}
-      <div class="col-md-4"><label class="form-label">{{operacao==='AJUSTE'?'Quantidade do ajuste (+/-)':'Quantidade'}}</label>
-        <input class="form-control" type="number" step="0.001" [(ngModel)]="quantidade" name="quantidade" required></div>
-      <div class="col-md-4"><label class="form-label">Data e hora</label><input class="form-control" type="datetime-local" [(ngModel)]="dataHora" name="dataHora" required></div>
-      <div class="col-12"><label class="form-label">Motivo/justificativa</label><textarea class="form-control" maxlength="255" [(ngModel)]="justificativa" name="justificativa" required></textarea></div>
+      <div class="col-md-4"><label class="form-label" for="quantidadeEstoque">{{operacao==='AJUSTE'?'Quantidade do ajuste (+/-)':'Quantidade'}}</label>
+        <input id="quantidadeEstoque" class="form-control" type="number" step="0.001" [(ngModel)]="quantidade" name="quantidade" required></div>
+      <div class="col-md-4"><label class="form-label" for="dataHoraEstoque">Data e hora</label><input id="dataHoraEstoque" class="form-control" type="datetime-local" [(ngModel)]="dataHora" name="dataHora" required></div>
+      <div class="col-12"><label class="form-label" for="justificativaEstoque">Motivo/justificativa</label><textarea id="justificativaEstoque" class="form-control" maxlength="255" [(ngModel)]="justificativa" name="justificativa" required></textarea></div>
     </div>
-    <div class="mt-4"><button class="btn btn-primary" [disabled]="processando">{{processando?'Registrando...':'Registrar movimentação'}}</button></div>
+    <div class="mt-4"><button type="submit" class="sige-button sige-button--primary" [disabled]="processando">{{processando?'Registrando...':'Registrar movimentação'}}</button></div>
   </form>
-</section>
+</main>
 

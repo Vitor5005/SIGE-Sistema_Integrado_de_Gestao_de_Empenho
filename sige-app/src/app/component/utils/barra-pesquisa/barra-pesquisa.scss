@@ -6,51 +6,54 @@
 }
 
 .container-pesquisar {
-  background-color: var(--branco);
+  background-color: var(--sige-surface-card);
   width: 100%;
   max-width: 100%;
   min-width: 0;
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: var(--sige-space-3);
+  gap: var(--sige-space-2);
   flex-wrap: wrap;
-  min-height: 100px;
+  min-height: 0;
   border: 1px solid var(--sige-border);
-  border-radius: var(--sige-radius-lg);
+  border-radius: var(--sige-radius-md);
   box-shadow: var(--sige-shadow-sm);
-  padding: var(--sige-space-5) var(--sige-space-6);
-  font-size: 16px;
+  padding: var(--sige-space-3) var(--sige-space-4);
+  font-size: 0.875rem;
   font-weight: bold;
 
   .pesquisarEfiltrar {
     display: flex;
     align-items: center;
-    gap: var(--sige-space-3);
+    gap: var(--sige-space-2);
     flex: 1 1 22rem;
     min-width: 0;
   }
 
   .pesquisarEfiltrar input {
     width: 100%;
-    max-width: 350px;
+    max-width: 22rem;
     min-width: 0;
     flex: 1 1 12rem;
-    height: 40px;
-    border-radius: 20px;
-    background-color: var(--branco);
-    border: var(--borda1);
-    padding: 0 15px;
+    min-height: 2.5rem;
+    padding: 0 var(--sige-space-3);
+    color: var(--sige-text-primary);
+    background-color: var(--sige-surface-card);
+    border: 1px solid var(--sige-border);
+    border-radius: var(--sige-radius-md);
   }
 
   .filtro {
     margin-left: 0;
-    min-width: 120px;
-    height: 40px;
-    border-radius: 20px;
-    background-color: var(--branco);
-    border: var(--borda1);
-    font-size: 16px;
+    min-width: 7.5rem;
+    min-height: 2.5rem;
+    padding: var(--sige-space-2) var(--sige-space-3);
+    color: var(--sige-text-primary);
+    background-color: var(--sige-surface-card);
+    border: 1px solid var(--sige-border);
+    border-radius: var(--sige-radius-md);
+    font-size: 0.875rem;
     font-weight: bold;
 
     i {
@@ -130,11 +133,11 @@
     input {
       width: 100%;
       min-width: 0;
-      height: 36px;
+      min-height: 2.25rem;
       padding: 0 var(--sige-space-2);
-      border: var(--borda1);
+      border: 1px solid var(--sige-border);
       border-radius: var(--sige-radius-sm);
-      background-color: var(--branco);
+      background-color: var(--sige-surface-card);
       color: var(--sige-text-primary);
       font-size: 0.85rem;
     }
@@ -143,11 +146,11 @@
   .filtro-select {
     width: 100%;
     min-width: 0;
-    height: 36px;
+    min-height: 2.25rem;
     padding: 0 var(--sige-space-2);
-    border: var(--borda1);
+    border: 1px solid var(--sige-border);
     border-radius: var(--sige-radius-sm);
-    background-color: var(--branco);
+    background-color: var(--sige-surface-card);
     color: var(--sige-text-primary);
     font-size: 0.85rem;
   }
@@ -159,17 +162,17 @@
     gap: var(--sige-space-2);
     width: 100%;
     padding: var(--sige-space-2);
-    border: 1px solid #dc3545;
+    border: 1px solid var(--sige-danger);
     border-radius: var(--sige-radius-sm);
-    background-color: var(--branco);
-    color: #dc3545;
+    background-color: var(--sige-surface-card);
+    color: var(--sige-danger);
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.15s, color 0.15s;
 
     &:hover {
-      background-color: #dc3545;
-      color: var(--branco);
+      background-color: var(--sige-danger);
+      color: var(--sige-color-white);
     }
   }
 }

@@ -118,12 +118,18 @@
   background: var(--sige-surface-info);
   border: 1px solid var(--sige-border);
   border-radius: var(--sige-radius-md);
-  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
 }
 
 .ata-empenho-contexto:hover {
   border-color: var(--sige-color-primary);
   box-shadow: var(--sige-shadow-sm);
+}
+
+.ata-empenho-contexto:focus-visible {
+  outline: 2px solid var(--sige-color-primary);
+  outline-offset: 2px;
 }
 
 .ata-empenho-codigo {
@@ -209,7 +215,7 @@
   .subtitulo-modal {
     margin-bottom: 12px;
 
-    h5 {
+    h3 {
       font-weight: 700;
       color: var(--font-cinza2);
       margin-bottom: 6px;
@@ -257,20 +263,11 @@
     }
   }
 
-  .linha-item {
-    cursor: pointer;
-    transition: background-color .15s ease;
-
-    &:hover {
-      background-color: #f4f8ff;
-    }
-  }
-
   .estado-vazio-selecao {
     padding: 18px 10px;
     text-align: center;
 
-    h6 {
+    p {
       margin: 0 0 4px;
       color: #334155;
       font-weight: 700;
@@ -313,6 +310,7 @@
   }
 
   .bloco-titulo {
+    margin: 0 0 10px;
     margin-bottom: 10px;
     font-size: 12px;
     font-weight: 700;
@@ -352,8 +350,9 @@
       transition: border-color .15s ease, box-shadow .15s ease;
 
       &:focus {
-        outline: none;
-        border-color: var(--azul-claro);
+        outline: 2px solid var(--sige-color-primary);
+        outline-offset: 2px;
+        border-color: var(--sige-color-primary);
         box-shadow: 0 0 0 3px rgba(39, 140, 234, 0.15);
       }
     }
@@ -389,7 +388,7 @@
   }
 
   .bloco-resultado-total {
-    h5 {
+    .valor-total-licitado {
       margin: 0;
       color: #1e3a5f;
       font-size: 1rem;

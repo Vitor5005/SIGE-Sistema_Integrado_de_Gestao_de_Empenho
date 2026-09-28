@@ -58,10 +58,11 @@
 }
 
 .card-entrega {
-  background: var(--branco);
-  box-shadow: var(--box-shadow);
-  border-radius: 10px;
-  padding: 15px;
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  box-shadow: var(--sige-shadow-sm);
+  border-radius: var(--sige-radius-md);
+  padding: var(--sige-space-4);
 }
 
 .topo-entrega {
@@ -76,21 +77,27 @@
   justify-content: center;
   flex-direction: column;
   gap: 10px;
-  padding: 15px 25px;
-  border-radius: 8px;
+  padding: var(--sige-space-4) var(--sige-space-5);
+  color: var(--sige-text-primary);
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-sm);
   min-width: 0;
   flex: 0 1 74%;
 
   &.em_espera {
-    background: var(--amarelo);
+    background: var(--sige-surface-warning);
+    border-color: var(--sige-warning);
   }
 
   &.realizada {
-    background: var(--verde);
+    background: var(--sige-surface-success);
+    border-color: var(--sige-success);
   }
 
   &.parcial {
-    background: #d97706;
+    background: var(--sige-surface-warning);
+    border-color: var(--sige-warning);
   }
 }
 
@@ -146,13 +153,13 @@
 }
 
 .links-entrega .contexto-separador {
-  color: var(--branco);
+  color: var(--sige-text-secondary);
 }
 
 .pedido-entrega {
   font-size: 18px;
   font-weight: bold;
-  color: var(--branco);
+  color: var(--sige-text-primary);
 }
 
 .link-emp,
@@ -200,8 +207,8 @@
 }
 
 .btn-confirmar {
-  background: var(--verde);
-  color: white;
+  background: var(--sige-success-strong);
+  color: var(--sige-color-white);
   border: none;
   padding: 8px 14px;
   border-radius: 6px;
@@ -490,8 +497,9 @@
   display: inline-block;
   font-size: 12px;
   font-weight: bold;
-  color: var(--branco);
-  background: rgba(0, 0, 0, 0.18);
+  color: var(--sige-text-secondary);
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
   padding: 3px 12px;
   border-radius: 5px;
   text-transform: uppercase;
@@ -594,7 +602,6 @@
   &:focus {
     border-color: var(--azul-claro);
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
-    outline: none;
   }
 }
 

@@ -25,6 +25,7 @@
 
   <div class="sige-list-table-wrap">
     <table class="sige-list-table">
+      <caption class="visually-hidden">Lista de licitações cadastradas</caption>
       <thead>
         <tr>
           <th scope="col">Identificação</th>
@@ -60,7 +61,7 @@
           </tr>
         } @else {
           @for (item of registro; track item.id) {
-            <tr class="sige-list-row--clickable" (click)="enviarPara('/visualizar-licitacao', item.id)">
+            <tr>
               <td>
                 <div>
                   <p>
@@ -75,7 +76,7 @@
               <td class="sige-cell--status">
                 <span [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span>
               </td>
-              <td class="sige-cell--number"><i class="bi bi-clock"></i> {{ item.validade }} Meses</td>
+              <td class="sige-cell--number"><i class="bi bi-clock" aria-hidden="true"></i> {{ item.validade }} meses</td>
               <td>
                 <span class="sige-cell--truncate" [title]="item.descricao">{{ item.descricao }}</span>
               </td>
@@ -84,7 +85,7 @@
                   <button
                     type="button"
                     class="sige-button sige-button--secondary sige-button--sm"
-                    (click)="$event.stopPropagation(); enviarPara('/visualizar-licitacao', item.id)">
+                    (click)="enviarPara('/visualizar-licitacao', item.id)">
                     Abrir
                   </button>
                 </div>

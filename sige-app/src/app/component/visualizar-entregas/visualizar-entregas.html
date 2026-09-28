@@ -133,42 +133,44 @@
             <div class="acoes-entrega">
               @if (item.status !== 'con' && pode(Recurso.ESTOQUE, Acao.REGISTRAR_RECEBIMENTO)) {
                 <button
+                  type="button"
                   class="btn-confirmar"
                   *ngIf="!confirmado"
                   (click)="enviarPara('/estoque/recebimento', item.id)"
                 >
-                  <i class="bi bi-check-circle"></i>
-                  REGISTRAR RECEBIMENTO
+                  <i class="bi bi-check-circle" aria-hidden="true"></i>
+                  Registrar recebimento
                 </button>
               }
 
               <button
+                type="button"
                 class="btn link-doc"
                 data-bs-toggle="modal"
                 data-bs-target="#verPedidoMordal"
                 (click)="getItensOrdem(item.id, $index)"
                 *ngIf="!confirmado"
               >
-                <i class="bi bi-eye"></i>
-                VER PEDIDO
+                <i class="bi bi-eye" aria-hidden="true"></i>
+                Ver pedido
               </button>
             </div>
           </div>
 
           <div class="rodape-entrega">
             <div class="rodape-item">
-              <span class="rodape-label">Data de Emissão</span>
+              <span class="rodape-label">Data de emissão</span>
               <span class="rodape-valor">{{ item.data_emissao | date: 'dd/MM/yyyy - HH:mm' }}</span>
             </div>
             <div class="rodape-item">
-              <span class="rodape-label">Data de Entrega Prevista</span>
+              <span class="rodape-label">Data de entrega prevista</span>
               <span class="rodape-valor">{{
                 item.data_entrega_prevista | date: 'dd/MM/yyyy'
               }}</span>
             </div>
             @if (item.status === 'con') {
               <div class="rodape-item rodape-item-concluida">
-                <span class="rodape-label">Data de Entrega</span>
+                <span class="rodape-label">Data de entrega</span>
                 <span class="rodape-valor">{{
                   item.data_entrega | date: 'dd/MM/yyyy - HH:mm'
                 }}</span>
@@ -194,9 +196,9 @@
       <div class="modal-content confirmar-modal-content">
         <div class="modal-header confirmar-modal-header">
           <div>
-            <h1 class="modal-title fs-5" id="confirmarModalLabel">
-              <i class="bi bi-truck"></i> Confirmar entrega
-            </h1>
+            <h2 class="modal-title fs-5" id="confirmarModalLabel">
+              <i class="bi bi-truck" aria-hidden="true"></i> Confirmar entrega
+            </h2>
             <p>Registre o recebimento efetivo e revise as informações antes de concluir.</p>
           </div>
           <button type="button" class="btn-close btn-close-white" [disabled]="isConfirmandoEntrega"
@@ -255,7 +257,7 @@
               </div>
               <button type="button" class="confirmacao-acao-secundaria" [disabled]="isConfirmandoEntrega"
                 (click)="marcarTodosComoRecebidos()">
-                <i class="bi bi-check2-all"></i> Marcar todos como recebidos
+                <i class="bi bi-check2-all" aria-hidden="true"></i> Marcar todos como recebidos
               </button>
             </div>
 
@@ -381,16 +383,16 @@
 
           @if (!isLoadingPedidos && !isConfirmandoEntrega && pedidosDaOrdem.length > 0 && etapaConfirmacao === 1) {
           <button type="button" class="confirmacao-acao-primaria" (click)="irParaRevisaoConfirmacao()">
-            Revisar confirmação <i class="bi bi-arrow-right"></i>
+            Revisar confirmação <i class="bi bi-arrow-right" aria-hidden="true"></i>
           </button>
           }
 
           @if (!isLoadingPedidos && !isConfirmandoEntrega && pedidosDaOrdem.length > 0 && etapaConfirmacao === 2) {
           <button type="button" class="confirmacao-acao-secundaria" (click)="voltarParaRegistroConfirmacao()">
-            <i class="bi bi-arrow-left"></i> Voltar e editar
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar e editar
           </button>
           <button type="button" class="confirmacao-acao-primaria" [disabled]="!podeConfirmarEntrega" (click)="confirmarEntrega(ordemSelecionada)">
-            <i class="bi bi-check-lg"></i> Confirmar entrega
+            <i class="bi bi-check-lg" aria-hidden="true"></i> Confirmar entrega
           </button>
           }
         </div>
@@ -407,10 +409,10 @@
 
                 <div class="modal-header">
 
-                    <h1 class="modal-title fs-5" id="entregaModalLabel">
-                        VER PEDIDO <i class="bi bi-truck"></i>
-                    </h1>
-                    <button type="button" class="btn-close" [disabled]="isConfirmandoEntrega" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h2 class="modal-title fs-5" id="verPedidoMordalLabel">
+                        Ver pedido <i class="bi bi-truck" aria-hidden="true"></i>
+                    </h2>
+                    <button type="button" class="btn-close" [disabled]="isConfirmandoEntrega" data-bs-dismiss="modal" aria-label="Fechar"></button>
 
                 </div>
 

@@ -1,66 +1,105 @@
-body{
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(90deg, rgba(0, 103, 190, 1) 0%, rgba(0, 48, 88, 0.95) 100%);
+.auth-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: var(--sige-space-4);
+  background: var(--cabecalho);
+}
+
+.container-login {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  .container-login{
-    background-color: #ffffff;
-    border-radius: 20px;
-    padding: 3rem 3.5rem;
+  justify-content: center;
+  width: min(100%, 28rem);
+  gap: var(--sige-space-5);
+  padding: var(--sige-space-6);
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-lg);
+  box-shadow: var(--sige-shadow-md);
+
+  .login-cabecalho h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+  }
+
+  form {
     display: flex;
     flex-direction: column;
+    width: 100%;
+    gap: var(--sige-space-4);
+    font-size: 1rem;
+
+    label {
+      color: var(--sige-text-secondary);
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      min-height: 2.5rem;
+      padding: 0 var(--sige-space-3);
+      color: var(--sige-text-primary);
+      background: var(--sige-surface-card);
+      border: 1px solid var(--sige-border);
+      border-radius: var(--sige-radius-md);
+      box-shadow: var(--sige-shadow-sm);
+    }
+
+    small {
+      color: var(--sige-color-primary);
+    }
+  }
+
+  .campo-senha {
+    position: relative;
+
+    input {
+      padding-right: 3rem;
+    }
+  }
+
+  .senha-toggle {
+    position: absolute;
+    top: 50%;
+    right: var(--sige-space-2);
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 20px;
-    form{
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      font-size: 18px;
-      label{
-        color: var(--font-cinza2);
-      }
-      input{
-        width: 350px;
-        height: 40px;
-        border: none;
-        border-radius: 10px;
-        box-shadow: var(--box-shadow);
-      }
-      small{
-        font-size: 12px;
-        color: var(--azul-claro);
-      }
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    color: var(--sige-text-secondary);
+    background: transparent;
+    border: 0;
+    border-radius: var(--sige-radius-sm);
+    cursor: pointer;
+    transform: translateY(-50%);
 
-      .campo-senha {
-        position: relative;
-      }
-      .campo-senha input {
-        width: 100%;
-        padding-right: 40px;
-      }
-      .campo-senha i {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        cursor: pointer;
-        font-size: 18px;
-      }
+    &:hover {
+      color: var(--sige-color-primary-strong);
     }
+  }
 
-    button.submit{
-      height: 40px;
-      background-color: var(--azul-escuro);
-      color: #ffffff;
-      border: none;
-      border-radius: 10px;
-    }
-    .cadastre-se{
-      color: var(--azul-claro);
-    }
+  button.submit {
+    min-height: 2.5rem;
+    color: var(--sige-color-white);
+    font-weight: 700;
+    background: var(--sige-color-primary-strong);
+    border: 1px solid var(--sige-color-primary-strong);
+    border-radius: var(--sige-radius-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-page {
+    padding: var(--sige-space-3);
+  }
+
+  .container-login {
+    padding: var(--sige-space-5);
   }
 }

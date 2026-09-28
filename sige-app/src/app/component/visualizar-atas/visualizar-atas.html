@@ -25,13 +25,14 @@
 
   <div class="sige-list-table-wrap">
     <table class="sige-list-table">
+      <caption class="visually-hidden">Lista de atas de registro de preços cadastradas</caption>
       <thead>
         <tr>
           <th scope="col">Identificação</th>
           <th scope="col">Fornecedor</th>
           <th scope="col" class="sige-cell--status">Status</th>
           <th scope="col" class="sige-cell--number">Validade</th>
-          <th scope="col" class="sige-cell--number">Valor total</th>
+          <th scope="col" class="sige-cell--number">Saldo da ARP</th>
           <th scope="col" class="sige-cell--actions">Ações</th>
         </tr>
       </thead>
@@ -61,7 +62,7 @@
           </tr>
         } @else {
           @for (item of atas; track item.id) {
-            <tr class="sige-list-row--clickable" (click)="enviarPara('/visualizar-ata', item.id)">
+            <tr>
               <td>
                 <p>{{ item.numero_ata }}</p>
                 <small>cadastrado: {{ item.licitacao.data_abertura }}</small>
@@ -78,7 +79,7 @@
                 <span [ngClass]="classValidade(item)">{{ verificarValidade(item) }}</span>
               </td>
               <td class="sige-cell--number">
-                <i class="bi bi-clock"></i>
+                <i class="bi bi-clock" aria-hidden="true"></i>
                 {{ item.licitacao.validade }} meses
               </td>
               <td class="sige-cell--number">R$ {{ item.ata_saldo_total }}</td>
@@ -87,7 +88,7 @@
                   <button
                     type="button"
                     class="sige-button sige-button--secondary sige-button--sm"
-                    (click)="$event.stopPropagation(); enviarPara('/visualizar-ata', item.id)">
+                    (click)="enviarPara('/visualizar-ata', item.id)">
                     Abrir
                   </button>
                 </div>

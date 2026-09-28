@@ -76,6 +76,7 @@
 
 .ata {
   display: grid;
+  width: 100%;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--sige-space-4);
@@ -83,13 +84,20 @@
   border: 1px solid var(--sige-border);
   border-radius: var(--sige-radius-md);
   background: var(--sige-surface-card);
+  color: inherit;
   cursor: pointer;
+  text-decoration: none;
   transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
     border-color: var(--sige-border-strong);
     background: var(--sige-surface-info);
     box-shadow: var(--sige-shadow-sm);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sige-color-primary);
+    outline-offset: 2px;
   }
 }
 
@@ -215,7 +223,7 @@
   .subtitulo-modal {
     margin-bottom: 12px;
 
-    h5 {
+    h3 {
       font-weight: 700;
       color: var(--font-cinza2);
       margin-bottom: 6px;
@@ -258,15 +266,6 @@
     }
   }
 
-  .linha-fornecedor {
-    cursor: pointer;
-    transition: background-color .15s ease;
-
-    &:hover {
-      background-color: #f4f8ff;
-    }
-  }
-
   .texto-ajuda-fornecedor {
     font-size: 12px;
     color: #6b7280;
@@ -299,6 +298,7 @@
   }
 
   .form-secao-titulo {
+    margin: 0 0 10px;
     margin-bottom: 10px;
     font-size: 12px;
     font-weight: 700;
@@ -340,8 +340,9 @@
       transition: border-color .15s ease, box-shadow .15s ease;
 
       &:focus {
-        outline: none;
-        border-color: var(--azul-claro);
+        outline: 2px solid var(--sige-color-primary);
+        outline-offset: 2px;
+        border-color: var(--sige-color-primary);
         box-shadow: 0 0 0 3px rgba(39, 140, 234, 0.15);
       }
     }

@@ -37,12 +37,13 @@
   </div>
   }
 
-  @if (erro) { <div class="alert alert-danger">{{ erro }}</div> }
-  @if (carregando) { <div class="estado">Carregando estoque...</div> }
+  @if (erro) { <div class="alert alert-danger" role="alert">{{ erro }}</div> }
+  @if (carregando) { <div class="estado" role="status" aria-live="polite">Carregando estoque...</div> }
 
   <div class="sige-list-table-wrap">
     <table class="sige-list-table">
-      <thead><tr><th>CATMAT</th><th>Descrição</th><th>Unidade</th><th>Categoria</th><th>Saldo no estoque</th></tr></thead>
+      <caption class="visually-hidden">Saldos atuais do estoque</caption>
+      <thead><tr><th scope="col">CATMAT</th><th scope="col">Descrição</th><th scope="col">Unidade</th><th scope="col">Categoria</th><th scope="col">Saldo no estoque</th></tr></thead>
       <tbody>
         @for (item of itens; track item.id; let indice = $index) {
           @if (iniciaCategoria(indice)) {
@@ -61,10 +62,11 @@
   </div>
 
   @if (pode(Recurso.ESTOQUE, Acao.CONSULTAR_CONSOLIDADO)) {
-    <h5 class="subtitulo">VISÃO CONSOLIDADA</h5>
+    <h5 class="subtitulo">Visão consolidada</h5>
     <div class="sige-list-table-wrap">
       <table class="sige-list-table">
-        <thead><tr><th>Empenho</th><th>Código - Item - Unidade</th><th>Saldo em ATA/Contrato</th><th>Saldo do Empenho</th><th>Saldo no Estoque</th></tr></thead>
+        <caption class="visually-hidden">Visão consolidada do estoque</caption>
+        <thead><tr><th scope="col">Empenho</th><th scope="col">Código - Item - Unidade</th><th scope="col">Saldo em ATA/Contrato</th><th scope="col">Saldo do Empenho</th><th scope="col">Saldo no Estoque</th></tr></thead>
         <tbody>
           @for (item of consolidado; track $index) {
             <tr><td>{{ item.empenho }}</td><td class="sige-cell--truncate" [attr.title]="item.catmat + ' - ' + item.descricao + ' - ' + item.unidade_medida">{{ item.catmat }} - {{ item.descricao }} - {{ item.unidade_medida }}</td>
