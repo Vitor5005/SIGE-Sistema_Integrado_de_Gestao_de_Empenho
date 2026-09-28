@@ -72,13 +72,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f api
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec api python seed.py
 ```
 
-Cria um usuário para cada papel — `diretor`, `tecnico`, `nutricionista` e `estoquista` — e **mostra a senha aleatória de cada um uma única vez**: anote-as. O `diretor` também acessa o `/admin`. O script não apaga nem altera outros dados e pode ser rodado de novo sem trocar senhas já criadas.
-
-Para definir você mesmo a senha inicial dos quatro:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -e SEED_SENHA='sua-senha-forte' api python seed.py
-```
+Cria um usuário para cada papel — `diretor`, `tecnico`, `nutricionista` e `estoquista` — com a senha inicial `senha123`. O `diretor` também acessa o `/admin`. O script não apaga nem altera outros dados e pode ser rodado de novo sem trocar senhas já criadas.
 
 Acesse `http://SEU_IP_PUBLICO`.
 
