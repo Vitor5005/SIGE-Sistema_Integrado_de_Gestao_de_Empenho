@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 
 from empenho.models import Empenho, ItemEmpenho
 from entrega.models import ItemOrdem, OrdemEntrega
-from entrega.pendencias import sincronizar_pendencias
+from utils.pendencias import sincronizar_pendencias
 from estoque.models import Estoque, Inventario, ItemInventario, MovimentacaoEstoque
 
 

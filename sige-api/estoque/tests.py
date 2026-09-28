@@ -13,7 +13,7 @@ from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
 from entrega.models import ItemOrdem, OrdemEntrega
 from estoque.models import Estoque, MovimentacaoEstoque
-from estoque.services import (
+from utils.estoque_services import (
     estornar_movimentacao,
     registrar_carga_inicial,
     registrar_recebimento,
@@ -188,7 +188,7 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
         self.assertEqual(self.item_ordem.quantidade_entregue, Decimal('0.00'))
 
     def test_falha_na_entrada_desfaz_conclusao_da_ordem(self):
-        with patch('estoque.services._registrar_movimentacao', side_effect=RuntimeError('falha simulada')):
+        with patch('utils.estoque_services._registrar_movimentacao', side_effect=RuntimeError('falha simulada')):
             with self.assertRaises(RuntimeError):
                 registrar_recebimento(
                     ordem_id=self.ordem.id,

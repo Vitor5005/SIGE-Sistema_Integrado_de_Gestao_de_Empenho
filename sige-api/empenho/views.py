@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -14,14 +14,18 @@ from empenho.services import (
     saldo_disponivel_ata,
     solicitar_reforco,
 )
-from licitacao.views import BaseFiltroMixin
-from utils.audit import AuditoriaRBACMixin
-from utils.permissions import RBACPermission
+from utils.mixins import (
+    AuditoriaRBACMixin,
+    BaseFiltroMixin,
+    EscopoPorPapelMixin,
+    FiltroQueryParamMixin,
+    SerializerEscritaMixin,
+)
 from utils.rbac import Acao, Papel, Recurso
-class EmpenhoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
+class EmpenhoViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin, viewsets.ModelViewSet):
     queryset = Empenho.objects.all()
     serializer_class = EmpenhoSerializer
-    permission_classes = [RBACPermission]
+    serializer_class_escrita = EmpenhoInsertSerializer
     rbac_resource = Recurso.EMPENHO
     rbac_action_map = {'resumo_financeiro': Acao.CONSULTAR}
     search_fields = ['codigo', 'ata__numero_ata', 'ata__fornecedor__nome_fantasia']
@@ -48,58 +52,36 @@ class EmpenhoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelViewSet):
             'valor_utilizado': f'{valor_utilizado:.2f}',
             'valor_disponivel': f'{valor_disponivel:.2f}',
         })
-    
-    def get_serializer_class(self):
-        
-        if self.action in ['create', 'update']:
-            return EmpenhoInsertSerializer
-        
-        return EmpenhoSerializer
-   
+
     ordering_fields = ['valor_total', 'saldo_utilizado', 'codigo']
     ordering = ['-id']  
 
     
-class ItemDoEmpehoViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
+class ItemDoEmpehoViewSet(AuditoriaRBACMixin, FiltroQueryParamMixin, viewsets.ModelViewSet):
     queryset = ItemEmpenho.objects.all()
     serializer_class = ItemEmpenhoSerializer
-    permission_classes = [RBACPermission]
     rbac_resource = Recurso.ITEM_EMPENHO
     pagination_class = None
-    
-    def get_queryset(self):
-        empenho_id = self.request.query_params.get('empenho_id')
-        return ItemEmpenho.objects.filter(empenho_id=empenho_id)
+    filtros_query_param = {'empenho_id': 'empenho_id'}
+    filtros_obrigatorios = True
 
-class ItemEmpenhoViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
+class ItemEmpenhoViewSet(AuditoriaRBACMixin, SerializerEscritaMixin, viewsets.ModelViewSet):
     queryset = ItemEmpenho.objects.all()
     serializer_class = ItemEmpenhoSerializer
-    permission_classes = [RBACPermission]
+    serializer_class_escrita = ItemEmpenhoInsertSerializer
     rbac_resource = Recurso.ITEM_EMPENHO
-    
-    def get_serializer_class(self):
-        if self.action in ['create', 'update']:
-            return ItemEmpenhoInsertSerializer
-        
-        return ItemEmpenhoSerializer
-    
-class OperacaoDoEmpenhoViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
+
+class OperacaoDoEmpenhoViewSet(AuditoriaRBACMixin, FiltroQueryParamMixin, viewsets.ModelViewSet):
     queryset = OperacaoItem.objects.all()
     serializer_class = OperacaoItemSerializer
-    permission_classes = [RBACPermission]
     rbac_resource = Recurso.OPERACAO_EMPENHO
     pagination_class = None
-    
-    def get_queryset(self):
-        empenho_id = self.request.query_params.get('empenho_id')
-        if empenho_id:
-            return OperacaoItem.objects.filter(item_empenho__empenho_id=empenho_id)
-        return OperacaoItem.objects.all() 
+    filtros_query_param = {'empenho_id': 'item_empenho__empenho_id'}
 
-class OperacaoItemViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
+class OperacaoItemViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin, viewsets.ModelViewSet):
     queryset = OperacaoItem.objects.all()
     serializer_class = OperacaoItemSerializer
-    permission_classes = [RBACPermission]
+    serializer_class_escrita = OperacaoItemInsertSerializer
     rbac_resource = Recurso.OPERACAO_EMPENHO
     http_method_names = ['get', 'post', 'head', 'options']
 
@@ -114,13 +96,7 @@ class OperacaoItemViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
             data=dados['data'],
         )
         return Response(OperacaoItemSerializer(operacao).data, status=201)
-    
-    def get_serializer_class(self):
-        if self.action in ['create', 'update']:
-            return OperacaoItemInsertSerializer
-        
-        return OperacaoItemSerializer
-    
+
     search_fields = ['tipo', 'item_empenho__item_ata__item_generico__descricao']
     filterset_fields = {
         'tipo': ['exact'], 
@@ -134,7 +110,9 @@ class OperacaoItemViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
 
 
 
-class SolicitacaoReforcoViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
+class SolicitacaoReforcoViewSet(
+    AuditoriaRBACMixin, BaseFiltroMixin, EscopoPorPapelMixin, viewsets.ReadOnlyModelViewSet
+):
     """
     Pedidos de reforço feitos pelo Nutricionista ao Diretor.
     O Nutricionista vê apenas os próprios pedidos; o Diretor vê todos.
@@ -144,8 +122,8 @@ class SolicitacaoReforcoViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.Re
         'solicitante', 'respondida_por',
     )
     serializer_class = SolicitacaoReforcoSerializer
-    permission_classes = [RBACPermission]
     rbac_resource = Recurso.SOLICITACAO_REFORCO
+    escopo_por_papel = {Papel.NUTRICIONISTA: lambda usuario: Q(solicitante=usuario)}
     rbac_action_map = {
         'create': Acao.CADASTRAR,
         'saldo': Acao.CADASTRAR,
@@ -160,13 +138,6 @@ class SolicitacaoReforcoViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.Re
     }
     ordering_fields = ['data_solicitacao', 'data_resposta']
     ordering = ['-data_solicitacao', '-id']
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        usuario = self.request.user
-        if getattr(usuario, 'papel', None) == Papel.NUTRICIONISTA:
-            queryset = queryset.filter(solicitante=usuario)
-        return queryset
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

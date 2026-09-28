@@ -6,5 +6,5 @@ class EstoqueConfig(AppConfig):
     name = 'estoque'
 
     def ready(self):
-        from estoque import signals  # noqa: F401
+        from utils import estoque_signals  # noqa: F401
 

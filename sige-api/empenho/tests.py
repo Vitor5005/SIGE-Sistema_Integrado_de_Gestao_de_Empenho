@@ -214,3 +214,58 @@ class SolicitacaoReforcoTests(APITestCase):
         self.assertTrue(self.client.post(url_vista).data['vista_pelo_solicitante'])
         restantes = self.client.get(self.url, {'vista_pelo_solicitante': 'false'}).data
         self.assertEqual([item['id'] for item in restantes['results']], [recusada])
+
+
+class MixinsDasViewsTests(APITestCase):
+    """Filtros por parâmetro da URL e serializer de escrita aplicados pelos mixins de utils.mixins."""
+
+    def setUp(self):
+        OperacaoEmpenhoTests.setUp(self)
+        registrar_operacao_item(item_empenho_id=self.item.id, tipo='inc', valor='10', data=self.data)
+        outro_empenho = Empenho.objects.create(
+            codigo='NE-OUTRO', ata=self.ata, valor_total=Decimal('0.00'), saldo_utilizado=Decimal('0.00'),
+        )
+        self.outro_item = ItemEmpenho.objects.create(
+            empenho=outro_empenho, item_ata=self.item_ata,
+            quantidade_atual=Decimal('0.00'), quantidade_entrege=Decimal('0.00'),
+        )
+        registrar_operacao_item(item_empenho_id=self.outro_item.id, tipo='inc', valor='5', data=self.data)
+        self.client.force_authenticate(
+            Usuario.objects.create_user('diretor_mixins', password='senha', papel=Papel.DIRETOR)
+        )
+
+    def ids(self, url, params=None):
+        resposta = self.client.get(url, params or {})
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        dados = resposta.data['results'] if isinstance(resposta.data, dict) else resposta.data
+        return sorted(item['id'] for item in dados)
+
+    def test_filtro_obrigatorio_sem_parametro_retorna_vazio(self):
+        url = reverse('itens-do-empenho-list')
+        self.assertEqual(self.ids(url), [])
+        self.assertEqual(self.ids(url, {'empenho_id': self.empenho.id}), [self.item.id])
+
+    def test_filtro_opcional_sem_parametro_retorna_todos(self):
+        url = reverse('operacoes-do-empenho-list')
+        todas = sorted(OperacaoItem.objects.values_list('id', flat=True))
+        self.assertEqual(self.ids(url), todas)
+        self.assertEqual(
+            self.ids(url, {'empenho_id': self.empenho.id}),
+            list(OperacaoItem.objects.filter(item_empenho=self.item).values_list('id', flat=True)),
+        )
+
+    def test_itens_da_ata_filtram_pela_ata(self):
+        url = reverse('itens_da_ata-list')
+        self.assertEqual(self.ids(url), [])
+        self.assertEqual(self.ids(url, {'ata_id': self.ata.id}), [self.item.id, self.outro_item.id])
+
+    def test_escrita_usa_serializer_plano_e_leitura_o_aninhado(self):
+        url = reverse('empenho-list')
+        resposta = self.client.post(url, {
+            'codigo': 'NE-NOVO', 'ata': self.ata.id, 'valor_total': '0.00', 'saldo_utilizado': '0.00',
+        }, format='json')
+        self.assertEqual(resposta.status_code, 201, resposta.data)
+        self.assertEqual(resposta.data['ata'], self.ata.id)
+
+        detalhe = self.client.get(reverse('empenho-detail', args=[resposta.data['id']]))
+        self.assertEqual(detalhe.data['ata']['numero_ata'], 'ATA-TESTE')

@@ -2,7 +2,7 @@
 
 import random
 from django.utils import timezone
-from django.core.signing import  TimestampSigner, BadSignature, SignatureExpired 
+from django.core.signing import  TimestampSigner, BadSignature, SignatureExpired
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -11,25 +11,22 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from usuario.models import Usuario, CodigoRedefiniçãoSenha, HistoricoAuditoria
 from usuario.serializers import UsuarioSerializer, CustomTokenObtainPairSerializer, HistoricoAuditoriaSerializer
-from licitacao.views import BaseFiltroMixin
 from utils.mail import get_email_client
-from utils.audit import AuditoriaRBACMixin
-from utils.permissions import RBACPermission
+from utils.mixins import AuditoriaRBACMixin, BaseFiltroMixin, RBACMixin
 from utils.rbac import Recurso
 signer = TimestampSigner()
 
 class UsuarioViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
-    permission_classes = [RBACPermission]
     rbac_resource = Recurso.USUARIO
-    
+
     search_fields = ['username', 'first_name', 'last_name', 'email']
     filterset_fields = {
         'papel': ['exact'],
         'is_active': ['exact'],
     }
-    
+
     ordering_fields = ['username', 'first_name', 'date_joined']
     ordering = ['username']
 
@@ -49,14 +46,14 @@ class UsuarioViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet)
             return Response({'error': 'O e-mail é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-           
+
             user = Usuario.objects.get(email=email)
         except Usuario.DoesNotExist:
-            
+
             return Response({'success': 'Se um usuário com este e-mail existir, um código foi enviado.'}, status=status.HTTP_200_OK)
 
         code_value = str(random.randint(100000, 999999))
-        
+
         CodigoRedefiniçãoSenha.objects.filter(usuario=user).delete()
         CodigoRedefiniçãoSenha.objects.create(usuario=user, codigo=code_value)
 
@@ -80,17 +77,17 @@ class UsuarioViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet)
             return Response({'error': 'O código é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            
+
             reset_instance = CodigoRedefiniçãoSenha.objects.get(codigo=code_value)
         except CodigoRedefiniçãoSenha.DoesNotExist:
             return Response({'error': 'Código inválido.'}, status=status.HTTP_400_BAD_REQUEST)
 
-   
+
         if timezone.now() > reset_instance.expira_em:
             reset_instance.delete()
             return Response({'error': 'O código de redefinição expirou.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        
+
+
         reset_token = signer.sign(str(reset_instance.usuario.pk))
         reset_instance.delete()
 
@@ -108,9 +105,9 @@ class UsuarioViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet)
             return Response({'error': 'Token de redefinição e nova senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-           
+
             user_pk = signer.unsign(token, max_age=300)
-           
+
             user = Usuario.objects.get(pk=user_pk)
         except SignatureExpired:
             return Response({'error': 'O token de redefinição expirou. Por favor, solicite um novo código.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -127,10 +124,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
 
 
-class HistoricoAuditoriaViewSet(BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
+class HistoricoAuditoriaViewSet(RBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
     queryset = HistoricoAuditoria.objects.select_related('usuario').all()
     serializer_class = HistoricoAuditoriaSerializer
-    permission_classes = [RBACPermission]
     rbac_resource = Recurso.HISTORICO
     search_fields = ['usuario__username', 'papel', 'acao', 'recurso', 'entidade']
     filterset_fields = {
