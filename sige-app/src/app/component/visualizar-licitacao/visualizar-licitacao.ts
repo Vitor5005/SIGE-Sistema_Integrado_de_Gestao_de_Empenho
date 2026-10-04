@@ -21,6 +21,7 @@ import { EmpenhoService } from '../../service/empenho.service';
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
+import { UNIDADES_FEDERATIVAS } from '../../model/estados';
 
 @Component({
   selector: 'app-visualizar-licitacao',
@@ -33,6 +34,7 @@ export class VisualizarLicitacao {
   readonly pode = pode;
   readonly Acao = Acao;
   readonly Recurso = Recurso;
+  readonly unidadesFederativas = UNIDADES_FEDERATIVAS;
 
   constructor(
     private router: Router,
@@ -207,13 +209,6 @@ export class VisualizarLicitacao {
     this.endereco_insercao.municipio = this.limitarTexto(this.endereco_insercao.municipio, 100);
   }
 
-  onEstadoInput(): void {
-    this.endereco_insercao.estado = (this.endereco_insercao.estado || '')
-      .replace(/[^a-zA-Z]/g, '')
-      .toUpperCase()
-      .slice(0, 2);
-  }
-
   onTelefoneInput(): void {
     const digitos = this.limparNumero(this.fornecedor_insercao.telefone).slice(0, 11);
 
@@ -278,7 +273,7 @@ export class VisualizarLicitacao {
   }
 
   get estadoValido(): boolean {
-    return (this.endereco_insercao.estado || '').trim().length === 2;
+    return this.unidadesFederativas.some(uf => uf.sigla === this.endereco_insercao.estado);
   }
 
   get fornecedorFormValido(): boolean {

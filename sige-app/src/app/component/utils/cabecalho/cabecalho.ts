@@ -3,10 +3,14 @@ import { Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from "@angular/router";
 import { filter } from 'rxjs';
+import { OrdemEntrega } from '../../../model/ordem_entrega';
 import { PendenciaFornecedor } from '../../../model/pendencia_fornecedor';
+import { ReforcoParaPedido } from '../../../model/reforco_para_pedido';
 import { SolicitacaoReforco } from '../../../model/solicitacao_reforco';
 import { Auth } from '../../../service/auth';
+import { OrdemEntregaService } from '../../../service/ordem-entrega.service';
 import { PendenciaFornecedorService } from '../../../service/pendencia-fornecedor.service';
+import { ReforcoParaPedidoService } from '../../../service/reforco-para-pedido.service';
 import { SolicitacaoReforcoService } from '../../../service/solicitacao-reforco.service';
 import { Acao, Papel, pode, Recurso } from '../../../security/rbac';
 
@@ -31,7 +35,36 @@ export class Cabecalho {
     private auth: Auth,
     private pendenciaService: PendenciaFornecedorService,
     private solicitacaoReforcoService: SolicitacaoReforcoService,
+    private reforcoParaPedidoService: ReforcoParaPedidoService,
+    private ordemEntregaService: OrdemEntregaService,
   ) { }
+
+  /** Quantos dias antes da data prevista a entrega passa a aparecer para o Estoquista. */
+  readonly diasAvisoEntrega = 3;
+
+  reforcosParaPedido: ReforcoParaPedido[] = [];
+  totalReforcosParaPedido = 0;
+  erroReforcosParaPedido = false;
+  marcandoReforcoCienteId: number | null = null;
+
+  entregasProximas: OrdemEntrega[] = [];
+  totalEntregasProximas = 0;
+  erroEntregasProximas = false;
+
+  /** Técnico é avisado dos reforços feitos pelo Diretor para pedir a entrega ao fornecedor. */
+  get podeVerReforcosParaPedido(): boolean {
+    return pode(Recurso.OPERACAO_EMPENHO, Acao.GERAR_ORDEM);
+  }
+
+  /** Estoquista é avisado das entregas previstas para os próximos dias (e das atrasadas). */
+  get podeVerEntregasProximas(): boolean {
+    return pode(Recurso.ESTOQUE, Acao.REGISTRAR_RECEBIMENTO);
+  }
+
+  get podeVerAlertas(): boolean {
+    return this.podeVerPendencias || this.podeVerReforcos || this.podeVerRespostasReforco
+      || this.podeVerReforcosParaPedido || this.podeVerEntregasProximas;
+  }
 
   reforcos: SolicitacaoReforco[] = [];
   totalReforcos = 0;
@@ -58,13 +91,79 @@ export class Cabecalho {
   get totalAlertas(): number {
     return (this.podeVerPendencias ? this.totalPendencias : 0)
       + (this.podeVerReforcos ? this.totalReforcos : 0)
-      + (this.podeVerRespostasReforco ? this.totalRespostasReforco : 0);
+      + (this.podeVerRespostasReforco ? this.totalRespostasReforco : 0)
+      + (this.podeVerReforcosParaPedido ? this.totalReforcosParaPedido : 0)
+      + (this.podeVerEntregasProximas ? this.totalEntregasProximas : 0);
   }
 
   carregarAlertas(): void {
     this.carregarPendencias();
     this.carregarReforcos();
     this.carregarRespostasReforco();
+    this.carregarReforcosParaPedido();
+    this.carregarEntregasProximas();
+  }
+
+  carregarReforcosParaPedido(): void {
+    if (!this.podeVerReforcosParaPedido) {
+      return;
+    }
+
+    this.reforcoParaPedidoService.listar(1, 5).subscribe({
+      next: (resposta) => {
+        this.reforcosParaPedido = resposta.results;
+        this.totalReforcosParaPedido = resposta.count;
+        this.erroReforcosParaPedido = false;
+      },
+      error: () => {
+        this.erroReforcosParaPedido = true;
+      },
+    });
+  }
+
+  marcarReforcoCiente(reforco: ReforcoParaPedido): void {
+    this.marcandoReforcoCienteId = reforco.id;
+    this.reforcoParaPedidoService.marcarCiente(reforco.id).subscribe({
+      next: () => {
+        this.marcandoReforcoCienteId = null;
+        this.carregarReforcosParaPedido();
+      },
+      error: () => {
+        this.marcandoReforcoCienteId = null;
+        this.erroReforcosParaPedido = true;
+      },
+    });
+  }
+
+  carregarEntregasProximas(): void {
+    if (!this.podeVerEntregasProximas) {
+      return;
+    }
+
+    const limite = new Date();
+    limite.setDate(limite.getDate() + this.diasAvisoEntrega);
+    limite.setHours(23, 59, 59, 999);
+
+    this.ordemEntregaService.get('', 1, 5, {
+      status__in: 'esp,par',
+      data_entrega_prevista__lte: limite.toISOString(),
+      ordering: 'data_entrega_prevista',
+    }).subscribe({
+      next: (resposta) => {
+        this.entregasProximas = resposta.results;
+        this.totalEntregasProximas = resposta.count;
+        this.erroEntregasProximas = false;
+      },
+      error: () => {
+        this.erroEntregasProximas = true;
+      },
+    });
+  }
+
+  entregaAtrasada(ordem: OrdemEntrega): boolean {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    return new Date(ordem.data_entrega_prevista) < hoje;
   }
 
   carregarRespostasReforco(): void {

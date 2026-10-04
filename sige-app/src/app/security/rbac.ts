@@ -119,6 +119,7 @@ export const MATRIZ_PERMISSOES: Matriz = {
     [Acao.INCLUIR_EMPENHO]: DIRETOR,
     [Acao.REFORCAR_EMPENHO]: DIRETOR,
     [Acao.ANULAR_EMPENHO]: DIRETOR,
+    [Acao.GERAR_ORDEM]: [Papel.TECNICO_ADMINISTRATIVO],
   },
   [Recurso.ORDEM_ENTREGA]: {
     // TODO: restringir Nutricionista às ordens das próprias solicitações

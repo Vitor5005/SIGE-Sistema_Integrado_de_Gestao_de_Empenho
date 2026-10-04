@@ -130,6 +130,8 @@ MATRIZ_PERMISSOES = {
         Acao.INCLUIR_EMPENHO: DIRETOR,
         Acao.REFORCAR_EMPENHO: DIRETOR,
         Acao.ANULAR_EMPENHO: DIRETOR,
+        # Ciência de um reforço feito pelo Diretor, antes de pedir a entrega ao fornecedor.
+        Acao.GERAR_ORDEM: frozenset({Papel.TECNICO_ADMINISTRATIVO}),
     },
     Recurso.ORDEM_ENTREGA: {
         # TODO: limitar a Nutricionista às ordens de suas solicitações quando

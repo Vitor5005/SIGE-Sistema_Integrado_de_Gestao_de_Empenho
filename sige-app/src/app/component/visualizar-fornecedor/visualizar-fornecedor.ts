@@ -12,6 +12,7 @@ import { FornecedorInsert } from '../../model/fornecedor_insert';
 import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
+import { UNIDADES_FEDERATIVAS } from '../../model/estados';
 
 @Component({
   selector: 'app-visualizar-fornecedor',
@@ -23,6 +24,7 @@ export class VisualizarFornecedor {
   readonly pode = pode;
   readonly Acao = Acao;
   readonly Recurso = Recurso;
+  readonly unidadesFederativas = UNIDADES_FEDERATIVAS;
 
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild("myInput") input!: ElementRef;
@@ -116,13 +118,6 @@ export class VisualizarFornecedor {
     this.endereco_editar.municipio = this.limitarTexto(this.endereco_editar.municipio, 100);
   }
 
-  onEstadoInput(): void {
-    this.endereco_editar.estado = (this.endereco_editar.estado || '')
-      .replace(/[^a-zA-Z]/g, '')
-      .toUpperCase()
-      .slice(0, 2);
-  }
-
   onTelefoneInput(): void {
     const digitos = this.limparNumero(this.fornecedor_editar.telefone).slice(0, 11);
 
@@ -179,7 +174,7 @@ export class VisualizarFornecedor {
   }
 
   get estadoValido(): boolean {
-    return (this.endereco_editar.estado || '').trim().length === 2;
+    return this.unidadesFederativas.some(uf => uf.sigla === this.endereco_editar.estado);
   }
 
   get fornecedorFormValido(): boolean {

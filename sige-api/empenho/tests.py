@@ -269,3 +269,51 @@ class MixinsDasViewsTests(APITestCase):
 
         detalhe = self.client.get(reverse('empenho-detail', args=[resposta.data['id']]))
         self.assertEqual(detalhe.data['ata']['numero_ata'], 'ATA-TESTE')
+
+
+class ReforcoParaPedidoTests(APITestCase):
+    """O Técnico é avisado dos reforços feitos pelo Diretor até confirmar ciência."""
+
+    def setUp(self):
+        OperacaoEmpenhoTests.setUp(self)
+        self.diretor = Usuario.objects.create_user('diretor_aviso', password='senha', papel=Papel.DIRETOR)
+        self.tecnico = Usuario.objects.create_user('tecnico_aviso', password='senha', papel=Papel.TECNICO_ADMINISTRATIVO)
+        self.nutricionista = Usuario.objects.create_user('nutri_aviso', password='senha', papel=Papel.NUTRICIONISTA)
+        self.url = reverse('reforco-para-pedido-list')
+
+    def avisos(self):
+        self.client.force_authenticate(self.tecnico)
+        return [item['id'] for item in self.client.get(self.url).data['results']]
+
+    def test_somente_reforcos_avisam_o_tecnico(self):
+        registrar_operacao_item(item_empenho_id=self.item.id, tipo='inc', valor='60', data=self.data)
+        reforco = registrar_operacao_item(item_empenho_id=self.item.id, tipo='ref', valor='10', data=self.data)
+        registrar_operacao_item(item_empenho_id=self.item.id, tipo='anl', valor='5', data=self.data)
+
+        self.assertEqual(self.avisos(), [reforco.id])
+
+    def test_reforco_de_solicitacao_atendida_tambem_avisa(self):
+        registrar_operacao_item(item_empenho_id=self.item.id, tipo='inc', valor='60', data=self.data)
+        self.client.force_authenticate(self.nutricionista)
+        solicitacao_id = self.client.post(reverse('solicitacao-reforco-list'), {
+            'item_empenho': self.item.id, 'quantidade': '10', 'justificativa': 'Cardápio.',
+        }, format='json').data['id']
+        self.client.force_authenticate(self.diretor)
+        self.client.post(reverse('solicitacao-reforco-atender', args=[solicitacao_id]))
+
+        operacao = SolicitacaoReforco.objects.get(pk=solicitacao_id).operacao
+        self.assertEqual(self.avisos(), [operacao.id])
+
+    def test_ciente_remove_o_aviso_e_somente_o_tecnico_confirma(self):
+        registrar_operacao_item(item_empenho_id=self.item.id, tipo='inc', valor='60', data=self.data)
+        reforco = registrar_operacao_item(item_empenho_id=self.item.id, tipo='ref', valor='10', data=self.data)
+        url_ciente = reverse('reforco-para-pedido-ciente', args=[reforco.id])
+
+        self.client.force_authenticate(self.diretor)
+        self.assertEqual(self.client.post(url_ciente).status_code, 403)
+        self.client.force_authenticate(self.nutricionista)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
+        self.client.force_authenticate(self.tecnico)
+        self.assertEqual(self.client.post(url_ciente).status_code, 200)
+        self.assertEqual(self.avisos(), [])

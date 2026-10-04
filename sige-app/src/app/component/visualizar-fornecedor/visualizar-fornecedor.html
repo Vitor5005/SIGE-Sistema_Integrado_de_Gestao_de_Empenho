@@ -243,11 +243,16 @@
                 </div>
                 <div class="form-group">
                   <label for="editarFornecedorEstado">Estado</label>
-                  <input id="editarFornecedorEstado" type="text" [(ngModel)]="endereco_editar.estado" name="estado" [disabled]="isSaving" maxlength="2"
-                    placeholder="UF" (input)="onEstadoInput()" [class.campo-invalido]="formSubmitted && !estadoValido"
+                  <select id="editarFornecedorEstado" [(ngModel)]="endereco_editar.estado" name="estado" [disabled]="isSaving"
+                    [class.campo-invalido]="formSubmitted && !estadoValido"
                     [attr.aria-invalid]="formSubmitted && !estadoValido ? 'true' : null">
+                    <option [ngValue]="undefined" disabled>Selecione o estado</option>
+                    @for (uf of unidadesFederativas; track uf.sigla) {
+                    <option [ngValue]="uf.sigla">{{ uf.sigla }} - {{ uf.nome }}</option>
+                    }
+                  </select>
                   @if(formSubmitted && !estadoValido) {
-                  <small class="mensagem-campo-invalido">Use a UF com 2 letras.</small>
+                  <small class="mensagem-campo-invalido">Selecione o estado.</small>
                   }
                 </div>
               </div>

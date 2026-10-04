@@ -60,6 +60,27 @@ class OperacaoItemSerializer(serializers.ModelSerializer):
         model = OperacaoItem
         fields = '__all__'
 
+
+class ReforcoParaPedidoSerializer(serializers.ModelSerializer):
+    """Reforço registrado pelo Diretor que o Técnico ainda não confirmou ter visto."""
+    empenho_id = serializers.IntegerField(source='item_empenho.empenho_id', read_only=True)
+    empenho_codigo = serializers.CharField(source='item_empenho.empenho.codigo', read_only=True)
+    fornecedor = serializers.CharField(
+        source='item_empenho.empenho.ata.fornecedor.nome_fantasia', read_only=True
+    )
+    genero = serializers.CharField(source='item_empenho.item_ata.item_generico.descricao', read_only=True)
+    unidade_medida = serializers.CharField(
+        source='item_empenho.item_ata.item_generico.unidade_medida', read_only=True
+    )
+
+    class Meta:
+        model = OperacaoItem
+        fields = (
+            'id', 'valor', 'data', 'ciente_tecnico',
+            'empenho_id', 'empenho_codigo', 'fornecedor', 'genero', 'unidade_medida',
+        )
+        read_only_fields = fields
+
 class ValorEmpenhoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empenho

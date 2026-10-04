@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from empenho.models import Empenho, ItemEmpenho,  OperacaoItem, SolicitacaoReforco
-from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, EmpenhoUpdateSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer, SolicitacaoReforcoSerializer
+from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, EmpenhoUpdateSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer, ReforcoParaPedidoSerializer, SolicitacaoReforcoSerializer
 from empenho.services import (
     atender_solicitacao_reforco,
     recusar_solicitacao_reforco,
@@ -122,6 +122,26 @@ class OperacaoItemViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscrita
 
     ordering_fields = ['data', 'valor']
     ordering = ['-data']
+
+
+class ReforcoParaPedidoViewSet(AuditoriaRBACMixin, viewsets.ReadOnlyModelViewSet):
+    """
+    Reforços registrados pelo Diretor que o Técnico ainda não confirmou ter visto.
+    Avisam o Técnico de que há saldo novo no empenho para pedir a entrega ao fornecedor.
+    """
+    queryset = OperacaoItem.objects.filter(tipo='ref', ciente_tecnico=False).select_related(
+        'item_empenho__empenho__ata__fornecedor', 'item_empenho__item_ata__item_generico',
+    ).order_by('-data', '-id')
+    serializer_class = ReforcoParaPedidoSerializer
+    rbac_resource = Recurso.OPERACAO_EMPENHO
+    rbac_action_map = {'ciente': Acao.GERAR_ORDEM}
+
+    @action(detail=True, methods=['post'])
+    def ciente(self, request, pk=None):
+        operacao = self.get_object()
+        operacao.ciente_tecnico = True
+        operacao.save(update_fields=['ciente_tecnico'])
+        return Response(self.get_serializer(operacao).data)
 
 
 

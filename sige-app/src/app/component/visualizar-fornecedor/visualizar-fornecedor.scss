@@ -165,7 +165,8 @@
       letter-spacing: .02em;
     }
 
-    input {
+    input,
+    select {
       border: 1px solid var(--sige-border);
       border-radius: var(--sige-radius-sm);
       padding: 8px 10px;

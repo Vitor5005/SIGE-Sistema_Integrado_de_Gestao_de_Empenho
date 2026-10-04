@@ -90,6 +90,7 @@ def registrar_operacao_item(*, item_empenho_id, tipo, valor, data):
         tipo=tipo,
         valor=quantidade,
         data=data,
+        ciente_tecnico=tipo != 'ref',
     )
     item_empenho.quantidade_atual = nova_quantidade
     item_empenho.save(update_fields=['quantidade_atual'])
