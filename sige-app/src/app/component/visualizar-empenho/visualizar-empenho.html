@@ -681,7 +681,7 @@
             <button type="button" class="entrega-acao-secundaria"
               (click)="tentarFecharModalSolicitacao()">Cancelar</button>
             <button type="button" class="entrega-acao-primaria" [disabled]="!podeAvancarDadosSolicitacao"
-              (click)="irParaItensSolicitacao()">Continuar <i class="bi bi-arrow-right"></i></button>
+              (click)="irParaItensSolicitacao()">Continuar</button>
           </div>
           }
 
@@ -690,10 +690,9 @@
             <small><b>Para revisar:</b> todos os itens selecionados precisam ter uma quantidade válida.</small>
           </div>
           <div class="entrega-modal-acoes">
-            <button type="button" class="entrega-acao-secundaria" (click)="voltarEtapaSolicitacao()"><i
-                class="bi bi-arrow-left"></i> Voltar</button>
+            <button type="button" class="entrega-acao-secundaria" (click)="voltarEtapaSolicitacao()">Voltar</button>
             <button type="button" class="entrega-acao-primaria" [disabled]="!podeAvancarItensSolicitacao"
-              (click)="irParaRevisaoSolicitacao()">Revisar solicitação <i class="bi bi-arrow-right"></i></button>
+              (click)="irParaRevisaoSolicitacao()">Revisar solicitação</button>
           </div>
           }
 
@@ -701,8 +700,7 @@
           <div class="valor-total-solicitacao">Total da solicitação: R$ {{ calcularSomaTotalItensSolicitados() |
             number:'1.2-2' }}</div>
           <div class="entrega-modal-acoes">
-            <button type="button" class="entrega-acao-secundaria" (click)="voltarEtapaSolicitacao()"><i
-                class="bi bi-arrow-left"></i> Voltar e editar</button>
+            <button type="button" class="entrega-acao-secundaria" (click)="voltarEtapaSolicitacao()">Voltar e editar</button>
             <button type="button" class="entrega-acao-primaria" [disabled]="!podeSolicitarEntrega"
               (click)="solicitarEntrega()"><i class="bi bi-check-lg"></i> Confirmar solicitação</button>
           </div>

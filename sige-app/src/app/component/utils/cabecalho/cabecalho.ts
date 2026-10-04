@@ -1,6 +1,8 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from "@angular/router";
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from "@angular/router";
+import { filter } from 'rxjs';
 import { PendenciaFornecedor } from '../../../model/pendencia_fornecedor';
 import { SolicitacaoReforco } from '../../../model/solicitacao_reforco';
 import { Auth } from '../../../service/auth';
@@ -166,7 +168,14 @@ export class Cabecalho {
     this.getPapel();
     this.getUser();
     this.carregarAlertas();
+
+    // O cabeçalho vive durante toda a sessão: atualiza as notificações a cada troca de tela.
+    this.router.events
+      .pipe(filter(evento => evento instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.carregarAlertas());
   }
+
+  private readonly destroyRef = inject(DestroyRef);
 
   carregarPendencias(): void {
     if (!this.podeVerPendencias) {

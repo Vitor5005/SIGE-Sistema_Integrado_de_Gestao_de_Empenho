@@ -386,12 +386,12 @@
 
             <div class="form-footer">
               <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page()">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar
+                Voltar
               </button>
 
               <button type="button" class="btn-confirmar" [disabled]="isSaving || !fornecedorFormValido"
                 [class.btn-confirmar-desabilitado]="isSaving || !fornecedorFormValido" (click)="avanca_modal_page()">
-                <i class="bi bi-arrow-right" aria-hidden="true"></i> Prosseguir
+                Prosseguir
               </button>
             </div>
 
@@ -453,7 +453,7 @@
             <div class="form-footer">
               @if (jump_page == false) {
               <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page()">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar
+                Voltar
               </button>
 
               <button type="button" class="btn-confirmar" [disabled]="!podeConcluirCadastro"
@@ -467,7 +467,7 @@
 
               @if (jump_page == true) {
               <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page(0)">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar
+                Voltar
               </button>
 
               <button type="button" class="btn-confirmar" [disabled]="!podeConcluirCadastro"
