@@ -109,7 +109,7 @@
     </a>
     }
 
-    @if (pode(Recurso.PENDENCIA_FORNECEDOR, Acao.ALTERAR_STATUS)) {
+    @if (podeVerPendencias || podeVerReforcos || podeVerRespostasReforco) {
     <div class="dropdown">
       <button
         class="alertas-botao"
