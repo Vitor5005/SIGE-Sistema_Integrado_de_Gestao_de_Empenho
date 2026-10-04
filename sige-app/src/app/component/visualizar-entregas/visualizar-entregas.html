@@ -384,13 +384,13 @@
 
           @if (!isLoadingPedidos && !isConfirmandoEntrega && pedidosDaOrdem.length > 0 && etapaConfirmacao === 1) {
           <button type="button" class="confirmacao-acao-primaria" (click)="irParaRevisaoConfirmacao()">
-            Revisar confirmação <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            Revisar confirmação
           </button>
           }
 
           @if (!isLoadingPedidos && !isConfirmandoEntrega && pedidosDaOrdem.length > 0 && etapaConfirmacao === 2) {
           <button type="button" class="confirmacao-acao-secundaria" (click)="voltarParaRegistroConfirmacao()">
-            <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar e editar
+            Voltar e editar
           </button>
           <button type="button" class="confirmacao-acao-primaria" [disabled]="!podeConfirmarEntrega" (click)="confirmarEntrega(ordemSelecionada)">
             <i class="bi bi-check-lg" aria-hidden="true"></i> Confirmar entrega

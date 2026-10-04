@@ -12,27 +12,3 @@
   width: 100%;
   margin-top: var(--sige-space-5);
 }
-
-.btn-voltar {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sige-space-2);
-  padding: var(--sige-space-2) 0;
-  color: var(--sige-text-secondary);
-  font-size: 0.875rem;
-  font-weight: 700;
-  text-decoration: none;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  transition: color 0.2s ease, transform 0.2s ease;
-
-  i {
-    font-size: 1.25rem;
-  }
-
-  &:hover {
-    color: var(--sige-color-primary-strong);
-    transform: translateX(-2px);
-  }
-}
