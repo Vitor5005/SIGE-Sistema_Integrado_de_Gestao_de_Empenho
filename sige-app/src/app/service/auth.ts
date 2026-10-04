@@ -21,13 +21,13 @@ export class Auth
   }
 
   verifyToken(token: string): Observable<any> {
-    let url = environment.API_URL + "verify/";
+    let url = this.apiUrl + "verify/";
     return this.http.post(url, { token });
   }
 
   refreshToken() {
 
-    let url = environment.API_URL + "refresh/";
+    let url = this.apiUrl + "refresh/";
     const refresh = localStorage.getItem('refresh_token');
 
     return this.http.post(url, { refresh });
