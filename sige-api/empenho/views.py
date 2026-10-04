@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from empenho.models import Empenho, ItemEmpenho,  OperacaoItem, SolicitacaoReforco
-from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer, SolicitacaoReforcoSerializer
+from empenho.serializers import EmpenhoInsertSerializer, EmpenhoSerializer, EmpenhoUpdateSerializer, ItemEmpenhoInsertSerializer, ItemEmpenhoSerializer, OperacaoItemInsertSerializer, OperacaoItemSerializer, SolicitacaoReforcoSerializer
 from empenho.services import (
     atender_solicitacao_reforco,
     recusar_solicitacao_reforco,

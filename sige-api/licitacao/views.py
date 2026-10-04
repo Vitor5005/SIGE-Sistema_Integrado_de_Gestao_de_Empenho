@@ -80,7 +80,7 @@ class AtaViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin, vi
             )
         return super().destroy(request, *args, **kwargs)
 
-class ItemAtaViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
+class ItemAtaViewSet(AuditoriaRBACMixin, SerializerEscritaMixin, viewsets.ModelViewSet):
     queryset = ItemAta.objects.all()
     serializer_class = ItemAtaSerializer
     serializer_class_escrita = ItemAtaInsertSerializer
