@@ -41,7 +41,7 @@ class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin
         'empenho__ata__fornecedor__cnpj',
     ]
     filterset_fields = {
-        'status': ['exact'],
+        'status': ['exact', 'in'],
         'empenho__id': ['exact'],
         'empenho__ata__licitacao__id': ['exact'],
         'data_emissao': ['exact', 'gte', 'lte'],
@@ -50,7 +50,7 @@ class EntregaViewSet(AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin
         'valor_total_executado': ['exact', 'gte', 'lte']
     }
 
-    ordering_fields = ['data_emissao', 'data_entrega', 'valor_total_executado']
+    ordering_fields = ['data_emissao', 'data_entrega', 'data_entrega_prevista', 'valor_total_executado']
     ordering = ['-data_emissao']
 
     @action(

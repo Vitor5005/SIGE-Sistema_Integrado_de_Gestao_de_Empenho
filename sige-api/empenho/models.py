@@ -33,6 +33,9 @@ class OperacaoItem(models.Model):
     tipo = models.CharField(max_length=3, choices=operacoes, blank=False, null=False, verbose_name="Tipo de Operação") 
     valor = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False, verbose_name="Valor da Operação")
     data = models.DateTimeField(blank=False, null=False, verbose_name="Data da Operação")
+    # Passa a False quando o Diretor registra um reforço, avisando o Técnico até que ele
+    # confirme ciência e solicite a entrega ao fornecedor.
+    ciente_tecnico = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Operação: {self.tipo} \n Valor: {self.valor} \n Data: {self.data} \n Item Empenho: {self.item_empenho.id}"

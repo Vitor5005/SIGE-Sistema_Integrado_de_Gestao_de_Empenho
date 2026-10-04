@@ -1,10 +1,11 @@
+from datetime import datetime, timezone as dt_timezone
 from decimal import Decimal
 
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from entrega.models import PendenciaFornecedor
+from entrega.models import OrdemEntrega, PendenciaFornecedor
 from utils.estoque_services import registrar_recebimento
 from estoque.tests import EstoqueBaseMixin
 from usuario.models import HistoricoAuditoria, Usuario
@@ -125,3 +126,36 @@ class PendenciaFornecedorTests(EstoqueBaseMixin, APITestCase):
 
         self.assertEqual(resposta.status_code, status.HTTP_201_CREATED, resposta.data)
         self.assertEqual(resposta.data['solicitante'], self.tecnico.id)
+
+
+class EntregasProximasTests(EstoqueBaseMixin, APITestCase):
+    """Consulta usada no aviso do Estoquista: ordens não concluídas com previsão até uma data."""
+
+    def setUp(self):
+        self.criar_cenario()
+        self.parcial = OrdemEntrega.objects.create(
+            empenho=self.empenho, codigo='OE-PARCIAL', status='par',
+            data_entrega_prevista=datetime(2026, 1, 10, tzinfo=dt_timezone.utc),
+            valor_total_executado=Decimal('0.00'),
+        )
+        OrdemEntrega.objects.create(
+            empenho=self.empenho, codigo='OE-CONCLUIDA', status='con',
+            data_entrega_prevista=datetime(2026, 1, 11, tzinfo=dt_timezone.utc),
+            valor_total_executado=Decimal('0.00'),
+        )
+        OrdemEntrega.objects.create(
+            empenho=self.empenho, codigo='OE-DISTANTE', status='esp',
+            data_entrega_prevista=datetime(2026, 3, 1, tzinfo=dt_timezone.utc),
+            valor_total_executado=Decimal('0.00'),
+        )
+
+    def test_estoquista_consulta_entregas_pendentes_ate_a_data(self):
+        self.client.force_authenticate(self.estoquista)
+        resposta = self.client.get(reverse('ordementrega-list'), {
+            'status__in': 'esp,par',
+            'data_entrega_prevista__lte': '2026-01-15T23:59:59Z',
+            'ordering': 'data_entrega_prevista',
+        })
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+        self.assertEqual([ordem['codigo'] for ordem in resposta.data['results']], ['OE-PARCIAL', 'OE-00030'])
