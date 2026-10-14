@@ -76,6 +76,8 @@ class EstoqueViewSet(RBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
                 'catmat': genero.catmat,
                 'descricao': genero.descricao,
                 'unidade_medida': genero.unidade_medida,
+                'categoria': genero.categoria,
+                'imagem': request.build_absolute_uri(genero.imagem.url) if genero.imagem else None,
                 'saldo_ata': item_ata.quantidade_licitada - operacoes[item_ata.id],
                 'saldo_empenho': item.quantidade_atual,
                 'saldo_estoque': saldos.get(genero.id, Decimal('0.000')),

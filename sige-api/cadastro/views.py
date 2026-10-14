@@ -1,10 +1,18 @@
 from django.db import transaction
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
-from cadastro.serializers import EnderecoSerializer, FornecedorSerializer, FornecedorCreateSerializer, ItemGenericoSerializer
+from cadastro.serializers import (
+    EnderecoSerializer,
+    FornecedorCreateSerializer,
+    FornecedorSerializer,
+    ItemGenericoImagemSerializer,
+    ItemGenericoSerializer,
+)
 from utils.mixins import AuditoriaRBACMixin, BaseFiltroMixin, SerializerEscritaMixin
-from utils.rbac import Recurso
+from utils.rbac import Acao, Recurso
 class EnderecoViewSet(AuditoriaRBACMixin, viewsets.ModelViewSet):
     queryset = Endereco.objects.all()
     serializer_class = EnderecoSerializer
@@ -58,6 +66,7 @@ class ItemGenericoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelView
     queryset = ItemGenerico.objects.all()
     serializer_class = ItemGenericoSerializer
     rbac_resource = Recurso.GENERO_ALIMENTICIO
+    rbac_action_map = {'imagem': Acao.EDITAR}
 
     
     search_fields = [
@@ -88,5 +97,30 @@ class ItemGenericoViewSet(AuditoriaRBACMixin, BaseFiltroMixin,viewsets.ModelView
                 status=status.HTTP_409_CONFLICT,
             )
 
-        return super().destroy(request, *args, **kwargs)
+        imagem = instance.imagem.name if instance.imagem else None
+        resposta = super().destroy(request, *args, **kwargs)
+        if imagem:
+            instance.imagem.storage.delete(imagem)
+        return resposta
+
+    @action(detail=True, methods=['post', 'delete'], parser_classes=[MultiPartParser, FormParser])
+    def imagem(self, request, pk=None):
+        item = self.get_object()
+        imagem_anterior = item.imagem.name if item.imagem else None
+
+        if request.method == 'DELETE':
+            item.imagem = None
+            item.save(update_fields=['imagem'])
+        else:
+            serializer = ItemGenericoImagemSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            item.imagem = serializer.validated_data['imagem']
+            item.save(update_fields=['imagem'])
+
+        if imagem_anterior and imagem_anterior != item.imagem.name:
+            item.imagem.storage.delete(imagem_anterior)
+
+        if request.method == 'DELETE':
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(self.get_serializer(item).data)
 

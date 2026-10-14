@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
+from django.db.models.fields.files import FieldFile
 from django.forms.models import model_to_dict
 
 
@@ -17,6 +18,9 @@ def _valor_json(valor):
         return [_valor_json(item) for item in valor]
     if isinstance(valor, (date, datetime, Decimal)):
         return str(valor)
+    if isinstance(valor, FieldFile):
+        # Um FieldFile vazio lança ValueError ao acessar .size; registra só o caminho.
+        return valor.name or None
     if hasattr(valor, 'name') and hasattr(valor, 'size'):
         return {'arquivo': valor.name, 'tamanho': valor.size}
     if isinstance(valor, (str, int, float, bool)) or valor is None:

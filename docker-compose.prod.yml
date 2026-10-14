@@ -19,6 +19,9 @@ services:
 
   api:
     logging: *logging
+    # Mantém as fotos dos gêneros entre recriações do container.
+    volumes:
+      - media_data:/app/media
     # Sem "command": o entrypoint aplica as migrações e sobe o gunicorn
     # com WEB_CONCURRENCY workers e GUNICORN_TIMEOUT segundos.
     environment:
@@ -44,3 +47,6 @@ services:
       PORT: 80
       API_HOST: api
       API_PORT: 8000
+
+volumes:
+  media_data:

@@ -81,6 +81,8 @@ class ItemGenerico(models.Model):
         null=True,
         blank=True,
     )
+    # Foto exibida nos cards do estoque; enviada pela ação /item-generico/{id}/imagem/.
+    imagem = models.ImageField(upload_to='generos/', null=True, blank=True)
 
     class Meta:
         constraints = [

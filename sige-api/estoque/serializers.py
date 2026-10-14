@@ -16,6 +16,7 @@ class EstoqueSerializer(serializers.ModelSerializer):
         source='item_generico.conteudo_embalagem', max_digits=10, decimal_places=3, read_only=True
     )
     unidade_embalagem = serializers.CharField(source='item_generico.unidade_embalagem', read_only=True)
+    imagem = serializers.ImageField(source='item_generico.imagem', read_only=True)
     possui_carga_inicial = serializers.BooleanField(read_only=True, default=False)
 
     class Meta:
@@ -23,7 +24,7 @@ class EstoqueSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'item_generico_id', 'catmat', 'descricao', 'unidade_medida',
             'categoria', 'categoria_descricao', 'conteudo_embalagem',
-            'unidade_embalagem', 'saldo_atual', 'data_atualizacao', 'possui_carga_inicial',
+            'unidade_embalagem', 'imagem', 'saldo_atual', 'data_atualizacao', 'possui_carga_inicial',
         )
 
 
