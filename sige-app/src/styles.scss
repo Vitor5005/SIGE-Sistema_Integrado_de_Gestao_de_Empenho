@@ -1067,6 +1067,84 @@ textarea {
   border-radius: var(--sige-radius-md);
 }
 
+// Etapa de revisão exibida antes de confirmar cadastros e envios.
+.sige-revisao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sige-space-3);
+}
+
+.sige-revisao__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sige-space-2);
+  padding: var(--sige-space-3) var(--sige-space-4);
+  color: var(--sige-color-primary-strong);
+  font-size: 0.875rem;
+  background: var(--sige-surface-info);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+}
+
+.sige-revisao__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: var(--sige-space-3);
+  margin: 0;
+}
+
+.sige-revisao__campo {
+  min-width: 0;
+  padding: var(--sige-space-3) var(--sige-space-4);
+  background: var(--sige-surface-subtle);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+
+  dt {
+    color: var(--sige-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  dd {
+    margin: var(--sige-space-1) 0 0;
+    color: var(--sige-text-primary);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+  }
+}
+
+.sige-revisao__campo--largo {
+  grid-column: 1 / -1;
+}
+
+.sige-revisao__campo--destaque {
+  background: var(--sige-surface-info);
+  border-color: var(--sige-color-primary);
+
+  dd {
+    color: var(--sige-color-primary-strong);
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+}
+
+.sige-revisao__acoes {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sige-space-3);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 575px) {
+  .sige-revisao__acoes > * {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
 .sige-related-card {
   display: block;
   padding: var(--sige-space-4);

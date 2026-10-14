@@ -101,6 +101,39 @@
   white-space: nowrap;
 }
 
+// Visão consolidada: textos quebram linha em vez de serem cortados; abaixo da
+// largura mínima o contêiner da tabela oferece rolagem horizontal.
+.estoque-consolidado-table {
+  min-width: 44rem;
+}
+
+.estoque-consolidado-table .consolidado-col-empenho {
+  width: 16%;
+}
+
+.estoque-consolidado-table .consolidado-col-item {
+  width: 42%;
+}
+
+.estoque-consolidado-table .consolidado-col-saldo {
+  width: 14%;
+}
+
+.estoque-consolidado-table th,
+.estoque-consolidado-table td {
+  overflow-wrap: anywhere;
+}
+
+.estoque-consolidado-table thead th {
+  white-space: normal;
+}
+
+.estoque-consolidado-table th.sige-cell--number,
+.estoque-consolidado-table td.sige-cell--number {
+  width: auto;
+  text-align: right;
+}
+
 .estoque-cell-categoria,
 .estoque-cell-unidade {
   overflow: hidden;
@@ -211,6 +244,19 @@
 
 .estoque-subpagina .tabela-estoque {
   margin: 0;
+}
+
+.estoque-subpagina .celula-observacao {
+  min-width: 15rem;
+}
+
+.texto-apoio-observacao {
+  display: block;
+  margin-top: var(--sige-space-1);
+  color: var(--sige-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  white-space: normal;
 }
 
 @media (max-width: 800px) {

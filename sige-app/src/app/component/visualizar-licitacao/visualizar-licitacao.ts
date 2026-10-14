@@ -320,6 +320,14 @@ export class VisualizarLicitacao {
       Boolean(this.ata_insercao.numero_ata || this.empenho_insercao.codigo || this.fornecedor_insercao.id);
   }
 
+  get numeroAtaNormalizado(): string {
+    return (this.ata_insercao.numero_ata || '').trim().toUpperCase();
+  }
+
+  get codigoEmpenhoNormalizado(): string {
+    return (this.empenho_insercao.codigo || '').trim().toUpperCase();
+  }
+
   get podeConcluirCadastro(): boolean {
     return !this.isSaving && this.ataFormValido && (this.jump_page || this.fornecedorFormValido);
   }
@@ -781,6 +789,38 @@ export class VisualizarLicitacao {
     this.endereco_insercao = <Endereco>{};
     this.ata_insercao.numero_ata = '';
     this.empenho_insercao.codigo = '';
+  }
+
+  revisarCadastroAta(): void {
+    this.formSubmittedPage2 = true;
+    this.errorMessageModal = '';
+
+    if (!this.podeConcluirCadastro) {
+      return;
+    }
+
+    this.modal_page = 3;
+  }
+
+  voltarParaEdicaoAta(): void {
+    if (this.isSaving) {
+      return;
+    }
+
+    this.errorMessageModal = '';
+    this.modal_page = 2;
+  }
+
+  confirmarCadastroAta(): void {
+    if (this.modal_page !== 3) {
+      return;
+    }
+
+    if (this.jump_page) {
+      this.saveAta();
+    } else {
+      this.saveFornecedor();
+    }
   }
 
   saveAta(): void {

@@ -590,6 +590,40 @@ export class VisualizarAta {
     return categoria ? categoria : item.categoria;
   }
 
+  revisarItem(): void {
+    this.formSubmittedPage2 = true;
+    this.errorMessageModal = '';
+    this.validarQuantidadeLicitada();
+    this.validarValorUnitario();
+
+    if (!this.podeConcluirCadastroItem) {
+      return;
+    }
+
+    this.modal_page = 3;
+  }
+
+  voltarParaEdicaoItem(): void {
+    if (this.isSaving) {
+      return;
+    }
+
+    this.errorMessageModal = '';
+    this.modal_page = 2;
+  }
+
+  confirmarInclusaoItem(): void {
+    if (this.modal_page !== 3) {
+      return;
+    }
+
+    if (this.jump_page) {
+      this.saveItemAta();
+    } else {
+      this.saveItemGenerico();
+    }
+  }
+
   saveItemGenerico(): void {
     this.formSubmittedPage1 = true;
     this.formSubmittedPage2 = true;

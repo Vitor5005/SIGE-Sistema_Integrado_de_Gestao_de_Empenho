@@ -1,5 +1,5 @@
 <main class="sige-page-container adicionar-licitacao-page">
-  <form class="form-licitacao" (ngSubmit)="save($event)">
+  <form class="form-licitacao" (ngSubmit)="revisar($event)">
 
     <header class="sige-page-header">
       <h1><i class="bi bi-plus-circle" aria-hidden="true"></i> Nova licitação</h1>
@@ -7,6 +7,7 @@
     </header>
 
 
+    @if (!emRevisao) {
     <!-- informações gerais -->
     <section class="sige-section licitacao-form-section" aria-labelledby="informacoes-gerais-title">
       <div class="subtitulo">
@@ -40,12 +41,16 @@
           <div class="d-flex flex-column">
             <label for="dataAberturaLicitacao">Data de abertura *</label>
             <input id="dataAberturaLicitacao" type="date" [(ngModel)]="licitacao.data_abertura" name="data_abertura"
-              [max]="todayDate" [disabled]="isSaving"
-              [class.campo-invalido]="formSubmitted && !dataAberturaValida"
-              [attr.aria-invalid]="formSubmitted && !dataAberturaValida">
-            <small class="texto-apoio-campo">A data não pode ser futura.</small>
-            @if(formSubmitted && !dataAberturaValida) {
-            <small class="mensagem-campo-invalido" role="alert">Informe uma data válida (hoje ou anterior).</small>
+              #dataAbertura="ngModel" [max]="todayDate" [disabled]="isSaving"
+              aria-describedby="dataAberturaAjuda"
+              [class.campo-invalido]="exibirErroDataAbertura(dataAbertura.touched)"
+              [attr.aria-invalid]="exibirErroDataAbertura(dataAbertura.touched)">
+            @if(exibirErroDataAbertura(dataAbertura.touched)) {
+            <small class="mensagem-campo-invalido" role="alert">Informe a data de hoje ou uma data anterior.</small>
+            } @else {
+            <small id="dataAberturaAjuda" class="texto-apoio-campo">
+              <i class="bi bi-info-circle" aria-hidden="true"></i> Use a data de hoje ou uma data anterior.
+            </small>
             }
           </div>
         </div>
@@ -83,22 +88,76 @@
         <small><b>Campos obrigatórios para criar:</b> número da licitação, validade e data de abertura.</small>
       </div>
 
+      <button class="sige-button sige-button--primary" type="submit" [disabled]="!podeCriarLicitacao"
+        [class.botao-desabilitado]="!podeCriarLicitacao">
+        Revisar dados
+      </button>
+    </div>
+    } @else {
+    <section class="sige-section licitacao-form-section sige-revisao" aria-labelledby="revisao-licitacao-title">
+      <div class="subtitulo">
+        <h2 id="revisao-licitacao-title" #tituloRevisao tabindex="-1">Revisão dos dados</h2>
+      </div>
+
+      <p class="sige-revisao__aviso">
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
+        <span>Confira as informações abaixo. A licitação só será criada depois que você confirmar.</span>
+      </p>
+
+      <dl class="sige-revisao__lista">
+        <div class="sige-revisao__campo sige-revisao__campo--destaque">
+          <dt>Número da licitação</dt>
+          <dd>{{ licitacao.numero_licitacao }}</dd>
+        </div>
+        <div class="sige-revisao__campo">
+          <dt>Validade</dt>
+          <dd>{{ licitacao.validade }} {{ +licitacao.validade === 1 ? 'mês' : 'meses' }}</dd>
+        </div>
+        <div class="sige-revisao__campo">
+          <dt>Data de abertura</dt>
+          <dd>{{ licitacao.data_abertura | date:'dd/MM/yyyy' }}</dd>
+        </div>
+        <div class="sige-revisao__campo">
+          <dt>Licitação atual</dt>
+          <dd>
+            @if (licitacao.atual) {
+            Sim{{ licitacaoAtual ? ' (substituirá a licitação ' + licitacaoAtual.numero_licitacao + ')' : '' }}
+            } @else {
+            Não
+            }
+          </dd>
+        </div>
+        <div class="sige-revisao__campo sige-revisao__campo--largo">
+          <dt>Descrição</dt>
+          <dd>{{ licitacao.descricao || 'Não informada' }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <div class="container-botoes">
       @if(errorMessage) {
       <div class="mensagem-erro-submit" role="alert">
         <small>{{ errorMessage }}</small>
       </div>
       }
 
-      <button class="sige-button sige-button--primary" type="submit" [disabled]="!podeCriarLicitacao"
-        [class.botao-desabilitado]="!podeCriarLicitacao">
-        @if(isSaving) {
-        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-        Salvando...
-        } @else {
-        Criar licitação
-        }
-      </button>
+      <div class="sige-revisao__acoes">
+        <button class="sige-button sige-button--secondary" type="button" [disabled]="isSaving"
+          (click)="voltarParaEdicao()">
+          Voltar
+        </button>
+        <button class="sige-button sige-button--primary" type="button" [disabled]="isSaving" (click)="save()">
+          @if(isSaving) {
+          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+          Salvando...
+          } @else {
+          <i class="bi bi-check-lg" aria-hidden="true"></i>
+          Confirmar
+          }
+        </button>
+      </div>
     </div>
+    }
 
   </form>
 

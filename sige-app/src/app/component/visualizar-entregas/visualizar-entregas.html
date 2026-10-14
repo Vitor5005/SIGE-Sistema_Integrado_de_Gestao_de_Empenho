@@ -390,7 +390,7 @@
 
           @if (!isLoadingPedidos && !isConfirmandoEntrega && pedidosDaOrdem.length > 0 && etapaConfirmacao === 2) {
           <button type="button" class="confirmacao-acao-secundaria" (click)="voltarParaRegistroConfirmacao()">
-            Voltar e editar
+            Voltar
           </button>
           <button type="button" class="confirmacao-acao-primaria" [disabled]="!podeConfirmarEntrega" (click)="confirmarEntrega(ordemSelecionada)">
             <i class="bi bi-check-lg" aria-hidden="true"></i> Confirmar entrega

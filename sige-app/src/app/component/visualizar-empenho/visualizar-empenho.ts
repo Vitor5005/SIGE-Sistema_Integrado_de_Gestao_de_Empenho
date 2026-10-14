@@ -69,6 +69,7 @@ export class VisualizarEmpenho {
   quantidadeReforco: number | null = null;
   justificativaReforco = '';
   enviandoReforco = false;
+  revisandoReforco = false;
   erroSolicitacaoReforco = '';
   respondendoReforcoId: number | null = null;
   recusandoReforcoId: number | null = null;
@@ -103,14 +104,38 @@ export class VisualizarEmpenho {
     this.quantidadeReforco = null;
     this.justificativaReforco = '';
     this.erroSolicitacaoReforco = '';
+    this.revisandoReforco = false;
     this.solicitacaoReforcoService.saldoDisponivel(item.id).subscribe({
       next: (saldo) => this.saldoReforco = saldo,
       error: () => this.erroSolicitacaoReforco = 'Não foi possível consultar o saldo da ARP.',
     });
   }
 
-  enviarSolicitacaoReforco(): void {
+  submeterSolicitacaoReforco(): void {
+    if (this.revisandoReforco) {
+      this.enviarSolicitacaoReforco();
+      return;
+    }
+
     if (!this.itemReforco || !this.podeEnviarSolicitacaoReforco) {
+      return;
+    }
+
+    this.erroSolicitacaoReforco = '';
+    this.revisandoReforco = true;
+  }
+
+  voltarEdicaoReforco(): void {
+    if (this.enviandoReforco) {
+      return;
+    }
+
+    this.erroSolicitacaoReforco = '';
+    this.revisandoReforco = false;
+  }
+
+  enviarSolicitacaoReforco(): void {
+    if (!this.itemReforco || !this.revisandoReforco || !this.podeEnviarSolicitacaoReforco) {
       return;
     }
     this.enviandoReforco = true;
@@ -176,6 +201,7 @@ export class VisualizarEmpenho {
   ordemEntregaInsert: OrdemEntregaInsert = <OrdemEntregaInsert>{};
   itensSelecionados: boolean[] = [];
   mensagemSolicitacao: string = '';
+  codigoPedidoEntrega: string = '';
   arquivoSolicitacao: File | null = null;
 
   get possuiItensSelecionados(): boolean {
@@ -208,13 +234,18 @@ export class VisualizarEmpenho {
     return Math.min(100, Math.max(0, (valorUtilizado / valorEmpenhado) * 100));
   }
 
+  // Mesmo texto padrão montado pela API, para que a revisão mostre exatamente o que será enviado.
   get placeholderMensagemSolicitacao(): string {
     const fornecedor = this.empenho?.ata?.fornecedor?.nome_fantasia || '[Fornecedor]';
     return (
       `Prezado Fornecedor ${fornecedor},\n\n` +
-      `Segue em anexo o pedido de entrega referente à ordem ${this.empenho?.ata?.numero_ata || '[Código]'}.\n\n` +
+      `Segue em anexo o pedido de entrega referente à ordem ${this.codigoPedidoEntrega || '[Código]'}.\n\n` +
       `Atenciosamente,\nEquipe SIGE.`
     );
+  }
+
+  get mensagemFinalSolicitacao(): string {
+    return this.mensagemSolicitacao?.trim() ? this.mensagemSolicitacao : this.placeholderMensagemSolicitacao;
   }
 
   get dataPrevisaoPreenchida(): boolean {
@@ -746,6 +777,7 @@ export class VisualizarEmpenho {
 
     this.etapaSolicitacao = 1;
     this.mensagemSolicitacao = '';
+    this.codigoPedidoEntrega = this.gerarCodigoPedidoEntrega();
     this.arquivoSolicitacao = null;
     this.ordemEntregaInsert = <OrdemEntregaInsert>{};
 
@@ -841,7 +873,7 @@ export class VisualizarEmpenho {
 
     this.isSolicitandoEntrega = true;
 
-    this.ordemEntregaInsert.codigo = this.gerarCodigoPedidoEntrega();
+    this.ordemEntregaInsert.codigo = this.codigoPedidoEntrega;
     this.ordemEntregaInsert.empenho = this.empenho.id;
     this.ordemEntregaInsert.data_emissao = new Date();
     this.ordemEntregaInsert.status = 'esp';
@@ -887,6 +919,7 @@ export class VisualizarEmpenho {
           next: () => this.acaoAposSalvarItens(ordemCriada.id),
           error: (err) => {
             this.isSolicitandoEntrega = false;
+            this.codigoPedidoEntrega = this.gerarCodigoPedidoEntrega();
             console.error('Erro ao salvar itens da ordem', err);
             this.feedback.erro(
               'O pedido foi criado, mas não foi possível salvar todos os itens. Tente novamente.',
@@ -897,6 +930,7 @@ export class VisualizarEmpenho {
       },
       error: (err) => {
         this.isSolicitandoEntrega = false;
+        this.codigoPedidoEntrega = this.gerarCodigoPedidoEntrega();
         console.error('Erro ao criar ordem de entrega', err);
         this.feedback.erro(
           'Não foi possível criar o pedido de entrega. Tente novamente.',
@@ -909,10 +943,7 @@ export class VisualizarEmpenho {
   private acaoAposSalvarItens(ordemId: number): void {
     const formData = new FormData();
     formData.append('anexo', this.arquivoSolicitacao as File);
-
-    if (this.mensagemSolicitacao?.trim()) {
-      formData.append('corpo_mensagem', this.mensagemSolicitacao);
-    }
+    formData.append('corpo_mensagem', this.mensagemFinalSolicitacao);
 
     this.ordemEntregaService.enviarEmail(ordemId, formData).subscribe({
       next: () => {
@@ -925,6 +956,7 @@ export class VisualizarEmpenho {
       },
       error: (err) => {
         this.isSolicitandoEntrega = false;
+        this.codigoPedidoEntrega = this.gerarCodigoPedidoEntrega();
         console.error('Erro ao enviar e-mail do pedido', err);
         this.feedback.erro(
           'O pedido foi registrado, mas não foi possível enviá-lo ao fornecedor.',

@@ -10,3 +10,58 @@
 	color: #64748b;
 }
 
+
+// A paginação é a navegação principal: a tabela se ajusta à largura disponível
+// em vez de exigir rolagem interna.
+.sige-list-table.tabela-empenhos {
+	min-width: 0;
+}
+
+@media (max-width: 767px) {
+	.tabela-empenhos thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+	}
+
+	.tabela-empenhos,
+	.tabela-empenhos tbody,
+	.tabela-empenhos tr,
+	.tabela-empenhos td {
+		display: block;
+		width: 100%;
+	}
+
+	.tabela-empenhos tbody tr:not(.linha-vazia-tabela) {
+		padding-block: var(--sige-space-2);
+		border-bottom: 1px solid var(--sige-border);
+	}
+
+	.tabela-empenhos tbody tr:last-child {
+		border-bottom: 0;
+	}
+
+	.tabela-empenhos tbody tr:not(.linha-vazia-tabela) td {
+		display: flex;
+		justify-content: space-between;
+		gap: var(--sige-space-3);
+		padding: var(--sige-space-1) var(--sige-space-4);
+		text-align: right;
+		border-bottom: 0;
+	}
+
+	.tabela-empenhos tbody td[data-label]::before {
+		content: attr(data-label);
+		color: var(--sige-text-secondary);
+		font-weight: 600;
+		text-align: left;
+	}
+
+	.tabela-empenhos .sige-cell--truncate {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+}

@@ -468,32 +468,86 @@
                             <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page(0)">
                                 Voltar
                             </button>
-
-                            <button type="button" class="btn-confirmar" [disabled]="!podeConcluirCadastroItem"
-                                [class.btn-confirmar-desabilitado]="!podeConcluirCadastroItem" (click)="saveItemAta()">
-                                @if(isSaving) {
-                                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-                                }
-                                Prosseguir
-                            </button>
                             }
 
                             @if(jump_page == false){
                             <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="volta_modal_page()">
                                 Voltar
                             </button>
-
+                            }
 
                             <button type="button" class="btn-confirmar" [disabled]="!podeConcluirCadastroItem"
-                                [class.btn-confirmar-desabilitado]="!podeConcluirCadastroItem" (click)="saveItemGenerico()">
-                                @if(isSaving) {
-                                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-                                }
-                                Prosseguir
+                                [class.btn-confirmar-desabilitado]="!podeConcluirCadastroItem" (click)="revisarItem()">
+                                Revisar item
                             </button>
-                            }
                         </div>
                     </form>
+                    }
+
+                    @if(modal_page === 3){
+                    <div class="subtitulo subtitulo-modal">
+                        <h3>Revisão do item</h3>
+                        <hr>
+                    </div>
+
+                    <div class="form-fornecedor sige-revisao">
+                        <p class="sige-revisao__aviso">
+                            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                            <span>Confira a quantidade e o valor antes de confirmar. Depois da inclusão, esses dados não
+                                poderão ser alterados por esta tela.</span>
+                        </p>
+
+                        <dl class="sige-revisao__lista">
+                            <div class="sige-revisao__campo sige-revisao__campo--destaque">
+                                <dt>Quantidade licitada</dt>
+                                <dd>{{ itemAta_insercao.quantidade_licitada | number:'1.2-2' }} {{ itemGenerico_insercao.unidade_medida }}</dd>
+                            </div>
+                            <div class="sige-revisao__campo sige-revisao__campo--destaque">
+                                <dt>Valor unitário</dt>
+                                <dd>R$ {{ itemAta_insercao.valor_unitario | number:'1.2-2' }}</dd>
+                            </div>
+                            <div class="sige-revisao__campo sige-revisao__campo--destaque">
+                                <dt>Valor total licitado</dt>
+                                <dd>R$ {{ itemAta_insercao.valor_unitario * itemAta_insercao.quantidade_licitada | number:'1.2-2' }}</dd>
+                            </div>
+                            <div class="sige-revisao__campo sige-revisao__campo--largo">
+                                <dt>Item</dt>
+                                <dd>{{ itemGenerico_insercao.descricao }}</dd>
+                            </div>
+                            <div class="sige-revisao__campo">
+                                <dt>CATMAT</dt>
+                                <dd>{{ itemGenerico_insercao.catmat }}</dd>
+                            </div>
+                            <div class="sige-revisao__campo">
+                                <dt>Unidade de medida</dt>
+                                <dd>{{ getUnidadeMedida(itemGenerico_insercao) }}</dd>
+                            </div>
+                            <div class="sige-revisao__campo">
+                                <dt>Categoria</dt>
+                                <dd>{{ getCategoria(itemGenerico_insercao) }}</dd>
+                            </div>
+                            <div class="sige-revisao__campo">
+                                <dt>Marca</dt>
+                                <dd>{{ itemAta_insercao.marca }}</dd>
+                            </div>
+                        </dl>
+
+                        <div class="form-footer sige-revisao__acoes">
+                            <button type="button" class="btn-confirmar" [disabled]="isSaving" (click)="voltarParaEdicaoItem()">
+                                Voltar
+                            </button>
+
+                            <button type="button" class="btn-confirmar" [disabled]="!podeConcluirCadastroItem"
+                                [class.btn-confirmar-desabilitado]="!podeConcluirCadastroItem" (click)="confirmarInclusaoItem()">
+                                @if(isSaving) {
+                                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                                } @else {
+                                <i class="bi bi-check-lg" aria-hidden="true"></i>
+                                }
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
                     }
                 </div>
             </div>

@@ -71,12 +71,19 @@
   @if (pode(Recurso.ESTOQUE, Acao.CONSULTAR_CONSOLIDADO)) {
     <h5 class="subtitulo">Visão consolidada</h5>
     <div class="sige-list-table-wrap">
-      <table class="sige-list-table">
+      <table class="sige-list-table estoque-consolidado-table">
+        <colgroup>
+          <col class="consolidado-col-empenho">
+          <col class="consolidado-col-item">
+          <col class="consolidado-col-saldo">
+          <col class="consolidado-col-saldo">
+          <col class="consolidado-col-saldo">
+        </colgroup>
         <caption class="visually-hidden">Visão consolidada do estoque</caption>
         <thead><tr><th scope="col">Empenho</th><th scope="col">Código - Item - Unidade</th><th scope="col" class="sige-cell--number">Saldo em ATA/Contrato</th><th scope="col" class="sige-cell--number">Saldo do Empenho</th><th scope="col" class="sige-cell--number">Saldo no Estoque</th></tr></thead>
         <tbody>
           @for (item of consolidado; track $index) {
-            <tr><td>{{ item.empenho }}</td><td class="sige-cell--truncate" [attr.title]="item.catmat + ' - ' + item.descricao + ' - ' + item.unidade_medida">{{ item.catmat }} - {{ item.descricao }} - {{ item.unidade_medida }}</td>
+            <tr><td>{{ item.empenho }}</td><td>{{ item.catmat }} - {{ item.descricao }} - {{ item.unidade_medida }}</td>
               <td class="sige-cell--number">{{ item.saldo_ata | number:'1.0-3' }}</td><td class="sige-cell--number">{{ item.saldo_empenho | number:'1.0-3' }}</td>
               <td class="sige-cell--number">{{ item.saldo_estoque | number:'1.0-3' }}</td></tr>
           } @empty { <tr><td colspan="5" class="estado">Nenhum empenho encontrado.</td></tr> }

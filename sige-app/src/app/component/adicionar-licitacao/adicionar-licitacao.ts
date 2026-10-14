@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { form } from '@angular/forms/signals';
 import { Licitacao } from '../../model/licitacao';
@@ -34,8 +34,11 @@ export class AdicionarLicitacao {
   
   lista: any[] = [];
 
+  @ViewChild('tituloRevisao') tituloRevisao?: ElementRef<HTMLElement>;
+
   licitacao: Licitacao = <Licitacao>{ atual: false };
   formSubmitted: boolean = false;
+  emRevisao: boolean = false;
   isSaving: boolean = false;
   errorMessage: string = '';
   licitacaoAtual: Licitacao | null = null;
@@ -44,7 +47,12 @@ export class AdicionarLicitacao {
   private usuarioAlterouOpcaoAtual: boolean = false;
 
   get todayDate(): string {
-    return new Date().toISOString().split('T')[0];
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}`;
   }
 
   get numeroLicitacaoValido(): boolean {
@@ -65,6 +73,10 @@ export class AdicionarLicitacao {
     const hoje = new Date(this.todayDate + 'T00:00:00');
     const dataInformada = new Date(data + 'T00:00:00');
     return dataInformada <= hoje;
+  }
+
+  exibirErroDataAbertura(campoTocado: boolean | null): boolean {
+    return (this.formSubmitted || Boolean(campoTocado)) && !this.dataAberturaValida;
   }
 
   get podeCriarLicitacao(): boolean {
@@ -111,7 +123,7 @@ export class AdicionarLicitacao {
       adicionados?.classList.remove('vazia')
     })
 
-    this.licitacao.data_abertura = new Date().toISOString().split('T')[0];
+    this.licitacao.data_abertura = this.todayDate;
     this.licitacao.atual = false;
     this.carregarLicitacaoAtual();
   }
@@ -153,7 +165,7 @@ export class AdicionarLicitacao {
     this.licitacao.descricao = this.licitacao.descricao?.trim();
   }
 
-  save(event?: Event){
+  revisar(event?: Event): void {
     event?.preventDefault();
     this.formSubmitted = true;
     this.errorMessage = '';
@@ -163,6 +175,26 @@ export class AdicionarLicitacao {
     }
 
     this.normalizarCampos();
+    this.emRevisao = true;
+    setTimeout(() => this.tituloRevisao?.nativeElement.focus());
+  }
+
+  voltarParaEdicao(): void {
+    if (this.isSaving) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.emRevisao = false;
+  }
+
+  save(){
+    this.errorMessage = '';
+
+    if (!this.emRevisao || !this.podeCriarLicitacao) {
+      return;
+    }
+
     this.isSaving = true;
 
     this.licitacaoService.save(this.licitacao).subscribe({

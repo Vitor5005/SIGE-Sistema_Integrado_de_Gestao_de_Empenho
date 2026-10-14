@@ -114,7 +114,13 @@
       <div class="sige-detail-section-header">
         <div>
           <h2 id="itens-empenho-title" class="sige-detail-section-title">Itens do empenho</h2>
+          @if (pode(Recurso.ORDEM_ENTREGA, Acao.GERAR_ORDEM)) {
           <p class="sige-detail-section-subtitle">Selecione os itens que deseja incluir na solicitação de entrega.</p>
+          } @else if (pode(Recurso.SOLICITACAO_REFORCO, Acao.CADASTRAR)) {
+          <p class="sige-detail-section-subtitle">Selecione os itens para os quais deseja solicitar reforço.</p>
+          } @else {
+          <p class="sige-detail-section-subtitle">Consulte os itens e as quantidades disponíveis neste empenho.</p>
+          }
         </div>
         <button type="button" class="sige-button sige-button--secondary" (click)="verEntregasDoEmpenho()">
           <i class="bi bi-truck" aria-hidden="true"></i>
@@ -632,12 +638,8 @@
               </div>
 
               <div class="entrega-revisao-mensagem">
-                <span>Mensagem ao fornecedor</span>
-                @if (mensagemSolicitacao?.trim()) {
-                <p>{{ mensagemSolicitacao }}</p>
-                } @else {
-                <p>Será utilizada a mensagem padrão do sistema.</p>
-                }
+                <span>Mensagem ao fornecedor{{ mensagemSolicitacao.trim() ? '' : ' (mensagem padrão do sistema)' }}</span>
+                <p>{{ mensagemFinalSolicitacao }}</p>
               </div>
 
               <div class="entrega-revisao-itens">
@@ -667,8 +669,8 @@
           @if (isSolicitandoEntrega) {
           <div class="status-processamento-entrega">
             <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-            <small>Solicitação em andamento. Aguarde a finalização para fechar o modal ou iniciar outra
-              operação.</small>
+            <small>Enviando a solicitação ao fornecedor. Aguarde: esta janela será fechada automaticamente quando o
+              envio for concluído.</small>
           </div>
           }
 
@@ -697,12 +699,10 @@
           }
 
           @if (!isSolicitandoEntrega && etapaSolicitacao === 3) {
-          <div class="valor-total-solicitacao">Total da solicitação: R$ {{ calcularSomaTotalItensSolicitados() |
-            number:'1.2-2' }}</div>
           <div class="entrega-modal-acoes">
-            <button type="button" class="entrega-acao-secundaria" (click)="voltarEtapaSolicitacao()">Voltar e editar</button>
+            <button type="button" class="entrega-acao-secundaria" (click)="voltarEtapaSolicitacao()">Voltar</button>
             <button type="button" class="entrega-acao-primaria" [disabled]="!podeSolicitarEntrega"
-              (click)="solicitarEntrega()"><i class="bi bi-check-lg"></i> Confirmar solicitação</button>
+              (click)="solicitarEntrega()"><i class="bi bi-check-lg"></i> Confirmar</button>
           </div>
           }
         </div>
@@ -818,9 +818,40 @@
             aria-hidden="true"></button>
         </div>
 
-        <form class="sige-modal-form solicitacao-reforco-form" (ngSubmit)="enviarSolicitacaoReforco()" novalidate>
+        <form class="sige-modal-form solicitacao-reforco-form" (ngSubmit)="submeterSolicitacaoReforco()" novalidate>
           <div class="modal-body sige-modal__body">
             @if (itemReforco; as item) {
+            @if (revisandoReforco) {
+            <div class="sige-revisao">
+              <p class="sige-revisao__aviso">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>Confira o pedido antes de enviá-lo ao Diretor.</span>
+              </p>
+
+              <dl class="sige-revisao__lista">
+                <div class="sige-revisao__campo sige-revisao__campo--largo">
+                  <dt>Item</dt>
+                  <dd>{{ item.item_ata.item_generico.descricao }}</dd>
+                </div>
+                <div class="sige-revisao__campo sige-revisao__campo--largo sige-revisao__campo--destaque">
+                  <dt>Quantidade solicitada</dt>
+                  <dd>{{ quantidadeReforco | number:'1.2-2' }} {{ item.item_ata.item_generico.unidade_medida }}</dd>
+                </div>
+                <div class="sige-revisao__campo">
+                  <dt>Quantidade atual no empenho</dt>
+                  <dd>{{ item.quantidade_atual | number:'1.2-2' }} {{ item.item_ata.item_generico.unidade_medida }}</dd>
+                </div>
+                <div class="sige-revisao__campo">
+                  <dt>Saldo disponível na ARP</dt>
+                  <dd>{{ saldoReforco | number:'1.2-2' }} {{ item.item_ata.item_generico.unidade_medida }}</dd>
+                </div>
+                <div class="sige-revisao__campo sige-revisao__campo--largo">
+                  <dt>Justificativa</dt>
+                  <dd>{{ justificativaReforco.trim() }}</dd>
+                </div>
+              </dl>
+            </div>
+            } @else {
             <div class="solicitacao-reforco-item">
               <span class="sige-detail-label">Item</span>
               <strong>{{ item.item_ata.item_generico.descricao }}</strong>
@@ -869,6 +900,7 @@
                 maxlength="1000" [disabled]="enviandoReforco" [(ngModel)]="justificativaReforco"
                 placeholder="Informe por que este reforço é necessário"></textarea>
             </div>
+            }
 
             @if (erroSolicitacaoReforco) {
             <div class="solicitacao-reforco-erro" role="alert">{{ erroSolicitacaoReforco }}</div>
@@ -877,17 +909,26 @@
           </div>
 
           <div class="modal-footer sige-modal__footer">
+            @if (revisandoReforco) {
             <button type="button" class="sige-button sige-button--secondary" [disabled]="enviandoReforco"
-              data-bs-dismiss="modal">Cancelar</button>
+              (click)="voltarEdicaoReforco()">Voltar</button>
             <button type="submit" class="sige-button sige-button--primary"
               [disabled]="!podeEnviarSolicitacaoReforco">
               @if (enviandoReforco) {
               <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
               Enviando...
               } @else {
-              Enviar solicitação
+              Confirmar
               }
             </button>
+            } @else {
+            <button type="button" class="sige-button sige-button--secondary" [disabled]="enviandoReforco"
+              data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="sige-button sige-button--primary"
+              [disabled]="!podeEnviarSolicitacaoReforco">
+              Revisar solicitação
+            </button>
+            }
           </div>
         </form>
       </div>

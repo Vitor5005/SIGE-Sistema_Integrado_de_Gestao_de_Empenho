@@ -15,7 +15,8 @@
         <td>{{item.quantidade_entregue|number:'1.0-3'}}</td><td>{{item.quantidade_pendente|number:'1.0-3'}}</td>
         <td><input class="form-control" type="number" min="0" [max]="item.quantidade_pendente" step="0.001" [(ngModel)]="item.quantidade_receber" [disabled]="item.quantidade_pendente <= 0" [attr.aria-label]="'Quantidade a receber de ' + item.item_empenho.item_ata.item_generico.descricao"></td>
         <td>{{item.item_empenho.item_ata.valor_unitario|currency:'BRL'}}</td><td>{{total(item)|currency:'BRL'}}</td>
-        <td><input class="form-control" maxlength="255" placeholder="Obrigatória se permanecer pendência" [(ngModel)]="item.observacao" [attr.aria-label]="'Observação sobre ' + item.item_empenho.item_ata.item_generico.descricao"></td></tr>}</tbody></table></div>
+        <td class="celula-observacao"><input class="form-control" maxlength="255" placeholder="Motivo da pendência" [(ngModel)]="item.observacao" [attr.aria-label]="'Observação sobre ' + item.item_empenho.item_ata.item_generico.descricao" [attr.aria-describedby]="'observacaoAjuda' + item.id">
+          <small class="texto-apoio-observacao" [id]="'observacaoAjuda' + item.id">Obrigatória quando parte da quantidade continuar pendente.</small></td></tr>}</tbody></table></div>
     @if (ordem.status !== 'con' && itensQueFicaraoPendentes.length) {
       <div class="alert alert-warning" role="status">
         <strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Entrega incompleta.</strong>

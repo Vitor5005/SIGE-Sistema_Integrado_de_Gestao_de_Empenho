@@ -11,6 +11,7 @@
 ## 📚 Sumário
 
 - [Visão geral](#-visão-geral)
+- [Navegação no sistema](#-navegação-no-sistema)
 - [Arquitetura](#-arquitetura)
 - [Tecnologias](#-tecnologias)
 - [Como rodar com Docker](#-como-rodar-com-docker)
@@ -34,13 +35,26 @@ Objetivos centrais do sistema:
 - preservar integridade de saldo ao longo do processo;
 - aumentar rastreabilidade das operações.
 
+## 🧭 Navegação no sistema
+
+Licitações, ARPs e empenhos ficam agrupados no menu **Aquisições** do cabeçalho, disponível para Diretor, Técnico administrativo e Nutricionista:
+
+| Para acessar | Caminho |
+|---|---|
+| Licitações | Cabeçalho > **Aquisições** > **Licitações** |
+| ARPs (Atas de Registro de Preços) | Cabeçalho > **Aquisições** > **ARPs** |
+| Empenhos | Cabeçalho > **Aquisições** > **Empenhos** |
+| Empenho de uma ARP específica | **Aquisições** > **Licitações** > licitação > ARP > empenho vinculado |
+
+Em telas estreitas, o menu do cabeçalho quebra para uma segunda linha, mas mantém os mesmos itens.
+
 ## 🧩 Arquitetura
 
 No ambiente Docker, o sistema sobe com 3 serviços:
 
 | Serviço | Stack | Porta (host) | Finalidade |
 |---|---|---:|---|
-| `db` | MySQL 8 | `3308` | Persistência de dados |
+| `db` | MySQL 8 | `3310` | Persistência de dados |
 | `api` | Django + DRF | `8000` | API REST + autenticação |
 | `app` | Angular | `4200` | Interface web |
 
@@ -73,7 +87,7 @@ O Docker Compose aplica automaticamente o `docker-compose.override.yml` no ambie
 - Frontend: `http://localhost:4200`
 - API: `http://localhost:8000`
 - Django Admin: `http://localhost:8000/admin`
-- MySQL (host): `localhost:3308`
+- MySQL (host): `localhost:3310`
 
 ### Subir o ambiente de produção
 

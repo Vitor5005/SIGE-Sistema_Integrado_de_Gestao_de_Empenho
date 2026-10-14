@@ -24,7 +24,7 @@
   }
 
   <div class="sige-list-table-wrap">
-    <table class="sige-list-table">
+    <table class="sige-list-table tabela-empenhos">
       <caption class="visually-hidden">Lista de empenhos</caption>
       <thead>
         <tr>
@@ -67,14 +67,14 @@
               role="link"
               (click)="enviarPara('visualizar-empenho', item.id)"
               (keydown.enter)="enviarPara('visualizar-empenho', item.id)">
-              <td><span>{{ item.codigo }}</span></td>
-              <td>
+              <td data-label="Identificação"><span>{{ item.codigo }}</span></td>
+              <td data-label="Fornecedor">
                 <span class="sige-cell--truncate" [title]="item.ata.fornecedor.nome_fantasia">
                   {{ item.ata.fornecedor.nome_fantasia }}
                 </span>
               </td>
-              <td class="sige-cell--number"><span>{{ item.saldo_utilizado }}</span></td>
-              <td class="sige-cell--number"><span>{{ item.valor_total }}</span></td>
+              <td class="sige-cell--number" data-label="Valor utilizado"><span>{{ item.saldo_utilizado }}</span></td>
+              <td class="sige-cell--number" data-label="Valor empenhado"><span>{{ item.valor_total }}</span></td>
               <td
                 class="sige-cell--actions"
                 (click)="$event.stopPropagation()"
