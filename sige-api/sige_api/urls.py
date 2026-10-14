@@ -31,4 +31,5 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('api/v1/', include('usuario.urls')),
     path('api/v1/', include('estoque.urls')),
+    path('api/v1/', include('cardapio.urls')),
 ]

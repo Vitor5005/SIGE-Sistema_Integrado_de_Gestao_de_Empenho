@@ -37,6 +37,7 @@ def _estoque_bloqueado(item_generico_id):
 def _registrar_movimentacao(
     *, item_generico_id, tipo, sentido, quantidade, usuario, data_hora,
     observacao='', item_ordem=None, item_inventario=None, movimentacao_estornada=None,
+    item_cardapio=None,
 ):
     quantidade = _decimal(quantidade)
     if quantidade <= ZERO:
@@ -59,6 +60,7 @@ def _registrar_movimentacao(
         item_ordem=item_ordem,
         item_inventario=item_inventario,
         movimentacao_estornada=movimentacao_estornada,
+        item_cardapio=item_cardapio,
         usuario=usuario,
         papel=usuario.papel,
     )
@@ -86,6 +88,34 @@ def registrar_saida(*, item_generico_id, quantidade, tipo_saida, justificativa, 
         usuario=usuario,
         data_hora=data_hora or timezone.now(),
         observacao=_justificativa(justificativa),
+    )
+
+
+def registrar_saida_cardapio(*, item_cardapio, quantidade, usuario, observacao):
+    """Retira do estoque o que foi liberado (ou consumido além do liberado) para um cardápio."""
+    return _registrar_movimentacao(
+        item_generico_id=item_cardapio.item_generico_id,
+        tipo=MovimentacaoEstoque.Tipo.SAIDA_PRODUCAO,
+        sentido=MovimentacaoEstoque.Sentido.SAIDA,
+        quantidade=quantidade,
+        usuario=usuario,
+        data_hora=timezone.now(),
+        observacao=observacao,
+        item_cardapio=item_cardapio,
+    )
+
+
+def registrar_devolucao_cardapio(*, item_cardapio, quantidade, usuario, observacao):
+    """Devolve ao estoque a sobra entre o liberado e o consumido no preparo."""
+    return _registrar_movimentacao(
+        item_generico_id=item_cardapio.item_generico_id,
+        tipo=MovimentacaoEstoque.Tipo.DEVOLUCAO_PREPARO,
+        sentido=MovimentacaoEstoque.Sentido.ENTRADA,
+        quantidade=quantidade,
+        usuario=usuario,
+        data_hora=timezone.now(),
+        observacao=observacao,
+        item_cardapio=item_cardapio,
     )
 
 
@@ -174,6 +204,10 @@ def estornar_movimentacao(*, movimentacao_id, justificativa, usuario, data_hora=
         raise ValidationError({'movimentacao': 'Não é permitido estornar um estorno.'})
     if MovimentacaoEstoque.objects.filter(movimentacao_estornada=original).exists():
         raise ValidationError({'movimentacao': 'Esta movimentação já foi estornada.'})
+    if original.item_cardapio_id:
+        raise ValidationError({
+            'movimentacao': 'Movimentações de cardápio são corrigidas pelo acerto do consumo real do cardápio.',
+        })
 
     sentido = (
         MovimentacaoEstoque.Sentido.SAIDA

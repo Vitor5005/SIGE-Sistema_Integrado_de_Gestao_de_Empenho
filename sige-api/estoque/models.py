@@ -92,6 +92,7 @@ class MovimentacaoEstoque(models.Model):
         AJUSTE_POSITIVO = 'AJUSTE_POSITIVO', 'Inventário (sobra)'
         AJUSTE_NEGATIVO = 'AJUSTE_NEGATIVO', 'Inventário (falta)'
         SAIDA_PRODUCAO = 'SAIDA_PRODUCAO', 'Consumo no preparo de refeições'
+        DEVOLUCAO_PREPARO = 'DEVOLUCAO_PREPARO', 'Devolução de sobras do preparo'
         SAIDA_DOACAO = 'SAIDA_DOACAO', 'Doação'
         SAIDA_PERDA = 'SAIDA_PERDA', 'Perda ou vencimento'
         ESTORNO = 'ESTORNO', 'Estorno'
@@ -123,6 +124,14 @@ class MovimentacaoEstoque(models.Model):
         blank=True,
         related_name='movimentacao_estoque',
     )
+    # Saídas e devoluções geradas por um cardápio (retirada aprovada e acerto do consumo real).
+    item_cardapio = models.ForeignKey(
+        'cardapio.ItemCardapio',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='movimentacoes_estoque',
+    )
     movimentacao_estornada = models.OneToOneField(
         'self',
         on_delete=models.PROTECT,
@@ -146,7 +155,7 @@ class MovimentacaoEstoque(models.Model):
             models.CheckConstraint(condition=Q(saldo_resultante__gte=0), name='mov_saldo_nao_negativo'),
             models.CheckConstraint(
                 condition=(
-                    Q(tipo__in=['ENTRADA_FORNECEDOR', 'CARGA_INICIAL', 'AJUSTE_POSITIVO'], sentido='E')
+                    Q(tipo__in=['ENTRADA_FORNECEDOR', 'CARGA_INICIAL', 'AJUSTE_POSITIVO', 'DEVOLUCAO_PREPARO'], sentido='E')
                     | Q(tipo__in=['AJUSTE_NEGATIVO', 'SAIDA_PRODUCAO', 'SAIDA_DOACAO', 'SAIDA_PERDA'], sentido='S')
                     | Q(tipo='ESTORNO')
                 ),
@@ -178,6 +187,13 @@ class MovimentacaoEstoque(models.Model):
                     | (~Q(tipo='ESTORNO') & Q(movimentacao_estornada__isnull=True))
                 ),
                 name='mov_estorno_exige_origem',
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(tipo='DEVOLUCAO_PREPARO', item_cardapio__isnull=False)
+                    | ~Q(tipo='DEVOLUCAO_PREPARO')
+                ),
+                name='mov_devolucao_exige_item_cardapio',
             ),
             models.CheckConstraint(
                 condition=(

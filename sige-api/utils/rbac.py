@@ -32,6 +32,7 @@ class Recurso:
     INVENTARIO = 'inventario'
     PENDENCIA_FORNECEDOR = 'pendencia_fornecedor'
     PAINEL_NUTRICIONISTA = 'painel_nutricionista'
+    CARDAPIO = 'cardapio'
 
 
 class Acao:
@@ -54,6 +55,7 @@ class Acao:
     ESTORNAR = 'estornar'
     CONSULTAR_EXTRATO = 'consultar_extrato'
     CONSULTAR_CONSOLIDADO = 'consultar_consolidado'
+    APROVAR = 'aprovar'
 
 
 DIRETOR = frozenset({Papel.DIRETOR})
@@ -183,6 +185,15 @@ MATRIZ_PERMISSOES = {
     # Visão de estoque, empenhos e ARPs para o planejamento de cardápios.
     Recurso.PAINEL_NUTRICIONISTA: {
         Acao.CONSULTAR: frozenset({Papel.NUTRICIONISTA}),
+    },
+    # A Nutricionista elabora o cardápio e informa o consumo real; o Estoquista
+    # aprova a retirada dos gêneros e confirma o acerto do consumo.
+    Recurso.CARDAPIO: {
+        Acao.CONSULTAR: DIRETOR_NUTRICIONISTA_ESTOQUISTA,
+        Acao.CADASTRAR: frozenset({Papel.NUTRICIONISTA}),
+        Acao.EDITAR: frozenset({Papel.NUTRICIONISTA}),
+        Acao.EXCLUIR: frozenset({Papel.NUTRICIONISTA}),
+        Acao.APROVAR: ESTOQUISTA,
     },
 }
 

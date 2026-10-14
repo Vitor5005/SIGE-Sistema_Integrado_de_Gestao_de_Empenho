@@ -131,7 +131,7 @@ class EstoqueViewSet(RBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
 
 class MovimentacaoEstoqueViewSet(RBACMixin, BaseFiltroMixin, FiltroQueryParamMixin, viewsets.ReadOnlyModelViewSet):
     queryset = MovimentacaoEstoque.objects.select_related(
-        'estoque__item_generico', 'usuario', 'item_ordem__ordem_entrega'
+        'estoque__item_generico', 'usuario', 'item_ordem__ordem_entrega', 'item_cardapio'
     ).all()
     serializer_class = MovimentacaoEstoqueSerializer
     rbac_resource = Recurso.MOVIMENTACAO_ESTOQUE

@@ -134,6 +134,20 @@ class SolicitacaoReforcoTests(APITestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(resposta.data['saldo_disponivel'], '40.00')
 
+    def test_opcoes_de_reforco_por_genero_para_o_cardapio(self):
+        self.solicitar(self.nutricionista)
+
+        resposta = self.client.get(
+            reverse('solicitacao-reforco-opcoes'), {'item_generico': self.item.item_ata.item_generico_id},
+        )
+
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual(len(resposta.data), 1)
+        opcao = resposta.data[0]
+        self.assertEqual(opcao['item_empenho'], self.item.id)
+        self.assertEqual(opcao['saldo_disponivel_ata'], '40.00')
+        self.assertTrue(opcao['possui_pedido_pendente'])
+
     def test_diretor_atende_e_o_reforco_e_executado(self):
         solicitacao_id = self.solicitar(self.nutricionista).data['id']
 

@@ -34,13 +34,14 @@ class MovimentacaoEstoqueSerializer(serializers.ModelSerializer):
     usuario_nome = serializers.CharField(source='usuario.username', read_only=True)
     tipo_descricao = serializers.CharField(source='get_tipo_display', read_only=True)
     ordem_codigo = serializers.CharField(source='item_ordem.ordem_entrega.codigo', read_only=True, allow_null=True)
+    cardapio_id = serializers.IntegerField(source='item_cardapio.cardapio_id', read_only=True, allow_null=True)
 
     class Meta:
         model = MovimentacaoEstoque
         fields = (
             'id', 'item_generico_id', 'genero', 'tipo', 'tipo_descricao', 'sentido', 'quantidade',
             'saldo_resultante', 'data_hora', 'data_registro', 'observacao',
-            'item_ordem', 'ordem_codigo', 'item_inventario', 'movimentacao_estornada',
+            'item_ordem', 'ordem_codigo', 'item_inventario', 'movimentacao_estornada', 'cardapio_id',
             'usuario', 'usuario_nome', 'papel',
         )
         read_only_fields = fields

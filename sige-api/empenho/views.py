@@ -162,6 +162,7 @@ class SolicitacaoReforcoViewSet(
     rbac_action_map = {
         'create': Acao.CADASTRAR,
         'saldo': Acao.CADASTRAR,
+        'opcoes': Acao.CADASTRAR,
         'atender': Acao.REFORCAR_EMPENHO,
         'recusar': Acao.ALTERAR_STATUS,
         'marcar_vista': Acao.CONSULTAR,
@@ -196,6 +197,39 @@ class SolicitacaoReforcoViewSet(
             'item_empenho': item_empenho.pk,
             'saldo_disponivel': f'{saldo_disponivel_ata(item_empenho.item_ata):.2f}',
         })
+
+    @action(detail=False, methods=['get'])
+    def opcoes(self, request):
+        """Empenhos em que o gênero (?item_generico=ID) pode ser reforçado, com o saldo de cada ARP.
+
+        Usado no cardápio, quando o estoque de um gênero está baixo.
+        """
+        item_generico_id = request.query_params.get('item_generico')
+        if not str(item_generico_id or '').isdigit():
+            raise ValidationError({'item_generico': 'Informe o gênero alimentício.'})
+
+        itens = ItemEmpenho.objects.select_related(
+            'empenho', 'item_ata__ata__fornecedor', 'item_ata__item_generico',
+        ).filter(item_ata__item_generico_id=item_generico_id).order_by('-empenho__id')
+        pendentes = set(
+            SolicitacaoReforco.objects.filter(
+                item_empenho__in=itens, status=SolicitacaoReforco.Status.PENDENTE,
+            ).values_list('item_empenho_id', flat=True)
+        )
+        return Response([
+            {
+                'item_empenho': item.pk,
+                'empenho_id': item.empenho_id,
+                'empenho_codigo': item.empenho.codigo,
+                'ata_numero': item.item_ata.ata.numero_ata,
+                'fornecedor': item.item_ata.ata.fornecedor.nome_fantasia,
+                'unidade_medida': item.item_ata.item_generico.unidade_medida,
+                'quantidade_atual': f'{item.quantidade_atual:.2f}',
+                'saldo_disponivel_ata': f'{saldo_disponivel_ata(item.item_ata):.2f}',
+                'possui_pedido_pendente': item.pk in pendentes,
+            }
+            for item in itens
+        ])
 
     @action(detail=True, methods=['post'])
     def atender(self, request, pk=None):
