@@ -10,6 +10,8 @@ services:
       MYSQL_USER: ${DB_USER:-sige}
       MYSQL_PASSWORD: ${DB_PASSWORD:-sige}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    ports:
+      - "3310:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
