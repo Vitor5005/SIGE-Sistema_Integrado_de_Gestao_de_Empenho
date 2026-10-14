@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -46,10 +46,12 @@ describe('CardapioForm', () => {
       providers: [
         { provide: CardapioService, useValue: cardapioService },
         { provide: SolicitacaoReforcoService, useValue: reforcoService },
-        { provide: Router, useValue: { navigate: vi.fn() } },
+        provideRouter([]),
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
       ],
     }).compileComponents();
+
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
     fixture = TestBed.createComponent(CardapioForm);
     component = fixture.componentInstance;
@@ -160,5 +162,57 @@ describe('CardapioForm', () => {
     component.enviarReforco();
     expect(reforcoService['solicitar']).toHaveBeenCalledWith(9, 30, expect.stringContaining('Arroz'));
     expect(component.reforco).toBeNull();
+  });
+
+  it('mostra a revisão sem salvar e mantém os dados ao voltar', () => {
+    component.secoes[0].linhas[0] = { item_generico: 1, quantidade: 22, observacao: 'Cozinhar' };
+
+    component.revisar();
+
+    expect(component.emRevisao).toBe(true);
+    expect(cardapioService['salvar']).not.toHaveBeenCalled();
+    expect(component.previa?.itens[0]).toEqual(expect.objectContaining({
+      descricao: 'Arroz', quantidade_planejada: 22, observacao: 'Cozinhar',
+    }));
+    expect(component.impactoEstoque).toEqual([
+      expect.objectContaining({ quantidade: 22, restante: 3, estoqueBaixo: true }),
+    ]);
+    expect(component.generosComEstoqueBaixo).toBe(1);
+
+    component.voltarParaEdicao();
+    expect(component.emRevisao).toBe(false);
+    expect(component.secoes[0].linhas[0].quantidade).toBe(22);
+  });
+
+  it('salva e envia ao estoque somente ao confirmar a revisão', () => {
+    component.secoes[0].linhas[0] = { item_generico: 1, quantidade: 10, observacao: '' };
+
+    component.confirmarEnvio();
+    expect(cardapioService['salvar']).not.toHaveBeenCalled();
+
+    component.revisar();
+    component.confirmarEnvio();
+    expect(cardapioService['salvar']).toHaveBeenCalledTimes(1);
+    expect(cardapioService['enviar']).toHaveBeenCalledWith(7);
+  });
+
+  it('renderiza o painel de reforço com o empenho e permite enviar', async () => {
+    const linha = { item_generico: 1, quantidade: 22, observacao: '' };
+    component.secoes[0].linhas[0] = linha;
+    fixture.detectChanges();
+
+    component.abrirReforco(linha);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const painel: HTMLElement = fixture.nativeElement.querySelector('.reforco-painel');
+    expect(painel.querySelector('.reforco-opcao')?.textContent).toContain('Empenho EMP-1');
+    expect(painel.querySelector('textarea')?.value).toContain('Estoque baixo de Arroz');
+
+    component.reforco!.quantidade = 5;
+    fixture.detectChanges();
+    const enviar = [...painel.querySelectorAll('button')].find((botao) => botao.textContent?.trim() === 'Enviar');
+    expect(enviar?.disabled).toBe(false);
   });
 });

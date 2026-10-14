@@ -75,6 +75,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
 
         token['papel'] = user.papel
-        token['username'] = user.username 
+        token['username'] = user.username
+        # Nome exibido em documentos, como a assinatura do cardápio.
+        token['nome'] = user.get_full_name() or user.username
 
         return token

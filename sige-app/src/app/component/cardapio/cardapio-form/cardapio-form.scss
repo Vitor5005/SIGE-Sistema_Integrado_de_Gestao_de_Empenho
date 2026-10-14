@@ -330,6 +330,47 @@ textarea {
   border-color: var(--sige-danger);
 }
 
+.cardapio-aviso--alerta {
+  color: var(--sige-text-warning);
+  background: var(--sige-surface-warning);
+  border-color: var(--sige-warning);
+}
+
+// ---- Revisão ----
+
+.cardapio-revisao {
+  .sige-page-header h1:focus {
+    outline: none;
+  }
+
+  .tabela-impacto td {
+    vertical-align: middle;
+  }
+
+  .impacto-meta {
+    display: block;
+    color: var(--sige-text-secondary);
+    font-size: 0.75rem;
+  }
+}
+
+.situacao {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sige-space-1);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.situacao--ok {
+  color: var(--sige-success-strong);
+}
+
+.situacao--baixo {
+  color: var(--sige-text-warning);
+}
+
 .cardapio-aviso--info {
   color: var(--sige-color-primary-strong);
   background: var(--sige-surface-info);

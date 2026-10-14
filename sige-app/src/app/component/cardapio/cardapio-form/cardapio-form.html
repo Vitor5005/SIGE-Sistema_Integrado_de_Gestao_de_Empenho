@@ -6,6 +6,7 @@
   } @else if (erroCarregamento) {
   <app-estado-conteudo tipo="error" titulo="Não foi possível abrir o cardápio" [mensagem]="erroCarregamento"></app-estado-conteudo>
   } @else {
+  @if (!emRevisao) {
   <form class="cardapio-form" (ngSubmit)="salvarRascunho()" novalidate>
     <header class="sige-page-header">
       <h1><i class="bi bi-journal-richtext" aria-hidden="true"></i> {{ modoEdicao ? 'Editar cardápio' : 'Novo cardápio' }}</h1>
@@ -103,7 +104,7 @@
             [disabled]="salvando" [class.campo-invalido]="formSubmitted && secaoSemTitulo(secao, indiceSecao)">
           <button type="button" class="sige-button sige-button--danger-outline sige-button--sm" [disabled]="salvando"
             (click)="removerSecao(indiceSecao)">
-            <i class="bi bi-trash3" aria-hidden="true"></i> Remover seção
+            <i class="bi bi-trash3" aria-hidden="true"></i> Remover
           </button>
           }
         </div>
@@ -152,7 +153,7 @@
             </small>
             @if (podePedirReforco && reforco?.linha !== linha) {
             <button type="button" class="botao-reforco" [disabled]="salvando" (click)="abrirReforco(linha)">
-              <i class="bi bi-plus-circle" aria-hidden="true"></i> Pedir reforço ao Diretor
+              <i class="bi bi-plus-circle" aria-hidden="true"></i> Pedir reforço
             </button>
             }
             } @else {
@@ -215,7 +216,8 @@
             @for (opcao of reforco.opcoes; track opcao.item_empenho) {
             <label class="reforco-opcao" [class.reforco-opcao--indisponivel]="saldoArp(opcao) < 1">
               <input type="radio" [name]="'reforcoEmpenho' + indiceSecao + '-' + indiceLinha" [value]="opcao.item_empenho"
-                [(ngModel)]="reforco.itemEmpenho" [disabled]="saldoArp(opcao) < 1 || reforco.enviando">
+                [(ngModel)]="reforco.itemEmpenho" [ngModelOptions]="{ standalone: true }"
+                [disabled]="saldoArp(opcao) < 1 || reforco.enviando">
               <span>
                 <b>Empenho {{ opcao.empenho_codigo }}</b> · ARP {{ opcao.ata_numero }} · {{ opcao.fornecedor }}
                 <small>
@@ -232,7 +234,7 @@
               <label [for]="'reforcoQuantidade' + indiceSecao + '-' + indiceLinha">Quantidade ({{ reforco.genero.unidade_medida }}) *</label>
               <input [id]="'reforcoQuantidade' + indiceSecao + '-' + indiceLinha" type="number" min="1" step="0.01"
                 [max]="opcaoReforcoSelecionada ? saldoArp(opcaoReforcoSelecionada) : null" [(ngModel)]="reforco.quantidade"
-                [disabled]="reforco.enviando || !reforco.itemEmpenho">
+                [ngModelOptions]="{ standalone: true }" [disabled]="reforco.enviando || !reforco.itemEmpenho">
               @if (opcaoReforcoSelecionada) {
               <small class="texto-apoio">De 1 até {{ formatarQuantidade(saldoArp(opcaoReforcoSelecionada)) }} {{ reforco.genero.unidade_medida }} (saldo da ARP).</small>
               }
@@ -240,7 +242,8 @@
             <div class="cardapio-campo">
               <label [for]="'reforcoJustificativa' + indiceSecao + '-' + indiceLinha">Justificativa *</label>
               <textarea [id]="'reforcoJustificativa' + indiceSecao + '-' + indiceLinha" rows="2" maxlength="1000"
-                [(ngModel)]="reforco.justificativa" [disabled]="reforco.enviando"></textarea>
+                [(ngModel)]="reforco.justificativa" [ngModelOptions]="{ standalone: true }"
+                [disabled]="reforco.enviando"></textarea>
             </div>
           </div>
           }
@@ -258,7 +261,7 @@
               @if (reforco.enviando) {
               <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
               }
-              Enviar pedido
+              Enviar
             </button>
             }
           </div>
@@ -274,7 +277,7 @@
       }
 
       <button type="button" class="sige-button sige-button--secondary" [disabled]="salvando" (click)="adicionarSecao()">
-        <i class="bi bi-collection" aria-hidden="true"></i> Adicionar seção (salada, sobremesa...)
+        <i class="bi bi-collection" aria-hidden="true"></i> Adicionar seção
       </button>
       }
     </section>
@@ -322,17 +325,136 @@
       <a class="sige-button sige-button--secondary" [routerLink]="modoEdicao ? ['/cardapio'] : ['/cardapios']"
         [queryParams]="modoEdicao ? { id: id } : {}">Cancelar</a>
       <button type="submit" class="sige-button sige-button--secondary" [disabled]="!podeSalvar">
-        <i class="bi bi-save" aria-hidden="true"></i> Salvar rascunho
+        <i class="bi bi-save" aria-hidden="true"></i> Salvar
       </button>
-      <button type="button" class="sige-button sige-button--primary" [disabled]="!podeEnviar" (click)="salvarEEnviar()">
-        @if (salvando) {
-        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-        } @else {
-        <i class="bi bi-send" aria-hidden="true"></i>
-        }
-        Enviar ao estoque
+      <button type="button" class="sige-button sige-button--primary" [disabled]="!podeEnviar" (click)="revisar()">
+        <i class="bi bi-clipboard-check" aria-hidden="true"></i> Revisar
       </button>
     </div>
   </form>
+  } @else if (previa) {
+  <div class="cardapio-form cardapio-revisao">
+    <header class="sige-page-header">
+      <h1 #tituloRevisao tabindex="-1"><i class="bi bi-clipboard-check" aria-hidden="true"></i> Revisar cardápio</h1>
+      <p>Confira os dados antes de enviar. O cardápio só será salvo e enviado ao estoque depois que você confirmar.</p>
+    </header>
+
+    <p class="sige-revisao__aviso">
+      <i class="bi bi-info-circle" aria-hidden="true"></i>
+      <span>Ao confirmar, os gêneros ficam reservados até o Estoquista aprovar ou recusar a retirada. Depois disso, o
+        cardápio só pode ser alterado se for recusado.</span>
+    </p>
+
+    <section class="sige-section cardapio-secao" aria-labelledby="revisao-dados-title">
+      <h2 id="revisao-dados-title">Dados da refeição</h2>
+      <dl class="sige-revisao__lista">
+        <div class="sige-revisao__campo sige-revisao__campo--destaque">
+          <dt>Refeição</dt>
+          <dd>{{ refeicaoDescricao }}</dd>
+        </div>
+        <div class="sige-revisao__campo sige-revisao__campo--destaque">
+          <dt>Data</dt>
+          <dd>{{ dataLocal | date: "dd/MM/yyyy (EEEE)" }}</dd>
+        </div>
+        <div class="sige-revisao__campo">
+          <dt>Estimativa</dt>
+          <dd>{{ estimativaPessoas }} pessoas</dd>
+        </div>
+        <div class="sige-revisao__campo">
+          <dt>Gêneros do estoque</dt>
+          <dd>{{ totalGenerosRevisao }}</dd>
+        </div>
+        <div class="sige-revisao__campo sige-revisao__campo--largo">
+          <dt>Preparações</dt>
+          <dd>{{ previa.preparacoes }}</dd>
+        </div>
+        @if (previa.observacoes) {
+        <div class="sige-revisao__campo sige-revisao__campo--largo">
+          <dt>Observações</dt>
+          <dd>{{ previa.observacoes }}</dd>
+        </div>
+        }
+      </dl>
+    </section>
+
+    <section class="sige-section cardapio-secao" aria-labelledby="revisao-estoque-title">
+      <div>
+        <h2 id="revisao-estoque-title">Impacto no estoque</h2>
+        <p class="texto-apoio">Quanto de cada gênero será reservado e quanto continuará disponível para outros cardápios.</p>
+      </div>
+
+      @if (generosComEstoqueBaixo) {
+      <div class="cardapio-aviso cardapio-aviso--alerta" role="status">
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+        <div><p>{{ generosComEstoqueBaixo }} gênero(s) ficarão com estoque baixo após este cardápio.</p></div>
+      </div>
+      }
+
+      <div class="sige-detail-table-wrap">
+        <table class="table sige-detail-table tabela-impacto">
+          <caption class="visually-hidden">Impacto do cardápio no estoque</caption>
+          <thead>
+            <tr>
+              <th scope="col">Gênero</th>
+              <th scope="col" class="sige-cell--number">Quantidade do cardápio</th>
+              <th scope="col" class="sige-cell--number">Disponível hoje</th>
+              <th scope="col" class="sige-cell--number">Restará</th>
+              <th scope="col">Situação</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (impacto of impactoEstoque; track impacto.genero.item_generico_id) {
+            <tr>
+              <td>
+                <strong>{{ impacto.genero.descricao }}</strong>
+                <span class="impacto-meta">CATMAT {{ impacto.genero.catmat }} · {{ unidadeComEmbalagem(impacto.genero) }}</span>
+              </td>
+              <td class="sige-cell--number"><strong>{{ formatarQuantidade(impacto.quantidade) }} {{ impacto.genero.unidade_medida }}</strong></td>
+              <td class="sige-cell--number">{{ formatarQuantidade(impacto.genero.disponivel) }} {{ impacto.genero.unidade_medida }}</td>
+              <td class="sige-cell--number">{{ formatarQuantidade(impacto.restante) }} {{ impacto.genero.unidade_medida }}</td>
+              <td>
+                @if (impacto.estoqueBaixo) {
+                <span class="situacao situacao--baixo"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Estoque baixo</span>
+                } @else {
+                <span class="situacao situacao--ok"><i class="bi bi-check-circle" aria-hidden="true"></i> Saldo suficiente</span>
+                }
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cardapio-secao" aria-labelledby="revisao-documento-title">
+      <div>
+        <h2 id="revisao-documento-title">Documento</h2>
+        <p class="texto-apoio">É assim que o cardápio será impresso.</p>
+      </div>
+      <app-cardapio-documento [cardapio]="previa"></app-cardapio-documento>
+    </section>
+
+    @if (erro) {
+    <div class="cardapio-aviso cardapio-aviso--recusa" role="alert">
+      <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+      <div><p>{{ erro }}</p></div>
+    </div>
+    }
+
+    <div class="cardapio-acoes">
+      <button type="button" class="sige-button sige-button--secondary" [disabled]="salvando" (click)="voltarParaEdicao()">
+        Voltar
+      </button>
+      <button type="button" class="sige-button sige-button--primary" [disabled]="salvando" (click)="confirmarEnvio()">
+        @if (salvando) {
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        } @else {
+        <i class="bi bi-check-lg" aria-hidden="true"></i>
+        }
+        Confirmar
+      </button>
+    </div>
+  </div>
+  }
   }
 </main>

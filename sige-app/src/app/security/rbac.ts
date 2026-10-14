@@ -179,9 +179,11 @@ export const MATRIZ_PERMISSOES: Matriz = {
 
 type TokenPayload = {
   papel?: Papel;
+  username?: string;
+  nome?: string;
 };
 
-export function obterPapelAtual(): Papel | null {
+function lerTokenAtual(): TokenPayload | null {
   const token = localStorage.getItem('access_token');
   if (!token) return null;
 
@@ -190,10 +192,20 @@ export function obterPapelAtual(): Papel | null {
     const json = decodeURIComponent(
       atob(base64).split('').map(c => `%${(`00${c.charCodeAt(0).toString(16)}`).slice(-2)}`).join('')
     );
-    return (JSON.parse(json) as TokenPayload).papel ?? null;
+    return JSON.parse(json) as TokenPayload;
   } catch {
     return null;
   }
+}
+
+export function obterPapelAtual(): Papel | null {
+  return lerTokenAtual()?.papel ?? null;
+}
+
+/** Nome completo do usuário logado (tokens antigos trazem só o username). */
+export function obterNomeUsuarioAtual(): string {
+  const payload = lerTokenAtual();
+  return payload?.nome || payload?.username || '';
 }
 
 export function temPermissao(papel: Papel | null, recurso: Recurso, acao: Acao): boolean {

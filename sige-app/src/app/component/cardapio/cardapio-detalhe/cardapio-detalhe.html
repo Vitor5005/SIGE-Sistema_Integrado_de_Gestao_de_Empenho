@@ -34,7 +34,7 @@
             <i class="bi bi-trash3" aria-hidden="true"></i> Excluir
           </button>
           <button type="button" class="sige-button sige-button--primary" [disabled]="processando" (click)="enviar()">
-            <i class="bi bi-send" aria-hidden="true"></i> Enviar ao estoque
+            <i class="bi bi-send" aria-hidden="true"></i> Enviar
           </button>
           }
           <button type="button" class="sige-button sige-button--secondary" (click)="imprimir()">
@@ -209,22 +209,22 @@
           <i class="bi bi-x-lg" aria-hidden="true"></i> Recusar
         </button>
         <button type="button" class="sige-button sige-button--primary" [disabled]="processando || !aprovacaoValida" (click)="aprovar()">
-          <i class="bi bi-box-arrow-up" aria-hidden="true"></i> Aprovar retirada
+          <i class="bi bi-box-arrow-up" aria-hidden="true"></i> Aprovar
         </button>
       </div>
       } @else if (modoConsumo) {
       <div class="cardapio-acoes">
         <button type="button" class="sige-button sige-button--primary" [disabled]="processando || !consumoValido" (click)="informarConsumo()">
-          <i class="bi bi-clipboard-check" aria-hidden="true"></i> Enviar consumo real
+          <i class="bi bi-clipboard-check" aria-hidden="true"></i> Enviar
         </button>
       </div>
       } @else if (modoConfirmacao) {
       <div class="cardapio-acoes">
         <button type="button" class="sige-button sige-button--danger-outline" [disabled]="processando" (click)="abrirMotivo('devolver')">
-          <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Devolver para correção
+          <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Devolver
         </button>
         <button type="button" class="sige-button sige-button--primary" [disabled]="processando" (click)="confirmarConsumo()">
-          <i class="bi bi-check2-all" aria-hidden="true"></i> Confirmar acerto do estoque
+          <i class="bi bi-check2-all" aria-hidden="true"></i> Confirmar
         </button>
       </div>
       }

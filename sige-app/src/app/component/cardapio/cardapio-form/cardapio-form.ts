@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
@@ -12,12 +13,13 @@ import {
   RefeicaoCardapio,
 } from '../../../model/cardapio';
 import { OpcaoReforcoGenero } from '../../../model/solicitacao_reforco';
-import { Acao, pode, Recurso } from '../../../security/rbac';
+import { Acao, obterNomeUsuarioAtual, pode, Recurso } from '../../../security/rbac';
 import { CardapioService, mensagemErroCardapio } from '../../../service/cardapio.service';
 import { FeedbackService } from '../../../service/feedback.service';
 import { SolicitacaoReforcoService } from '../../../service/solicitacao-reforco.service';
 import { BotaoVoltar } from '../../utils/botao-voltar/botao-voltar';
 import { EstadoConteudo } from '../../utils/estado-conteudo/estado-conteudo';
+import { CardapioDocumento } from '../cardapio-documento/cardapio-documento';
 import { agruparPorSecao, formatarQuantidade, unidadeComEmbalagem } from '../cardapio-util';
 
 /** Abaixo desta fração do saldo disponível restante, o gênero recebe o aviso de estoque baixo. */
@@ -32,6 +34,14 @@ interface LinhaForm {
 interface SecaoForm {
   titulo: string;
   linhas: LinhaForm[];
+}
+
+/** Efeito de um gênero do cardápio sobre o saldo disponível, exibido na revisão. */
+interface ImpactoEstoque {
+  genero: DisponibilidadeGenero;
+  quantidade: number;
+  restante: number;
+  estoqueBaixo: boolean;
 }
 
 /** Pedido de reforço ao Diretor aberto a partir de um gênero com estoque baixo. */
@@ -49,7 +59,7 @@ interface PedidoReforco {
 
 @Component({
   selector: 'app-cardapio-form',
-  imports: [BotaoVoltar, EstadoConteudo, FormsModule, RouterLink],
+  imports: [BotaoVoltar, CardapioDocumento, DatePipe, EstadoConteudo, FormsModule, RouterLink],
   templateUrl: './cardapio-form.html',
   styleUrl: './cardapio-form.scss',
 })
@@ -80,6 +90,14 @@ export class CardapioForm implements OnInit {
   private disponibilidadePorGenero = new Map<number, DisponibilidadeGenero>();
 
   reforco: PedidoReforco | null = null;
+
+  /** Etapa de conferência antes de salvar e enviar o cardápio ao estoque. */
+  emRevisao = false;
+  previa: Cardapio | null = null;
+  impactoEstoque: ImpactoEstoque[] = [];
+  private nomeNutricionista = obterNomeUsuarioAtual();
+
+  @ViewChild('tituloRevisao') tituloRevisao?: ElementRef<HTMLElement>;
 
   constructor(
     private cardapioService: CardapioService,
@@ -155,6 +173,7 @@ export class CardapioForm implements OnInit {
     this.preparacoes = cardapio.preparacoes;
     this.observacoes = cardapio.observacoes;
     this.motivoRecusa = cardapio.status === 'RECUSADO' ? cardapio.motivo_recusa : '';
+    this.nomeNutricionista = cardapio.criado_por_nome || this.nomeNutricionista;
 
     const grupos = agruparPorSecao(cardapio.itens);
     this.secoes = grupos.length
@@ -447,38 +466,120 @@ export class CardapioForm implements OnInit {
     });
   }
 
-  salvarEEnviar(): void {
+  // ---- Revisão antes do envio ----
+
+  revisar(): void {
     this.formSubmitted = true;
+    this.reforco = null;
     if (!this.podeEnviar) {
       return;
     }
 
-    this.feedback.confirmar({
-      titulo: 'Enviar cardápio ao estoque?',
-      mensagem: `${this.itensPreenchidos.length} gênero(s) ficarão reservados até o Estoquista aprovar ou recusar `
-        + 'a retirada. Depois de enviado, o cardápio só pode ser alterado se for recusado.',
-      textoConfirmar: 'Enviar',
-      textoCancelar: 'Continuar editando',
-    }).then((confirmado) => {
-      if (!confirmado) {
-        return;
-      }
-      this.gravar((cardapio) => {
-        this.salvando = true;
-        this.cardapioService.enviar(cardapio.id).subscribe({
-          next: () => {
-            this.salvando = false;
-            this.feedback.sucesso('Cardápio enviado. O estoque foi notificado para aprovar a retirada.');
-            this.abrirCardapio(cardapio.id);
-          },
-          error: (erro) => {
-            this.salvando = false;
-            // O rascunho já está gravado: continua editando o mesmo cardápio.
-            this.id = cardapio.id;
-            this.erro = mensagemErroCardapio(erro, 'O rascunho foi salvo, mas não foi possível enviá-lo.');
-            this.carregarDisponibilidade();
-          },
-        });
+    this.previa = this.montarPrevia();
+    this.impactoEstoque = this.calcularImpacto();
+    this.erro = '';
+    this.emRevisao = true;
+    window.scrollTo({ top: 0 });
+    setTimeout(() => this.tituloRevisao?.nativeElement.focus());
+  }
+
+  voltarParaEdicao(): void {
+    if (this.salvando) {
+      return;
+    }
+    this.emRevisao = false;
+    this.erro = '';
+  }
+
+  get refeicaoDescricao(): string {
+    return this.refeicoes.find((opcao) => opcao.valor === this.refeicao)?.label ?? '';
+  }
+
+  get dataLocal(): Date {
+    const [ano, mes, dia] = this.data.split('-').map(Number);
+    return new Date(ano, mes - 1, dia);
+  }
+
+  get totalGenerosRevisao(): number {
+    return this.impactoEstoque.length;
+  }
+
+  get generosComEstoqueBaixo(): number {
+    return this.impactoEstoque.filter((impacto) => impacto.estoqueBaixo).length;
+  }
+
+  /** O documento da revisão usa o mesmo componente do documento impresso. */
+  private montarPrevia(): Cardapio {
+    const dados = this.montarCardapio();
+    return {
+      id: this.id ?? 0,
+      refeicao: dados.refeicao as Cardapio['refeicao'],
+      refeicao_descricao: this.refeicaoDescricao,
+      data: dados.data,
+      estimativa_pessoas: Number(dados.estimativa_pessoas),
+      preparacoes: dados.preparacoes,
+      observacoes: dados.observacoes,
+      status: 'RASCUNHO',
+      status_descricao: 'Rascunho',
+      motivo_recusa: '',
+      criado_por_nome: this.nomeNutricionista,
+      criado_em: '',
+      atualizado_em: '',
+      enviado_em: null,
+      aprovado_por_nome: null,
+      aprovado_em: null,
+      consumo_informado_em: null,
+      finalizado_por_nome: null,
+      finalizado_em: null,
+      itens: dados.itens.map((item, indice) => {
+        const genero = this.generoDe(item.item_generico);
+        return {
+          ...item,
+          id: -(indice + 1),
+          descricao: genero?.descricao,
+          catmat: genero?.catmat,
+          unidade_medida: genero?.unidade_medida,
+          conteudo_embalagem: genero?.conteudo_embalagem,
+          unidade_embalagem: genero?.unidade_embalagem,
+          quantidade_liberada: null,
+          quantidade_consumida: null,
+        };
+      }),
+    };
+  }
+
+  private calcularImpacto(): ImpactoEstoque[] {
+    const ids = [...new Set(this.itensPreenchidos.map(({ linha }) => Number(linha.item_generico)))];
+    return ids.map((id) => ({
+      genero: this.generoDe(id)!,
+      quantidade: this.arredondar(this.totalPlanejado(id)),
+      restante: this.restanteAposCardapio(id),
+      estoqueBaixo: this.estoqueBaixo(id),
+    }));
+  }
+
+  /** Salva o cardápio e o envia ao estoque; só é chamado a partir da revisão. */
+  confirmarEnvio(): void {
+    if (!this.emRevisao || !this.podeEnviar) {
+      return;
+    }
+
+    this.gravar((cardapio) => {
+      this.salvando = true;
+      this.cardapioService.enviar(cardapio.id).subscribe({
+        next: () => {
+          this.salvando = false;
+          this.feedback.sucesso('Cardápio enviado. O estoque foi notificado para aprovar a retirada.');
+          this.abrirCardapio(cardapio.id);
+        },
+        error: (erro) => {
+          this.salvando = false;
+          // O rascunho já está gravado: volta à edição do mesmo cardápio para ajustar.
+          this.id = cardapio.id;
+          this.emRevisao = false;
+          this.erro = mensagemErroCardapio(erro, 'O rascunho foi salvo, mas não foi possível enviá-lo.');
+          this.carregarDisponibilidade();
+        },
       });
     });
   }
