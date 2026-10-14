@@ -1,7 +1,5 @@
 services:
   db:
-    ports:
-      - "3308:3306"
     environment:
       MYSQL_DATABASE: sige
       MYSQL_USER: sige
