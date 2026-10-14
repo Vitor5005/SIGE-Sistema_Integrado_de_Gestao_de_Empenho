@@ -221,6 +221,49 @@
               </div>
             </div>
 
+            <div class="foto-genero" role="group" aria-labelledby="fotoGeneroTitulo">
+              <div class="foto-genero__preview">
+                @if (fotoExibida) {
+                <img [src]="fotoExibida" [alt]="'Foto de ' + (registroEditar.descricao || 'gênero alimentício')">
+                } @else {
+                <i class="bi bi-image" aria-hidden="true"></i>
+                <span>Sem foto</span>
+                }
+              </div>
+
+              <div class="foto-genero__conteudo">
+                <span class="foto-genero__titulo" id="fotoGeneroTitulo">Foto (opcional)</span>
+                <small class="texto-apoio-input" id="fotoGeneroAjuda">JPG, PNG ou WebP, até 2 MB. A foto aparece nos cards do
+                  estoque.</small>
+
+                <input #fotoInput id="fotoGenero" type="file" class="visually-hidden"
+                  accept="image/jpeg,image/png,image/webp" [disabled]="isSaving" aria-describedby="fotoGeneroAjuda"
+                  (change)="onFotoSelecionada($event)">
+
+                <div class="foto-genero__acoes">
+                  <button type="button" class="sige-button sige-button--secondary sige-button--sm" [disabled]="isSaving"
+                    (click)="fotoInput.click()">
+                    <i class="bi bi-upload" aria-hidden="true"></i> {{ fotoExibida ? 'Trocar foto' : 'Escolher foto' }}
+                  </button>
+                  @if (fotoExibida) {
+                  <button type="button" class="sige-button sige-button--danger-outline sige-button--sm"
+                    [disabled]="isSaving" (click)="removerFoto()">
+                    <i class="bi bi-trash3" aria-hidden="true"></i> Remover foto
+                  </button>
+                  }
+                </div>
+
+                @if (erroFoto) {
+                <small class="mensagem-campo-invalido" role="alert">{{ erroFoto }}</small>
+                } @else if (fotoSelecionada) {
+                <small class="texto-apoio-input">Nova foto selecionada: {{ fotoSelecionada.name }}. Ela será enviada ao
+                  salvar.</small>
+                } @else if (removerFotoAtual) {
+                <small class="texto-apoio-input">A foto atual será removida ao salvar.</small>
+                }
+              </div>
+            </div>
+
             <div class="requisitos-modal" [class.requisitos-ok]="formularioValido">
               <small><b>Obrigatório:</b> preencher CATMAT válido, categoria, unidade de medida e descrição.</small>
             </div>

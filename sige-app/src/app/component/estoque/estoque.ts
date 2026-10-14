@@ -43,6 +43,8 @@ export class Estoque {
     }
   ];
   agruparPorCategoria = false;
+  modoVisualizacao: 'cards' | 'tabela' = 'cards';
+  imagensComErro = new Set<string>();
   carregando = false;
   erro = '';
   totalItens = 0;
@@ -52,8 +54,22 @@ export class Estoque {
     private estadoListagem: EstadoListagemService
   ) {}
 
+  private readonly chaveVisualizacao = 'sige.estoque.visualizacao';
+
+  private readonly iconesCategoria: Record<string, string> = {
+    tempS: 'bi-flower2',
+    SM: 'bi-box-seam',
+    Lac: 'bi-cup-straw',
+    Oli: 'bi-droplet',
+    MolCo: 'bi-cup-hot',
+    Fr: 'bi-basket',
+    Le: 'bi-basket2',
+    Pr: 'bi-egg-fried',
+  };
+
   ngOnInit(): void {
     this.restaurarEstadoListagem();
+    this.restaurarVisualizacao();
     this.carregar();
     if (pode(Recurso.ESTOQUE, Acao.CONSULTAR_CONSOLIDADO)) {
       this.estoqueService.consolidado().subscribe({
@@ -85,6 +101,30 @@ export class Estoque {
         this.carregando = false;
       },
     });
+  }
+
+  alterarVisualizacao(modo: 'cards' | 'tabela'): void {
+    this.modoVisualizacao = modo;
+    try {
+      localStorage.setItem(this.chaveVisualizacao, modo);
+    } catch {
+      // Sem acesso ao armazenamento do navegador, a escolha vale só nesta visita.
+    }
+  }
+
+  iconeCategoria(categoria: string): string {
+    return this.iconesCategoria[categoria] || 'bi-image';
+  }
+
+  private restaurarVisualizacao(): void {
+    try {
+      const salvo = localStorage.getItem(this.chaveVisualizacao);
+      if (salvo === 'cards' || salvo === 'tabela') {
+        this.modoVisualizacao = salvo;
+      }
+    } catch {
+      this.modoVisualizacao = 'cards';
+    }
   }
 
   alternarAgrupamento(): void {

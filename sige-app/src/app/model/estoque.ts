@@ -8,6 +8,7 @@ export interface EstoqueItem {
   categoria_descricao: string;
   conteudo_embalagem: number | null;
   unidade_embalagem: string | null;
+  imagem: string | null;
   saldo_atual: number;
   data_atualizacao: string;
   possui_carga_inicial: boolean;
@@ -36,6 +37,8 @@ export interface EstoqueConsolidado {
   catmat: string;
   descricao: string;
   unidade_medida: string;
+  categoria: string;
+  imagem: string | null;
   saldo_ata: number;
   saldo_empenho: number;
   saldo_estoque: number;

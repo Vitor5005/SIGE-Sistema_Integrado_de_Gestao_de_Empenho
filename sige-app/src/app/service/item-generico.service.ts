@@ -63,6 +63,16 @@ export class ItemGenericoService implements ICrudService<ItemGenerico> {
     return this.http.delete<void>(url);
   }
 
+  enviarImagem(id: number, imagem: File): Observable<ItemGenerico> {
+    const formData = new FormData();
+    formData.append('imagem', imagem);
+    return this.http.post<ItemGenerico>(this.apiUrl + id + '/imagem/', formData);
+  }
+
+  removerImagem(id: number): Observable<void> {
+    return this.http.delete<void>(this.apiUrl + id + '/imagem/');
+  }
+
   getComFiltros(params: any) {
     const filtros = { ...params };
     const page = Number(filtros.page) || 1;

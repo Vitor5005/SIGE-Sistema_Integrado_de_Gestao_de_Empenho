@@ -4,5 +4,6 @@ export type ItemGenerico = {
     descricao: string;
     unidade_medida: string;
     categoria: string;
+    imagem?: string | null;
 
 }

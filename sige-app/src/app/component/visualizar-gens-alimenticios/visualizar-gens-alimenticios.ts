@@ -1,5 +1,5 @@
 import { FiltroConfig } from './../../model/filtro-config';
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 import { Paginacao } from '../utils/paginacao/paginacao';
 import { Router } from '@angular/router';
@@ -10,6 +10,7 @@ import { FeedbackService } from '../../service/feedback.service';
 import { EstadoConteudo } from '../utils/estado-conteudo/estado-conteudo';
 import { Acao, pode, Recurso } from '../../security/rbac';
 import { EstadoListagemService } from '../../service/estado-listagem.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-visualizar-gens-alimenticios',
@@ -18,7 +19,7 @@ import { EstadoListagemService } from '../../service/estado-listagem.service';
   templateUrl: './visualizar-gens-alimenticios.html',
   styleUrl: './visualizar-gens-alimenticios.scss',
 })
-export class VisualizarGensAlimenticios {
+export class VisualizarGensAlimenticios implements OnDestroy {
   readonly pode = pode;
   readonly Acao = Acao;
   readonly Recurso = Recurso;
@@ -26,6 +27,14 @@ export class VisualizarGensAlimenticios {
   @ViewChild('myModal') modal!: ElementRef;
   @ViewChild('myInput') input!: ElementRef;
   @ViewChild('fecharModalInternoBtn') fecharModalInternoBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('fotoInput') fotoInput?: ElementRef<HTMLInputElement>;
+
+  readonly tiposFotoAceitos = ['image/jpeg', 'image/png', 'image/webp'];
+  readonly tamanhoMaximoFoto = 2 * 1024 * 1024;
+  fotoSelecionada: File | null = null;
+  previewFoto: string | null = null;
+  removerFotoAtual: boolean = false;
+  erroFoto: string = '';
 
   filtros: FiltroConfig[] = [
   {
@@ -241,6 +250,78 @@ filtrosAtivos: any = {};
     this.errorMessageModal = '';
     this.registroOriginalModal = { ...registro };
     this.registroEditar = { ...registro };
+    this.limparFoto();
+  }
+
+  get fotoExibida(): string | null {
+    if (this.previewFoto) {
+      return this.previewFoto;
+    }
+    return this.removerFotoAtual ? null : this.registroEditar.imagem || null;
+  }
+
+  get fotoAlterada(): boolean {
+    return Boolean(this.fotoSelecionada) || this.removerFotoAtual;
+  }
+
+  onFotoSelecionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const arquivo = input.files?.[0];
+    this.erroFoto = '';
+
+    if (!arquivo) {
+      return;
+    }
+
+    if (!this.tiposFotoAceitos.includes(arquivo.type)) {
+      this.erroFoto = 'Envie uma imagem JPG, PNG ou WebP.';
+      input.value = '';
+      return;
+    }
+
+    if (arquivo.size > this.tamanhoMaximoFoto) {
+      this.erroFoto = 'A imagem deve ter no máximo 2 MB.';
+      input.value = '';
+      return;
+    }
+
+    this.revogarPreview();
+    this.fotoSelecionada = arquivo;
+    this.previewFoto = URL.createObjectURL(arquivo);
+  }
+
+  removerFoto(): void {
+    if (this.fotoSelecionada) {
+      this.revogarPreview();
+      this.fotoSelecionada = null;
+      if (this.fotoInput) {
+        this.fotoInput.nativeElement.value = '';
+      }
+      return;
+    }
+
+    this.removerFotoAtual = true;
+  }
+
+  private limparFoto(): void {
+    this.revogarPreview();
+    this.fotoSelecionada = null;
+    this.removerFotoAtual = false;
+    this.erroFoto = '';
+    if (this.fotoInput) {
+      this.fotoInput.nativeElement.value = '';
+    }
+  }
+
+  private revogarPreview(): void {
+    if (this.previewFoto) {
+      URL.revokeObjectURL(this.previewFoto);
+      this.previewFoto = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.revogarPreview();
   }
 
   onCatmatInput(): void {
@@ -284,7 +365,8 @@ filtrosAtivos: any = {};
       (this.registroOriginalModal.catmat || '') !== (this.registroEditar.catmat || '') ||
       (this.registroOriginalModal.categoria || '') !== (this.registroEditar.categoria || '') ||
       (this.registroOriginalModal.unidade_medida || '') !== (this.registroEditar.unidade_medida || '') ||
-      (this.registroOriginalModal.descricao || '') !== (this.registroEditar.descricao || '')
+      (this.registroOriginalModal.descricao || '') !== (this.registroEditar.descricao || '') ||
+      this.fotoAlterada
     );
   }
 
@@ -319,11 +401,25 @@ filtrosAtivos: any = {};
     this.isSaving = true;
 
     this.ItemGenericoService.save(this.registroEditar).subscribe({
-      next: () => {
-        this.isSaving = false;
-        this.fecharModalSemConfirmacao();
-        this.feedback.sucesso('Gênero alimentício atualizado com sucesso.');
-        this.getItens();
+      next: (salvo: ItemGenerico) => {
+        const requisicaoFoto = this.requisicaoFoto(salvo.id);
+        if (!requisicaoFoto) {
+          this.concluirSalvamento();
+          return;
+        }
+
+        // O gênero já foi gravado; uma falha na foto não deve desfazer o cadastro.
+        requisicaoFoto.subscribe({
+          next: () => this.concluirSalvamento(),
+          error: (erro) => {
+            this.concluirSalvamento();
+            this.feedback.aviso(
+              (erro?.error?.imagem?.[0] || 'Não foi possível salvar a foto.') +
+              ' Edite o gênero para tentar novamente.',
+              'Foto não salva'
+            );
+          }
+        });
       },
       error: (erro) => {
         this.isSaving = false;
@@ -336,6 +432,23 @@ filtrosAtivos: any = {};
           : 'Não foi possível salvar as alterações. Verifique os dados e tente novamente.';
       }
     });
+  }
+
+  private requisicaoFoto(id: number): Observable<unknown> | null {
+    if (this.fotoSelecionada) {
+      return this.ItemGenericoService.enviarImagem(id, this.fotoSelecionada);
+    }
+    if (this.removerFotoAtual && this.registroEditar.imagem) {
+      return this.ItemGenericoService.removerImagem(id);
+    }
+    return null;
+  }
+
+  private concluirSalvamento(): void {
+    this.isSaving = false;
+    this.fecharModalSemConfirmacao();
+    this.feedback.sucesso('Gênero alimentício atualizado com sucesso.');
+    this.getItens();
   }
 
   excluirRegistro(): void {
