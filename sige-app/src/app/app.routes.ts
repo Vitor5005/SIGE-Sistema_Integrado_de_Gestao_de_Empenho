@@ -22,6 +22,9 @@ import { Estoque } from './component/estoque/estoque';
 import { ExtratoEstoque } from './component/estoque/extrato-estoque/extrato-estoque';
 import { MovimentarEstoque } from './component/estoque/movimentar-estoque/movimentar-estoque';
 import { RegistrarRecebimento } from './component/estoque/registrar-recebimento/registrar-recebimento';
+import { Cardapios } from './component/cardapio/cardapios/cardapios';
+import { CardapioForm } from './component/cardapio/cardapio-form/cardapio-form';
+import { CardapioDetalhe } from './component/cardapio/cardapio-detalhe/cardapio-detalhe';
 
 export const routes: Routes = [
   {
@@ -135,6 +138,30 @@ export const routes: Routes = [
         component: RegistrarRecebimento,
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.ESTOQUE, acao: Acao.REGISTRAR_RECEBIMENTO } },
+      },
+      {
+        path: 'cardapios',
+        component: Cardapios,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.CARDAPIO, acao: Acao.CONSULTAR } },
+      },
+      {
+        path: 'cardapios/novo',
+        component: CardapioForm,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.CARDAPIO, acao: Acao.CADASTRAR } },
+      },
+      {
+        path: 'cardapios/editar',
+        component: CardapioForm,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.CARDAPIO, acao: Acao.EDITAR } },
+      },
+      {
+        path: 'cardapio',
+        component: CardapioDetalhe,
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.CARDAPIO, acao: Acao.CONSULTAR } },
       }
     ]
   },

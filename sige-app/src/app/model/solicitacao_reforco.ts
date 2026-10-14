@@ -21,3 +21,16 @@ export type SolicitacaoReforco = {
   data_resposta: string | null;
   vista_pelo_solicitante: boolean;
 };
+
+/** Empenho em que um gênero pode ser reforçado, com o saldo restante na ARP. */
+export interface OpcaoReforcoGenero {
+  item_empenho: number;
+  empenho_id: number;
+  empenho_codigo: string;
+  ata_numero: string;
+  fornecedor: string;
+  unidade_medida: string;
+  quantidade_atual: string;
+  saldo_disponivel_ata: string;
+  possui_pedido_pendente: boolean;
+}

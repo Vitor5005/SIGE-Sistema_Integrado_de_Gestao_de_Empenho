@@ -1,0 +1,97 @@
+<main class="sige-list-page">
+  <header class="sige-list-header">
+    <div>
+      <h1 class="sige-list-title"><i class="bi bi-journal-richtext" aria-hidden="true"></i> Cardápios</h1>
+      <p class="sige-list-description">
+        Cardápios quantitativos das refeições, com a retirada dos gêneros aprovada pelo estoque.
+      </p>
+    </div>
+  </header>
+
+  <section class="sige-list-toolbar" aria-label="Busca e filtros">
+    <div class="sige-list-toolbar__search">
+      <app-barra-pesquisa [filtros]="filtros" placeholder="Buscar por preparação ou gênero..."
+        [termoInicial]="termoBusca" [valoresIniciais]="filtrosAtivos" (pesquisar)="carregar($event)"
+        (filtrosAlterados)="aplicarFiltros($event)"></app-barra-pesquisa>
+    </div>
+    @if (pode(Recurso.CARDAPIO, Acao.CADASTRAR)) {
+    <div class="sige-list-toolbar__actions">
+      <a class="sige-button sige-button--primary" routerLink="/cardapios/novo">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Novo cardápio
+      </a>
+    </div>
+    }
+  </section>
+
+  @if (!carregando && !erro) {
+  <p class="sige-list-meta" aria-live="polite">
+    {{ total }} {{ total === 1 ? 'cardápio encontrado' : 'cardápios encontrados' }}
+  </p>
+  }
+
+  <div class="sige-list-table-wrap">
+    <table class="sige-list-table tabela-cardapios">
+      <caption class="visually-hidden">Lista de cardápios</caption>
+      <thead>
+        <tr>
+          <th scope="col">Data</th>
+          <th scope="col">Refeição</th>
+          <th scope="col" class="sige-cell--number">Estimativa</th>
+          <th scope="col" class="sige-cell--number">Gêneros</th>
+          <th scope="col">Situação</th>
+          <th scope="col">Nutricionista</th>
+          <th scope="col" class="sige-cell--actions">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (carregando) {
+        <tr class="linha-vazia-tabela">
+          <td colspan="7">
+            <app-estado-conteudo tipo="loading" mensagem="Carregando cardápios..." [compacto]="true"></app-estado-conteudo>
+          </td>
+        </tr>
+        } @else if (erro) {
+        <tr class="linha-vazia-tabela">
+          <td colspan="7">
+            <app-estado-conteudo tipo="error" titulo="Não foi possível carregar os dados" [mensagem]="erro"
+              [compacto]="true" [mostrarAcao]="true" (acao)="carregar()"></app-estado-conteudo>
+          </td>
+        </tr>
+        } @else {
+        @for (cardapio of cardapios; track cardapio.id) {
+        <tr class="sige-list-row--clickable" tabindex="0" role="link" (click)="abrir(cardapio)"
+          (keydown.enter)="abrir(cardapio)">
+          <td data-label="Data">{{ cardapio.data | date: 'dd/MM/yyyy (EEE)' }}</td>
+          <td data-label="Refeição">{{ cardapio.refeicao_descricao }}</td>
+          <td data-label="Estimativa" class="sige-cell--number">{{ cardapio.estimativa_pessoas }} pessoas</td>
+          <td data-label="Gêneros" class="sige-cell--number">{{ cardapio.total_itens }}</td>
+          <td data-label="Situação"><span [class]="classeStatus(cardapio.status)">{{ cardapio.status_descricao }}</span></td>
+          <td data-label="Nutricionista"><span class="sige-cell--truncate">{{ cardapio.criado_por_nome }}</span></td>
+          <td class="sige-cell--actions" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+            <div class="sige-table-actions">
+              <button type="button" class="sige-button sige-button--secondary sige-button--sm" (click)="abrir(cardapio)">
+                Abrir
+              </button>
+            </div>
+          </td>
+        </tr>
+        }
+        @if (cardapios.length === 0) {
+        <tr class="linha-vazia-tabela">
+          <td colspan="7">
+            <app-estado-conteudo tipo="empty" titulo="Nenhum cardápio encontrado"
+              mensagem="Ajuste a busca ou os filtros, ou crie um novo cardápio." [compacto]="true"></app-estado-conteudo>
+          </td>
+        </tr>
+        }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (!carregando && !erro && total > 0) {
+  <app-paginacao class="paginacao-lista" [currentPage]="currentPage" [pageSize]="pageSize" [totalItems]="total"
+    totalLabel="Total de cardápios" [showTotal]="false" (pageChange)="irParaPagina($event)"
+    (pageSizeChange)="alterarPageSize($event)"></app-paginacao>
+  }
+</main>

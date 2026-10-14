@@ -1,0 +1,208 @@
+// Reproduz a folha "Cardápio quantitativo" do RU: fonte serifada no cabeçalho,
+// faixas cinzas de seção e tabela de três colunas com bordas finas.
+:host {
+  display: block;
+}
+
+.documento {
+  max-width: 50rem;
+  margin: 0 auto;
+  padding: 2.5rem 2.75rem 2rem;
+  color: #111111;
+  background: #ffffff;
+  border: 1px solid var(--sige-border);
+  box-shadow: var(--sige-shadow-md);
+  font-family: Arial, Helvetica, sans-serif;
+
+  // O styles.scss global aplica Inter a todo elemento (*); aqui o documento usa as fontes da folha.
+  * {
+    font-family: inherit;
+  }
+}
+
+// Brasão à esquerda e o nome da instituição centralizado no restante da linha, como na folha.
+.documento__cabecalho {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 5.5rem;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.documento__brasao {
+  width: 100%;
+  height: auto;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.documento__instituicao {
+  text-align: center;
+  font-variant: small-caps;
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.3;
+
+  p {
+    margin: 0;
+  }
+}
+
+.documento__refeicao {
+  margin: 0 0 1rem;
+  color: #111111;
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.documento__titulo,
+.documento__data {
+  margin: 0 0 0.75rem;
+  text-align: center;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.documento__titulo {
+  font-size: 1.2rem;
+}
+
+.documento__data {
+  margin-bottom: 0.25rem;
+  font-size: 1.05rem;
+}
+
+.documento__tabela {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.95rem;
+
+  .col-quantidade {
+    width: 22%;
+  }
+
+  .col-genero {
+    width: 36%;
+  }
+
+  .col-observacoes {
+    width: 42%;
+  }
+
+  th,
+  td {
+    padding: 0.2rem 0.5rem;
+    vertical-align: middle;
+    border: 1px solid #555555;
+    overflow-wrap: anywhere;
+  }
+
+  .faixa {
+    color: #333333;
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: 700;
+    background: #9a9a9a;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .preparacao {
+    font-weight: 700;
+  }
+
+  .colunas th {
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .secao {
+    font-weight: 700;
+  }
+
+  .quantidade {
+    text-align: center;
+
+    s {
+      color: #555555;
+    }
+
+    .liberada {
+      margin-left: 0.4rem;
+      font-weight: 700;
+    }
+  }
+
+  .observacao {
+    font-size: 0.875rem;
+  }
+
+  .observacoes {
+    height: 8rem;
+    vertical-align: top;
+
+    p {
+      margin: 0.25rem 0 0;
+      white-space: pre-line;
+    }
+  }
+}
+
+.documento__assinatura {
+  margin-top: 2rem;
+  text-align: center;
+  font-weight: 700;
+
+  p {
+    margin: 0;
+  }
+}
+
+// Mais específico que o "* { font-family: inherit }" acima, para manter a fonte serifada da folha.
+.documento .documento__instituicao,
+.documento .documento__refeicao,
+.documento .documento__titulo,
+.documento .documento__data {
+  font-family: 'Times New Roman', Times, serif;
+}
+
+@media (max-width: 575px) {
+  .documento {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .documento__tabela {
+    font-size: 0.8125rem;
+  }
+
+  .documento__cabecalho {
+    grid-template-columns: 3.5rem minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .documento__instituicao {
+    font-size: 0.9rem;
+  }
+}
+
+@media print {
+  .documento {
+    max-width: none;
+    padding: 14mm 16mm;
+    border: 0;
+    box-shadow: none;
+  }
+
+  // Uma linha da tabela, o cabeçalho e a assinatura nunca são partidos entre duas páginas.
+  .documento__tabela tr,
+  .documento__cabecalho,
+  .documento__assinatura {
+    break-inside: avoid;
+  }
+
+  .documento__assinatura {
+    break-before: avoid;
+  }
+}

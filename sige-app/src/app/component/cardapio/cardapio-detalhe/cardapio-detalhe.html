@@ -1,0 +1,239 @@
+<main class="sige-detail-page">
+  <div class="nao-imprimir">
+    <app-botao-voltar></app-botao-voltar>
+  </div>
+
+  <div class="sige-detail-layout">
+    @if (carregando) {
+    <app-estado-conteudo tipo="loading" mensagem="Carregando cardápio..."></app-estado-conteudo>
+    } @else if (erroCarregamento || !cardapio) {
+    <app-estado-conteudo tipo="error" titulo="Não foi possível abrir o cardápio" [mensagem]="erroCarregamento"></app-estado-conteudo>
+    } @else {
+    <nav class="sige-detail-breadcrumb nao-imprimir" aria-label="Navegação contextual">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/cardapios">Cardápios</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ cardapio.refeicao_descricao }} de {{ cardapio.data | date: 'dd/MM/yyyy' }}</li>
+      </ol>
+    </nav>
+
+    <section class="sige-detail-shell nao-imprimir">
+      <header class="sige-detail-header">
+        <div class="sige-detail-heading">
+          <h1 class="sige-detail-title">{{ cardapio.refeicao_descricao }} · {{ cardapio.data | date: "dd/MM/yyyy (EEEE)" }}</h1>
+          <p class="sige-detail-subtitle">
+            <span [class]="classeStatus(cardapio.status)">{{ cardapio.status_descricao }}</span>
+            Estimativa de {{ cardapio.estimativa_pessoas }} pessoas · Nutricionista {{ cardapio.criado_por_nome }}
+          </p>
+        </div>
+        <div class="sige-detail-actions">
+          @if (editavel) {
+          <button type="button" class="sige-button sige-button--secondary" [disabled]="processando" (click)="editar()">
+            <i class="bi bi-pencil-square" aria-hidden="true"></i> Editar
+          </button>
+          <button type="button" class="sige-button sige-button--danger-outline" [disabled]="processando" (click)="excluir()">
+            <i class="bi bi-trash3" aria-hidden="true"></i> Excluir
+          </button>
+          <button type="button" class="sige-button sige-button--primary" [disabled]="processando" (click)="enviar()">
+            <i class="bi bi-send" aria-hidden="true"></i> Enviar ao estoque
+          </button>
+          }
+          <button type="button" class="sige-button sige-button--secondary" (click)="imprimir()">
+            <i class="bi bi-printer" aria-hidden="true"></i> Imprimir
+          </button>
+        </div>
+      </header>
+
+      @if (cardapio.motivo_recusa && (cardapio.status === 'RECUSADO' || cardapio.status === 'APROVADO')) {
+      <div class="cardapio-alerta cardapio-alerta--perigo" role="alert">
+        <i class="bi bi-x-octagon" aria-hidden="true"></i>
+        <div>
+          <strong>{{ cardapio.status === 'RECUSADO' ? 'Retirada recusada pelo estoque' : 'Consumo devolvido pelo estoque para correção' }}</strong>
+          <p>{{ cardapio.motivo_recusa }}</p>
+        </div>
+      </div>
+      }
+
+      <ol class="cardapio-etapas" aria-label="Andamento do cardápio">
+        <li class="concluida"><strong>Criado</strong><span>{{ cardapio.criado_em | date: 'dd/MM HH:mm' }}</span></li>
+        <li [class.concluida]="cardapio.enviado_em">
+          <strong>Enviado ao estoque</strong><span>{{ cardapio.enviado_em ? (cardapio.enviado_em | date: 'dd/MM HH:mm') : '—' }}</span>
+        </li>
+        <li [class.concluida]="cardapio.aprovado_em">
+          <strong>Retirada aprovada</strong>
+          <span>{{ cardapio.aprovado_em ? (cardapio.aprovado_em | date: 'dd/MM HH:mm') + ' · ' + cardapio.aprovado_por_nome : '—' }}</span>
+        </li>
+        <li [class.concluida]="cardapio.consumo_informado_em">
+          <strong>Consumo informado</strong>
+          <span>{{ cardapio.consumo_informado_em ? (cardapio.consumo_informado_em | date: 'dd/MM HH:mm') : '—' }}</span>
+        </li>
+        <li [class.concluida]="cardapio.finalizado_em">
+          <strong>Estoque acertado</strong>
+          <span>{{ cardapio.finalizado_em ? (cardapio.finalizado_em | date: 'dd/MM HH:mm') + ' · ' + cardapio.finalizado_por_nome : '—' }}</span>
+        </li>
+      </ol>
+    </section>
+
+    <section class="sige-detail-section nao-imprimir" aria-labelledby="itens-cardapio-title">
+      <div class="sige-detail-section-header">
+        <div>
+          <h2 id="itens-cardapio-title" class="sige-detail-section-title">Gêneros do cardápio</h2>
+          <p class="sige-detail-subtitle">
+            @if (modoAprovacao) {
+            Confira cada gênero. Você pode liberar menos que o planejado (0 para não liberar), nunca mais que o saldo.
+            } @else if (modoConsumo) {
+            Após o preparo, informe quanto de cada gênero foi realmente usado. Sobras voltam ao estoque e o uso a mais é retirado.
+            } @else if (modoConfirmacao) {
+            Confira o consumo informado pela nutricionista antes de acertar o estoque.
+            } @else {
+            Quantidades planejadas{{ mostrarLiberada ? ', liberadas pelo estoque' : '' }}{{ mostrarConsumida ? ' e consumidas no preparo' : '' }}.
+            }
+          </p>
+        </div>
+      </div>
+
+      <div class="sige-detail-table-wrap">
+        <table class="table sige-detail-table tabela-itens-cardapio">
+          <caption class="visually-hidden">Gêneros do cardápio</caption>
+          <thead>
+            <tr>
+              <th scope="col">Gênero</th>
+              <th scope="col" class="sige-cell--number">Planejado</th>
+              @if (modoAprovacao) {
+              <th scope="col" class="sige-cell--number">Saldo em estoque</th>
+              }
+              @if (mostrarLiberada) {
+              <th scope="col" class="sige-cell--number">Liberado</th>
+              }
+              @if (mostrarConsumida) {
+              <th scope="col" class="sige-cell--number">Consumido</th>
+              }
+              @if (mostrarAcerto) {
+              <th scope="col">Acerto do estoque</th>
+              }
+              <th scope="col">Observações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (grupo of grupos; track grupo.secao) {
+            <tr class="linha-secao">
+              <th scope="colgroup" colspan="7">{{ grupo.secao || 'Preparações principais' }}</th>
+            </tr>
+            @for (item of grupo.itens; track item.id) {
+            <tr>
+              <td>
+                <strong>{{ item.descricao }}</strong>
+                <span class="item-meta">CATMAT {{ item.catmat }} · {{ unidadeComEmbalagem(item) }}</span>
+              </td>
+              <td class="sige-cell--number">{{ formatarQuantidade(item.quantidade_planejada) }} {{ item.unidade_medida }}</td>
+              @if (modoAprovacao) {
+              <td class="sige-cell--number">
+                {{ saldoAtual(item) === null ? '...' : formatarQuantidade(saldoAtual(item)) + ' ' + item.unidade_medida }}
+              </td>
+              }
+              @if (mostrarLiberada) {
+              <td class="sige-cell--number">
+                @if (modoAprovacao) {
+                <div class="campo-quantidade">
+                  <label class="visually-hidden" [for]="'liberada' + item.id">Quantidade liberada de {{ item.descricao }}</label>
+                  <input [id]="'liberada' + item.id" type="number" min="0" step="0.001" [max]="item.quantidade_planejada"
+                    [(ngModel)]="quantidades[item.id!]" [disabled]="processando"
+                    [class.campo-invalido]="erroLiberada(item)" [class.campo-ajustado]="!erroLiberada(item) && ajustada(item)">
+                  <span>{{ item.unidade_medida }}</span>
+                </div>
+                @if (erroLiberada(item); as erro) {
+                <small class="mensagem-campo-invalido">{{ erro }}</small>
+                } @else if (ajustada(item)) {
+                <small class="texto-ajuste">Ajustado</small>
+                }
+                } @else {
+                {{ formatarQuantidade(item.quantidade_liberada) }} {{ item.quantidade_liberada !== null ? item.unidade_medida : '' }}
+                }
+              </td>
+              }
+              @if (mostrarConsumida) {
+              <td class="sige-cell--number">
+                @if (modoConsumo) {
+                <div class="campo-quantidade">
+                  <label class="visually-hidden" [for]="'consumida' + item.id">Quantidade consumida de {{ item.descricao }}</label>
+                  <input [id]="'consumida' + item.id" type="number" min="0" step="0.001"
+                    [(ngModel)]="quantidades[item.id!]" [disabled]="processando" [class.campo-invalido]="erroConsumo(item)">
+                  <span>{{ item.unidade_medida }}</span>
+                </div>
+                @if (erroConsumo(item); as erro) {
+                <small class="mensagem-campo-invalido">{{ erro }}</small>
+                }
+                } @else {
+                {{ formatarQuantidade(item.quantidade_consumida) }} {{ item.quantidade_consumida !== null ? item.unidade_medida : '' }}
+                }
+              </td>
+              }
+              @if (mostrarAcerto) {
+              <td>
+                <span class="acerto" [class.acerto--devolver]="diferenca(item) < 0" [class.acerto--retirar]="diferenca(item) > 0">
+                  {{ textoAcerto(item) }}
+                </span>
+              </td>
+              }
+              <td class="coluna-observacao">{{ item.observacao || '—' }}</td>
+            </tr>
+            }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (erroAcao) {
+      <div class="cardapio-alerta cardapio-alerta--perigo" role="alert">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        <div><p>{{ erroAcao }}</p></div>
+      </div>
+      }
+
+      @if (motivoAcao) {
+      <div class="cardapio-motivo">
+        <label for="motivoAcao">{{ motivoAcao === 'recusar' ? 'Motivo da recusa *' : 'O que precisa ser corrigido no consumo? *' }}</label>
+        <textarea id="motivoAcao" rows="3" maxlength="500" [(ngModel)]="motivo" [disabled]="processando"
+          placeholder="A nutricionista verá esta mensagem."></textarea>
+        <div class="cardapio-acoes">
+          <button type="button" class="sige-button sige-button--secondary" [disabled]="processando" (click)="abrirMotivo(null)">
+            Voltar
+          </button>
+          <button type="button" class="sige-button sige-button--danger" [disabled]="processando || !motivo.trim()" (click)="enviarMotivo()">
+            Confirmar
+          </button>
+        </div>
+      </div>
+      } @else if (modoAprovacao) {
+      <div class="cardapio-acoes">
+        <button type="button" class="sige-button sige-button--danger-outline" [disabled]="processando" (click)="abrirMotivo('recusar')">
+          <i class="bi bi-x-lg" aria-hidden="true"></i> Recusar
+        </button>
+        <button type="button" class="sige-button sige-button--primary" [disabled]="processando || !aprovacaoValida" (click)="aprovar()">
+          <i class="bi bi-box-arrow-up" aria-hidden="true"></i> Aprovar retirada
+        </button>
+      </div>
+      } @else if (modoConsumo) {
+      <div class="cardapio-acoes">
+        <button type="button" class="sige-button sige-button--primary" [disabled]="processando || !consumoValido" (click)="informarConsumo()">
+          <i class="bi bi-clipboard-check" aria-hidden="true"></i> Enviar consumo real
+        </button>
+      </div>
+      } @else if (modoConfirmacao) {
+      <div class="cardapio-acoes">
+        <button type="button" class="sige-button sige-button--danger-outline" [disabled]="processando" (click)="abrirMotivo('devolver')">
+          <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Devolver para correção
+        </button>
+        <button type="button" class="sige-button sige-button--primary" [disabled]="processando" (click)="confirmarConsumo()">
+          <i class="bi bi-check2-all" aria-hidden="true"></i> Confirmar acerto do estoque
+        </button>
+      </div>
+      }
+    </section>
+
+    <section class="cardapio-documento-secao" aria-labelledby="documento-title">
+      <h2 id="documento-title" class="sige-detail-section-title nao-imprimir">Documento</h2>
+      <app-cardapio-documento [cardapio]="cardapio"></app-cardapio-documento>
+    </section>
+    }
+  </div>
+</main>

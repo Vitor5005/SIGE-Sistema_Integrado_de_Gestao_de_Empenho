@@ -4,7 +4,7 @@ import { map, Observable } from 'rxjs';
 
 import { environment } from '../environments/environment';
 import { normalizePaginatedResponse, PaginatedResponse } from '../model/pagination';
-import { SolicitacaoReforco, StatusSolicitacaoReforco } from '../model/solicitacao_reforco';
+import { OpcaoReforcoGenero, SolicitacaoReforco, StatusSolicitacaoReforco } from '../model/solicitacao_reforco';
 
 @Injectable({ providedIn: 'root' })
 export class SolicitacaoReforcoService {
@@ -30,6 +30,12 @@ export class SolicitacaoReforcoService {
     const params = new HttpParams().set('item_empenho', itemEmpenhoId);
     return this.http.get<{ saldo_disponivel: string }>(this.apiUrl + 'saldo/', { params })
       .pipe(map(resposta => Number(resposta.saldo_disponivel)));
+  }
+
+  /** Empenhos em que o gênero pode ser reforçado (usado no cardápio quando o estoque está baixo). */
+  opcoesPorGenero(itemGenericoId: number): Observable<OpcaoReforcoGenero[]> {
+    const params = new HttpParams().set('item_generico', itemGenericoId);
+    return this.http.get<OpcaoReforcoGenero[]>(this.apiUrl + 'opcoes/', { params });
   }
 
   solicitar(itemEmpenhoId: number, quantidade: number, justificativa: string): Observable<SolicitacaoReforco> {

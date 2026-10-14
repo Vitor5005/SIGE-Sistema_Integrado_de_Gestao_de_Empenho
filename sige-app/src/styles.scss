@@ -1067,6 +1067,72 @@ textarea {
   border-radius: var(--sige-radius-md);
 }
 
+// Selo de situação do cardápio (listagem, detalhe e notificações).
+.status-cardapio {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--sige-space-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: var(--sige-radius-pill);
+}
+
+.status-cardapio--rascunho {
+  color: var(--sige-text-secondary);
+  background: var(--sige-surface-muted);
+  border-color: var(--sige-border-strong);
+}
+
+.status-cardapio--aguardando {
+  color: var(--sige-text-warning);
+  background: var(--sige-surface-warning);
+  border-color: var(--sige-warning);
+}
+
+.status-cardapio--recusado {
+  color: var(--sige-danger);
+  background: var(--sige-surface-danger);
+  border-color: var(--sige-danger);
+}
+
+.status-cardapio--aprovado {
+  color: var(--sige-color-primary-strong);
+  background: var(--sige-surface-info);
+  border-color: var(--sige-color-primary);
+}
+
+.status-cardapio--finalizado {
+  color: var(--sige-success-strong);
+  background: var(--sige-surface-success);
+  border-color: var(--sige-success);
+}
+
+// Impressão: só o conteúdo marcado da página (ex.: documento do cardápio) vai para o papel.
+// Sem margem na página, o navegador não imprime o próprio cabeçalho e rodapé (data, título, URL);
+// a margem fica por conta do documento.
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  app-cabecalho,
+  app-feedback-global,
+  .sige-skip-link,
+  .nao-imprimir {
+    display: none !important;
+  }
+
+  body,
+  .sige-app-main {
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+}
+
 // Etapa de revisão exibida antes de confirmar cadastros e envios.
 .sige-revisao {
   display: flex;

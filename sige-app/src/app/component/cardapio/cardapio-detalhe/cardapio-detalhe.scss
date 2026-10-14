@@ -1,0 +1,193 @@
+.sige-detail-subtitle .status-cardapio {
+  margin-right: var(--sige-space-2);
+}
+
+.cardapio-alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sige-space-3);
+  padding: var(--sige-space-3) var(--sige-space-4);
+  border: 1px solid;
+  border-radius: var(--sige-radius-md);
+
+  i {
+    font-size: 1.25rem;
+  }
+
+  p {
+    margin: var(--sige-space-1) 0 0;
+  }
+}
+
+.cardapio-alerta--perigo {
+  color: var(--sige-danger);
+  background: var(--sige-surface-danger);
+  border-color: var(--sige-danger);
+}
+
+// Andamento: cada etapa concluída fica destacada.
+.cardapio-etapas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--sige-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--sige-space-2) var(--sige-space-3);
+    color: var(--sige-text-secondary);
+    font-size: 0.8125rem;
+    background: var(--sige-surface-subtle);
+    border: 1px solid var(--sige-border);
+    border-top: 3px solid var(--sige-border-strong);
+    border-radius: var(--sige-radius-sm);
+  }
+
+  li.concluida {
+    color: var(--sige-text-primary);
+    border-top-color: var(--sige-color-primary);
+  }
+}
+
+.tabela-itens-cardapio {
+  .linha-secao th {
+    color: var(--sige-text-primary);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    background: var(--sige-surface-muted);
+  }
+
+  .item-meta {
+    display: block;
+    color: var(--sige-text-secondary);
+    font-size: 0.75rem;
+  }
+
+  .coluna-observacao {
+    min-width: 12rem;
+    color: var(--sige-text-secondary);
+    font-size: 0.8125rem;
+  }
+
+  td.sige-cell--number {
+    white-space: nowrap;
+  }
+}
+
+.campo-quantidade {
+  display: inline-flex;
+  align-items: stretch;
+
+  input {
+    width: 7rem;
+    padding: var(--sige-space-1) var(--sige-space-2);
+    text-align: right;
+    border: 1px solid var(--sige-border-strong);
+    border-radius: var(--sige-radius-sm) 0 0 var(--sige-radius-sm);
+  }
+
+  span {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--sige-space-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--sige-surface-muted);
+    border: 1px solid var(--sige-border-strong);
+    border-left: 0;
+    border-radius: 0 var(--sige-radius-sm) var(--sige-radius-sm) 0;
+  }
+}
+
+.campo-invalido {
+  background: var(--sige-surface-danger);
+  border-color: var(--sige-danger) !important;
+}
+
+.campo-ajustado {
+  background: var(--sige-surface-warning);
+  border-color: var(--sige-warning) !important;
+}
+
+.mensagem-campo-invalido,
+.texto-ajuste {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.mensagem-campo-invalido {
+  color: var(--sige-danger);
+}
+
+.texto-ajuste {
+  color: var(--sige-text-warning);
+}
+
+.acerto {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sige-text-secondary);
+}
+
+.acerto--devolver {
+  color: var(--sige-success-strong);
+}
+
+.acerto--retirar {
+  color: var(--sige-text-warning);
+}
+
+.cardapio-motivo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sige-space-2);
+  margin-top: var(--sige-space-3);
+
+  label {
+    font-weight: 600;
+  }
+
+  textarea {
+    width: 100%;
+    padding: var(--sige-space-2) var(--sige-space-3);
+    border: 1px solid var(--sige-border-strong);
+    border-radius: var(--sige-radius-sm);
+  }
+}
+
+.cardapio-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sige-space-3);
+  margin-top: var(--sige-space-3);
+}
+
+.cardapio-documento-secao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sige-space-3);
+}
+
+@media (max-width: 575px) {
+  .cardapio-acoes > * {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
+@media print {
+  .sige-detail-page,
+  .sige-detail-layout {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+  }
+}

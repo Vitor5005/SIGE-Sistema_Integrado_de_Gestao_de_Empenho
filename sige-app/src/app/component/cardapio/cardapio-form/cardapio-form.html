@@ -1,0 +1,338 @@
+<main class="sige-page-container cardapio-form-page">
+  <app-botao-voltar></app-botao-voltar>
+
+  @if (carregando) {
+  <app-estado-conteudo tipo="loading" mensagem="Carregando cardápio..."></app-estado-conteudo>
+  } @else if (erroCarregamento) {
+  <app-estado-conteudo tipo="error" titulo="Não foi possível abrir o cardápio" [mensagem]="erroCarregamento"></app-estado-conteudo>
+  } @else {
+  <form class="cardapio-form" (ngSubmit)="salvarRascunho()" novalidate>
+    <header class="sige-page-header">
+      <h1><i class="bi bi-journal-richtext" aria-hidden="true"></i> {{ modoEdicao ? 'Editar cardápio' : 'Novo cardápio' }}</h1>
+      <p>Monte o cardápio quantitativo com os gêneros do estoque. O envio só é liberado quando há saldo para todos.</p>
+    </header>
+
+    @if (motivoRecusa) {
+    <div class="cardapio-aviso cardapio-aviso--recusa" role="alert">
+      <i class="bi bi-x-octagon" aria-hidden="true"></i>
+      <div>
+        <strong>Recusado pelo estoque</strong>
+        <p>{{ motivoRecusa }}</p>
+      </div>
+    </div>
+    }
+
+    <section class="sige-section cardapio-secao" aria-labelledby="dados-refeicao-title">
+      <h2 id="dados-refeicao-title">Dados da refeição</h2>
+      <div class="cardapio-grid">
+        <div class="cardapio-campo">
+          <label for="refeicao">Refeição *</label>
+          <select id="refeicao" name="refeicao" [(ngModel)]="refeicao" [disabled]="salvando"
+            [class.campo-invalido]="formSubmitted && !refeicao">
+            <option value="" disabled>Selecione</option>
+            @for (opcao of refeicoes; track opcao.valor) {
+            <option [value]="opcao.valor">{{ opcao.label }}</option>
+            }
+          </select>
+          @if (formSubmitted && !refeicao) {
+          <small class="mensagem-campo-invalido">Selecione a refeição.</small>
+          }
+        </div>
+        <div class="cardapio-campo">
+          <label for="data">Data *</label>
+          <input id="data" name="data" type="date" [(ngModel)]="data" [disabled]="salvando"
+            [class.campo-invalido]="formSubmitted && !data">
+          @if (formSubmitted && !data) {
+          <small class="mensagem-campo-invalido">Informe a data.</small>
+          }
+        </div>
+        <div class="cardapio-campo">
+          <label for="estimativa">Estimativa de pessoas *</label>
+          <input id="estimativa" name="estimativa" type="number" min="1" step="1" placeholder="Ex.: 550"
+            [(ngModel)]="estimativaPessoas" [disabled]="salvando"
+            [class.campo-invalido]="formSubmitted && !(estimativaPessoas! > 0)">
+          @if (formSubmitted && !(estimativaPessoas! > 0)) {
+          <small class="mensagem-campo-invalido">Informe quantas pessoas são esperadas.</small>
+          }
+        </div>
+      </div>
+
+      <div class="cardapio-campo">
+        <label for="preparacoes">Preparações *</label>
+        <textarea id="preparacoes" name="preparacoes" rows="5" [(ngModel)]="preparacoes" [disabled]="salvando"
+          aria-describedby="preparacoesAjuda"
+          placeholder="COXA E SOBRECOXA AO MOLHO&#10;ARROZ BRANCO&#10;FEIJÃO CARIOCA&#10;SALADA: MAIONESE DE BATATA DOCE&#10;SOBREMESA: MELÃO"
+          [class.campo-invalido]="formSubmitted && !preparacoes.trim()"></textarea>
+        <small id="preparacoesAjuda" class="texto-apoio">Uma preparação por linha, como aparecerá no documento.</small>
+        @if (formSubmitted && !preparacoes.trim()) {
+        <small class="mensagem-campo-invalido">Informe ao menos uma preparação.</small>
+        }
+      </div>
+    </section>
+
+    <section class="sige-section cardapio-secao" aria-labelledby="detalhamento-title">
+      <div class="cardapio-secao__cabecalho">
+        <div>
+          <h2 id="detalhamento-title">Detalhamento</h2>
+          <p class="texto-apoio">
+            Escolha os gêneros do estoque. O saldo disponível já desconta o que está reservado em outros cardápios enviados.
+          </p>
+        </div>
+      </div>
+
+      @if (!disponibilidadeCarregada) {
+      <app-estado-conteudo tipo="loading" mensagem="Consultando os saldos do estoque..." [compacto]="true"></app-estado-conteudo>
+      } @else if (semEstoque) {
+      <div class="cardapio-aviso cardapio-aviso--recusa" role="alert">
+        <i class="bi bi-box-seam" aria-hidden="true"></i>
+        <div>
+          <strong>Não há gêneros com saldo disponível no estoque.</strong>
+          <p>O cardápio é montado a partir do estoque. Aguarde o registro de entradas para criar um cardápio.</p>
+        </div>
+      </div>
+      } @else {
+      @for (secao of secoes; track secao; let indiceSecao = $index) {
+      <div class="detalhamento-secao">
+        <div class="detalhamento-secao__titulo">
+          @if (indiceSecao === 0) {
+          <h3>Preparações principais</h3>
+          } @else {
+          <label class="visually-hidden" [for]="'secao' + indiceSecao">Título da seção</label>
+          <input [id]="'secao' + indiceSecao" [name]="'secao' + indiceSecao" type="text" maxlength="150"
+            placeholder="Ex.: SALADA: MAIONESE DE BATATA DOCE E ALFACE" [(ngModel)]="secao.titulo"
+            [disabled]="salvando" [class.campo-invalido]="formSubmitted && secaoSemTitulo(secao, indiceSecao)">
+          <button type="button" class="sige-button sige-button--danger-outline sige-button--sm" [disabled]="salvando"
+            (click)="removerSecao(indiceSecao)">
+            <i class="bi bi-trash3" aria-hidden="true"></i> Remover seção
+          </button>
+          }
+        </div>
+        @if (formSubmitted && secaoSemTitulo(secao, indiceSecao)) {
+        <small class="mensagem-campo-invalido">Dê um título a esta seção (ex.: SOBREMESA: FRUTA).</small>
+        }
+
+        <div class="detalhamento-cabecalho" aria-hidden="true">
+          <span>Gênero</span><span>Quantidade</span><span>Observações</span><span></span>
+        </div>
+
+        @for (linha of secao.linhas; track linha; let indiceLinha = $index) {
+        <div class="detalhamento-linha" [class.detalhamento-linha--erro]="excedeSaldo(linha.item_generico)">
+          <div class="cardapio-campo">
+            <label class="detalhamento-rotulo" [for]="'genero' + indiceSecao + '-' + indiceLinha">Gênero</label>
+            <select [id]="'genero' + indiceSecao + '-' + indiceLinha" [name]="'genero' + indiceSecao + '-' + indiceLinha"
+              [ngModel]="linha.item_generico" (ngModelChange)="linha.item_generico = $event; ajustarAoSaldo(linha)"
+              [disabled]="salvando"
+              [class.campo-invalido]="(formSubmitted && linhaInvalida(linha) && !linha.item_generico) || generoSemSaldo(linha.item_generico)">
+              <option [ngValue]="null">Selecione um gênero</option>
+              @for (genero of disponibilidade; track genero.item_generico_id) {
+              <option [ngValue]="genero.item_generico_id"
+                [disabled]="+genero.disponivel <= 0 && linha.item_generico !== genero.item_generico_id">
+                {{ genero.descricao }} · {{ unidadeComEmbalagem(genero) }} ·
+                {{ +genero.disponivel > 0 ? 'disponível ' + formatarQuantidade(genero.disponivel) : 'sem saldo' }}
+              </option>
+              }
+            </select>
+            @if (generoDe(linha.item_generico); as genero) {
+            @if (generoSemSaldo(linha.item_generico)) {
+            <small class="mensagem-campo-invalido">Sem saldo em estoque. Escolha outro gênero.</small>
+            } @else if (excedeSaldo(linha.item_generico)) {
+            <small class="mensagem-campo-invalido">
+              Sem saldo suficiente: {{ formatarQuantidade(totalPlanejado(linha.item_generico)) }} planejado(s){{ repetidoNoCardapio(linha.item_generico) ? ' no total do cardápio' : '' }},
+              {{ formatarQuantidade(genero.disponivel) }} {{ genero.unidade_medida }} disponível(is).
+            </small>
+            } @else if (estoqueBaixo(linha.item_generico)) {
+            <small class="aviso-estoque-baixo">
+              <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+              @if (restanteAposCardapio(linha.item_generico) <= 0) {
+              Estoque baixo: este cardápio usa todo o saldo disponível ({{ formatarQuantidade(genero.disponivel) }} {{ genero.unidade_medida }}).
+              } @else {
+              Estoque baixo: restarão {{ formatarQuantidade(restanteAposCardapio(linha.item_generico)) }} de
+              {{ formatarQuantidade(genero.disponivel) }} {{ genero.unidade_medida }} disponível(is).
+              }
+            </small>
+            @if (podePedirReforco && reforco?.linha !== linha) {
+            <button type="button" class="botao-reforco" [disabled]="salvando" (click)="abrirReforco(linha)">
+              <i class="bi bi-plus-circle" aria-hidden="true"></i> Pedir reforço ao Diretor
+            </button>
+            }
+            } @else {
+            <small class="texto-apoio">
+              Disponível: {{ formatarQuantidade(genero.disponivel) }} {{ genero.unidade_medida }}
+              @if (+genero.reservado > 0) { ({{ formatarQuantidade(genero.reservado) }} reservado(s) em outros cardápios) }
+            </small>
+            }
+            }
+          </div>
+
+          <div class="cardapio-campo">
+            <label class="detalhamento-rotulo" [for]="'quantidade' + indiceSecao + '-' + indiceLinha">Quantidade</label>
+            <div class="campo-com-unidade">
+              <input [id]="'quantidade' + indiceSecao + '-' + indiceLinha" [name]="'quantidade' + indiceSecao + '-' + indiceLinha"
+                type="number" min="0.001" step="0.001" placeholder="0" [(ngModel)]="linha.quantidade"
+                [max]="maximoDaLinha(linha)" [disabled]="salvando || !linha.item_generico || generoSemSaldo(linha.item_generico)"
+                (change)="ajustarAoSaldo(linha)"
+                [class.campo-invalido]="(formSubmitted && linhaInvalida(linha) && !(linha.quantidade! > 0)) || excedeSaldo(linha.item_generico)">
+              <span>{{ generoDe(linha.item_generico)?.unidade_medida || '—' }}</span>
+            </div>
+            @if (foiAjustada(linha)) {
+            <small class="aviso-estoque-baixo">Ajustado ao máximo disponível.</small>
+            }
+          </div>
+
+          <div class="cardapio-campo">
+            <label class="detalhamento-rotulo" [for]="'obs' + indiceSecao + '-' + indiceLinha">Observações</label>
+            <input [id]="'obs' + indiceSecao + '-' + indiceLinha" [name]="'obs' + indiceSecao + '-' + indiceLinha"
+              type="text" maxlength="255" placeholder="Ex.: Cortar em cubinhos p/ o frango" [(ngModel)]="linha.observacao"
+              [disabled]="salvando">
+          </div>
+
+          <button type="button" class="detalhamento-remover" [disabled]="salvando"
+            [attr.aria-label]="'Remover linha ' + (indiceLinha + 1)" (click)="removerLinha(secao, indiceLinha)">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        @if (reforco && reforco.linha === linha) {
+        <div class="reforco-painel" role="group" [attr.aria-labelledby]="'reforcoTitulo' + indiceSecao + '-' + indiceLinha">
+          <div class="reforco-painel__cabecalho">
+            <strong [id]="'reforcoTitulo' + indiceSecao + '-' + indiceLinha">Pedir reforço de {{ reforco.genero.descricao }} ao Diretor</strong>
+            <button type="button" class="detalhamento-remover" aria-label="Fechar pedido de reforço" (click)="fecharReforco()">
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+          </div>
+          <p class="texto-apoio">
+            O reforço aumenta a quantidade empenhada junto ao fornecedor. O saldo em estoque só aumenta quando a entrega
+            for recebida, então este cardápio continua limitado ao saldo atual.
+          </p>
+
+          @if (reforco.carregando) {
+          <app-estado-conteudo tipo="loading" mensagem="Consultando os empenhos deste gênero..." [compacto]="true"></app-estado-conteudo>
+          } @else if (!reforco.opcoes.length && !reforco.erro) {
+          <p class="aviso-estoque-baixo">Este gênero não está em nenhum empenho, então não há como pedir reforço.</p>
+          } @else if (reforco.opcoes.length) {
+          <fieldset class="reforco-opcoes">
+            <legend>Empenho a reforçar</legend>
+            @for (opcao of reforco.opcoes; track opcao.item_empenho) {
+            <label class="reforco-opcao" [class.reforco-opcao--indisponivel]="saldoArp(opcao) < 1">
+              <input type="radio" [name]="'reforcoEmpenho' + indiceSecao + '-' + indiceLinha" [value]="opcao.item_empenho"
+                [(ngModel)]="reforco.itemEmpenho" [disabled]="saldoArp(opcao) < 1 || reforco.enviando">
+              <span>
+                <b>Empenho {{ opcao.empenho_codigo }}</b> · ARP {{ opcao.ata_numero }} · {{ opcao.fornecedor }}
+                <small>
+                  Saldo na ARP: {{ formatarQuantidade(opcao.saldo_disponivel_ata) }} {{ opcao.unidade_medida }}
+                  @if (opcao.possui_pedido_pendente) { · já existe um pedido aguardando o Diretor }
+                </small>
+              </span>
+            </label>
+            }
+          </fieldset>
+
+          <div class="reforco-campos">
+            <div class="cardapio-campo">
+              <label [for]="'reforcoQuantidade' + indiceSecao + '-' + indiceLinha">Quantidade ({{ reforco.genero.unidade_medida }}) *</label>
+              <input [id]="'reforcoQuantidade' + indiceSecao + '-' + indiceLinha" type="number" min="1" step="0.01"
+                [max]="opcaoReforcoSelecionada ? saldoArp(opcaoReforcoSelecionada) : null" [(ngModel)]="reforco.quantidade"
+                [disabled]="reforco.enviando || !reforco.itemEmpenho">
+              @if (opcaoReforcoSelecionada) {
+              <small class="texto-apoio">De 1 até {{ formatarQuantidade(saldoArp(opcaoReforcoSelecionada)) }} {{ reforco.genero.unidade_medida }} (saldo da ARP).</small>
+              }
+            </div>
+            <div class="cardapio-campo">
+              <label [for]="'reforcoJustificativa' + indiceSecao + '-' + indiceLinha">Justificativa *</label>
+              <textarea [id]="'reforcoJustificativa' + indiceSecao + '-' + indiceLinha" rows="2" maxlength="1000"
+                [(ngModel)]="reforco.justificativa" [disabled]="reforco.enviando"></textarea>
+            </div>
+          </div>
+          }
+
+          @if (reforco.erro) {
+          <small class="mensagem-campo-invalido" role="alert">{{ reforco.erro }}</small>
+          }
+
+          <div class="reforco-acoes">
+            <button type="button" class="sige-button sige-button--secondary sige-button--sm" [disabled]="reforco.enviando"
+              (click)="fecharReforco()">Cancelar</button>
+            @if (reforco.opcoes.length) {
+            <button type="button" class="sige-button sige-button--primary sige-button--sm" [disabled]="!pedidoReforcoValido"
+              (click)="enviarReforco()">
+              @if (reforco.enviando) {
+              <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              }
+              Enviar pedido
+            </button>
+            }
+          </div>
+        </div>
+        }
+        }
+
+        <button type="button" class="sige-button sige-button--secondary sige-button--sm" [disabled]="salvando"
+          (click)="adicionarLinha(secao)">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar gênero
+        </button>
+      </div>
+      }
+
+      <button type="button" class="sige-button sige-button--secondary" [disabled]="salvando" (click)="adicionarSecao()">
+        <i class="bi bi-collection" aria-hidden="true"></i> Adicionar seção (salada, sobremesa...)
+      </button>
+      }
+    </section>
+
+    <section class="sige-section cardapio-secao" aria-labelledby="observacoes-title">
+      <h2 id="observacoes-title">Observações</h2>
+      <div class="cardapio-campo">
+        <label class="visually-hidden" for="observacoes">Observações gerais</label>
+        <textarea id="observacoes" name="observacoes" rows="3" [(ngModel)]="observacoes" [disabled]="salvando"
+          placeholder="Observações gerais do cardápio (opcional)"></textarea>
+      </div>
+    </section>
+
+    @if (generosSemSaldo.length) {
+    <div class="cardapio-aviso cardapio-aviso--recusa" role="alert">
+      <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+      <div>
+        <strong>O cardápio não pode ser salvo: falta saldo em estoque.</strong>
+        <p>
+          Reduza a quantidade de:
+          @for (genero of generosSemSaldo; track genero.item_generico_id; let ultimo = $last) {
+          {{ genero.descricao }} ({{ formatarQuantidade(genero.disponivel) }} {{ genero.unidade_medida }} disponível){{ ultimo ? '.' : ', ' }}
+          }
+          Ajuste as quantidades ou escolha outros gêneros para salvar.
+        </p>
+      </div>
+    </div>
+    }
+
+    @if (disponibilidadeCarregada && !semEstoque && !itensPreenchidos.length) {
+    <div class="cardapio-aviso cardapio-aviso--info" role="status">
+      <i class="bi bi-info-circle" aria-hidden="true"></i>
+      <div><p>Adicione ao menos um gênero do estoque ao detalhamento para salvar o cardápio.</p></div>
+    </div>
+    }
+
+    @if (erro) {
+    <div class="cardapio-aviso cardapio-aviso--recusa" role="alert">
+      <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+      <div><p>{{ erro }}</p></div>
+    </div>
+    }
+
+    <div class="cardapio-acoes">
+      <a class="sige-button sige-button--secondary" [routerLink]="modoEdicao ? ['/cardapio'] : ['/cardapios']"
+        [queryParams]="modoEdicao ? { id: id } : {}">Cancelar</a>
+      <button type="submit" class="sige-button sige-button--secondary" [disabled]="!podeSalvar">
+        <i class="bi bi-save" aria-hidden="true"></i> Salvar rascunho
+      </button>
+      <button type="button" class="sige-button sige-button--primary" [disabled]="!podeEnviar" (click)="salvarEEnviar()">
+        @if (salvando) {
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        } @else {
+        <i class="bi bi-send" aria-hidden="true"></i>
+        }
+        Enviar ao estoque
+      </button>
+    </div>
+  </form>
+  }
+</main>

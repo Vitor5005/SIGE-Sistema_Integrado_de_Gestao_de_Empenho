@@ -3,11 +3,13 @@ import { Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from "@angular/router";
 import { filter } from 'rxjs';
+import { CardapioResumo } from '../../../model/cardapio';
 import { OrdemEntrega } from '../../../model/ordem_entrega';
 import { PendenciaFornecedor } from '../../../model/pendencia_fornecedor';
 import { ReforcoParaPedido } from '../../../model/reforco_para_pedido';
 import { SolicitacaoReforco } from '../../../model/solicitacao_reforco';
 import { Auth } from '../../../service/auth';
+import { CardapioService } from '../../../service/cardapio.service';
 import { OrdemEntregaService } from '../../../service/ordem-entrega.service';
 import { PendenciaFornecedorService } from '../../../service/pendencia-fornecedor.service';
 import { ReforcoParaPedidoService } from '../../../service/reforco-para-pedido.service';
@@ -37,6 +39,7 @@ export class Cabecalho {
     private solicitacaoReforcoService: SolicitacaoReforcoService,
     private reforcoParaPedidoService: ReforcoParaPedidoService,
     private ordemEntregaService: OrdemEntregaService,
+    private cardapioService: CardapioService,
   ) { }
 
   /** Quantos dias antes da data prevista a entrega passa a aparecer para o Estoquista. */
@@ -61,9 +64,18 @@ export class Cabecalho {
     return pode(Recurso.ESTOQUE, Acao.REGISTRAR_RECEBIMENTO);
   }
 
+  cardapiosPendentes: CardapioResumo[] = [];
+  totalCardapiosPendentes = 0;
+  erroCardapiosPendentes = false;
+
+  /** Estoquista aprova retiradas e confirma consumos; Nutricionista corrige recusas e informa o consumo real. */
+  get podeVerCardapios(): boolean {
+    return pode(Recurso.CARDAPIO, Acao.APROVAR) || pode(Recurso.CARDAPIO, Acao.EDITAR);
+  }
+
   get podeVerAlertas(): boolean {
     return this.podeVerPendencias || this.podeVerReforcos || this.podeVerRespostasReforco
-      || this.podeVerReforcosParaPedido || this.podeVerEntregasProximas;
+      || this.podeVerReforcosParaPedido || this.podeVerEntregasProximas || this.podeVerCardapios;
   }
 
   reforcos: SolicitacaoReforco[] = [];
@@ -93,7 +105,8 @@ export class Cabecalho {
       + (this.podeVerReforcos ? this.totalReforcos : 0)
       + (this.podeVerRespostasReforco ? this.totalRespostasReforco : 0)
       + (this.podeVerReforcosParaPedido ? this.totalReforcosParaPedido : 0)
-      + (this.podeVerEntregasProximas ? this.totalEntregasProximas : 0);
+      + (this.podeVerEntregasProximas ? this.totalEntregasProximas : 0)
+      + (this.podeVerCardapios ? this.totalCardapiosPendentes : 0);
   }
 
   carregarAlertas(): void {
@@ -102,6 +115,42 @@ export class Cabecalho {
     this.carregarRespostasReforco();
     this.carregarReforcosParaPedido();
     this.carregarEntregasProximas();
+    this.carregarCardapiosPendentes();
+  }
+
+  carregarCardapiosPendentes(): void {
+    if (!this.podeVerCardapios) {
+      return;
+    }
+
+    const status = pode(Recurso.CARDAPIO, Acao.APROVAR) ? 'ENVIADO,CONSUMO_INFORMADO' : 'RECUSADO,APROVADO';
+    this.cardapioService.listar({ status }, 1, 5).subscribe({
+      next: (resposta) => {
+        this.cardapiosPendentes = resposta.results;
+        this.totalCardapiosPendentes = resposta.count;
+        this.erroCardapiosPendentes = false;
+      },
+      error: () => {
+        this.erroCardapiosPendentes = true;
+      },
+    });
+  }
+
+  textoPendenciaCardapio(cardapio: CardapioResumo): string {
+    switch (cardapio.status) {
+      case 'ENVIADO':
+        return 'Aguardando a aprovação da retirada dos gêneros.';
+      case 'CONSUMO_INFORMADO':
+        return 'Consumo real informado. Confira e acerte o estoque.';
+      case 'RECUSADO':
+        return 'Retirada recusada pelo estoque. Corrija e reenvie.';
+      case 'APROVADO':
+        return cardapio.motivo_recusa
+          ? 'Consumo devolvido pelo estoque para correção.'
+          : 'Retirada aprovada. Após o preparo, informe o consumo real.';
+      default:
+        return cardapio.status_descricao;
+    }
   }
 
   carregarReforcosParaPedido(): void {
@@ -231,6 +280,8 @@ export class Cabecalho {
     '/visualizar-empenhos',
     '/visualizar-empenho',
   ] as const;
+
+  readonly rotasCardapios = ['/cardapios', '/cardapio'] as const;
 
   readonly rotasCadastros = [
     '/visualizar-fornecedores',

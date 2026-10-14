@@ -35,6 +35,7 @@ export class ExtratoEstoque {
     SAIDA_PRODUCAO: 'Saída para produção',
     SAIDA_DOACAO: 'Saída para doação',
     SAIDA_PERDA: 'Saída por perda',
+    DEVOLUCAO_PREPARO: 'Devolução de sobras do preparo',
     ESTORNO: 'Estorno',
   };
 

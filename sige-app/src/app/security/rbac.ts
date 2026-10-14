@@ -25,6 +25,7 @@ export enum Recurso {
   PENDENCIA_FORNECEDOR = 'pendencia_fornecedor',
   SOLICITACAO_REFORCO = 'solicitacao_reforco',
   PAINEL_NUTRICIONISTA = 'painel_nutricionista',
+  CARDAPIO = 'cardapio',
 }
 
 export enum Acao {
@@ -48,6 +49,7 @@ export enum Acao {
   ESTORNAR = 'estornar',
   CONSULTAR_EXTRATO = 'consultar_extrato',
   CONSULTAR_CONSOLIDADO = 'consultar_consolidado',
+  APROVAR = 'aprovar',
 }
 
 type Matriz = Partial<Record<Recurso, Partial<Record<Acao, readonly Papel[]>>>>;
@@ -165,6 +167,13 @@ export const MATRIZ_PERMISSOES: Matriz = {
   },
   [Recurso.PAINEL_NUTRICIONISTA]: {
     [Acao.CONSULTAR]: [Papel.NUTRICIONISTA],
+  },
+  [Recurso.CARDAPIO]: {
+    [Acao.CONSULTAR]: DIRETOR_NUTRICIONISTA_ESTOQUISTA,
+    [Acao.CADASTRAR]: [Papel.NUTRICIONISTA],
+    [Acao.EDITAR]: [Papel.NUTRICIONISTA],
+    [Acao.EXCLUIR]: [Papel.NUTRICIONISTA],
+    [Acao.APROVAR]: ESTOQUISTA,
   },
 };
 

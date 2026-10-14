@@ -63,6 +63,12 @@
     </a>
     }
 
+    @if (pode(Recurso.CARDAPIO, Acao.CONSULTAR)) {
+    <a class="nav-item" routerLink="/cardapios" [class.is-active]="isGrupoAtivo(rotasCardapios)">
+      Cardápios
+    </a>
+    }
+
     @if (pode(Recurso.FORNECEDOR, Acao.CONSULTAR) && pode(Recurso.GENERO_ALIMENTICIO, Acao.CONSULTAR)) {
     <div class="dropdown">
       <button
@@ -128,6 +134,38 @@
       </button>
 
       <div class="dropdown-menu dropdown-menu-end dropdown-menu--sige alertas-dropdown" aria-labelledby="menuAlertas">
+        @if (podeVerCardapios) {
+        <span class="dropdown-header">Cardápios</span>
+
+        @if (erroCardapiosPendentes) {
+        <p class="alertas-vazio">Não foi possível carregar os cardápios.</p>
+        } @else if (!cardapiosPendentes.length) {
+        <p class="alertas-vazio">Nenhum cardápio aguardando você.</p>
+        } @else {
+        <ul class="alertas-lista">
+          @for (cardapio of cardapiosPendentes; track cardapio.id) {
+          <li class="alerta-item">
+            <div class="alerta-topo">
+              <strong>{{ cardapio.refeicao_descricao }} de {{ cardapio.data | date: 'dd/MM/yyyy' }}</strong>
+              <span>{{ cardapio.atualizado_em | date: 'dd/MM HH:mm' }}</span>
+            </div>
+            <p class="alerta-resumo">{{ textoPendenciaCardapio(cardapio) }}</p>
+            @if (cardapio.motivo_recusa) {
+            <p class="alerta-motivo">"{{ cardapio.motivo_recusa }}"</p>
+            }
+            <div class="alerta-rodape">
+              <span>{{ cardapio.criado_por_nome }} · {{ cardapio.total_itens }} gênero(s)</span>
+              <a class="alerta-ciente" [routerLink]="['/cardapio']" [queryParams]="{ id: cardapio.id }">Abrir</a>
+            </div>
+          </li>
+          }
+        </ul>
+        @if (totalCardapiosPendentes > cardapiosPendentes.length) {
+        <p class="alertas-vazio">E mais {{ totalCardapiosPendentes - cardapiosPendentes.length }} cardápio(s).</p>
+        }
+        }
+        }
+
         @if (podeVerRespostasReforco) {
         <span class="dropdown-header">Respostas aos seus pedidos de reforço</span>
 

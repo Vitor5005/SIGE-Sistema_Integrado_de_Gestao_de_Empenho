@@ -26,6 +26,7 @@ export interface MovimentacaoEstoque {
   data_hora: string;
   observacao: string | null;
   ordem_codigo: string | null;
+  cardapio_id: number | null;
   usuario_nome: string;
   papel: string;
 }
