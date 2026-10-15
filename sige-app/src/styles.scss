@@ -1126,6 +1126,11 @@ textarea {
     display: none !important;
   }
 
+  html,
+  body {
+    min-height: 0 !important;
+  }
+
   body,
   .sige-app-main {
     padding: 0 !important;

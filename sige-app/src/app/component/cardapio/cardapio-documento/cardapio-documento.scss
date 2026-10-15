@@ -187,22 +187,78 @@
   }
 }
 
+// Layout compacto da folha impressa (aplicado no "beforeprint"): fonte e espaçamentos menores
+// para que o cardápio caiba em uma única página A4. Se ainda não couber, o componente aplica zoom.
+.documento.documento--impressao {
+  max-width: none;
+  margin: 0;
+  padding: 8mm 12mm;
+  border: 0;
+  box-shadow: none;
+
+  .documento__cabecalho {
+    grid-template-columns: 3.75rem minmax(0, 1fr) 3.75rem;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .documento__instituicao {
+    font-size: 0.95rem;
+    line-height: 1.2;
+  }
+
+  .documento__refeicao {
+    margin-bottom: 0.35rem;
+    font-size: 1.25rem;
+  }
+
+  .documento__titulo {
+    margin-bottom: 0.35rem;
+    font-size: 1rem;
+  }
+
+  .documento__data {
+    margin-bottom: 0.4rem;
+    font-size: 0.9rem;
+  }
+
+  .documento__tabela {
+    font-size: 0.78rem;
+    line-height: 1.25;
+
+    th,
+    td {
+      padding: 0.1rem 0.4rem;
+    }
+
+    .observacao {
+      font-size: 0.72rem;
+    }
+
+    .observacoes {
+      height: auto;
+      min-height: 2.5rem;
+    }
+  }
+
+  .documento__assinatura {
+    margin-top: 1.25rem;
+    font-size: 0.85rem;
+  }
+}
+
 @media print {
   .documento {
     max-width: none;
-    padding: 14mm 16mm;
+    margin: 0;
+    padding: 8mm 12mm;
     border: 0;
     box-shadow: none;
+    break-after: avoid;
   }
 
-  // Uma linha da tabela, o cabeçalho e a assinatura nunca são partidos entre duas páginas.
-  .documento__tabela tr,
   .documento__cabecalho,
   .documento__assinatura {
     break-inside: avoid;
-  }
-
-  .documento__assinatura {
-    break-before: avoid;
   }
 }

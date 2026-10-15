@@ -1,8 +1,14 @@
 import { DatePipe, UpperCasePipe } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, ElementRef, HostListener, Input, ViewChild } from '@angular/core';
 
 import { Cardapio, ItemCardapio } from '../../../model/cardapio';
 import { agruparPorSecao, formatarQuantidade } from '../cardapio-util';
+
+/** Folha A4 em px CSS (96 px por polegada). */
+const MM = 96 / 25.4;
+const LARGURA_A4 = 210 * MM;
+// Um pouco abaixo dos 297 mm: arredondamentos do navegador não podem empurrar nada para uma 2ª página.
+const ALTURA_UTIL_A4 = 293 * MM;
 
 /** Cardápio quantitativo no mesmo modelo da folha impressa usada pelo Restaurante Universitário. */
 @Component({
@@ -13,6 +19,38 @@ import { agruparPorSecao, formatarQuantidade } from '../cardapio-util';
 })
 export class CardapioDocumento {
   @Input({ required: true }) cardapio!: Cardapio;
+
+  @ViewChild('documento', { static: true }) private documento!: ElementRef<HTMLElement>;
+
+  /**
+   * O PDF tem de caber em uma única página. Antes de imprimir, aplica o layout compacto
+   * de impressão, mede a altura e, se ainda passar de uma folha A4, reduz tudo (zoom)
+   * na proporção necessária, alargando a área para que a largura continue a da folha.
+   */
+  @HostListener('window:beforeprint')
+  ajustarParaUmaPagina(): void {
+    const elemento = this.documento.nativeElement;
+    elemento.classList.add('documento--impressao');
+    elemento.style.removeProperty('zoom');
+    elemento.style.width = `${LARGURA_A4}px`;
+
+    const escala = Math.min(1, ALTURA_UTIL_A4 / elemento.scrollHeight);
+    if (escala < 1) {
+      elemento.style.width = `${LARGURA_A4 / escala}px`;
+      // A altura muda com a nova largura (menos quebras de linha); mede de novo.
+      const escalaFinal = Math.min(1, ALTURA_UTIL_A4 / elemento.scrollHeight);
+      elemento.style.width = `${LARGURA_A4 / escalaFinal}px`;
+      elemento.style.setProperty('zoom', String(escalaFinal));
+    }
+  }
+
+  @HostListener('window:afterprint')
+  restaurarDepoisDaImpressao(): void {
+    const elemento = this.documento.nativeElement;
+    elemento.classList.remove('documento--impressao');
+    elemento.style.removeProperty('zoom');
+    elemento.style.removeProperty('width');
+  }
 
   get preparacoes(): string[] {
     return this.cardapio.preparacoes.split('\n').map((linha) => linha.trim()).filter(Boolean);
