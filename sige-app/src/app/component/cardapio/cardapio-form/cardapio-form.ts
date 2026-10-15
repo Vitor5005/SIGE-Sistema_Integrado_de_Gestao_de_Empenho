@@ -78,6 +78,8 @@ export class CardapioForm implements OnInit {
 
   refeicao: RefeicaoCardapio | '' = '';
   data = this.hoje();
+  /** Data já gravada do rascunho em edição; continua aceita mesmo que já tenha passado. */
+  private dataOriginal = '';
   estimativaPessoas: number | null = null;
   preparacoes = '';
   observacoes = '';
@@ -137,7 +139,8 @@ export class CardapioForm implements OnInit {
     return this.id !== null;
   }
 
-  private hoje(): string {
+  /** Hoje no formato do campo de data (aaaa-mm-dd), no fuso do navegador. */
+  hoje(): string {
     const agora = new Date();
     return [
       agora.getFullYear(),
@@ -169,6 +172,7 @@ export class CardapioForm implements OnInit {
   private preencher(cardapio: Cardapio): void {
     this.refeicao = cardapio.refeicao;
     this.data = cardapio.data;
+    this.dataOriginal = cardapio.data;
     this.estimativaPessoas = cardapio.estimativa_pessoas;
     this.preparacoes = cardapio.preparacoes;
     this.observacoes = cardapio.observacoes;
@@ -401,9 +405,14 @@ export class CardapioForm implements OnInit {
     return indice > 0 && !secao.titulo.trim() && secao.linhas.some((linha) => this.linhaPreenchida(linha));
   }
 
+  /** Não se cria cardápio para um dia que já passou; um rascunho antigo mantém a data que já tinha. */
+  get dataNoPassado(): boolean {
+    return Boolean(this.data) && this.data < this.hoje() && this.data !== this.dataOriginal;
+  }
+
   get dadosGeraisValidos(): boolean {
-    return Boolean(this.refeicao) && Boolean(this.data) && Number(this.estimativaPessoas) > 0
-      && Boolean(this.preparacoes.trim());
+    return Boolean(this.refeicao) && Boolean(this.data) && !this.dataNoPassado
+      && Number(this.estimativaPessoas) > 0 && Boolean(this.preparacoes.trim());
   }
 
   get itensPreenchidos(): { secao: string; linha: LinhaForm }[] {

@@ -1,11 +1,20 @@
 from collections import defaultdict
+from datetime import datetime
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from django.db import transaction
 from rest_framework import serializers
 
 from cardapio.models import Cardapio, ItemCardapio
 from cardapio.services import faltas_de_saldo
+
+# O servidor trabalha em UTC; "hoje" é o dia no Acre, onde fica o Restaurante Universitário.
+FUSO_RU = ZoneInfo('America/Rio_Branco')
+
+
+def hoje_no_ru():
+    return datetime.now(FUSO_RU).date()
 
 
 def _nome_usuario(usuario):
@@ -67,6 +76,14 @@ class CardapioSerializer(serializers.ModelSerializer):
 
     def get_finalizado_por_nome(self, cardapio):
         return _nome_usuario(cardapio.finalizado_por)
+
+    def validate_data(self, valor):
+        # Ao editar um rascunho antigo sem trocar a data, ela continua aceita.
+        if self.instance is not None and valor == self.instance.data:
+            return valor
+        if valor < hoje_no_ru():
+            raise serializers.ValidationError('A data do cardápio não pode estar no passado.')
+        return valor
 
     def validate_preparacoes(self, valor):
         linhas = [linha.strip() for linha in (valor or '').splitlines() if linha.strip()]

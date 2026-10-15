@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.urls import reverse
@@ -6,6 +7,7 @@ from rest_framework.test import APITestCase
 
 from cadastro.models import ItemGenerico
 from cardapio.models import Cardapio
+from cardapio.serializers import hoje_no_ru
 from estoque.models import Estoque, MovimentacaoEstoque
 from usuario.models import Usuario
 from utils.rbac import Papel
@@ -39,11 +41,11 @@ class CardapioFluxoTests(APITestCase):
         self.assertEqual(resposta.status_code, status.HTTP_201_CREATED, resposta.data)
         return resposta.data
 
-    def _post_cardapio(self, arroz='38', feijao='15'):
+    def _post_cardapio(self, arroz='38', feijao='15', data=None):
         self.client.force_authenticate(self.nutricionista)
         return self.client.post(reverse('cardapio-list'), {
             'refeicao': 'JANTAR',
-            'data': '2025-09-29',
+            'data': (data or hoje_no_ru() + timedelta(days=1)).isoformat(),
             'estimativa_pessoas': 550,
             'preparacoes': 'ARROZ BRANCO\nFEIJÃO CARIOCA',
             'itens': [
@@ -107,10 +109,22 @@ class CardapioFluxoTests(APITestCase):
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('Feijão carioca: sem saldo', str(resposta.data))
 
+    def test_nao_cria_cardapio_com_data_no_passado(self):
+        resposta = self._post_cardapio(data=hoje_no_ru() - timedelta(days=1))
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('data', resposta.data)
+        self.assertFalse(Cardapio.objects.exists())
+
+    def test_cria_cardapio_para_hoje(self):
+        resposta = self._post_cardapio(data=hoje_no_ru())
+
+        self.assertEqual(resposta.status_code, status.HTTP_201_CREATED, resposta.data)
+
     def test_nao_cria_cardapio_sem_generos(self):
         self.client.force_authenticate(self.nutricionista)
         resposta = self.client.post(reverse('cardapio-list'), {
-            'refeicao': 'JANTAR', 'data': '2025-09-29', 'estimativa_pessoas': 550,
+            'refeicao': 'JANTAR', 'data': hoje_no_ru().isoformat(), 'estimativa_pessoas': 550,
             'preparacoes': 'ARROZ BRANCO', 'itens': [],
         }, format='json')
 
