@@ -153,7 +153,7 @@ class PendenciaFornecedorViewSet(
     )
     serializer_class = PendenciaFornecedorSerializer
     rbac_resource = Recurso.PENDENCIA_FORNECEDOR
-    rbac_action_map = {'ciente': Acao.ALTERAR_STATUS}
+    rbac_action_map = {'ciente': Acao.ALTERAR_STATUS, 'limpar': Acao.ALTERAR_STATUS}
     escopo_por_papel = {
         Papel.TECNICO_ADMINISTRATIVO: lambda usuario: Q(destinatario=usuario) | Q(destinatario__isnull=True),
     }
@@ -183,3 +183,14 @@ class PendenciaFornecedorViewSet(
         pendencia.data_ciencia = timezone.now()
         pendencia.save(update_fields=['status', 'ciente_por', 'data_ciencia', 'data_atualizacao'])
         return Response(self.get_serializer(pendencia).data)
+
+    @action(detail=False, methods=['post'])
+    def limpar(self, request):
+        """Marca como cientes todas as pendências abertas visíveis ao usuário (botão "Limpar" do sino)."""
+        atualizados = self.get_queryset().filter(status=PendenciaFornecedor.Status.ABERTA).update(
+            status=PendenciaFornecedor.Status.CIENTE,
+            ciente_por=request.user,
+            data_ciencia=timezone.now(),
+            data_atualizacao=timezone.now(),
+        )
+        return Response({'atualizados': atualizados})

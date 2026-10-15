@@ -22,4 +22,9 @@ export class PendenciaFornecedorService {
   marcarCiente(id: number): Observable<PendenciaFornecedor> {
     return this.http.post<PendenciaFornecedor>(`${this.apiUrl}${id}/ciente/`, {});
   }
+
+  /** Marca como cientes todas as pendências abertas. */
+  limpar(): Observable<{ atualizados: number }> {
+    return this.http.post<{ atualizados: number }>(this.apiUrl + 'limpar/', {});
+  }
 }

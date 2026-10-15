@@ -54,6 +54,11 @@ export class SolicitacaoReforcoService {
     return this.http.post<SolicitacaoReforco>(`${this.apiUrl}${id}/marcar-vista/`, {});
   }
 
+  /** Marca como vistas todas as respostas do Diretor aos pedidos do usuário. */
+  marcarTodasVistas(): Observable<{ atualizados: number }> {
+    return this.http.post<{ atualizados: number }>(this.apiUrl + 'marcar-todas-vistas/', {});
+  }
+
   recusar(id: number, resposta: string): Observable<SolicitacaoReforco> {
     return this.http.post<SolicitacaoReforco>(`${this.apiUrl}${id}/recusar/`, { resposta });
   }

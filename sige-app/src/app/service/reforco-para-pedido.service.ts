@@ -21,4 +21,9 @@ export class ReforcoParaPedidoService {
   marcarCiente(id: number): Observable<ReforcoParaPedido> {
     return this.http.post<ReforcoParaPedido>(`${this.apiUrl}${id}/ciente/`, {});
   }
+
+  /** Marca todos os reforços como cientes. */
+  limpar(): Observable<{ atualizados: number }> {
+    return this.http.post<{ atualizados: number }>(this.apiUrl + 'limpar/', {});
+  }
 }

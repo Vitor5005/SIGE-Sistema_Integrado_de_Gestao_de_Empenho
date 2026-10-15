@@ -2,7 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from "@angular/router";
-import { filter } from 'rxjs';
+import { filter, forkJoin, Observable } from 'rxjs';
 import { CardapioResumo } from '../../../model/cardapio';
 import { OrdemEntrega } from '../../../model/ordem_entrega';
 import { PendenciaFornecedor } from '../../../model/pendencia_fornecedor';
@@ -76,6 +76,43 @@ export class Cabecalho {
   get podeVerAlertas(): boolean {
     return this.podeVerPendencias || this.podeVerReforcos || this.podeVerRespostasReforco
       || this.podeVerReforcosParaPedido || this.podeVerEntregasProximas || this.podeVerCardapios;
+  }
+
+  limpandoAlertas = false;
+
+  /** Avisos que só pedem ciência (o "Ciente"/"Ok" de cada item); o botão "Limpar" dispensa todos. */
+  get totalAlertasLimpaveis(): number {
+    return (this.podeVerPendencias ? this.totalPendencias : 0)
+      + (this.podeVerRespostasReforco ? this.totalRespostasReforco : 0)
+      + (this.podeVerReforcosParaPedido ? this.totalReforcosParaPedido : 0);
+  }
+
+  limparAlertas(): void {
+    const requisicoes: Observable<unknown>[] = [];
+    if (this.podeVerPendencias && this.totalPendencias) {
+      requisicoes.push(this.pendenciaService.limpar());
+    }
+    if (this.podeVerRespostasReforco && this.totalRespostasReforco) {
+      requisicoes.push(this.solicitacaoReforcoService.marcarTodasVistas());
+    }
+    if (this.podeVerReforcosParaPedido && this.totalReforcosParaPedido) {
+      requisicoes.push(this.reforcoParaPedidoService.limpar());
+    }
+    if (!requisicoes.length) {
+      return;
+    }
+
+    this.limpandoAlertas = true;
+    forkJoin(requisicoes).subscribe({
+      next: () => {
+        this.limpandoAlertas = false;
+        this.carregarAlertas();
+      },
+      error: () => {
+        this.limpandoAlertas = false;
+        this.carregarAlertas();
+      },
+    });
   }
 
   reforcos: SolicitacaoReforco[] = [];

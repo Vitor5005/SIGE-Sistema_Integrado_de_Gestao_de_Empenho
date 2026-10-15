@@ -134,7 +134,7 @@ class ReforcoParaPedidoViewSet(AuditoriaRBACMixin, viewsets.ReadOnlyModelViewSet
     ).order_by('-data', '-id')
     serializer_class = ReforcoParaPedidoSerializer
     rbac_resource = Recurso.OPERACAO_EMPENHO
-    rbac_action_map = {'ciente': Acao.GERAR_ORDEM}
+    rbac_action_map = {'ciente': Acao.GERAR_ORDEM, 'limpar': Acao.GERAR_ORDEM}
 
     @action(detail=True, methods=['post'])
     def ciente(self, request, pk=None):
@@ -142,6 +142,11 @@ class ReforcoParaPedidoViewSet(AuditoriaRBACMixin, viewsets.ReadOnlyModelViewSet
         operacao.ciente_tecnico = True
         operacao.save(update_fields=['ciente_tecnico'])
         return Response(self.get_serializer(operacao).data)
+
+    @action(detail=False, methods=['post'])
+    def limpar(self, request):
+        """Marca todos os avisos de reforço como cientes (botão "Limpar" do sino)."""
+        return Response({'atualizados': self.get_queryset().update(ciente_tecnico=True)})
 
 
 
@@ -166,6 +171,7 @@ class SolicitacaoReforcoViewSet(
         'atender': Acao.REFORCAR_EMPENHO,
         'recusar': Acao.ALTERAR_STATUS,
         'marcar_vista': Acao.CONSULTAR,
+        'marcar_todas_vistas': Acao.CONSULTAR,
     }
     filterset_fields = {
         'status': ['exact', 'in'],
@@ -262,3 +268,11 @@ class SolicitacaoReforcoViewSet(
             solicitacao.vista_pelo_solicitante = True
             solicitacao.save(update_fields=['vista_pelo_solicitante'])
         return Response(self.get_serializer(solicitacao).data)
+
+    @action(detail=False, methods=['post'], url_path='marcar-todas-vistas')
+    def marcar_todas_vistas(self, request):
+        """O solicitante dispensa de uma vez os avisos das respostas já dadas pelo Diretor."""
+        atualizados = SolicitacaoReforco.objects.filter(
+            solicitante=request.user, vista_pelo_solicitante=False,
+        ).exclude(status=SolicitacaoReforco.Status.PENDENTE).update(vista_pelo_solicitante=True)
+        return Response({'atualizados': atualizados})

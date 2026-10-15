@@ -134,6 +134,14 @@
       </button>
 
       <div class="dropdown-menu dropdown-menu-end dropdown-menu--sige alertas-dropdown" aria-labelledby="menuAlertas">
+        <div class="alertas-cabecalho">
+          <strong>Notificações</strong>
+          <button type="button" class="alertas-limpar" [disabled]="limpandoAlertas || !totalAlertasLimpaveis"
+            title="Marca como ciente todos os avisos já atendidos" (click)="limparAlertas()">
+            <i class="bi bi-check2-all" aria-hidden="true"></i> Limpar
+          </button>
+        </div>
+
         @if (podeVerCardapios) {
         <span class="dropdown-header">Cardápios</span>
 
