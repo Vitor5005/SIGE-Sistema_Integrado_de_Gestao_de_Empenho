@@ -18,11 +18,13 @@ export class CardapioService {
 
   constructor(private http: HttpClient) {}
 
-  listar(filtros: { search?: string; status?: string; refeicao?: string } = {}, page = 1, pageSize = 10):
+  listar(filtros: { search?: string; status?: string; refeicao?: string; pendentes?: boolean } = {}, page = 1, pageSize = 10):
     Observable<PaginatedResponse<CardapioResumo>> {
     let params = new HttpParams().set('page', page).set('page_size', pageSize);
     if (filtros.search) params = params.set('search', filtros.search);
     if (filtros.refeicao) params = params.set('refeicao', filtros.refeicao);
+    // O backend escolhe, pelo papel do usuário, os cardápios que aguardam uma ação dele.
+    if (filtros.pendentes) params = params.set('pendentes', 1);
     if (filtros.status) {
       params = filtros.status.includes(',')
         ? params.set('status__in', filtros.status)
@@ -54,6 +56,23 @@ export class CardapioService {
 
   enviar(id: number): Observable<Cardapio> {
     return this.http.post<Cardapio>(`${this.apiUrl}${id}/enviar/`, {});
+  }
+
+  cancelarEnvio(id: number): Observable<Cardapio> {
+    return this.http.post<Cardapio>(`${this.apiUrl}${id}/cancelar-envio/`, {});
+  }
+
+  solicitarAlteracao(id: number, motivo: string): Observable<Cardapio> {
+    return this.http.post<Cardapio>(`${this.apiUrl}${id}/solicitar-alteracao/`, { motivo });
+  }
+
+  recusarAlteracao(id: number, motivo: string): Observable<Cardapio> {
+    return this.http.post<Cardapio>(`${this.apiUrl}${id}/recusar-alteracao/`, { motivo });
+  }
+
+  /** Responde com o novo rascunho criado a partir do cardápio original. */
+  aceitarAlteracao(id: number): Observable<Cardapio> {
+    return this.http.post<Cardapio>(`${this.apiUrl}${id}/aceitar-alteracao/`, {});
   }
 
   aprovar(id: number, itens: QuantidadeItemCardapio[]): Observable<Cardapio> {

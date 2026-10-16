@@ -12,6 +12,12 @@ class Cardapio(models.Model):
     CONSUMO_INFORMADO -> FINALIZADO (sobras devolvidas / uso extra retirado).
     O Estoquista pode recusar o envio (RECUSADO) ou devolver o consumo
     informado para correção (volta a APROVADO).
+
+    Alterações de última hora: enquanto ENVIADO, a Nutricionista pode cancelar o envio
+    (volta a RASCUNHO). Depois de APROVADO, ela solicita a alteração (ALTERACAO_SOLICITADA);
+    se o Estoquista aceitar, o liberado volta ao estoque, este cardápio fica SUBSTITUIDO e
+    nasce um rascunho igual para ser ajustado e reenviado. As movimentações do estoque
+    continuam presas aos itens do cardápio original.
     """
 
     class Refeicao(models.TextChoices):
@@ -26,6 +32,8 @@ class Cardapio(models.Model):
         APROVADO = 'APROVADO', 'Retirada aprovada'
         CONSUMO_INFORMADO = 'CONSUMO_INFORMADO', 'Consumo aguardando confirmação'
         FINALIZADO = 'FINALIZADO', 'Finalizado'
+        ALTERACAO_SOLICITADA = 'ALTERACAO_SOLICITADA', 'Alteração aguardando o estoque'
+        SUBSTITUIDO = 'SUBSTITUIDO', 'Substituído por alteração'
 
     STATUS_EDITAVEIS = (Status.RASCUNHO, Status.RECUSADO)
 
@@ -35,9 +43,15 @@ class Cardapio(models.Model):
     # Uma preparação por linha (ex.: "ARROZ BRANCO").
     preparacoes = models.TextField()
     observacoes = models.TextField(blank=True, default='')
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.RASCUNHO)
+    status = models.CharField(max_length=25, choices=Status.choices, default=Status.RASCUNHO)
     # Motivo da última recusa do envio ou da devolução do consumo pelo Estoquista.
     motivo_recusa = models.CharField(max_length=500, blank=True, default='')
+    # Motivo do pedido de alteração feito pela Nutricionista após a aprovação.
+    motivo_alteracao = models.CharField(max_length=500, blank=True, default='')
+    # Rascunho criado quando o Estoquista aceita a alteração deste cardápio.
+    substituido_por = models.OneToOneField(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='substitui',
+    )
 
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='cardapios_criados',

@@ -220,3 +220,144 @@ class CardapioFluxoTests(APITestCase):
         }, format='json')
 
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # ---- Alterações de última hora ----
+
+    def _aprovar(self, cardapio, arroz='38', feijao='15'):
+        self.client.force_authenticate(self.nutricionista)
+        self.client.post(reverse('cardapio-enviar', args=[cardapio['id']]))
+        itens = self._itens(cardapio)
+        self.client.force_authenticate(self.estoquista)
+        resposta = self.client.post(reverse('cardapio-aprovar', args=[cardapio['id']]), {'itens': [
+            {'item': itens['Arroz'], 'quantidade': arroz},
+            {'item': itens['Feijão carioca'], 'quantidade': feijao},
+        ]}, format='json')
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+
+    def test_cancelar_envio_volta_a_rascunho_e_libera_a_reserva(self):
+        cardapio = self._criar_cardapio(arroz='30', feijao='1')
+        self.client.post(reverse('cardapio-enviar', args=[cardapio['id']]))
+
+        resposta = self.client.post(reverse('cardapio-cancelar-envio', args=[cardapio['id']]))
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        self.assertEqual(resposta.data['status'], Cardapio.Status.RASCUNHO)
+        self.assertIsNone(resposta.data['enviado_em'])
+        self.assertEqual(self._post_cardapio(arroz='20', feijao='1').status_code, status.HTTP_201_CREATED)
+        resposta = self.client.patch(
+            reverse('cardapio-detail', args=[cardapio['id']]), {'estimativa_pessoas': 500}, format='json',
+        )
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK)
+
+    def test_estoquista_nao_cancela_envio_e_aprovado_nao_pode_ser_cancelado(self):
+        cardapio = self._criar_cardapio()
+        self.client.post(reverse('cardapio-enviar', args=[cardapio['id']]))
+        self.client.force_authenticate(self.estoquista)
+        resposta = self.client.post(reverse('cardapio-cancelar-envio', args=[cardapio['id']]))
+        self.assertEqual(resposta.status_code, status.HTTP_403_FORBIDDEN)
+
+        self._aprovar(cardapio)
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.post(reverse('cardapio-cancelar-envio', args=[cardapio['id']]))
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_alteracao_aceita_devolve_o_liberado_e_cria_rascunho_igual(self):
+        cardapio = self._criar_cardapio()
+        self._aprovar(cardapio, arroz='30', feijao='15')
+        self.assertEqual(self._saldo(self.arroz), Decimal('10'))
+
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.post(
+            reverse('cardapio-solicitar-alteracao', args=[cardapio['id']]), {'motivo': 'Trocar o feijão.'},
+        )
+        self.assertEqual(resposta.data['status'], Cardapio.Status.ALTERACAO_SOLICITADA)
+        self.assertEqual(resposta.data['motivo_alteracao'], 'Trocar o feijão.')
+        self.assertEqual(self._saldo(self.arroz), Decimal('10'))  # nada volta antes do aceite
+
+        self.client.force_authenticate(self.estoquista)
+        resposta = self.client.post(reverse('cardapio-aceitar-alteracao', args=[cardapio['id']]))
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        novo = resposta.data
+        self.assertEqual(novo['status'], Cardapio.Status.RASCUNHO)
+        self.assertEqual(novo['substitui'], cardapio['id'])
+        self.assertEqual(
+            {item['descricao']: Decimal(item['quantidade_planejada']) for item in novo['itens']},
+            {'Arroz': Decimal('38'), 'Feijão carioca': Decimal('15')},
+        )
+        self.assertEqual(self._saldo(self.arroz), Decimal('40'))
+        self.assertEqual(self._saldo(self.feijao), Decimal('15'))
+        original = Cardapio.objects.get(pk=cardapio['id'])
+        self.assertEqual(original.status, Cardapio.Status.SUBSTITUIDO)
+        self.assertEqual(original.substituido_por_id, novo['id'])
+        self.assertEqual(MovimentacaoEstoque.objects.filter(
+            tipo=MovimentacaoEstoque.Tipo.DEVOLUCAO_PREPARO, item_cardapio__cardapio=original,
+        ).count(), 2)
+
+        # O rascunho segue o fluxo normal: é editado e reenviado.
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.patch(reverse('cardapio-detail', args=[novo['id']]), {
+            'itens': [{'item_generico': self.arroz.id, 'quantidade_planejada': '40', 'secao': ''}],
+        }, format='json')
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        resposta = self.client.post(reverse('cardapio-enviar', args=[novo['id']]))
+        self.assertEqual(resposta.data['status'], Cardapio.Status.ENVIADO)
+
+    def test_alteracao_recusada_volta_a_aprovado_sem_mexer_no_estoque(self):
+        cardapio = self._criar_cardapio()
+        self._aprovar(cardapio)
+        self.client.force_authenticate(self.nutricionista)
+        self.client.post(reverse('cardapio-solicitar-alteracao', args=[cardapio['id']]), {'motivo': 'Trocar.'})
+
+        self.client.force_authenticate(self.estoquista)
+        resposta = self.client.post(
+            reverse('cardapio-recusar-alteracao', args=[cardapio['id']]), {'motivo': 'Já está na panela.'},
+        )
+
+        self.assertEqual(resposta.data['status'], Cardapio.Status.APROVADO)
+        self.assertEqual(resposta.data['motivo_recusa'], 'Já está na panela.')
+        self.assertEqual(self._saldo(self.arroz), Decimal('2'))
+        self.assertFalse(Cardapio.objects.filter(status=Cardapio.Status.RASCUNHO).exists())
+
+    def test_nao_solicita_alteracao_de_cardapio_de_dia_passado(self):
+        cardapio = self._criar_cardapio()
+        self._aprovar(cardapio)
+        Cardapio.objects.filter(pk=cardapio['id']).update(data=hoje_no_ru() - timedelta(days=1))
+
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.post(
+            reverse('cardapio-solicitar-alteracao', args=[cardapio['id']]), {'motivo': 'Trocar.'},
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_papeis_no_pedido_de_alteracao(self):
+        cardapio = self._criar_cardapio()
+        self._aprovar(cardapio)
+        resposta = self.client.post(
+            reverse('cardapio-solicitar-alteracao', args=[cardapio['id']]), {'motivo': 'Trocar.'},
+        )
+        self.assertEqual(resposta.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(self.nutricionista)
+        self.client.post(reverse('cardapio-solicitar-alteracao', args=[cardapio['id']]), {'motivo': 'Trocar.'})
+        resposta = self.client.post(reverse('cardapio-aceitar-alteracao', args=[cardapio['id']]))
+        self.assertEqual(resposta.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_pendentes_mostram_o_que_aguarda_cada_papel(self):
+        self._criar_cardapio(arroz='1', feijao='1')  # rascunho comum não é pendência
+        cardapio = self._criar_cardapio(arroz='38', feijao='14')
+        self._aprovar(cardapio, feijao='14')
+        self.client.force_authenticate(self.nutricionista)
+        self.client.post(reverse('cardapio-solicitar-alteracao', args=[cardapio['id']]), {'motivo': 'Trocar.'})
+
+        self.client.force_authenticate(self.estoquista)
+        pendentes = self.client.get(reverse('cardapio-list'), {'pendentes': 1}).data['results']
+        self.assertEqual([item['id'] for item in pendentes], [cardapio['id']])
+
+        novo = self.client.post(reverse('cardapio-aceitar-alteracao', args=[cardapio['id']])).data
+        self.assertEqual(self.client.get(reverse('cardapio-list'), {'pendentes': 1}).data['count'], 0)
+
+        self.client.force_authenticate(self.nutricionista)
+        pendentes = self.client.get(reverse('cardapio-list'), {'pendentes': 1}).data['results']
+        self.assertEqual([item['id'] for item in pendentes], [novo['id']])

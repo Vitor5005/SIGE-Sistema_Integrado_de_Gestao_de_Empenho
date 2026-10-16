@@ -160,8 +160,7 @@ export class Cabecalho {
       return;
     }
 
-    const status = pode(Recurso.CARDAPIO, Acao.APROVAR) ? 'ENVIADO,CONSUMO_INFORMADO' : 'RECUSADO,APROVADO';
-    this.cardapioService.listar({ status }, 1, 5).subscribe({
+    this.cardapioService.listar({ pendentes: true }, 1, 5).subscribe({
       next: (resposta) => {
         this.cardapiosPendentes = resposta.results;
         this.totalCardapiosPendentes = resposta.count;
@@ -179,12 +178,19 @@ export class Cabecalho {
         return 'Aguardando a aprovação da retirada dos gêneros.';
       case 'CONSUMO_INFORMADO':
         return 'Consumo real informado. Confira e acerte o estoque.';
+      case 'ALTERACAO_SOLICITADA':
+        return 'A nutricionista pediu para alterar o cardápio. Aceite para devolver os gêneros ao estoque.';
+      case 'RASCUNHO':
+        return 'Alteração aceita pelo estoque. Ajuste o novo rascunho e reenvie.';
       case 'RECUSADO':
         return 'Retirada recusada pelo estoque. Corrija e reenvie.';
       case 'APROVADO':
-        return cardapio.motivo_recusa
-          ? 'Consumo devolvido pelo estoque para correção.'
-          : 'Retirada aprovada. Após o preparo, informe o consumo real.';
+        if (!cardapio.motivo_recusa) {
+          return 'Retirada aprovada. Após o preparo, informe o consumo real.';
+        }
+        return cardapio.motivo_alteracao
+          ? 'Pedido de alteração recusado pelo estoque.'
+          : 'Consumo devolvido pelo estoque para correção.';
       default:
         return cardapio.status_descricao;
     }

@@ -1,4 +1,4 @@
-from django.db.models import Count
+from django.db.models import Count, Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -13,23 +13,27 @@ from cardapio.serializers import (
     QuantidadesItensSerializer,
 )
 from utils.mixins import AuditoriaRBACMixin, BaseFiltroMixin
-from utils.rbac import Acao, Recurso
+from utils.rbac import Acao, Recurso, tem_permissao
 
 
 class CardapioViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet):
     queryset = Cardapio.objects.select_related(
-        'criado_por', 'aprovado_por', 'finalizado_por',
+        'criado_por', 'aprovado_por', 'finalizado_por', 'substitui',
     ).prefetch_related('itens__item_generico')
     serializer_class = CardapioSerializer
     rbac_resource = Recurso.CARDAPIO
     rbac_action_map = {
         'disponibilidade': Acao.CONSULTAR,
         'enviar': Acao.EDITAR,
+        'cancelar_envio': Acao.EDITAR,
+        'solicitar_alteracao': Acao.EDITAR,
         'informar_consumo': Acao.EDITAR,
         'aprovar': Acao.APROVAR,
         'recusar': Acao.APROVAR,
         'confirmar_consumo': Acao.APROVAR,
         'devolver_consumo': Acao.APROVAR,
+        'aceitar_alteracao': Acao.APROVAR,
+        'recusar_alteracao': Acao.APROVAR,
     }
     search_fields = ['preparacoes', 'itens__item_generico__descricao']
     filterset_fields = {
@@ -43,8 +47,19 @@ class CardapioViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet
     def get_queryset(self):
         queryset = super().get_queryset()
         if self.action == 'list':
+            if self.request.query_params.get('pendentes'):
+                queryset = queryset.filter(self._pendentes_do_usuario())
             return queryset.annotate(total_itens=Count('itens', distinct=True))
         return queryset
+
+    def _pendentes_do_usuario(self):
+        """Cardápios que aguardam uma ação do papel do usuário (usado pelo sino de avisos)."""
+        papel = self.request.user.papel
+        S = Cardapio.Status
+        if tem_permissao(papel, Recurso.CARDAPIO, Acao.APROVAR):
+            return Q(status__in=[S.ENVIADO, S.CONSUMO_INFORMADO, S.ALTERACAO_SOLICITADA])
+        # Inclui o rascunho criado por uma alteração aceita, que precisa ser ajustado e reenviado.
+        return Q(status__in=[S.RECUSADO, S.APROVADO]) | Q(status=S.RASCUNHO, substitui__isnull=False)
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -75,6 +90,35 @@ class CardapioViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet
     def enviar(self, request, pk=None):
         cardapio = services.enviar(cardapio_id=self.get_object().pk, usuario=request.user)
         return self._responder(cardapio)
+
+    @action(detail=True, methods=['post'], url_path='cancelar-envio')
+    def cancelar_envio(self, request, pk=None):
+        cardapio = services.cancelar_envio(cardapio_id=self.get_object().pk, usuario=request.user)
+        return self._responder(cardapio)
+
+    @action(detail=True, methods=['post'], url_path='solicitar-alteracao')
+    def solicitar_alteracao(self, request, pk=None):
+        dados = MotivoSerializer(data=request.data)
+        dados.is_valid(raise_exception=True)
+        cardapio = services.solicitar_alteracao(
+            cardapio_id=self.get_object().pk, motivo=dados.validated_data['motivo'], usuario=request.user,
+        )
+        return self._responder(cardapio)
+
+    @action(detail=True, methods=['post'], url_path='recusar-alteracao')
+    def recusar_alteracao(self, request, pk=None):
+        dados = MotivoSerializer(data=request.data)
+        dados.is_valid(raise_exception=True)
+        cardapio = services.recusar_alteracao(
+            cardapio_id=self.get_object().pk, motivo=dados.validated_data['motivo'], usuario=request.user,
+        )
+        return self._responder(cardapio)
+
+    @action(detail=True, methods=['post'], url_path='aceitar-alteracao')
+    def aceitar_alteracao(self, request, pk=None):
+        """Responde com o novo rascunho criado a partir do cardápio original."""
+        novo = services.aceitar_alteracao(cardapio_id=self.get_object().pk, usuario=request.user)
+        return self._responder(novo)
 
     @action(detail=True, methods=['post'])
     def recusar(self, request, pk=None):

@@ -9,6 +9,8 @@ export function classeStatusCardapio(status: StatusCardapio): string {
     APROVADO: 'status-cardapio--aprovado',
     CONSUMO_INFORMADO: 'status-cardapio--aguardando',
     FINALIZADO: 'status-cardapio--finalizado',
+    ALTERACAO_SOLICITADA: 'status-cardapio--aguardando',
+    SUBSTITUIDO: 'status-cardapio--rascunho',
   };
   return `status-cardapio ${classes[status] ?? ''}`;
 }

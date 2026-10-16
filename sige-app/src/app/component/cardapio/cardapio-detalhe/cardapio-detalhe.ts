@@ -20,7 +20,7 @@ import {
   unidadeComEmbalagem,
 } from '../cardapio-util';
 
-type MotivoAcao = 'recusar' | 'devolver' | null;
+type MotivoAcao = 'recusar' | 'devolver' | 'alterar' | 'recusarAlteracao' | null;
 
 @Component({
   selector: 'app-cardapio-detalhe',
@@ -75,13 +75,17 @@ export class CardapioDetalhe implements OnInit {
   }
 
   ngOnInit(): void {
-    const id = Number(this.route.snapshot.queryParamMap.get('id'));
-    if (!Number.isInteger(id) || id <= 0) {
-      this.carregando = false;
-      this.erroCarregamento = 'Não foi possível identificar o cardápio.';
-      return;
-    }
-    this.carregar(id);
+    // Acompanha o parâmetro: os links entre o cardápio substituído e o novo rascunho reaproveitam a página.
+    this.route.queryParamMap.subscribe((params) => {
+      const id = Number(params.get('id'));
+      if (!Number.isInteger(id) || id <= 0) {
+        this.carregando = false;
+        this.erroCarregamento = 'Não foi possível identificar o cardápio.';
+        return;
+      }
+      this.erroCarregamento = '';
+      this.carregar(id);
+    });
   }
 
   carregar(id: number): void {
@@ -151,6 +155,15 @@ export class CardapioDetalhe implements OnInit {
 
   get modoConsumo(): boolean {
     return this.podeEditar && this.cardapio?.status === 'APROVADO';
+  }
+
+  get podeCancelarEnvio(): boolean {
+    return this.podeEditar && this.cardapio?.status === 'ENVIADO';
+  }
+
+  /** Estoquista decide sobre o pedido de alteração de um cardápio já aprovado. */
+  get modoAlteracao(): boolean {
+    return this.podeAprovar && this.cardapio?.status === 'ALTERACAO_SOLICITADA';
   }
 
   get modoConfirmacao(): boolean {
@@ -271,6 +284,46 @@ export class CardapioDetalhe implements OnInit {
     ));
   }
 
+  cancelarEnvio(): void {
+    this.feedback.confirmar({
+      titulo: 'Cancelar o envio?',
+      mensagem: 'O cardápio sai da fila do estoque e volta a ser rascunho para você alterar e reenviar.',
+      textoConfirmar: 'Cancelar envio',
+    }).then((ok) => ok && this.executar(
+      this.cardapioService.cancelarEnvio(this.cardapio!.id),
+      'Envio cancelado. O cardápio voltou a ser rascunho.',
+      'Não foi possível cancelar o envio.',
+    ));
+  }
+
+  aceitarAlteracao(): void {
+    this.feedback.confirmar({
+      titulo: 'Aceitar a alteração?',
+      mensagem: 'Tudo o que foi liberado volta ao estoque agora. A nutricionista recebe um novo rascunho '
+        + 'para ajustar e reenviar, que passará de novo pela sua aprovação.',
+      textoConfirmar: 'Aceitar',
+    }).then((ok) => {
+      if (!ok) {
+        return;
+      }
+      const original = this.cardapio!.id;
+      this.processando = true;
+      this.erroAcao = '';
+      // A resposta é o novo rascunho; o Estoquista continua vendo o original, agora substituído.
+      this.cardapioService.aceitarAlteracao(original).subscribe({
+        next: () => {
+          this.processando = false;
+          this.feedback.sucesso('Alteração aceita. Os gêneros voltaram ao estoque e a nutricionista foi notificada.');
+          this.carregar(original);
+        },
+        error: (erro) => {
+          this.processando = false;
+          this.erroAcao = mensagemErroCardapio(erro, 'Não foi possível aceitar a alteração.');
+        },
+      });
+    });
+  }
+
   excluir(): void {
     this.feedback.confirmar({
       titulo: 'Excluir cardápio?',
@@ -362,7 +415,36 @@ export class CardapioDetalhe implements OnInit {
         'Consumo devolvido para correção.',
         'Não foi possível devolver o consumo.',
       );
+    } else if (this.motivoAcao === 'alterar') {
+      this.executar(
+        this.cardapioService.solicitarAlteracao(this.cardapio.id, motivo),
+        'Pedido de alteração enviado. O estoque foi notificado.',
+        'Não foi possível solicitar a alteração.',
+      );
+    } else if (this.motivoAcao === 'recusarAlteracao') {
+      this.executar(
+        this.cardapioService.recusarAlteracao(this.cardapio.id, motivo),
+        'Alteração recusada. A nutricionista foi notificada.',
+        'Não foi possível recusar a alteração.',
+      );
     }
+  }
+
+  get rotuloMotivo(): string {
+    switch (this.motivoAcao) {
+      case 'recusar':
+        return 'Motivo da recusa *';
+      case 'devolver':
+        return 'O que precisa ser corrigido no consumo? *';
+      case 'alterar':
+        return 'O que precisa mudar no cardápio? *';
+      default:
+        return 'Por que a alteração não pode ser feita? *';
+    }
+  }
+
+  get destinatarioMotivo(): string {
+    return this.motivoAcao === 'alterar' ? 'O Estoquista verá esta mensagem.' : 'A nutricionista verá esta mensagem.';
   }
 
   imprimir(): void {

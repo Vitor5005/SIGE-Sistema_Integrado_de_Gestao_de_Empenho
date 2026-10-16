@@ -25,6 +25,18 @@
   border-color: var(--sige-danger);
 }
 
+// Pedido de alteração e substituição de um cardápio já aprovado.
+.cardapio-alerta--aviso {
+  color: var(--sige-text-warning);
+  background: var(--sige-surface-warning);
+  border-color: var(--sige-warning);
+
+  a {
+    font-weight: 700;
+    color: inherit;
+  }
+}
+
 // Andamento: cada etapa concluída fica destacada.
 .cardapio-etapas {
   display: grid;

@@ -158,7 +158,9 @@
               <span>{{ cardapio.atualizado_em | date: 'dd/MM HH:mm' }}</span>
             </div>
             <p class="alerta-resumo">{{ textoPendenciaCardapio(cardapio) }}</p>
-            @if (cardapio.motivo_recusa) {
+            @if (cardapio.status === 'ALTERACAO_SOLICITADA' && cardapio.motivo_alteracao) {
+            <p class="alerta-motivo">"{{ cardapio.motivo_alteracao }}"</p>
+            } @else if (cardapio.motivo_recusa) {
             <p class="alerta-motivo">"{{ cardapio.motivo_recusa }}"</p>
             }
             <div class="alerta-rodape">

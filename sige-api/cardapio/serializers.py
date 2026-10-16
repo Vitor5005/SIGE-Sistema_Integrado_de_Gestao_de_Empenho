@@ -1,20 +1,11 @@
 from collections import defaultdict
-from datetime import datetime
 from decimal import Decimal
-from zoneinfo import ZoneInfo
 
 from django.db import transaction
 from rest_framework import serializers
 
 from cardapio.models import Cardapio, ItemCardapio
-from cardapio.services import faltas_de_saldo
-
-# O servidor trabalha em UTC; "hoje" é o dia no Acre, onde fica o Restaurante Universitário.
-FUSO_RU = ZoneInfo('America/Rio_Branco')
-
-
-def hoje_no_ru():
-    return datetime.now(FUSO_RU).date()
+from cardapio.services import faltas_de_saldo, hoje_no_ru
 
 
 def _nome_usuario(usuario):
@@ -53,20 +44,27 @@ class CardapioSerializer(serializers.ModelSerializer):
     criado_por_nome = serializers.SerializerMethodField()
     aprovado_por_nome = serializers.SerializerMethodField()
     finalizado_por_nome = serializers.SerializerMethodField()
+    # Id do cardápio original quando este rascunho nasceu de uma alteração aceita.
+    substitui = serializers.SerializerMethodField()
 
     class Meta:
         model = Cardapio
         fields = (
             'id', 'refeicao', 'refeicao_descricao', 'data', 'estimativa_pessoas', 'preparacoes',
-            'observacoes', 'status', 'status_descricao', 'motivo_recusa', 'itens',
+            'observacoes', 'status', 'status_descricao', 'motivo_recusa', 'motivo_alteracao', 'itens',
             'criado_por', 'criado_por_nome', 'criado_em', 'atualizado_em', 'enviado_em',
             'aprovado_por', 'aprovado_por_nome', 'aprovado_em', 'consumo_informado_em',
-            'finalizado_por', 'finalizado_por_nome', 'finalizado_em',
+            'finalizado_por', 'finalizado_por_nome', 'finalizado_em', 'substituido_por', 'substitui',
         )
         read_only_fields = (
-            'status', 'motivo_recusa', 'criado_por', 'criado_em', 'atualizado_em', 'enviado_em',
-            'aprovado_por', 'aprovado_em', 'consumo_informado_em', 'finalizado_por', 'finalizado_em',
+            'status', 'motivo_recusa', 'motivo_alteracao', 'criado_por', 'criado_em', 'atualizado_em',
+            'enviado_em', 'aprovado_por', 'aprovado_em', 'consumo_informado_em', 'finalizado_por',
+            'finalizado_em', 'substituido_por',
         )
+
+    def get_substitui(self, cardapio):
+        original = getattr(cardapio, 'substitui', None)
+        return original.pk if original else None
 
     def get_criado_por_nome(self, cardapio):
         return _nome_usuario(cardapio.criado_por)
@@ -162,7 +160,8 @@ class CardapioResumoSerializer(serializers.ModelSerializer):
         model = Cardapio
         fields = (
             'id', 'refeicao', 'refeicao_descricao', 'data', 'estimativa_pessoas', 'status',
-            'status_descricao', 'motivo_recusa', 'criado_por_nome', 'total_itens', 'atualizado_em',
+            'status_descricao', 'motivo_recusa', 'motivo_alteracao', 'criado_por_nome', 'total_itens',
+            'atualizado_em',
         )
 
     def get_criado_por_nome(self, cardapio):

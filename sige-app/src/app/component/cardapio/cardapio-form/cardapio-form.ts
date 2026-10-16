@@ -531,6 +531,7 @@ export class CardapioForm implements OnInit {
       status: 'RASCUNHO',
       status_descricao: 'Rascunho',
       motivo_recusa: '',
+      motivo_alteracao: '',
       criado_por_nome: this.nomeNutricionista,
       criado_em: '',
       atualizado_em: '',
@@ -540,6 +541,8 @@ export class CardapioForm implements OnInit {
       consumo_informado_em: null,
       finalizado_por_nome: null,
       finalizado_em: null,
+      substituido_por: null,
+      substitui: null,
       itens: dados.itens.map((item, indice) => {
         const genero = this.generoDe(item.item_generico);
         return {

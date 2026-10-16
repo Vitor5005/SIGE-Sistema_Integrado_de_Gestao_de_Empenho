@@ -6,7 +6,9 @@ export type StatusCardapio =
   | 'RECUSADO'
   | 'APROVADO'
   | 'CONSUMO_INFORMADO'
-  | 'FINALIZADO';
+  | 'FINALIZADO'
+  | 'ALTERACAO_SOLICITADA'
+  | 'SUBSTITUIDO';
 
 export const REFEICOES: { valor: RefeicaoCardapio; label: string }[] = [
   { valor: 'CAFE', label: 'Café da manhã' },
@@ -41,6 +43,7 @@ export interface Cardapio {
   status: StatusCardapio;
   status_descricao: string;
   motivo_recusa: string;
+  motivo_alteracao: string;
   itens: ItemCardapio[];
   criado_por_nome: string;
   criado_em: string;
@@ -51,6 +54,10 @@ export interface Cardapio {
   consumo_informado_em: string | null;
   finalizado_por_nome: string | null;
   finalizado_em: string | null;
+  /** Rascunho criado quando o estoque aceitou a alteração deste cardápio. */
+  substituido_por: number | null;
+  /** Cardápio original, quando este rascunho nasceu de uma alteração aceita. */
+  substitui: number | null;
 }
 
 export interface CardapioResumo {
@@ -62,6 +69,7 @@ export interface CardapioResumo {
   status: StatusCardapio;
   status_descricao: string;
   motivo_recusa: string;
+  motivo_alteracao: string;
   criado_por_nome: string;
   total_itens: number;
   atualizado_em: string;

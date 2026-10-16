@@ -1,5 +1,7 @@
 from collections import defaultdict
+from datetime import datetime
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from django.db import transaction
 from django.db.models import Sum
@@ -12,6 +14,13 @@ from utils.estoque_services import registrar_devolucao_cardapio, registrar_saida
 
 ZERO = Decimal('0.000')
 TRES_CASAS = Decimal('0.001')
+
+# O servidor trabalha em UTC; "hoje" é o dia no Acre, onde fica o Restaurante Universitário.
+FUSO_RU = ZoneInfo('America/Rio_Branco')
+
+
+def hoje_no_ru():
+    return datetime.now(FUSO_RU).date()
 
 
 def _quantidade(valor, campo):
@@ -136,6 +145,18 @@ def enviar(*, cardapio_id, usuario):
 
 
 @transaction.atomic
+def cancelar_envio(*, cardapio_id, usuario):
+    """A Nutricionista retira o cardápio da fila do estoque para alterá-lo; nada saiu do estoque ainda."""
+    cardapio = _bloquear(
+        cardapio_id, [Cardapio.Status.ENVIADO], 'Somente cardápios aguardando o estoque podem ter o envio cancelado.',
+    )
+    cardapio.status = Cardapio.Status.RASCUNHO
+    cardapio.enviado_em = None
+    cardapio.save(update_fields=['status', 'enviado_em', 'atualizado_em'])
+    return cardapio
+
+
+@transaction.atomic
 def recusar(*, cardapio_id, motivo, usuario):
     cardapio = _bloquear(cardapio_id, [Cardapio.Status.ENVIADO], 'Somente cardápios enviados podem ser recusados.')
     motivo = (motivo or '').strip()
@@ -203,7 +224,11 @@ def informar_consumo(*, cardapio_id, quantidades, usuario):
     cardapio.status = Cardapio.Status.CONSUMO_INFORMADO
     cardapio.consumo_informado_em = timezone.now()
     cardapio.motivo_recusa = ''
-    cardapio.save(update_fields=['status', 'consumo_informado_em', 'motivo_recusa', 'atualizado_em'])
+    # Um pedido de alteração recusado deixa de importar depois que o consumo é informado.
+    cardapio.motivo_alteracao = ''
+    cardapio.save(update_fields=[
+        'status', 'consumo_informado_em', 'motivo_recusa', 'motivo_alteracao', 'atualizado_em',
+    ])
     return cardapio
 
 
@@ -251,3 +276,91 @@ def confirmar_consumo(*, cardapio_id, usuario):
     cardapio.finalizado_em = timezone.now()
     cardapio.save(update_fields=['status', 'finalizado_por', 'finalizado_em', 'atualizado_em'])
     return cardapio
+
+
+@transaction.atomic
+def solicitar_alteracao(*, cardapio_id, motivo, usuario):
+    """A Nutricionista pede para alterar um cardápio cuja retirada já foi aprovada."""
+    cardapio = _bloquear(
+        cardapio_id, [Cardapio.Status.APROVADO],
+        'A alteração só pode ser solicitada após a aprovação e antes de informar o consumo.',
+    )
+    if cardapio.data < hoje_no_ru():
+        raise ValidationError({'status': 'Não é possível alterar o cardápio de um dia que já passou.'})
+    motivo = (motivo or '').strip()
+    if not motivo:
+        raise ValidationError({'motivo': 'Informe o motivo da alteração.'})
+
+    cardapio.status = Cardapio.Status.ALTERACAO_SOLICITADA
+    cardapio.motivo_alteracao = motivo
+    cardapio.motivo_recusa = ''
+    cardapio.save(update_fields=['status', 'motivo_alteracao', 'motivo_recusa', 'atualizado_em'])
+    return cardapio
+
+
+@transaction.atomic
+def recusar_alteracao(*, cardapio_id, motivo, usuario):
+    """O Estoquista não aceita a alteração (ex.: os gêneros já foram para o preparo)."""
+    cardapio = _bloquear(
+        cardapio_id, [Cardapio.Status.ALTERACAO_SOLICITADA], 'Não há pedido de alteração aguardando o estoque.',
+    )
+    motivo = (motivo or '').strip()
+    if not motivo:
+        raise ValidationError({'motivo': 'Informe o motivo da recusa.'})
+
+    cardapio.status = Cardapio.Status.APROVADO
+    cardapio.motivo_recusa = motivo
+    cardapio.save(update_fields=['status', 'motivo_recusa', 'atualizado_em'])
+    return cardapio
+
+
+@transaction.atomic
+def aceitar_alteracao(*, cardapio_id, usuario):
+    """Devolve ao estoque tudo o que foi liberado e cria um rascunho igual para a Nutricionista ajustar.
+
+    O cardápio original fica SUBSTITUIDO e mantém suas movimentações; o novo rascunho
+    passa de novo por envio e aprovação. Retorna o novo rascunho.
+    """
+    cardapio = _bloquear(
+        cardapio_id, [Cardapio.Status.ALTERACAO_SOLICITADA], 'Não há pedido de alteração aguardando o estoque.',
+    )
+    itens = list(cardapio.itens.select_related('item_generico'))
+    referencia = _referencia(cardapio)
+    for item in itens:
+        if item.quantidade_liberada and item.quantidade_liberada > ZERO:
+            registrar_devolucao_cardapio(
+                item_cardapio=item,
+                quantidade=item.quantidade_liberada,
+                usuario=usuario,
+                observacao=f'Devolução por alteração do {referencia}.',
+            )
+
+    novo = Cardapio.objects.create(
+        refeicao=cardapio.refeicao,
+        data=cardapio.data,
+        estimativa_pessoas=cardapio.estimativa_pessoas,
+        preparacoes=cardapio.preparacoes,
+        observacoes=cardapio.observacoes,
+        criado_por=cardapio.criado_por,
+    )
+    ItemCardapio.objects.bulk_create([
+        ItemCardapio(
+            cardapio=novo,
+            ordem=item.ordem,
+            secao=item.secao,
+            item_generico=item.item_generico,
+            quantidade_planejada=item.quantidade_planejada,
+            observacao=item.observacao,
+        )
+        for item in itens
+    ])
+
+    cardapio.status = Cardapio.Status.SUBSTITUIDO
+    cardapio.substituido_por = novo
+    cardapio.motivo_recusa = ''
+    cardapio.finalizado_por = usuario
+    cardapio.finalizado_em = timezone.now()
+    cardapio.save(update_fields=[
+        'status', 'substituido_por', 'motivo_recusa', 'finalizado_por', 'finalizado_em', 'atualizado_em',
+    ])
+    return novo

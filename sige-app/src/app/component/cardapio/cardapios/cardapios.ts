@@ -35,6 +35,8 @@ export class Cardapios implements OnInit {
         { valor: 'APROVADO', label: 'Retirada aprovada' },
         { valor: 'CONSUMO_INFORMADO', label: 'Consumo aguardando confirmação' },
         { valor: 'FINALIZADO', label: 'Finalizado' },
+        { valor: 'ALTERACAO_SOLICITADA', label: 'Alteração aguardando o estoque' },
+        { valor: 'SUBSTITUIDO', label: 'Substituído por alteração' },
       ],
     },
     {

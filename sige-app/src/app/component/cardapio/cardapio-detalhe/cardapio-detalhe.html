@@ -37,6 +37,11 @@
             <i class="bi bi-send" aria-hidden="true"></i> Enviar
           </button>
           }
+          @if (podeCancelarEnvio) {
+          <button type="button" class="sige-button sige-button--secondary" [disabled]="processando" (click)="cancelarEnvio()">
+            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Cancelar envio
+          </button>
+          }
           <button type="button" class="sige-button sige-button--secondary" (click)="imprimir()">
             <i class="bi bi-printer" aria-hidden="true"></i> Imprimir
           </button>
@@ -47,8 +52,56 @@
       <div class="cardapio-alerta cardapio-alerta--perigo" role="alert">
         <i class="bi bi-x-octagon" aria-hidden="true"></i>
         <div>
-          <strong>{{ cardapio.status === 'RECUSADO' ? 'Retirada recusada pelo estoque' : 'Consumo devolvido pelo estoque para correção' }}</strong>
+          <strong>
+            @if (cardapio.status === 'RECUSADO') {
+            Retirada recusada pelo estoque
+            } @else if (cardapio.motivo_alteracao) {
+            Pedido de alteração recusado pelo estoque
+            } @else {
+            Consumo devolvido pelo estoque para correção
+            }
+          </strong>
           <p>{{ cardapio.motivo_recusa }}</p>
+        </div>
+      </div>
+      }
+
+      @if (cardapio.status === 'ALTERACAO_SOLICITADA') {
+      <div class="cardapio-alerta cardapio-alerta--aviso" role="status">
+        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+        <div>
+          <strong>{{ modoAlteracao ? 'A nutricionista pediu para alterar este cardápio' : 'Alteração aguardando o estoque' }}</strong>
+          <p>{{ cardapio.motivo_alteracao }}</p>
+          @if (modoAlteracao) {
+          <p>Ao aceitar, o que foi liberado volta ao estoque e o cardápio é substituído por um novo rascunho.</p>
+          }
+        </div>
+      </div>
+      } @else if (cardapio.status === 'SUBSTITUIDO') {
+      <div class="cardapio-alerta cardapio-alerta--aviso" role="status">
+        <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+        <div>
+          <strong>Cardápio substituído por alteração</strong>
+          <p>{{ cardapio.motivo_alteracao }}</p>
+          <p>
+            Os gêneros liberados voltaram ao estoque.
+            @if (cardapio.substituido_por) {
+            <a [routerLink]="['/cardapio']" [queryParams]="{ id: cardapio.substituido_por }">Abrir o cardápio que o substitui</a>
+            } @else {
+            O rascunho criado para a alteração foi excluído.
+            }
+          </p>
+        </div>
+      </div>
+      } @else if (cardapio.substitui) {
+      <div class="cardapio-alerta cardapio-alerta--aviso" role="status">
+        <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+        <div>
+          <strong>Alteração de um cardápio já aprovado</strong>
+          <p>
+            Este cardápio substitui o anterior, cujos gêneros voltaram ao estoque.
+            <a [routerLink]="['/cardapio']" [queryParams]="{ id: cardapio.substitui }">Ver o cardápio original</a>
+          </p>
         </div>
       </div>
       }
@@ -82,7 +135,16 @@
             Confira cada gênero. Você pode liberar menos que o planejado (0 para não liberar), nunca mais que o saldo.
             } @else if (modoConsumo) {
             Após o preparo, informe quanto de cada gênero foi realmente usado. Sobras voltam ao estoque e o uso a mais é retirado.
-            } @else if (modoConfirmacao) {
+            } @else if (modoAlteracao) {
+      <div class="cardapio-acoes">
+        <button type="button" class="sige-button sige-button--danger-outline" [disabled]="processando" (click)="abrirMotivo('recusarAlteracao')">
+          <i class="bi bi-x-lg" aria-hidden="true"></i> Recusar alteração
+        </button>
+        <button type="button" class="sige-button sige-button--primary" [disabled]="processando" (click)="aceitarAlteracao()">
+          <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i> Aceitar e devolver ao estoque
+        </button>
+      </div>
+      } @else if (modoConfirmacao) {
             Confira o consumo informado pela nutricionista antes de acertar o estoque.
             } @else {
             Quantidades planejadas{{ mostrarLiberada ? ', liberadas pelo estoque' : '' }}{{ mostrarConsumida ? ' e consumidas no preparo' : '' }}.
@@ -191,9 +253,9 @@
 
       @if (motivoAcao) {
       <div class="cardapio-motivo">
-        <label for="motivoAcao">{{ motivoAcao === 'recusar' ? 'Motivo da recusa *' : 'O que precisa ser corrigido no consumo? *' }}</label>
+        <label for="motivoAcao">{{ rotuloMotivo }}</label>
         <textarea id="motivoAcao" rows="3" maxlength="500" [(ngModel)]="motivo" [disabled]="processando"
-          placeholder="A nutricionista verá esta mensagem."></textarea>
+          [placeholder]="destinatarioMotivo"></textarea>
         <div class="cardapio-acoes">
           <button type="button" class="sige-button sige-button--secondary" [disabled]="processando" (click)="abrirMotivo(null)">
             Voltar
@@ -214,8 +276,20 @@
       </div>
       } @else if (modoConsumo) {
       <div class="cardapio-acoes">
+        <button type="button" class="sige-button sige-button--secondary" [disabled]="processando" (click)="abrirMotivo('alterar')">
+          <i class="bi bi-pencil-square" aria-hidden="true"></i> Solicitar alteração
+        </button>
         <button type="button" class="sige-button sige-button--primary" [disabled]="processando || !consumoValido" (click)="informarConsumo()">
           <i class="bi bi-clipboard-check" aria-hidden="true"></i> Enviar
+        </button>
+      </div>
+      } @else if (modoAlteracao) {
+      <div class="cardapio-acoes">
+        <button type="button" class="sige-button sige-button--danger-outline" [disabled]="processando" (click)="abrirMotivo('recusarAlteracao')">
+          <i class="bi bi-x-lg" aria-hidden="true"></i> Recusar alteração
+        </button>
+        <button type="button" class="sige-button sige-button--primary" [disabled]="processando" (click)="aceitarAlteracao()">
+          <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i> Aceitar e devolver ao estoque
         </button>
       </div>
       } @else if (modoConfirmacao) {
