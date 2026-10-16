@@ -1,56 +1,131 @@
+// Foto do campus à esquerda e formulário à direita; em telas estreitas a foto vira uma faixa no topo.
 .auth-page {
   display: grid;
-  place-items: center;
+  grid-template-columns: minmax(0, 1.7fr) minmax(22rem, 1fr);
+  gap: var(--sige-space-6);
   min-height: 100vh;
   min-height: 100dvh;
   padding: var(--sige-space-4);
-  background: var(--cabecalho);
+  background: var(--sige-surface-subtle);
+}
+
+.login-banner {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 20rem;
+  overflow: hidden;
+  background: var(--sige-color-primary-strong) url('/imagens/campus.jpeg') center / cover no-repeat;
+  border-radius: var(--sige-radius-lg);
+  box-shadow: var(--sige-shadow-md);
+
+  // Escurece a base da foto para o texto ficar legível.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 48, 88, 0.9) 0%, rgba(0, 48, 88, 0.45) 30%, rgba(0, 48, 88, 0) 55%);
+  }
+}
+
+.login-banner-texto {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sige-space-1);
+  padding: var(--sige-space-6);
+  color: var(--sige-color-white);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.login-banner-sigla {
+  font-size: clamp(3rem, 6vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.login-banner-nome {
+  margin-top: var(--sige-space-3);
+  font-size: clamp(1.125rem, 2vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.login-banner-local {
+  font-size: clamp(1rem, 1.5vw, 1.375rem);
+  opacity: 0.92;
 }
 
 .container-login {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  width: min(100%, 28rem);
-  gap: var(--sige-space-5);
-  padding: var(--sige-space-6);
-  background: var(--sige-surface-card);
-  border: 1px solid var(--sige-border);
-  border-radius: var(--sige-radius-lg);
-  box-shadow: var(--sige-shadow-md);
+  width: min(100%, 30rem);
+  margin: 0 auto;
+  gap: var(--sige-space-6);
+  padding: var(--sige-space-6) var(--sige-space-4);
 
-  .login-cabecalho h1 {
-    margin: 0;
-    font-size: clamp(1.5rem, 3vw, 2rem);
+  .login-cabecalho {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sige-space-2);
+    text-align: center;
+
+    h1 {
+      margin: var(--sige-space-4) 0 0;
+      color: var(--sige-color-primary-strong);
+      font-size: clamp(1.75rem, 3vw, 2.25rem);
+      font-weight: 800;
+    }
+
+    p {
+      margin: 0;
+      color: var(--sige-text-secondary);
+    }
+  }
+
+  .login-logo {
+    width: clamp(6rem, 10vw, 8.5rem);
+    height: auto;
   }
 
   form {
     display: flex;
     flex-direction: column;
     width: 100%;
-    gap: var(--sige-space-4);
+    gap: var(--sige-space-5);
     font-size: 1rem;
+  }
 
-    label {
-      color: var(--sige-text-secondary);
-      font-size: 0.875rem;
-      font-weight: 700;
-    }
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sige-space-2);
+  }
 
-    input {
-      width: 100%;
-      min-height: 2.5rem;
-      padding: 0 var(--sige-space-3);
-      color: var(--sige-text-primary);
-      background: var(--sige-surface-card);
-      border: 1px solid var(--sige-border);
-      border-radius: var(--sige-radius-md);
-      box-shadow: var(--sige-shadow-sm);
-    }
+  label {
+    color: var(--sige-color-primary-strong);
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
 
-    small {
-      color: var(--sige-color-primary);
+  input {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0 var(--sige-space-3);
+    color: var(--sige-text-primary);
+    background: var(--sige-surface-card);
+    border: 1px solid var(--sige-border-strong);
+    border-radius: var(--sige-radius-md);
+    box-shadow: var(--sige-shadow-sm);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:focus {
+      border-color: var(--sige-color-primary);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0, 103, 190, 0.18);
     }
   }
 
@@ -73,6 +148,7 @@
     height: 2.25rem;
     padding: 0;
     color: var(--sige-text-secondary);
+    font-size: 1.125rem;
     background: transparent;
     border: 0;
     border-radius: var(--sige-radius-sm);
@@ -84,13 +160,47 @@
     }
   }
 
+  .link-recuperar {
+    align-self: flex-end;
+    color: var(--sige-color-primary);
+    font-size: 0.875rem;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   button.submit {
-    min-height: 2.5rem;
+    min-height: 3rem;
     color: var(--sige-color-white);
+    font-size: 1.0625rem;
     font-weight: 700;
     background: var(--sige-color-primary-strong);
     border: 1px solid var(--sige-color-primary-strong);
     border-radius: var(--sige-radius-md);
+    box-shadow: var(--sige-shadow-sm);
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background: #00243f;
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .auth-page {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    gap: var(--sige-space-4);
+  }
+
+  .login-banner {
+    min-height: 13rem;
+  }
+
+  .login-banner-texto {
+    padding: var(--sige-space-5);
   }
 }
 
@@ -99,7 +209,15 @@
     padding: var(--sige-space-3);
   }
 
+  .login-banner {
+    min-height: 10rem;
+  }
+
+  .login-banner-texto {
+    padding: var(--sige-space-4);
+  }
+
   .container-login {
-    padding: var(--sige-space-5);
+    padding: var(--sige-space-4) 0;
   }
 }
