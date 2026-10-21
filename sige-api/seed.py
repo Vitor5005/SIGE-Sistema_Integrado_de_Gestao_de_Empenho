@@ -2,12 +2,12 @@
 Cria um usuário para cada papel do sistema: Diretor, Técnico Administrativo,
 Nutricionista e Estoquista.
 
-Uso:  python seed.py
-      SEED_SENHA='minha-senha' python seed.py   # mesma senha para os quatro
+Usuários: diretor, tecnico, nutricionista e estoquista.
+Também popula a demonstração (fornecedores, licitações, atas, empenhos, entregas,
+recebimentos) e a carga inicial do estoque físico do R.U.
 
-Sem SEED_SENHA, cada usuário novo recebe uma senha aleatória, exibida uma única vez.
-Pode ser executado mais de uma vez: usuários existentes mantêm a senha atual e
-apenas têm o papel e o acesso garantidos. Nenhum outro dado é alterado.
+Uso:  python seed.py                               # senha 'senha123' para os quatro
+      SEED_SENHA='minha-senha' python seed.py   # outra senha para os quatro (use em produção)
 """
 import os
 import random
@@ -36,7 +36,7 @@ from estoque.models import (
     MovimentacaoEstoque,
 )
 from usuario.models import Usuario
-from utils.estoque_services import registrar_recebimento
+from utils.estoque_services import registrar_carga_inicial, registrar_recebimento
 from utils.rbac import Papel
 
 
@@ -95,6 +95,28 @@ ITENS_ALIMENTOS = [
     {'catmat': '600003', 'descricao': 'Ovos Caipira', 'categoria': 'Pr', 'unidade': 'duzia', 'conteudo_embalagem': None, 'unidade_embalagem': None},
 ]
 
+# Gêneros que só existem no estoque físico do R.U. (não entram em atas/empenhos):
+# recebem uma carga inicial de estoque registrada pelo estoquista.
+ITENS_CARGA_INICIAL = [
+    {'catmat': 'ES0001', 'descricao': 'Ervas finas', 'categoria': 'tempS', 'unidade': 'un', 'conteudo_embalagem': Decimal('10'), 'unidade_embalagem': 'g', 'quantidade': Decimal('246')},
+    {'catmat': 'ES0002', 'descricao': 'Folha de louro', 'categoria': 'tempS', 'unidade': 'un', 'conteudo_embalagem': Decimal('10'), 'unidade_embalagem': 'g', 'quantidade': Decimal('352')},
+    {'catmat': 'ES0003', 'descricao': 'Linhaça', 'categoria': 'tempS', 'unidade': 'un', 'conteudo_embalagem': Decimal('200'), 'unidade_embalagem': 'g', 'quantidade': Decimal('38')},
+    {'catmat': 'ES0004', 'descricao': 'Linhaça', 'categoria': 'tempS', 'unidade': 'un', 'conteudo_embalagem': Decimal('500'), 'unidade_embalagem': 'g', 'quantidade': Decimal('5')},
+    {'catmat': 'ES0005', 'descricao': 'Arroz', 'categoria': 'SM', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None, 'quantidade': Decimal('1430')},
+    {'catmat': 'ES0006', 'descricao': 'Feijão carioca', 'categoria': 'SM', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None, 'quantidade': Decimal('970')},
+    {'catmat': 'ES0007', 'descricao': 'Açúcar', 'categoria': 'SM', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None, 'quantidade': Decimal('258')},
+    {'catmat': 'ES0008', 'descricao': 'Sal', 'categoria': 'SM', 'unidade': 'KG', 'conteudo_embalagem': None, 'unidade_embalagem': None, 'quantidade': Decimal('80')},
+    {'catmat': 'ES0009', 'descricao': 'Leite integral', 'categoria': 'Lac', 'unidade': 'L', 'conteudo_embalagem': None, 'unidade_embalagem': None, 'quantidade': Decimal('1284')},
+    {'catmat': 'ES0010', 'descricao': 'Creme de leite', 'categoria': 'Lac', 'unidade': 'un', 'conteudo_embalagem': Decimal('200'), 'unidade_embalagem': 'g', 'quantidade': Decimal('210')},
+    {'catmat': 'ES0011', 'descricao': 'Óleo de soja', 'categoria': 'Oli', 'unidade': 'un', 'conteudo_embalagem': Decimal('900'), 'unidade_embalagem': 'ml', 'quantidade': Decimal('162')},
+    {'catmat': 'ES0012', 'descricao': 'Azeite de dendê', 'categoria': 'Oli', 'unidade': 'un', 'conteudo_embalagem': Decimal('900'), 'unidade_embalagem': 'ml', 'quantidade': Decimal('23')},
+    {'catmat': 'ES0013', 'descricao': 'Azeite de dendê', 'categoria': 'Oli', 'unidade': 'un', 'conteudo_embalagem': Decimal('500'), 'unidade_embalagem': 'ml', 'quantidade': Decimal('12')},
+    {'catmat': 'ES0014', 'descricao': 'Mostarda', 'categoria': 'MolCo', 'unidade': 'un', 'conteudo_embalagem': Decimal('200'), 'unidade_embalagem': 'g', 'quantidade': Decimal('91')},
+    {'catmat': 'ES0015', 'descricao': 'Ketchup', 'categoria': 'MolCo', 'unidade': 'un', 'conteudo_embalagem': Decimal('390'), 'unidade_embalagem': 'g', 'quantidade': Decimal('170')},
+]
+# TODO: incluir itens de "Bebidas e Complementos" e "Outros itens" somente
+# após a definição dos códigos de categoria correspondentes.
+
 FAIXAS_PRECO_UNITARIO = {
     '100001': (Decimal('5.50'), Decimal('9.50')),
     '100002': (Decimal('6.50'), Decimal('11.50')),
@@ -126,7 +148,7 @@ def validar_catalogo_seed():
     categorias_validas = {valor for valor, _ in ItemGenerico.categorias_de_alimento}
     embalagens_validas = {valor for valor, _ in ItemGenerico.unidades_embalagem}
 
-    for item in ITENS_ALIMENTOS:
+    for item in ITENS_ALIMENTOS + ITENS_CARGA_INICIAL:
         catmat = item.get('catmat')
         descricao = item.get('descricao')
         unidade = item.get('unidade')
@@ -200,16 +222,19 @@ def gerar_valor_unitario_item(catmat: str) -> Decimal:
     )
 
 
+SENHA_PADRAO = os.environ.get('SEED_SENHA') or 'senha123'
+
+
 def create_usuarios():
-    """Garante os quatro perfis ativos usados pela demonstração."""
+    """Garante um perfil ativo de cada papel, todos com a senha SENHA_PADRAO."""
     perfis = (
-        ('admin', Papel.DIRETOR, 'Administrador', 'do Sistema', 'admin@example.com', 'admin'),
-        ('user0', Papel.TECNICO_ADMINISTRATIVO, 'Técnico', 'Administrativo', 'user0@example.com', 'password123'),
-        ('user1', Papel.NUTRICIONISTA, 'Nutricionista', 'SIGE', 'user1@example.com', 'password123'),
-        ('user2', Papel.ESTOQUISTA, 'Estoquista', 'SIGE', 'user2@example.com', 'password123'),
+        ('diretor', Papel.DIRETOR, 'Diretor', 'SIGE', 'diretor@example.com'),
+        ('tecnico', Papel.TECNICO_ADMINISTRATIVO, 'Técnico', 'Administrativo', 'tecnico@example.com'),
+        ('nutricionista', Papel.NUTRICIONISTA, 'Nutricionista', 'SIGE', 'nutricionista@example.com'),
+        ('estoquista', Papel.ESTOQUISTA, 'Estoquista', 'SIGE', 'estoquista@example.com'),
     )
     usuarios = {}
-    for username, papel, first_name, last_name, email, senha in perfis:
+    for username, papel, first_name, last_name, email in perfis:
         usuario, _ = Usuario.objects.get_or_create(
             username=username,
             defaults={
@@ -217,8 +242,8 @@ def create_usuarios():
                 'last_name': last_name,
                 'email': email,
                 'papel': papel,
-                'is_staff': username == 'admin',
-                'is_superuser': username == 'admin',
+                'is_staff': papel == Papel.DIRETOR,
+                'is_superuser': papel == Papel.DIRETOR,
                 'is_active': True,
             },
         )
@@ -227,10 +252,10 @@ def create_usuarios():
         usuario.email = email
         usuario.papel = papel
         usuario.is_active = True
-        if username == 'admin':
+        if papel == Papel.DIRETOR:
             usuario.is_staff = True
             usuario.is_superuser = True
-        usuario.set_password(senha)
+        usuario.set_password(SENHA_PADRAO)
         usuario.save()
         usuarios[papel] = usuario
     return usuarios
@@ -570,6 +595,27 @@ def seed_recebimentos(ordens, estoquista):
         )
 
 
+def seed_carga_inicial_estoque(estoquista):
+    """Cadastra os gêneros só de estoque e registra a carga inicial de cada um."""
+    for dados in ITENS_CARGA_INICIAL:
+        genero = ItemGenerico.objects.create(
+            catmat=dados['catmat'],
+            descricao=dados['descricao'],
+            unidade_medida=dados['unidade'],
+            categoria=dados['categoria'],
+            conteudo_embalagem=dados['conteudo_embalagem'],
+            unidade_embalagem=dados['unidade_embalagem'],
+        )
+        registrar_carga_inicial(
+            item_generico_id=genero.id,
+            quantidade=dados['quantidade'],
+            justificativa='Carga inicial de desenvolvimento do estoque físico do R.U.',
+            usuario=estoquista,
+            data_hora=timezone.now(),
+        )
+    return len(ITENS_CARGA_INICIAL)
+
+
 def banco_possui_dados_de_dominio():
     modelos = (
         Endereco,
@@ -619,10 +665,10 @@ def clean_database():
 
 def validar_seed():
     papeis_esperados = {
-        'admin': Papel.DIRETOR,
-        'user0': Papel.TECNICO_ADMINISTRATIVO,
-        'user1': Papel.NUTRICIONISTA,
-        'user2': Papel.ESTOQUISTA,
+        'diretor': Papel.DIRETOR,
+        'tecnico': Papel.TECNICO_ADMINISTRATIVO,
+        'nutricionista': Papel.NUTRICIONISTA,
+        'estoquista': Papel.ESTOQUISTA,
     }
     for username, papel in papeis_esperados.items():
         if not Usuario.objects.filter(username=username, papel=papel, is_active=True).exists():
@@ -715,6 +761,7 @@ def seed_all():
         ordens = seed_ordens_entrega(empenhos, usuarios[Papel.TECNICO_ADMINISTRATIVO])
         itens_ordem = seed_itens_ordem(ordens)
         seed_recebimentos(ordens, usuarios[Papel.ESTOQUISTA])
+        cargas_iniciais = seed_carga_inicial_estoque(usuarios[Papel.ESTOQUISTA])
         validar_seed()
     imprimir_resumo()
     return {
@@ -729,6 +776,7 @@ def seed_all():
         'operacoes': len(operacoes),
         'ordens': len(ordens),
         'itens_ordem': len(itens_ordem),
+        'cargas_iniciais': cargas_iniciais,
     }
 
 
