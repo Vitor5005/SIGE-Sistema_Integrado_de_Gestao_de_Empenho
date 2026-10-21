@@ -1,13 +1,14 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive } from "@angular/router";
+import { NavigationEnd, RouteReuseStrategy, Router, RouterLink, RouterLinkActive } from "@angular/router";
 import { filter, forkJoin, Observable } from 'rxjs';
 import { CardapioResumo } from '../../../model/cardapio';
 import { OrdemEntrega } from '../../../model/ordem_entrega';
 import { PendenciaFornecedor } from '../../../model/pendencia_fornecedor';
 import { ReforcoParaPedido } from '../../../model/reforco_para_pedido';
 import { SolicitacaoReforco } from '../../../model/solicitacao_reforco';
+import { IdRouteReuseStrategy } from '../../../routing/id-route-reuse.strategy';
 import { Auth } from '../../../service/auth';
 import { CardapioService } from '../../../service/cardapio.service';
 import { OrdemEntregaService } from '../../../service/ordem-entrega.service';
@@ -369,6 +370,24 @@ export class Cabecalho {
   }
 
   private readonly destroyRef = inject(DestroyRef);
+  private readonly reuseStrategy = inject(RouteReuseStrategy);
+
+  /**
+   * O routerLink ignora o clique quando a notificação aponta para a tela já aberta,
+   * e ela continuaria com dados antigos (ex.: reforço novo no empenho que está aberto).
+   * Nesse caso a tela é recriada para buscar os dados de novo.
+   */
+  reabrirSeJaAberta(rota: string, id: number): void {
+    const destino = this.router.createUrlTree([rota], { queryParams: { id } });
+    if (this.router.url !== this.router.serializeUrl(destino)) {
+      return;
+    }
+
+    if (this.reuseStrategy instanceof IdRouteReuseStrategy) {
+      this.reuseStrategy.recriarNaProximaNavegacao();
+    }
+    this.router.navigateByUrl(destino, { onSameUrlNavigation: 'reload' });
+  }
 
   carregarPendencias(): void {
     if (!this.podeVerPendencias) {

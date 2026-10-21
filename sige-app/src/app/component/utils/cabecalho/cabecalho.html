@@ -165,7 +165,8 @@
             }
             <div class="alerta-rodape">
               <span>{{ cardapio.criado_por_nome }} · {{ cardapio.total_itens }} gênero(s)</span>
-              <a class="alerta-ciente" [routerLink]="['/cardapio']" [queryParams]="{ id: cardapio.id }">Abrir</a>
+              <a class="alerta-ciente" [routerLink]="['/cardapio']" [queryParams]="{ id: cardapio.id }"
+                (click)="reabrirSeJaAberta('/cardapio', cardapio.id)">Abrir</a>
             </div>
           </li>
           }
@@ -200,7 +201,7 @@
             }
             <div class="alerta-rodape">
               <a [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: resposta.empenho_id }"
-                (click)="marcarRespostaVista(resposta)">Empenho {{ resposta.empenho_codigo }}</a>
+                (click)="marcarRespostaVista(resposta); reabrirSeJaAberta('/visualizar-empenho', resposta.empenho_id)">Empenho {{ resposta.empenho_codigo }}</a>
               <button type="button" class="alerta-ciente" [disabled]="marcandoVistaId === resposta.id"
                 (click)="marcarRespostaVista(resposta)">
                 <i class="bi bi-check2" aria-hidden="true"></i> Ok
@@ -236,7 +237,8 @@
             <p class="alerta-motivo">"{{ reforco.justificativa }}"</p>
             <div class="alerta-rodape">
               <span>Empenho {{ reforco.empenho_codigo }}</span>
-              <a class="alerta-ciente" [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: reforco.empenho_id }">
+              <a class="alerta-ciente" [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: reforco.empenho_id }"
+                (click)="reabrirSeJaAberta('/visualizar-empenho', reforco.empenho_id)">
                 Analisar
               </a>
             </div>
@@ -269,7 +271,8 @@
               Solicite a entrega ao fornecedor.
             </p>
             <div class="alerta-rodape">
-              <a [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: reforco.empenho_id }">
+              <a [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: reforco.empenho_id }"
+                (click)="reabrirSeJaAberta('/visualizar-empenho', reforco.empenho_id)">
                 Empenho {{ reforco.empenho_codigo }}
               </a>
               <button type="button" class="alerta-ciente" [disabled]="marcandoReforcoCienteId === reforco.id"
