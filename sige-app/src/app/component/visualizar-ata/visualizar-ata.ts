@@ -742,6 +742,8 @@ export class VisualizarAta {
 
   private fecharModalSemConfirmacao(): void {
     if (this.fecharModalInternoBtn?.nativeElement) {
+      // Tira o foco de dentro do modal antes de escondê-lo (evita o aviso de aria-hidden do navegador).
+      (document.activeElement as HTMLElement | null)?.blur();
       this.permitirFecharModalSemConfirmacao = true;
       this.fecharModalInternoBtn.nativeElement.click();
     }
