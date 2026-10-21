@@ -4,6 +4,7 @@ import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 import { CommonModule } from '@angular/common';
 import { EmpenhoService } from '../../service/empenho.service';
 import { Empenho } from '../../model/empenho';
+import { Fornecedor } from '../../model/fornecedor';
 import { ItemEmpenho } from '../../model/itemEmpenho';
 import { OperacaoItem } from '../../model/operacao_item';
 import { OperacaoItemService } from '../../service/operacao-item.service';
@@ -195,6 +196,12 @@ export class VisualizarEmpenho {
   }
 
   empenho: Empenho = <Empenho>{};
+
+  // O empenho começa vazio até a API responder, então o fornecedor pode ainda não existir.
+  get fornecedorEmpenho(): Fornecedor | undefined {
+    return this.empenho.ata?.fornecedor;
+  }
+
   itensEmpenho: ItemEmpenho[] = [];
   itemEmpenhoModal: ItemEmpenho = <ItemEmpenho>{};
   itensOrdemInsert: ItemOrdemInsert[] = [];

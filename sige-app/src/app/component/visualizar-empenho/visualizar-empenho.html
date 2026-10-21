@@ -533,15 +533,15 @@
               <div class="entrega-contexto-solicitacao">
                 <div>
                   <span>Fornecedor</span>
-                  <strong>{{ empenho?.ata?.fornecedor?.nome_fantasia || 'Não informado' }}</strong>
+                  <strong>{{ fornecedorEmpenho?.nome_fantasia || 'Não informado' }}</strong>
                 </div>
                 <div>
                   <span>E-mail</span>
-                  <strong>{{ empenho?.ata?.fornecedor?.email || 'Não informado' }}</strong>
+                  <strong>{{ fornecedorEmpenho?.email || 'Não informado' }}</strong>
                 </div>
                 <div>
                   <span>Empenho</span>
-                  <strong>{{ empenho?.codigo || 'Não informado' }}</strong>
+                  <strong>{{ empenho.codigo || 'Não informado' }}</strong>
                 </div>
               </div>
 
@@ -630,8 +630,8 @@
               </div>
 
               <div class="entrega-revisao-dados">
-                <div><span>Fornecedor</span><strong>{{ empenho?.ata?.fornecedor?.nome_fantasia }}</strong></div>
-                <div><span>E-mail</span><strong>{{ empenho?.ata?.fornecedor?.email }}</strong></div>
+                <div><span>Fornecedor</span><strong>{{ fornecedorEmpenho?.nome_fantasia }}</strong></div>
+                <div><span>E-mail</span><strong>{{ fornecedorEmpenho?.email }}</strong></div>
                 <div><span>Data prevista</span><strong>{{ ordemEntregaInsert.data_entrega_prevista | date:'dd/MM/yyyy'
                     }}</strong></div>
                 <div><span>Arquivo</span><strong>{{ nomeArquivoSolicitacao }}</strong></div>
@@ -725,7 +725,7 @@
         </div>
 
         <div class="modal-body sige-modal__body">
-          @if (itemEmpenhoModal?.id && itemEmpenhoModal?.item_ata?.item_generico) {
+          @if (itemEmpenhoModal.id && itemEmpenhoModal.item_ata.item_generico) {
           <div class="operacao-item">
             <span class="sige-detail-label operacao-item-label">Item</span>
             <strong class="operacao-item-valor">{{ itemEmpenhoModal.item_ata.item_generico.descricao }}</strong>

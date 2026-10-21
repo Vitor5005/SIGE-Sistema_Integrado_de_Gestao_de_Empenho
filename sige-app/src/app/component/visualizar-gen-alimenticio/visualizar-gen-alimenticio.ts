@@ -1,11 +1,10 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { BotaoVoltar } from '../utils/botao-voltar/botao-voltar';
 import { Acao, pode, Recurso } from '../../security/rbac';
 
 @Component({
   selector: 'app-visualizar-gen-alimenticio',
-  imports: [BotaoVoltar, RouterLink],
+  imports: [BotaoVoltar],
   templateUrl: './visualizar-gen-alimenticio.html',
   styleUrl: './visualizar-gen-alimenticio.scss',
 })

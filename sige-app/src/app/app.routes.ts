@@ -1,30 +1,8 @@
 import { Routes } from '@angular/router';
-import { AdicionarLicitacao } from './component/adicionar-licitacao/adicionar-licitacao';
-import { VisualizarLicitacoes } from './component/visualizar-licitacoes/visualizar-licitacoes';
-import { VisualizarLicitacao } from './component/visualizar-licitacao/visualizar-licitacao';
-import { VisualizarAtas } from './component/visualizar-atas/visualizar-atas';
-import { VisualizarAta } from './component/visualizar-ata/visualizar-ata';
-import { VisualizarEmpenhos } from './component/visualizar-empenhos/visualizar-empenhos';
-import { VisualizarEmpenho } from './component/visualizar-empenho/visualizar-empenho';
-import { VisualizarEntregas } from './component/visualizar-entregas/visualizar-entregas';
-import { VisualizarFornecedores } from './component/visualizar-fornecedores/visualizar-fornecedores';
-import { VisualizarFornecedor } from './component/visualizar-fornecedor/visualizar-fornecedor';
-import { VisualizarGensAlimenticios } from './component/visualizar-gens-alimenticios/visualizar-gens-alimenticios';
 import { Login } from './component/login/login';
-import { Cadastro } from './component/cadastro/cadastro';
-import { RecuperarSenha } from './component/recuperar-senha/recuperar-senha';
 import { authGuard } from './guard/auth.guard';
-import { Home } from './component/home/home';
-import { VisualizarUsuarios } from './component/visualizar-usuarios/visualizar-usuarios';
 import { permissionGuard } from './guard/permission.guard';
 import { Acao, Recurso } from './security/rbac';
-import { Estoque } from './component/estoque/estoque';
-import { ExtratoEstoque } from './component/estoque/extrato-estoque/extrato-estoque';
-import { MovimentarEstoque } from './component/estoque/movimentar-estoque/movimentar-estoque';
-import { RegistrarRecebimento } from './component/estoque/registrar-recebimento/registrar-recebimento';
-import { Cardapios } from './component/cardapio/cardapios/cardapios';
-import { CardapioForm } from './component/cardapio/cardapio-form/cardapio-form';
-import { CardapioDetalhe } from './component/cardapio/cardapio-detalhe/cardapio-detalhe';
 
 export const routes: Routes = [
   {
@@ -38,7 +16,7 @@ export const routes: Routes = [
   },
   {
     path: 'recuperar-senha',
-    component: RecuperarSenha
+    loadComponent: () => import('./component/recuperar-senha/recuperar-senha').then(m => m.RecuperarSenha)
   },
   {
     path: "",
@@ -46,120 +24,120 @@ export const routes: Routes = [
     children: [
       {
         path: 'home',
-        component: Home,
+        loadComponent: () => import('./component/home/home').then(m => m.Home),
       },
       {
         path: 'visualizar-licitacoes',
-        component: VisualizarLicitacoes,
+        loadComponent: () => import('./component/visualizar-licitacoes/visualizar-licitacoes').then(m => m.VisualizarLicitacoes),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.LICITACAO, acao: Acao.CONSULTAR } },
       },
       {
         path: 'adicionar-licitacao',
-        component: AdicionarLicitacao,
+        loadComponent: () => import('./component/adicionar-licitacao/adicionar-licitacao').then(m => m.AdicionarLicitacao),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.LICITACAO, acao: Acao.CADASTRAR } },
       },
       {
         path: 'visualizar-licitacao',
-        component: VisualizarLicitacao,
+        loadComponent: () => import('./component/visualizar-licitacao/visualizar-licitacao').then(m => m.VisualizarLicitacao),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.LICITACAO, acao: Acao.CONSULTAR } },
       },
       {
         path: "visualizar-atas",
-        component: VisualizarAtas,
+        loadComponent: () => import('./component/visualizar-atas/visualizar-atas').then(m => m.VisualizarAtas),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.ATA, acao: Acao.CONSULTAR } },
       },
       {
         path: 'visualizar-ata',
-        component: VisualizarAta,
+        loadComponent: () => import('./component/visualizar-ata/visualizar-ata').then(m => m.VisualizarAta),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.ATA, acao: Acao.CONSULTAR } },
       },
       {
         path: 'visualizar-empenhos',
-        component: VisualizarEmpenhos,
+        loadComponent: () => import('./component/visualizar-empenhos/visualizar-empenhos').then(m => m.VisualizarEmpenhos),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.EMPENHO, acao: Acao.CONSULTAR } },
       },
       {
         path: "visualizar-empenho",
-        component: VisualizarEmpenho,
+        loadComponent: () => import('./component/visualizar-empenho/visualizar-empenho').then(m => m.VisualizarEmpenho),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.EMPENHO, acao: Acao.CONSULTAR } },
       },
       {
         path: "visualizar-entregas",
-        component: VisualizarEntregas,
+        loadComponent: () => import('./component/visualizar-entregas/visualizar-entregas').then(m => m.VisualizarEntregas),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.ORDEM_ENTREGA, acao: Acao.CONSULTAR } },
       },
       {
         path: "visualizar-fornecedores",
-        component: VisualizarFornecedores,
+        loadComponent: () => import('./component/visualizar-fornecedores/visualizar-fornecedores').then(m => m.VisualizarFornecedores),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.FORNECEDOR, acao: Acao.CONSULTAR } },
       },
       {
         path: "visualizar-fornecedor",
-        component: VisualizarFornecedor,
+        loadComponent: () => import('./component/visualizar-fornecedor/visualizar-fornecedor').then(m => m.VisualizarFornecedor),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.FORNECEDOR, acao: Acao.CONSULTAR } },
       },
 
       {
         path: "visualizar-gens-alimenticios",
-        component: VisualizarGensAlimenticios,
+        loadComponent: () => import('./component/visualizar-gens-alimenticios/visualizar-gens-alimenticios').then(m => m.VisualizarGensAlimenticios),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.GENERO_ALIMENTICIO, acao: Acao.CONSULTAR } },
       },
       {
         path: 'estoque',
-        component: Estoque,
+        loadComponent: () => import('./component/estoque/estoque').then(m => m.Estoque),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.ESTOQUE, acao: Acao.CONSULTAR } },
       },
       {
         path: 'estoque/extrato',
-        component: ExtratoEstoque,
+        loadComponent: () => import('./component/estoque/extrato-estoque/extrato-estoque').then(m => m.ExtratoEstoque),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.MOVIMENTACAO_ESTOQUE, acao: Acao.CONSULTAR_EXTRATO } },
       },
       {
         path: 'estoque/movimentacao',
-        component: MovimentarEstoque,
+        loadComponent: () => import('./component/estoque/movimentar-estoque/movimentar-estoque').then(m => m.MovimentarEstoque),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.ESTOQUE, acao: Acao.REGISTRAR_SAIDA } },
       },
       {
         path: 'estoque/recebimento',
-        component: RegistrarRecebimento,
+        loadComponent: () => import('./component/estoque/registrar-recebimento/registrar-recebimento').then(m => m.RegistrarRecebimento),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.ESTOQUE, acao: Acao.REGISTRAR_RECEBIMENTO } },
       },
       {
         path: 'cardapios',
-        component: Cardapios,
+        loadComponent: () => import('./component/cardapio/cardapios/cardapios').then(m => m.Cardapios),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.CARDAPIO, acao: Acao.CONSULTAR } },
       },
       {
         path: 'cardapios/novo',
-        component: CardapioForm,
+        loadComponent: () => import('./component/cardapio/cardapio-form/cardapio-form').then(m => m.CardapioForm),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.CARDAPIO, acao: Acao.CADASTRAR } },
       },
       {
         path: 'cardapios/editar',
-        component: CardapioForm,
+        loadComponent: () => import('./component/cardapio/cardapio-form/cardapio-form').then(m => m.CardapioForm),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.CARDAPIO, acao: Acao.EDITAR } },
       },
       {
         path: 'cardapio',
-        component: CardapioDetalhe,
+        loadComponent: () => import('./component/cardapio/cardapio-detalhe/cardapio-detalhe').then(m => m.CardapioDetalhe),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.CARDAPIO, acao: Acao.CONSULTAR } },
       }
@@ -171,7 +149,7 @@ export const routes: Routes = [
     children: [
       {
         path: "visualizar-usuarios",
-        component: VisualizarUsuarios,
+        loadComponent: () => import('./component/visualizar-usuarios/visualizar-usuarios').then(m => m.VisualizarUsuarios),
         canActivate: [permissionGuard],
         data: { permission: { recurso: Recurso.USUARIO, acao: Acao.CONSULTAR } },
       }
