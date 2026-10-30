@@ -124,6 +124,33 @@ class ItemInventario(models.Model):
         ]
 
 
+class ContagemLoteInventario(models.Model):
+    item_inventario = models.ForeignKey(
+        ItemInventario,
+        on_delete=models.PROTECT,
+        related_name='contagens_lote',
+    )
+    lote = models.ForeignKey(
+        LoteEstoque,
+        on_delete=models.PROTECT,
+        related_name='contagens_inventario',
+    )
+    saldo_sistema = models.DecimalField(max_digits=12, decimal_places=3)
+    quantidade_contada = models.DecimalField(max_digits=12, decimal_places=3)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['item_inventario', 'lote'],
+                name='contagem_lote_unica_por_item',
+            ),
+            models.CheckConstraint(
+                condition=Q(saldo_sistema__gte=0) & Q(quantidade_contada__gte=0),
+                name='contagem_lote_quantidades_nao_negativas',
+            ),
+        ]
+
+
 class MovimentacaoEstoqueQuerySet(models.QuerySet):
     def update(self, **kwargs):
         raise ValidationError('Movimentações de estoque são imutáveis; use estorno.')
@@ -163,12 +190,12 @@ class MovimentacaoEstoque(models.Model):
         blank=True,
         related_name='movimentacoes_estoque',
     )
-    item_inventario = models.OneToOneField(
+    item_inventario = models.ForeignKey(
         ItemInventario,
         on_delete=models.PROTECT,
         null=True,
         blank=True,
-        related_name='movimentacao_estoque',
+        related_name='movimentacoes_estoque',
     )
     # Saídas e devoluções geradas por um cardápio (retirada aprovada e acerto do consumo real).
     item_cardapio = models.ForeignKey(

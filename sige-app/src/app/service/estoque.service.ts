@@ -7,6 +7,7 @@ import {
   EstoqueConsolidado,
   EstoqueItem,
   ItemRecebimento,
+  LoteInventario,
   LoteSaida,
   MovimentacaoEstoque,
 } from '../model/estoque';
@@ -57,12 +58,17 @@ export class EstoqueService {
     return this.http.get<LoteSaida[]>(this.apiUrl + 'lotes-para-perda/', { params });
   }
 
+  listarLotesParaInventario(itemGenericoId: number): Observable<LoteInventario[]> {
+    const params = new HttpParams().set('item_generico_id', itemGenericoId);
+    return this.http.get<LoteInventario[]>(this.apiUrl + 'lotes-para-inventario/', { params });
+  }
+
   registrarCargaInicial(payload: object): Observable<MovimentacaoEstoque> {
     return this.http.post<MovimentacaoEstoque>(this.apiUrl + 'cargas-iniciais/', payload);
   }
 
-  registrarAjuste(payload: object): Observable<MovimentacaoEstoque> {
-    return this.http.post<MovimentacaoEstoque>(this.apiUrl + 'ajustes/', payload);
+  registrarAjuste(payload: object): Observable<MovimentacaoEstoque[]> {
+    return this.http.post<MovimentacaoEstoque[]>(this.apiUrl + 'ajustes/', payload);
   }
 
   estornar(payload: object): Observable<MovimentacaoEstoque> {

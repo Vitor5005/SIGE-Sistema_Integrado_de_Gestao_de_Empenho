@@ -15,6 +15,7 @@ from estoque.serializers import (
     CargaInicialSerializer,
     EstoqueSerializer,
     EstornoSerializer,
+    LoteInventarioSerializer,
     LoteSaidaSerializer,
     MovimentacaoEstoqueSerializer,
     RecebimentoSerializer,
@@ -46,6 +47,7 @@ class EstoqueViewSet(RBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
         'recebimentos': Acao.REGISTRAR_RECEBIMENTO,
         'saidas': Acao.REGISTRAR_SAIDA,
         'lotes_para_perda': Acao.REGISTRAR_SAIDA,
+        'lotes_para_inventario': Acao.REGISTRAR_AJUSTE,
         'cargas_iniciais': Acao.REGISTRAR_CARGA_INICIAL,
         'ajustes': Acao.REGISTRAR_AJUSTE,
         'estornos': Acao.ESTORNAR,
@@ -144,6 +146,30 @@ class EstoqueViewSet(RBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
             lote.id,
         ))
         return Response(LoteSaidaSerializer(lotes, many=True).data)
+
+    @action(detail=False, methods=['get'], url_path='lotes-para-inventario')
+    def lotes_para_inventario(self, request):
+        try:
+            item_generico_id = int(request.query_params.get('item_generico_id'))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError({
+                'item_generico_id': 'Informe um gênero válido.',
+            }) from exc
+        if item_generico_id <= 0:
+            raise ValidationError({'item_generico_id': 'Informe um gênero válido.'})
+
+        lotes = list(
+            LoteEstoque.objects.filter(
+                estoque__item_generico_id=item_generico_id,
+                saldo_atual__gt=0,
+            )
+        )
+        lotes.sort(key=lambda lote: (
+            0 if lote.legado else 1,
+            lote.data_validade if lote.data_validade is not None else date.max,
+            lote.id,
+        ))
+        return Response(LoteInventarioSerializer(lotes, many=True).data)
 
     @action(detail=False, methods=['post'], url_path='cargas-iniciais')
     def cargas_iniciais(self, request):

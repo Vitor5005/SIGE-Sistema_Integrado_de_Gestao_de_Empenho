@@ -13,6 +13,7 @@ from empenho.models import Empenho, ItemEmpenho
 from entrega.models import ItemOrdem, OrdemEntrega
 from utils.pendencias import sincronizar_pendencias
 from estoque.models import (
+    ContagemLoteInventario,
     Estoque,
     Inventario,
     ItemInventario,
@@ -45,27 +46,6 @@ def _estoque_bloqueado(item_generico_id):
     return Estoque.objects.select_for_update().select_related('item_generico').get(
         item_generico_id=item_generico_id
     )
-
-
-def _lote_legado_bloqueado(estoque):
-    LoteEstoque.objects.get_or_create(
-        estoque=estoque,
-        numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
-        defaults={
-            'data_validade': None,
-            'saldo_atual': estoque.saldo_atual,
-            'legado': True,
-        },
-    )
-    lote = LoteEstoque.objects.select_for_update().get(
-        estoque=estoque,
-        numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
-    )
-    if not lote.legado or lote.data_validade is not None:
-        raise ValidationError({
-            'estoque': 'O lote legado do estoque está inconsistente.',
-        })
-    return lote
 
 
 def _validar_consistencia_lotes(estoque):
@@ -221,32 +201,6 @@ def _resolver_alocacoes_lote(*, estoque, quantidade, sentido, alocacoes_lote):
     return alocacoes
 
 
-def _alocacoes_saida_compativel(*, estoque, quantidade):
-    lotes = list(
-        LoteEstoque.objects.select_for_update()
-        .filter(estoque=estoque, saldo_atual__gt=ZERO)
-    )
-    lotes.sort(key=lambda lote: (
-        0 if lote.legado else 1,
-        lote.data_validade if lote.data_validade is not None else date.max,
-        lote.id,
-    ))
-
-    restante = quantidade
-    alocacoes = []
-    for lote in lotes:
-        if restante <= ZERO:
-            break
-        quantidade_lote = min(_decimal(lote.saldo_atual), restante)
-        if quantidade_lote > ZERO:
-            alocacoes.append({'lote': lote, 'quantidade': quantidade_lote})
-            restante = (restante - quantidade_lote).quantize(Decimal('0.001'))
-
-    if restante > ZERO:
-        raise ValidationError({'quantidade': 'A quantidade informada excede o saldo em estoque.'})
-    return alocacoes
-
-
 def _alocacoes_saida_fefo(*, estoque, quantidade, data_referencia):
     referencia = _data_referencia_lotes(data_referencia)
     lotes = list(
@@ -309,9 +263,6 @@ def _registrar_movimentacao(
             sentido=sentido,
             alocacoes_lote=alocacoes_lote,
         )
-    elif sentido == MovimentacaoEstoque.Sentido.ENTRADA:
-        lote = _lote_legado_bloqueado(estoque)
-        alocacoes = [{'lote': lote, 'quantidade': quantidade}]
     elif usar_fefo:
         alocacoes = _alocacoes_saida_fefo(
             estoque=estoque,
@@ -323,7 +274,7 @@ def _registrar_movimentacao(
             ),
         )
     else:
-        alocacoes = _alocacoes_saida_compativel(estoque=estoque, quantidade=quantidade)
+        raise ValidationError({'lotes': 'Informe os lotes da movimentação.'})
 
     delta = quantidade if sentido == MovimentacaoEstoque.Sentido.ENTRADA else -quantidade
     novo_saldo = (estoque.saldo_atual + delta).quantize(Decimal('0.001'))
@@ -536,82 +487,268 @@ def registrar_devolucao_cardapio(*, item_cardapio, quantidade, usuario, observac
     )
 
 
+def _normalizar_lotes_carga_inicial(lotes):
+    if not isinstance(lotes, (list, tuple)) or not lotes:
+        raise ValidationError({'lotes': 'Informe ao menos um lote para a carga inicial.'})
+
+    normalizados = []
+    numeros = set()
+    for dados in lotes:
+        if not isinstance(dados, dict):
+            raise ValidationError({'lotes': 'Informe um lote válido para a carga inicial.'})
+        numero_lote = _numero_lote(dados.get('numero_lote'))
+        if numero_lote.casefold() in numeros:
+            raise ValidationError({
+                'lotes': 'O mesmo lote foi informado mais de uma vez para este item.',
+            })
+        quantidade = _decimal(dados.get('quantidade'))
+        if quantidade <= ZERO:
+            raise ValidationError({'quantidade': 'A quantidade deve ser maior que zero.'})
+        normalizados.append({
+            'numero_lote': numero_lote,
+            'data_validade': _data_validade(dados.get('data_validade')),
+            'quantidade': quantidade,
+        })
+        numeros.add(numero_lote.casefold())
+    return normalizados
+
+
 @transaction.atomic
-def registrar_carga_inicial(*, item_generico_id, quantidade, justificativa, usuario, data_hora=None):
+def registrar_carga_inicial(*, item_generico_id, lotes, justificativa, usuario, data_hora=None):
     estoque = _estoque_bloqueado(item_generico_id)
+    _validar_consistencia_lotes(estoque)
     if MovimentacaoEstoque.objects.filter(
         estoque=estoque,
         tipo=MovimentacaoEstoque.Tipo.CARGA_INICIAL,
     ).exists():
         raise ValidationError({'item_generico': 'Este gênero já possui carga inicial.'})
+    if _decimal(estoque.saldo_atual) != ZERO:
+        raise ValidationError({
+            'item_generico': (
+                'A carga inicial só pode ser registrada quando o saldo atual do gênero é zero.'
+            ),
+        })
+
+    lotes_normalizados = _normalizar_lotes_carga_inicial(lotes)
+    alocacoes_lote = []
+    contagens = []
+    quantidade_total = ZERO
+    for dados in lotes_normalizados:
+        lote = _lote_recebimento_bloqueado(
+            estoque=estoque,
+            numero_lote=dados['numero_lote'],
+            data_validade=dados['data_validade'],
+        )
+        saldo_sistema = _decimal(lote.saldo_atual)
+        alocacoes_lote.append({'lote_id': lote.id, 'quantidade': dados['quantidade']})
+        contagens.append((lote, saldo_sistema, dados['quantidade']))
+        quantidade_total = (quantidade_total + dados['quantidade']).quantize(Decimal('0.001'))
 
     momento = data_hora or timezone.now()
+    observacao = _justificativa(justificativa)
     inventario = Inventario.objects.create(
         tipo=Inventario.Tipo.CARGA_INICIAL,
         status=Inventario.Status.FINALIZADO,
         data_contagem=momento,
         data_finalizacao=momento,
-        observacao=_justificativa(justificativa),
+        observacao=observacao,
         usuario=usuario,
     )
     item = ItemInventario.objects.create(
         inventario=inventario,
         estoque=estoque,
-        saldo_sistema=estoque.saldo_atual,
-        quantidade_contada=_decimal(quantidade),
+        saldo_sistema=ZERO,
+        quantidade_contada=quantidade_total,
     )
+    for lote, saldo_sistema, quantidade_contada in contagens:
+        ContagemLoteInventario.objects.create(
+            item_inventario=item,
+            lote=lote,
+            saldo_sistema=saldo_sistema,
+            quantidade_contada=quantidade_contada,
+        )
     return _registrar_movimentacao(
         item_generico_id=item_generico_id,
         tipo=MovimentacaoEstoque.Tipo.CARGA_INICIAL,
         sentido=MovimentacaoEstoque.Sentido.ENTRADA,
-        quantidade=quantidade,
+        quantidade=quantidade_total,
         usuario=usuario,
         data_hora=momento,
-        observacao=inventario.observacao,
+        observacao=observacao,
         item_inventario=item,
+        alocacoes_lote=alocacoes_lote,
     )
 
 
-@transaction.atomic
-def registrar_ajuste(*, item_generico_id, quantidade_contada, justificativa, usuario, data_hora=None):
-    """Inventário: recebe o que foi contado na prateleira e lança a diferença para o saldo do sistema."""
-    quantidade_contada = _decimal(quantidade_contada, 'quantidade_contada')
-    if quantidade_contada < ZERO:
-        raise ValidationError({'quantidade_contada': 'A quantidade contada não pode ser negativa.'})
+def _resolver_contagens_inventario(*, estoque, lotes, lotes_positivos):
+    if not isinstance(lotes, (list, tuple)) or not lotes:
+        raise ValidationError({'lotes': 'Informe ao menos um lote para o inventário.'})
 
-    estoque = _estoque_bloqueado(item_generico_id)
-    ajuste = quantidade_contada - estoque.saldo_atual
-    if ajuste == ZERO:
+    contagens = []
+    lote_ids = set()
+    numeros_novos = set()
+    for dados in lotes:
+        if not isinstance(dados, dict):
+            raise ValidationError({'lotes': 'Informe um lote válido para o inventário.'})
+
+        lote_id = dados.get('lote_id')
+        tem_identidade_nova = (
+            dados.get('numero_lote') is not None
+            or dados.get('data_validade') is not None
+        )
+        quantidade_contada = _decimal(dados.get('quantidade_contada'), 'quantidade_contada')
+        if quantidade_contada < ZERO:
+            raise ValidationError({
+                'quantidade_contada': 'A quantidade contada não pode ser negativa.',
+            })
+
+        if lote_id is not None:
+            if tem_identidade_nova:
+                raise ValidationError({
+                    'lotes': 'Para lotes existentes informe apenas o lote e a quantidade contada.',
+                })
+            try:
+                lote = LoteEstoque.objects.select_for_update().get(pk=lote_id)
+            except (LoteEstoque.DoesNotExist, TypeError, ValueError) as exc:
+                raise ValidationError({'lotes': 'Informe um lote válido para o inventário.'}) from exc
+            if lote.estoque_id != estoque.id:
+                raise ValidationError({'lotes': 'O lote informado não pertence ao mesmo estoque.'})
+        else:
+            if quantidade_contada <= ZERO:
+                raise ValidationError({
+                    'quantidade_contada': 'A quantidade de um novo lote deve ser maior que zero.',
+                })
+            numero_lote = _numero_lote(dados.get('numero_lote'))
+            if numero_lote.casefold() in numeros_novos:
+                raise ValidationError({
+                    'lotes': 'O mesmo lote foi informado mais de uma vez para este item.',
+                })
+            lote = _lote_recebimento_bloqueado(
+                estoque=estoque,
+                numero_lote=numero_lote,
+                data_validade=_data_validade(dados.get('data_validade')),
+            )
+            numeros_novos.add(numero_lote.casefold())
+
+        if lote.id in lote_ids:
+            raise ValidationError({
+                'lotes': 'O mesmo lote foi informado mais de uma vez para este item.',
+            })
+        lote_ids.add(lote.id)
+        contagens.append({
+            'lote': lote,
+            'saldo_sistema': _decimal(lote.saldo_atual),
+            'quantidade_contada': quantidade_contada,
+        })
+
+    ids_positivos = {lote.id for lote in lotes_positivos}
+    if not ids_positivos.issubset(lote_ids):
         raise ValidationError({
-            'quantidade_contada': 'A contagem confere com o saldo do sistema; não há diferença a ajustar.'
+            'lotes': 'A contagem deve informar todos os lotes que possuem saldo no sistema.',
+        })
+    return contagens
+
+
+@transaction.atomic
+def registrar_ajuste(*, item_generico_id, lotes, justificativa, usuario, data_hora=None):
+    """Registra uma contagem física completa, preservando cada lote contado."""
+    estoque = _estoque_bloqueado(item_generico_id)
+    _validar_consistencia_lotes(estoque)
+    lotes_positivos = list(
+        LoteEstoque.objects.select_for_update()
+        .filter(estoque=estoque, saldo_atual__gt=ZERO)
+    )
+    saldo_sistema_estoque = _decimal(estoque.saldo_atual)
+    contagens = _resolver_contagens_inventario(
+        estoque=estoque,
+        lotes=lotes,
+        lotes_positivos=lotes_positivos,
+    )
+
+    quantidade_contada_total = sum(
+        (contagem['quantidade_contada'] for contagem in contagens),
+        ZERO,
+    ).quantize(Decimal('0.001'))
+    diferencas_negativas = []
+    diferencas_positivas = []
+    for contagem in contagens:
+        diferenca = (
+            contagem['quantidade_contada'] - contagem['saldo_sistema']
+        ).quantize(Decimal('0.001'))
+        if diferenca < ZERO:
+            diferencas_negativas.append({
+                'lote_id': contagem['lote'].id,
+                'quantidade': abs(diferenca),
+            })
+        elif diferenca > ZERO:
+            diferencas_positivas.append({
+                'lote_id': contagem['lote'].id,
+                'quantidade': diferenca,
+            })
+
+    if not diferencas_negativas and not diferencas_positivas:
+        raise ValidationError({
+            'lotes': 'A contagem confere com os saldos dos lotes; não há diferença a ajustar.',
         })
 
     momento = data_hora or timezone.now()
+    observacao = _justificativa(justificativa)
     inventario = Inventario.objects.create(
         tipo=Inventario.Tipo.PERIODICO,
         status=Inventario.Status.FINALIZADO,
         data_contagem=momento,
         data_finalizacao=momento,
-        observacao=_justificativa(justificativa),
+        observacao=observacao,
         usuario=usuario,
     )
     item = ItemInventario.objects.create(
         inventario=inventario,
         estoque=estoque,
-        saldo_sistema=estoque.saldo_atual,
-        quantidade_contada=quantidade_contada,
+        saldo_sistema=saldo_sistema_estoque,
+        quantidade_contada=quantidade_contada_total,
     )
-    positivo = ajuste > ZERO
-    return _registrar_movimentacao(
-        item_generico_id=item_generico_id,
-        tipo=(MovimentacaoEstoque.Tipo.AJUSTE_POSITIVO if positivo else MovimentacaoEstoque.Tipo.AJUSTE_NEGATIVO),
-        sentido=(MovimentacaoEstoque.Sentido.ENTRADA if positivo else MovimentacaoEstoque.Sentido.SAIDA),
-        quantidade=abs(ajuste),
-        usuario=usuario,
-        data_hora=momento,
-        observacao=inventario.observacao,
-        item_inventario=item,
-    )
+    for contagem in contagens:
+        ContagemLoteInventario.objects.create(
+            item_inventario=item,
+            lote=contagem['lote'],
+            saldo_sistema=contagem['saldo_sistema'],
+            quantidade_contada=contagem['quantidade_contada'],
+        )
+
+    movimentos = []
+    if diferencas_negativas:
+        quantidade_negativa = sum(
+            (alocacao['quantidade'] for alocacao in diferencas_negativas),
+            ZERO,
+        ).quantize(Decimal('0.001'))
+        movimentos.append(_registrar_movimentacao(
+            item_generico_id=item_generico_id,
+            tipo=MovimentacaoEstoque.Tipo.AJUSTE_NEGATIVO,
+            sentido=MovimentacaoEstoque.Sentido.SAIDA,
+            quantidade=quantidade_negativa,
+            usuario=usuario,
+            data_hora=momento,
+            observacao=observacao,
+            item_inventario=item,
+            alocacoes_lote=diferencas_negativas,
+        ))
+    if diferencas_positivas:
+        quantidade_positiva = sum(
+            (alocacao['quantidade'] for alocacao in diferencas_positivas),
+            ZERO,
+        ).quantize(Decimal('0.001'))
+        movimentos.append(_registrar_movimentacao(
+            item_generico_id=item_generico_id,
+            tipo=MovimentacaoEstoque.Tipo.AJUSTE_POSITIVO,
+            sentido=MovimentacaoEstoque.Sentido.ENTRADA,
+            quantidade=quantidade_positiva,
+            usuario=usuario,
+            data_hora=momento,
+            observacao=observacao,
+            item_inventario=item,
+            alocacoes_lote=diferencas_positivas,
+        ))
+    return item, movimentos
 
 
 @transaction.atomic

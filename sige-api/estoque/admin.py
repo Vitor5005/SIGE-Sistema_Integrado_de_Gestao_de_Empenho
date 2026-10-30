@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from estoque.models import (
+    ContagemLoteInventario,
     Estoque,
     Inventario,
     ItemInventario,
@@ -69,6 +70,21 @@ class LoteEstoqueAdmin(admin.ModelAdmin):
 class MovimentacaoLoteAdmin(admin.ModelAdmin):
     list_display = ('movimentacao', 'lote', 'quantidade', 'saldo_lote_resultante')
     readonly_fields = [field.name for field in MovimentacaoLote._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ContagemLoteInventario)
+class ContagemLoteInventarioAdmin(admin.ModelAdmin):
+    list_display = ('item_inventario', 'lote', 'saldo_sistema', 'quantidade_contada')
+    readonly_fields = [field.name for field in ContagemLoteInventario._meta.fields]
 
     def has_add_permission(self, request):
         return False

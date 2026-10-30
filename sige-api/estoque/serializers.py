@@ -65,6 +65,42 @@ class LoteSaidaSerializer(serializers.ModelSerializer):
         return lote_vencido(lote)
 
 
+class LoteInventarioSerializer(serializers.ModelSerializer):
+    vencido = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LoteEstoque
+        fields = ('id', 'numero_lote', 'data_validade', 'saldo_atual', 'legado', 'vencido')
+        read_only_fields = fields
+
+    def get_vencido(self, lote):
+        return lote_vencido(lote)
+
+
+class LoteRecebimentoSerializer(serializers.Serializer):
+    numero_lote = serializers.CharField(
+        max_length=100,
+        allow_blank=False,
+        trim_whitespace=True,
+    )
+    data_validade = serializers.DateField()
+    quantidade = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=3,
+        min_value=Decimal('0.001'),
+    )
+
+    def validate_numero_lote(self, valor):
+        numero_lote = valor.strip()
+        if not numero_lote:
+            raise serializers.ValidationError('Informe o número do lote.')
+        if numero_lote.casefold() == LoteEstoque.NUMERO_LOTE_LEGADO.casefold():
+            raise serializers.ValidationError(
+                'O identificador LEGADO é reservado para saldos anteriores ao controle de lotes.'
+            )
+        return numero_lote
+
+
 class SaidaSerializer(serializers.Serializer):
     item_generico_id = serializers.IntegerField(min_value=1)
     quantidade = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0.001'))
@@ -89,16 +125,93 @@ class SaidaSerializer(serializers.Serializer):
 
 class CargaInicialSerializer(serializers.Serializer):
     item_generico_id = serializers.IntegerField(min_value=1)
-    quantidade = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0.001'))
+    lotes = LoteRecebimentoSerializer(many=True, allow_empty=False)
     justificativa = serializers.CharField(allow_blank=False, trim_whitespace=True)
     data_hora = serializers.DateTimeField(required=False)
+
+    def validate_lotes(self, lotes):
+        numeros_informados = set()
+        for lote in lotes:
+            numero_normalizado = lote['numero_lote'].strip().casefold()
+            if numero_normalizado in numeros_informados:
+                raise serializers.ValidationError(
+                    'O mesmo lote foi informado mais de uma vez para este item.'
+                )
+            numeros_informados.add(numero_normalizado)
+        return lotes
+
+
+class LoteContagemInventarioSerializer(serializers.Serializer):
+    lote_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    numero_lote = serializers.CharField(
+        required=False,
+        allow_blank=False,
+        trim_whitespace=True,
+        max_length=100,
+    )
+    data_validade = serializers.DateField(required=False)
+    quantidade_contada = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=3,
+        min_value=Decimal('0'),
+    )
+
+    def validate(self, attrs):
+        lote_id = attrs.get('lote_id')
+        possui_identidade_nova = (
+            attrs.get('numero_lote') is not None
+            or attrs.get('data_validade') is not None
+        )
+        quantidade_contada = attrs['quantidade_contada']
+        if lote_id is not None:
+            if possui_identidade_nova:
+                raise serializers.ValidationError({
+                    'lotes': 'Para lotes existentes informe apenas o lote e a quantidade contada.',
+                })
+            return attrs
+
+        if not attrs.get('numero_lote') or attrs.get('data_validade') is None:
+            raise serializers.ValidationError({
+                'lotes': 'Informe o número e a data de validade do novo lote.',
+            })
+        if quantidade_contada <= Decimal('0.000'):
+            raise serializers.ValidationError({
+                'quantidade_contada': 'A quantidade de um novo lote deve ser maior que zero.',
+            })
+        if attrs['numero_lote'].strip().casefold() == LoteEstoque.NUMERO_LOTE_LEGADO.casefold():
+            raise serializers.ValidationError({
+                'numero_lote': (
+                    'O identificador LEGADO é reservado para saldos anteriores ao controle de lotes.'
+                ),
+            })
+        return attrs
 
 
 class AjusteSerializer(serializers.Serializer):
     item_generico_id = serializers.IntegerField(min_value=1)
-    quantidade_contada = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0'))
+    lotes = LoteContagemInventarioSerializer(many=True, allow_empty=False)
     justificativa = serializers.CharField(allow_blank=False, trim_whitespace=True)
     data_hora = serializers.DateTimeField(required=False)
+
+    def validate_lotes(self, lotes):
+        lote_ids = set()
+        numeros_novos = set()
+        for lote in lotes:
+            lote_id = lote.get('lote_id')
+            if lote_id is not None:
+                if lote_id in lote_ids:
+                    raise serializers.ValidationError(
+                        'O mesmo lote foi informado mais de uma vez para este item.'
+                    )
+                lote_ids.add(lote_id)
+                continue
+            numero_lote = lote['numero_lote'].strip().casefold()
+            if numero_lote in numeros_novos:
+                raise serializers.ValidationError(
+                    'O mesmo lote foi informado mais de uma vez para este item.'
+                )
+            numeros_novos.add(numero_lote)
+        return lotes
 
 
 class EstornoSerializer(serializers.Serializer):
@@ -107,7 +220,7 @@ class EstornoSerializer(serializers.Serializer):
     data_hora = serializers.DateTimeField(required=False)
 
 
-class LoteRecebimentoSerializer(serializers.Serializer):
+class _LoteRecebimentoSerializerLegado(serializers.Serializer):
     numero_lote = serializers.CharField(
         max_length=100,
         allow_blank=False,

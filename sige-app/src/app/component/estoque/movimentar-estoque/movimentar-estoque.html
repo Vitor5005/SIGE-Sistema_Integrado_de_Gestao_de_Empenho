@@ -1,48 +1,213 @@
 <section class="estoque-pagina">
-  <div class="estoque-topo"><div><h3>NOVA MOVIMENTAÇÃO</h3><p>Registre saídas e contagens de inventário do estoque.</p></div>
-    <a class="btn btn-outline-primary" routerLink="/estoque">Voltar ao estoque</a></div>
-  @if(erro){<div class="alert alert-danger">{{erro}}</div>} @if(sucesso){<div class="alert alert-success">{{sucesso}}</div>}
+  <div class="estoque-topo">
+    <div>
+      <h3>NOVA MOVIMENTAÇÃO</h3>
+      <p>Registre saídas, cargas iniciais e contagens de inventário do estoque.</p>
+    </div>
+    <a class="btn btn-outline-primary" routerLink="/estoque">Voltar ao estoque</a>
+  </div>
+
+  @if (erro) {
+    <div class="alert alert-danger">{{ erro }}</div>
+  }
+  @if (sucesso) {
+    <div class="alert alert-success">{{ sucesso }}</div>
+  }
+
   <form class="card p-4" (ngSubmit)="salvar()">
     <div class="row g-3">
-      <div class="col-md-4"><label class="form-label">Operação</label>
+      <div class="col-md-4">
+        <label class="form-label">Operação</label>
         <select class="form-select" [ngModel]="operacao" (ngModelChange)="trocarOperacao($event)" name="operacao">
           <option value="SAIDA">Saída</option>
           <option value="INVENTARIO">Inventário (contagem)</option>
-          @if(itensSemCargaInicial.length){<option value="CARGA_INICIAL">Carga inicial (implantação)</option>}
-        </select></div>
-      <div class="col-md-8"><label class="form-label">Gênero alimentício</label>
+          @if (itensSemCargaInicial.length) {
+            <option value="CARGA_INICIAL">Carga inicial (implantação)</option>
+          }
+        </select>
+      </div>
+
+      <div class="col-md-8">
+        <label class="form-label">Gênero alimentício</label>
         <select class="form-select" [ngModel]="itemGenericoId" (ngModelChange)="trocarGenero($event)" name="genero" required>
           <option [ngValue]="undefined">Selecione</option>
-          @for(item of itensDaOperacao;track item.id){<option [ngValue]="item.item_generico_id">{{item.catmat}} - {{item.descricao}}</option>}
-        </select></div>
-      <div class="col-12"><p class="text-muted small mb-0">{{descricaoOperacao}}</p></div>
-      @if(operacao==='SAIDA'){<div class="col-md-4"><label class="form-label">Motivo da saída</label>
-        <select class="form-select" [ngModel]="tipoSaida" (ngModelChange)="trocarTipoSaida($event)" name="tipoSaida">
-          <option value="PRODUCAO">Consumo no preparo de refeições</option><option value="DOACAO">Doação</option><option value="PERDA">Perda ou vencimento</option>
-        </select></div>}
-      @if(operacao==='SAIDA' && tipoSaida==='PERDA'){<div class="col-md-8"><label class="form-label">Lote *</label>
-        <select class="form-select" [(ngModel)]="loteId" name="lotePerda" [disabled]="carregandoLotes || !itemSelecionado" required>
-          <option [ngValue]="undefined">{{carregandoLotes ? 'Carregando lotes...' : 'Selecione o lote'}}</option>
-          @for(lote of lotesPerda;track lote.id){<option [ngValue]="lote.id">
-            {{lote.numero_lote}}{{lote.vencido ? ' — Vencido' : ''}} — {{formatarDataValidade(lote.data_validade)}} — {{lote.saldo_atual|number:'1.0-3'}} {{itemSelecionado?.unidade_medida}}
-          </option>}
+          @for (item of itensDaOperacao; track item.id) {
+            <option [ngValue]="item.item_generico_id">{{ item.catmat }} - {{ item.descricao }}</option>
+          }
         </select>
-        @if(loteSelecionado){<small class="text-muted d-block mt-1">Saldo do lote: <b>{{loteSelecionado.saldo_atual|number:'1.0-3'}} {{itemSelecionado?.unidade_medida}}</b></small>}
-      </div>}
-      <div class="col-md-4"><label class="form-label">{{rotuloQuantidade}}</label>
-        <input class="form-control" type="number" step="0.001" min="0" [(ngModel)]="quantidade" name="quantidade" required>
-        @if(itemSelecionado){<small class="text-muted d-block mt-1">Saldo físico: <b>{{itemSelecionado.saldo_atual|number:'1.0-3'}} {{itemSelecionado.unidade_medida}}</b></small>}
-        @if(itemSelecionado && operacao==='SAIDA' && (tipoSaida==='PRODUCAO' || tipoSaida==='DOACAO')){
-        <small class="text-muted d-block mt-1">Disponível para uso: <b>{{itemSelecionado.saldo_utilizavel|number:'1.0-3'}} {{itemSelecionado.unidade_medida}}</b><br>Lotes vencidos não são considerados disponíveis para produção ou doação.</small>}
-        @if(operacao==='INVENTARIO' && diferencaInventario!==null){
-        <small class="d-block" [class.text-success]="diferencaInventario>0" [class.text-danger]="diferencaInventario<0" [class.text-muted]="diferencaInventario===0">
-          @if(diferencaInventario===0){Contagem confere com o sistema; nada a ajustar.}
-          @else{{{diferencaInventario>0?'Sobra':'Falta'}} de {{diferencaAbsoluta|number:'1.0-3'}} {{itemSelecionado?.unidade_medida}} será lançada.}
-        </small>}
       </div>
-      <div class="col-md-4"><label class="form-label">Data e hora</label><input class="form-control" type="datetime-local" [(ngModel)]="dataHora" name="dataHora" required></div>
-      <div class="col-12"><label class="form-label">Motivo/justificativa</label><textarea class="form-control" maxlength="255" [(ngModel)]="justificativa" name="justificativa" required></textarea></div>
+
+      <div class="col-12"><p class="text-muted small mb-0">{{ descricaoOperacao }}</p></div>
+
+      @if (operacao === 'SAIDA') {
+        <div class="col-md-4">
+          <label class="form-label">Motivo da saída</label>
+          <select class="form-select" [ngModel]="tipoSaida" (ngModelChange)="trocarTipoSaida($event)" name="tipoSaida">
+            <option value="PRODUCAO">Consumo no preparo de refeições</option>
+            <option value="DOACAO">Doação</option>
+            <option value="PERDA">Perda ou vencimento</option>
+          </select>
+        </div>
+
+        @if (tipoSaida === 'PERDA') {
+          <div class="col-md-8">
+            <label class="form-label">Lote *</label>
+            <select class="form-select" [(ngModel)]="loteId" name="lotePerda" [disabled]="carregandoLotes || !itemSelecionado" required>
+              <option [ngValue]="undefined">{{ carregandoLotes ? 'Carregando lotes...' : 'Selecione o lote' }}</option>
+              @for (lote of lotesPerda; track lote.id) {
+                <option [ngValue]="lote.id">
+                  {{ lote.numero_lote }}{{ lote.vencido ? ' — Vencido' : '' }} — {{ formatarDataValidade(lote.data_validade) }} — {{ lote.saldo_atual | number:'1.0-3' }} {{ itemSelecionado?.unidade_medida }}
+                </option>
+              }
+            </select>
+            @if (loteSelecionado) {
+              <small class="text-muted d-block mt-1">Saldo do lote: <b>{{ loteSelecionado.saldo_atual | number:'1.0-3' }} {{ itemSelecionado?.unidade_medida }}</b></small>
+            }
+          </div>
+        }
+
+        <div class="col-md-4">
+          <label class="form-label">Quantidade</label>
+          <input class="form-control" type="number" step="0.001" min="0" [(ngModel)]="quantidade" name="quantidade" required>
+          @if (itemSelecionado) {
+            <small class="text-muted d-block mt-1">Saldo físico: <b>{{ itemSelecionado.saldo_atual | number:'1.0-3' }} {{ itemSelecionado.unidade_medida }}</b></small>
+          }
+          @if (itemSelecionado && (tipoSaida === 'PRODUCAO' || tipoSaida === 'DOACAO')) {
+            <small class="text-muted d-block mt-1">
+              Disponível para uso: <b>{{ itemSelecionado.saldo_utilizavel | number:'1.0-3' }} {{ itemSelecionado.unidade_medida }}</b><br>
+              Lotes vencidos não são considerados disponíveis para produção ou doação.
+            </small>
+          }
+        </div>
+      }
+
+      @if (operacao === 'CARGA_INICIAL') {
+        <div class="col-12">
+          <fieldset class="border rounded p-3">
+            <legend class="float-none w-auto px-2 fs-6 mb-0">Lotes da carga inicial</legend>
+            @for (lote of lotesCargaInicial; track $index; let indice = $index) {
+              <div class="row g-2 align-items-end mb-2">
+                <div class="col-md-4">
+                  <label class="form-label" [for]="'cargaNumero' + indice">Número do lote</label>
+                  <input class="form-control" type="text" maxlength="100" [(ngModel)]="lote.numero_lote" [name]="'cargaNumero' + indice" [id]="'cargaNumero' + indice">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" [for]="'cargaValidade' + indice">Data de validade</label>
+                  <input class="form-control" type="date" [(ngModel)]="lote.data_validade" [name]="'cargaValidade' + indice" [id]="'cargaValidade' + indice">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label" [for]="'cargaQuantidade' + indice">Quantidade</label>
+                  <div class="input-group">
+                    <input class="form-control" type="number" min="0.001" step="0.001" [(ngModel)]="lote.quantidade" [name]="'cargaQuantidade' + indice" [id]="'cargaQuantidade' + indice">
+                    @if (itemSelecionado) {
+                      <span class="input-group-text">{{ itemSelecionado.unidade_medida }}</span>
+                    }
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <button type="button" class="btn btn-outline-danger w-100" [disabled]="lotesCargaInicial.length === 1" (click)="removerLoteCargaInicial(indice)">Remover</button>
+                </div>
+              </div>
+            }
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="adicionarLoteCargaInicial()">Adicionar lote</button>
+            <p class="mb-0 mt-3">Total da carga inicial: <b>{{ totalCargaInicial | number:'1.0-3' }} {{ itemSelecionado?.unidade_medida }}</b></p>
+          </fieldset>
+        </div>
+      }
+
+      @if (operacao === 'INVENTARIO') {
+        <div class="col-12">
+          <fieldset class="border rounded p-3">
+            <legend class="float-none w-auto px-2 fs-6 mb-0">Lotes do inventário</legend>
+            @if (!itemSelecionado) {
+              <p class="text-muted mb-0">Selecione um gênero para carregar os lotes com saldo no sistema.</p>
+            } @else if (carregandoLotesInventario) {
+              <p class="text-muted mb-0">Carregando lotes do inventário...</p>
+            } @else {
+              @for (lote of lotesInventario; track $index; let indice = $index) {
+                @if (!lote.novo) {
+                  <div class="row g-2 align-items-end mb-2 border-bottom pb-2">
+                    <div class="col-md-4">
+                      <label class="form-label">Número do lote</label>
+                      <p class="form-control-plaintext mb-0">
+                        {{ lote.legado ? 'LEGADO — validade não informada' : lote.numero_lote + (lote.vencido ? ' — Vencido' : '') }}
+                      </p>
+                      @if (lote.legado) {
+                        <small class="text-muted">Para regularizar este saldo, informe 0 no LEGADO e adicione abaixo os lotes reais encontrados na contagem.</small>
+                      }
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Validade</label>
+                      <p class="form-control-plaintext mb-0">{{ formatarDataValidade(lote.data_validade) }}</p>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">Saldo no sistema</label>
+                      <p class="form-control-plaintext mb-0">{{ lote.saldo_sistema | number:'1.0-3' }} {{ itemSelecionado.unidade_medida }}</p>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label" [for]="'inventarioContado' + indice">Quantidade contada</label>
+                      <div class="input-group">
+                        <input class="form-control" type="number" min="0" step="0.001" [(ngModel)]="lote.quantidade_contada" [name]="'inventarioContado' + indice" [id]="'inventarioContado' + indice">
+                        <span class="input-group-text">{{ itemSelecionado.unidade_medida }}</span>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="row g-2 align-items-end mb-2 border-bottom pb-2">
+                    <div class="col-md-4">
+                      <label class="form-label" [for]="'inventarioNumero' + indice">Número do lote encontrado</label>
+                      <input class="form-control" type="text" maxlength="100" [(ngModel)]="lote.numero_lote" [name]="'inventarioNumero' + indice" [id]="'inventarioNumero' + indice">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label" [for]="'inventarioValidade' + indice">Data de validade</label>
+                      <input class="form-control" type="date" [(ngModel)]="lote.data_validade" [name]="'inventarioValidade' + indice" [id]="'inventarioValidade' + indice">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label" [for]="'inventarioQuantidade' + indice">Quantidade contada</label>
+                      <div class="input-group">
+                        <input class="form-control" type="number" min="0.001" step="0.001" [(ngModel)]="lote.quantidade_contada" [name]="'inventarioQuantidade' + indice" [id]="'inventarioQuantidade' + indice">
+                        <span class="input-group-text">{{ itemSelecionado.unidade_medida }}</span>
+                      </div>
+                    </div>
+                    <div class="col-md-2">
+                      <button type="button" class="btn btn-outline-danger w-100" (click)="removerLoteInventario(indice)">Remover</button>
+                    </div>
+                  </div>
+                }
+              }
+
+              <button type="button" class="btn btn-outline-secondary btn-sm" (click)="adicionarLoteInventario()">Adicionar lote encontrado</button>
+
+              <div class="mt-3 text-muted">
+                <div>Saldo físico no sistema: <b>{{ itemSelecionado.saldo_atual | number:'1.0-3' }} {{ itemSelecionado.unidade_medida }}</b></div>
+                <div>Total contado: <b>{{ totalContadoInventario | number:'1.0-3' }} {{ itemSelecionado.unidade_medida }}</b></div>
+                <div>Diferença total: <b>{{ diferencaTotalInventario | number:'1.0-3' }} {{ itemSelecionado.unidade_medida }}</b></div>
+                @if (inventarioSemDiferenca) {
+                  <div class="mt-1">A contagem confere com os saldos dos lotes; não há diferença a ajustar.</div>
+                } @else if (diferencaTotalInventario === 0) {
+                  <div class="mt-1">O saldo total não será alterado, mas haverá redistribuição entre lotes.</div>
+                } @else if (diferencaTotalInventario > 0) {
+                  <div class="mt-1 text-success">Sobra total de {{ diferencaTotalInventario | number:'1.0-3' }} {{ itemSelecionado.unidade_medida }}.</div>
+                } @else {
+                  <div class="mt-1 text-danger">Falta total de {{ -diferencaTotalInventario | number:'1.0-3' }} {{ itemSelecionado.unidade_medida }}.</div>
+                }
+              </div>
+            }
+          </fieldset>
+        </div>
+      }
+
+      <div class="col-md-4">
+        <label class="form-label">Data e hora</label>
+        <input class="form-control" type="datetime-local" [(ngModel)]="dataHora" name="dataHora" required>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Motivo/justificativa</label>
+        <textarea class="form-control" maxlength="255" [(ngModel)]="justificativa" name="justificativa" required></textarea>
+      </div>
     </div>
-    <div class="mt-4"><button type="submit" class="sige-button sige-button--primary" [disabled]="processando">{{processando?'Registrando...':'Registrar movimentação'}}</button></div>
+    <div class="mt-4">
+      <button type="submit" class="sige-button sige-button--primary" [disabled]="processando">{{ processando ? 'Registrando...' : 'Registrar movimentação' }}</button>
+    </div>
   </form>
 </section>

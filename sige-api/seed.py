@@ -36,6 +36,7 @@ from estoque.models import (
     ItemInventario,
     LoteEstoque,
     MovimentacaoEstoque,
+    MovimentacaoLote,
 )
 from usuario.models import Usuario
 from utils.estoque_services import FUSO_ESTOQUE, registrar_carga_inicial, registrar_recebimento
@@ -658,9 +659,38 @@ def seed_recebimentos(ordens, estoquista):
         )
 
 
+def _lotes_carga_inicial_demo(*, dados, indice, data_carga):
+    if timezone.is_aware(data_carga):
+        data_local = timezone.localtime(data_carga, FUSO_ESTOQUE).date()
+    else:
+        data_local = data_carga.date()
+    quantidade = Decimal(dados['quantidade']).quantize(Decimal('0.001'))
+
+    def lote(sequencia, quantidade_lote, dias):
+        return {
+            'numero_lote': f"INI-{dados['catmat']}-{sequencia:03d}",
+            'data_validade': data_local + timedelta(days=dias),
+            'quantidade': quantidade_lote,
+        }
+
+    if indice % 2 == 0:
+        primeira_parcela = (quantidade / Decimal('2')).quantize(
+            Decimal('0.001'),
+            rounding=ROUND_HALF_UP,
+        )
+        segunda_parcela = (quantidade - primeira_parcela).quantize(Decimal('0.001'))
+        if primeira_parcela > Decimal('0.000') and segunda_parcela > Decimal('0.000'):
+            return [
+                lote(1, primeira_parcela, 120 + indice),
+                lote(2, segunda_parcela, 240 + indice),
+            ]
+    return [lote(1, quantidade, 120 + indice)]
+
+
 def seed_carga_inicial_estoque(estoquista):
     """Cadastra os gêneros só de estoque e registra a carga inicial de cada um."""
-    for dados in ITENS_CARGA_INICIAL:
+    data_carga = timezone.now()
+    for indice, dados in enumerate(ITENS_CARGA_INICIAL):
         genero = ItemGenerico.objects.create(
             catmat=dados['catmat'],
             descricao=dados['descricao'],
@@ -671,10 +701,14 @@ def seed_carga_inicial_estoque(estoquista):
         )
         registrar_carga_inicial(
             item_generico_id=genero.id,
-            quantidade=dados['quantidade'],
+            lotes=_lotes_carga_inicial_demo(
+                dados=dados,
+                indice=indice,
+                data_carga=data_carga,
+            ),
             justificativa='Carga inicial de desenvolvimento do estoque físico do R.U.',
             usuario=estoquista,
-            data_hora=timezone.now(),
+            data_hora=data_carga,
         )
     return len(ITENS_CARGA_INICIAL)
 
@@ -775,9 +809,8 @@ def validar_seed():
             estoque=estoque,
             numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
         ).first()
-        if (
-            lote_legado is None
-            or not lote_legado.legado
+        if lote_legado is not None and (
+            not lote_legado.legado
             or lote_legado.data_validade is not None
         ):
             raise RuntimeError(
@@ -792,6 +825,14 @@ def validar_seed():
             raise RuntimeError(
                 f'Estoque inconsistente para {estoque.item_generico.descricao}: '
                 f'saldo consolidado = {saldo_consolidado}; saldo dos lotes = {saldo_lotes}.'
+            )
+    for movimento in MovimentacaoEstoque.objects.filter(
+        tipo=MovimentacaoEstoque.Tipo.CARGA_INICIAL,
+    ):
+        alocacoes = MovimentacaoLote.objects.filter(movimentacao=movimento)
+        if not alocacoes.exists() or alocacoes.filter(lote__legado=True).exists():
+            raise RuntimeError(
+                'Toda carga inicial deve possuir alocações em lotes reais.'
             )
     if Estoque.objects.filter(saldo_atual__lt=0).exists():
         raise RuntimeError('A demonstração não pode possuir saldo negativo em estoque.')
