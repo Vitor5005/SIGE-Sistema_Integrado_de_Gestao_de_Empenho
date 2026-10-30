@@ -10,8 +10,18 @@ export interface EstoqueItem {
   unidade_embalagem: string | null;
   imagem: string | null;
   saldo_atual: number;
+  saldo_utilizavel: number;
   data_atualizacao: string;
   possui_carga_inicial: boolean;
+}
+
+export interface LoteSaida {
+  id: number;
+  numero_lote: string;
+  data_validade: string | null;
+  saldo_atual: number;
+  legado: boolean;
+  vencido: boolean;
 }
 
 export interface MovimentacaoEstoque {

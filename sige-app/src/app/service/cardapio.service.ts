@@ -48,9 +48,10 @@ export class CardapioService {
     return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
 
-  disponibilidade(cardapioId?: number): Observable<DisponibilidadeGenero[]> {
+  disponibilidade(cardapioId?: number, data?: string): Observable<DisponibilidadeGenero[]> {
     let params = new HttpParams();
     if (cardapioId) params = params.set('cardapio', cardapioId);
+    if (data) params = params.set('data', data);
     return this.http.get<DisponibilidadeGenero[]>(this.apiUrl + 'disponibilidade/', { params });
   }
 

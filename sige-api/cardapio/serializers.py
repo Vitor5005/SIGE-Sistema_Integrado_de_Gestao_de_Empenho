@@ -97,11 +97,27 @@ class CardapioSerializer(serializers.ModelSerializer):
             )
 
         itens = dados.get('itens')
+        if itens is None and instancia is not None and 'data' in dados:
+            itens = [
+                {
+                    'item_generico': item.item_generico,
+                    'quantidade_planejada': item.quantidade_planejada,
+                }
+                for item in instancia.itens.select_related('item_generico')
+            ]
         if itens is not None:
-            self._validar_itens_contra_estoque(itens)
+            data_referencia = (
+                dados['data']
+                if instancia is None
+                else dados.get('data', instancia.data)
+            )
+            self._validar_itens_contra_estoque(
+                itens,
+                data_referencia=data_referencia,
+            )
         return dados
 
-    def _validar_itens_contra_estoque(self, itens):
+    def _validar_itens_contra_estoque(self, itens, *, data_referencia):
         """O cardápio é montado a partir do estoque: só gêneros com saldo, até o disponível."""
         if not itens:
             raise serializers.ValidationError({'itens': 'Adicione ao menos um gênero com saldo em estoque.'})
@@ -113,7 +129,12 @@ class CardapioSerializer(serializers.ModelSerializer):
             planejado[genero.id] += item['quantidade_planejada']
             generos[genero.id] = genero
 
-        faltas = faltas_de_saldo(planejado, generos, excluir_cardapio_id=getattr(self.instance, 'pk', None))
+        faltas = faltas_de_saldo(
+            planejado,
+            generos,
+            excluir_cardapio_id=getattr(self.instance, 'pk', None),
+            data_referencia=data_referencia,
+        )
         if faltas:
             raise serializers.ValidationError({'itens': faltas})
 

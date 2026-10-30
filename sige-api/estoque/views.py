@@ -1,18 +1,21 @@
 from collections import defaultdict
+from datetime import date
 from decimal import Decimal
 
 from django.db.models import Exists, OuterRef, Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from empenho.models import ItemEmpenho, OperacaoItem
-from estoque.models import Estoque, MovimentacaoEstoque
+from estoque.models import Estoque, LoteEstoque, MovimentacaoEstoque
 from estoque.serializers import (
     AjusteSerializer,
     CargaInicialSerializer,
     EstoqueSerializer,
     EstornoSerializer,
+    LoteSaidaSerializer,
     MovimentacaoEstoqueSerializer,
     RecebimentoSerializer,
     SaidaSerializer,
@@ -23,6 +26,7 @@ from utils.estoque_services import (
     registrar_carga_inicial,
     registrar_recebimento,
     registrar_saida,
+    lote_vencido,
 )
 from utils.mixins import BaseFiltroMixin, FiltroQueryParamMixin, RBACMixin
 from utils.painel_nutricionista import montar_painel
@@ -41,6 +45,7 @@ class EstoqueViewSet(RBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
         'consolidado': Acao.CONSULTAR_CONSOLIDADO,
         'recebimentos': Acao.REGISTRAR_RECEBIMENTO,
         'saidas': Acao.REGISTRAR_SAIDA,
+        'lotes_para_perda': Acao.REGISTRAR_SAIDA,
         'cargas_iniciais': Acao.REGISTRAR_CARGA_INICIAL,
         'ajustes': Acao.REGISTRAR_AJUSTE,
         'estornos': Acao.ESTORNAR,
@@ -115,6 +120,30 @@ class EstoqueViewSet(RBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['post'])
     def saidas(self, request):
         return self._executar(SaidaSerializer, registrar_saida, request)
+
+    @action(detail=False, methods=['get'], url_path='lotes-para-perda')
+    def lotes_para_perda(self, request):
+        try:
+            item_generico_id = int(request.query_params.get('item_generico_id'))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError({
+                'item_generico_id': 'Informe um g\u00eanero v\u00e1lido.',
+            }) from exc
+        if item_generico_id <= 0:
+            raise ValidationError({'item_generico_id': 'Informe um g\u00eanero v\u00e1lido.'})
+
+        lotes = list(
+            LoteEstoque.objects.filter(
+                estoque__item_generico_id=item_generico_id,
+                saldo_atual__gt=0,
+            )
+        )
+        lotes.sort(key=lambda lote: (
+            0 if not lote.legado and lote_vencido(lote) else (1 if not lote.legado else 2),
+            lote.data_validade if lote.data_validade is not None else date.max,
+            lote.id,
+        ))
+        return Response(LoteSaidaSerializer(lotes, many=True).data)
 
     @action(detail=False, methods=['post'], url_path='cargas-iniciais')
     def cargas_iniciais(self, request):

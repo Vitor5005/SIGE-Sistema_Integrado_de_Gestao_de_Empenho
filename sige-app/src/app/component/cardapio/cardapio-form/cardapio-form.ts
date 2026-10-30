@@ -112,9 +112,9 @@ export class CardapioForm implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.queryParamMap.get('id'));
     this.id = Number.isInteger(id) && id > 0 ? id : null;
-    this.carregarDisponibilidade();
 
     if (!this.id) {
+      this.carregarDisponibilidade();
       this.carregando = false;
       return;
     }
@@ -126,6 +126,7 @@ export class CardapioForm implements OnInit {
           return;
         }
         this.preencher(cardapio);
+        this.carregarDisponibilidade();
         this.carregando = false;
       },
       error: () => {
@@ -149,12 +150,17 @@ export class CardapioForm implements OnInit {
     ].join('-');
   }
 
+  aoAlterarData(data: string): void {
+    this.data = data;
+    this.carregarDisponibilidade();
+  }
+
   private linhaVazia(): LinhaForm {
     return { item_generico: null, quantidade: null, observacao: '' };
   }
 
   private carregarDisponibilidade(): void {
-    this.cardapioService.disponibilidade(this.id ?? undefined).subscribe({
+    this.cardapioService.disponibilidade(this.id ?? undefined, this.data || undefined).subscribe({
       next: (dados) => {
         // Gêneros com saldo primeiro; os zerados aparecem no fim, desabilitados.
         this.disponibilidade = [...dados].sort((a, b) =>

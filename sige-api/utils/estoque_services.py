@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -125,6 +126,29 @@ def _data_local(momento):
     raise ValidationError({'data_entrada': 'Informe uma data de entrada válida.'})
 
 
+def _data_referencia_lotes(data_referencia=None):
+    if data_referencia is None:
+        return timezone.localtime(timezone.now(), FUSO_ESTOQUE).date()
+    return _data_local(data_referencia)
+
+
+def lote_vencido(lote, data_referencia=None):
+    if lote.legado:
+        return False
+    if lote.data_validade is None:
+        return False
+    return lote.data_validade < _data_referencia_lotes(data_referencia)
+
+
+def saldo_utilizavel_estoque(estoque, data_referencia=None):
+    referencia = _data_referencia_lotes(data_referencia)
+    total = ZERO
+    for lote in LoteEstoque.objects.filter(estoque=estoque, saldo_atual__gt=ZERO):
+        if lote.legado or not lote_vencido(lote, referencia):
+            total = (total + _decimal(lote.saldo_atual)).quantize(Decimal('0.001'))
+    return total.quantize(Decimal('0.001'))
+
+
 def _lote_recebimento_bloqueado(*, estoque, numero_lote, data_validade):
     numero_lote = _numero_lote(numero_lote)
     data_validade = _data_validade(data_validade)
@@ -223,11 +247,53 @@ def _alocacoes_saida_compativel(*, estoque, quantidade):
     return alocacoes
 
 
+def _alocacoes_saida_fefo(*, estoque, quantidade, data_referencia):
+    referencia = _data_referencia_lotes(data_referencia)
+    lotes = list(
+        LoteEstoque.objects.select_for_update()
+        .filter(estoque=estoque, saldo_atual__gt=ZERO)
+    )
+    lotes_reais = sorted(
+        (
+            lote for lote in lotes
+            if not lote.legado and not lote_vencido(lote, referencia)
+        ),
+        key=lambda lote: (lote.data_validade, lote.id),
+    )
+    lotes_legado = sorted(
+        (lote for lote in lotes if lote.legado),
+        key=lambda lote: lote.id,
+    )
+
+    restante = quantidade
+    alocacoes = []
+    for lote in [*lotes_reais, *lotes_legado]:
+        if restante <= ZERO:
+            break
+        quantidade_lote = min(_decimal(lote.saldo_atual), restante)
+        if quantidade_lote > ZERO:
+            alocacoes.append({'lote': lote, 'quantidade': quantidade_lote})
+            restante = (restante - quantidade_lote).quantize(Decimal('0.001'))
+
+    if restante > ZERO:
+        saldo_fisico = _decimal(estoque.saldo_atual)
+        saldo_utilizavel = saldo_utilizavel_estoque(estoque, referencia)
+        if saldo_fisico >= quantidade and saldo_utilizavel < quantidade:
+            raise ValidationError({
+                'quantidade': (
+                    'H\u00e1 saldo f\u00edsico em estoque, mas a quantidade dispon\u00edvel para uso \u00e9 insuficiente '
+                    'porque existem lotes vencidos.'
+                ),
+            })
+        raise ValidationError({'quantidade': 'A quantidade informada excede o saldo em estoque.'})
+    return alocacoes
+
+
 @transaction.atomic
 def _registrar_movimentacao(
     *, item_generico_id, tipo, sentido, quantidade, usuario, data_hora,
     observacao='', item_ordem=None, item_inventario=None, movimentacao_estornada=None,
-    item_cardapio=None, alocacoes_lote=None,
+    item_cardapio=None, alocacoes_lote=None, usar_fefo=False, data_referencia_lotes=None,
 ):
     quantidade = _decimal(quantidade)
     if quantidade <= ZERO:
@@ -246,6 +312,16 @@ def _registrar_movimentacao(
     elif sentido == MovimentacaoEstoque.Sentido.ENTRADA:
         lote = _lote_legado_bloqueado(estoque)
         alocacoes = [{'lote': lote, 'quantidade': quantidade}]
+    elif usar_fefo:
+        alocacoes = _alocacoes_saida_fefo(
+            estoque=estoque,
+            quantidade=quantidade,
+            data_referencia=(
+                data_referencia_lotes
+                if data_referencia_lotes is not None
+                else _data_local(data_hora)
+            ),
+        )
     else:
         alocacoes = _alocacoes_saida_compativel(estoque=estoque, quantidade=quantidade)
 
@@ -304,7 +380,9 @@ def _registrar_movimentacao(
 
 
 @transaction.atomic
-def registrar_saida(*, item_generico_id, quantidade, tipo_saida, justificativa, usuario, data_hora=None):
+def registrar_saida(
+    *, item_generico_id, quantidade, tipo_saida, justificativa, usuario, data_hora=None, lote_id=None,
+):
     tipos = {
         'PRODUCAO': MovimentacaoEstoque.Tipo.SAIDA_PRODUCAO,
         'DOACAO': MovimentacaoEstoque.Tipo.SAIDA_DOACAO,
@@ -312,14 +390,33 @@ def registrar_saida(*, item_generico_id, quantidade, tipo_saida, justificativa, 
     }
     if tipo_saida not in tipos:
         raise ValidationError({'tipo_saida': 'Tipo de saída inválido.'})
+    momento = data_hora or timezone.now()
+    if tipo_saida == 'PERDA':
+        if lote_id is None:
+            raise ValidationError({
+                'lote_id': 'Selecione o lote que est\u00e1 sendo baixado por perda ou vencimento.',
+            })
+        alocacoes_lote = [{'lote_id': lote_id, 'quantidade': quantidade}]
+        usar_fefo = False
+    else:
+        if lote_id is not None:
+            raise ValidationError({
+                'lote_id': 'O lote s\u00f3 deve ser informado para sa\u00eddas por perda ou vencimento.',
+            })
+        alocacoes_lote = None
+        usar_fefo = True
+
     return _registrar_movimentacao(
         item_generico_id=item_generico_id,
         tipo=tipos[tipo_saida],
         sentido=MovimentacaoEstoque.Sentido.SAIDA,
         quantidade=quantidade,
         usuario=usuario,
-        data_hora=data_hora or timezone.now(),
+        data_hora=momento,
         observacao=_justificativa(justificativa),
+        alocacoes_lote=alocacoes_lote,
+        usar_fefo=usar_fefo,
+        data_referencia_lotes=_data_local(momento) if usar_fefo else None,
     )
 
 
@@ -334,11 +431,98 @@ def registrar_saida_cardapio(*, item_cardapio, quantidade, usuario, observacao):
         data_hora=timezone.now(),
         observacao=observacao,
         item_cardapio=item_cardapio,
+        usar_fefo=True,
+        data_referencia_lotes=item_cardapio.cardapio.data,
     )
 
 
+def _alocacoes_devolucao_cardapio(*, item_cardapio, quantidade):
+    quantidade = _decimal(quantidade)
+    retiradas = []
+    devolvido_por_lote = defaultdict(lambda: ZERO)
+    for alocacao in (
+        MovimentacaoLote.objects.select_for_update()
+        .select_related('lote', 'movimentacao')
+        .filter(movimentacao__item_cardapio=item_cardapio)
+        .order_by('movimentacao__data_hora', 'movimentacao_id', 'id')
+    ):
+        movimento = alocacao.movimentacao
+        if (
+            movimento.tipo == MovimentacaoEstoque.Tipo.SAIDA_PRODUCAO
+            and movimento.sentido == MovimentacaoEstoque.Sentido.SAIDA
+        ):
+            retiradas.append(alocacao)
+        elif (
+            movimento.tipo == MovimentacaoEstoque.Tipo.DEVOLUCAO_PREPARO
+            and movimento.sentido == MovimentacaoEstoque.Sentido.ENTRADA
+        ):
+            devolvido_por_lote[alocacao.lote_id] = (
+                devolvido_por_lote[alocacao.lote_id] + _decimal(alocacao.quantidade)
+            ).quantize(Decimal('0.001'))
+
+    retirado_por_lote = defaultdict(lambda: ZERO)
+    for alocacao in retiradas:
+        retirado_por_lote[alocacao.lote_id] = (
+            retirado_por_lote[alocacao.lote_id] + _decimal(alocacao.quantidade)
+        ).quantize(Decimal('0.001'))
+
+    restante_por_lote = {
+        lote_id: max(retirado - devolvido_por_lote[lote_id], ZERO)
+        for lote_id, retirado in retirado_por_lote.items()
+    }
+    saldo_retirado = sum(restante_por_lote.values(), ZERO).quantize(Decimal('0.001'))
+    if quantidade > saldo_retirado:
+        raise ValidationError({
+            'quantidade': (
+                'A quantidade devolvida excede a quantidade ainda retirada para este item do card\u00e1pio.'
+            ),
+        })
+
+    restante = quantidade
+    alocacoes_por_lote = {}
+    ordem_lotes = []
+    for retirada in reversed(retiradas):
+        if restante <= ZERO:
+            break
+        disponivel = restante_por_lote[retirada.lote_id]
+        if disponivel <= ZERO:
+            continue
+        quantidade_lote = min(_decimal(retirada.quantidade), disponivel, restante)
+        if quantidade_lote <= ZERO:
+            continue
+        if retirada.lote_id not in alocacoes_por_lote:
+            alocacoes_por_lote[retirada.lote_id] = ZERO
+            ordem_lotes.append(retirada.lote_id)
+        alocacoes_por_lote[retirada.lote_id] = (
+            alocacoes_por_lote[retirada.lote_id] + quantidade_lote
+        ).quantize(Decimal('0.001'))
+        restante_por_lote[retirada.lote_id] = (
+            disponivel - quantidade_lote
+        ).quantize(Decimal('0.001'))
+        restante = (restante - quantidade_lote).quantize(Decimal('0.001'))
+
+    if restante > ZERO:
+        raise ValidationError({
+            'quantidade': (
+                'A quantidade devolvida excede a quantidade ainda retirada para este item do card\u00e1pio.'
+            ),
+        })
+    return [
+        {'lote_id': lote_id, 'quantidade': alocacoes_por_lote[lote_id]}
+        for lote_id in ordem_lotes
+    ]
+
+
+@transaction.atomic
 def registrar_devolucao_cardapio(*, item_cardapio, quantidade, usuario, observacao):
     """Devolve ao estoque a sobra entre o liberado e o consumido no preparo."""
+    quantidade = _decimal(quantidade)
+    if quantidade <= ZERO:
+        raise ValidationError({'quantidade': 'A quantidade deve ser maior que zero.'})
+    alocacoes_lote = _alocacoes_devolucao_cardapio(
+        item_cardapio=item_cardapio,
+        quantidade=quantidade,
+    )
     return _registrar_movimentacao(
         item_generico_id=item_cardapio.item_generico_id,
         tipo=MovimentacaoEstoque.Tipo.DEVOLUCAO_PREPARO,
@@ -348,6 +532,7 @@ def registrar_devolucao_cardapio(*, item_cardapio, quantidade, usuario, observac
         data_hora=timezone.now(),
         observacao=observacao,
         item_cardapio=item_cardapio,
+        alocacoes_lote=alocacoes_lote,
     )
 
 

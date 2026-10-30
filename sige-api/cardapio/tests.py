@@ -2,14 +2,16 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.urls import reverse
+from rest_framework.exceptions import ValidationError
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from cadastro.models import ItemGenerico
 from cardapio.models import Cardapio
 from cardapio.serializers import hoje_no_ru
-from estoque.models import Estoque, LoteEstoque, MovimentacaoEstoque
+from estoque.models import Estoque, LoteEstoque, MovimentacaoEstoque, MovimentacaoLote
 from usuario.models import Usuario
+from utils.estoque_services import registrar_devolucao_cardapio
 from utils.rbac import Papel
 
 
@@ -47,6 +49,41 @@ class CardapioFluxoTests(APITestCase):
 
     def _saldo(self, genero):
         return Estoque.objects.get(item_generico=genero).saldo_atual
+
+    def _definir_lotes(self, genero, lotes, legado='0'):
+        saldo_legado = Decimal(str(legado)).quantize(Decimal('0.001'))
+        lotes_normalizados = [
+            (numero, validade, Decimal(str(saldo)).quantize(Decimal('0.001')))
+            for numero, validade, saldo in lotes
+        ]
+        saldo_total = saldo_legado + sum((saldo for _, _, saldo in lotes_normalizados), Decimal('0.000'))
+        estoque, _ = Estoque.objects.update_or_create(
+            item_generico=genero,
+            defaults={'saldo_atual': saldo_total},
+        )
+        LoteEstoque.objects.filter(estoque=estoque).delete()
+        LoteEstoque.objects.create(
+            estoque=estoque,
+            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+            data_validade=None,
+            saldo_atual=saldo_legado,
+            legado=True,
+        )
+        for numero, validade, saldo in lotes_normalizados:
+            LoteEstoque.objects.create(
+                estoque=estoque,
+                numero_lote=numero,
+                data_validade=validade,
+                saldo_atual=saldo,
+                legado=False,
+            )
+        return estoque
+
+    def _saldo_lote(self, genero, numero_lote):
+        return LoteEstoque.objects.get(
+            estoque__item_generico=genero,
+            numero_lote=numero_lote,
+        ).saldo_atual
 
     def _criar_cardapio(self, arroz='38', feijao='15'):
         resposta = self._post_cardapio(arroz, feijao)
@@ -373,3 +410,187 @@ class CardapioFluxoTests(APITestCase):
         self.client.force_authenticate(self.nutricionista)
         pendentes = self.client.get(reverse('cardapio-list'), {'pendentes': 1}).data['results']
         self.assertEqual([item['id'] for item in pendentes], [novo['id']])
+
+    def test_disponibilidade_considera_validade_na_data_do_cardapio(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [
+                ('LOTE-VENCE-ANTES', data_cardapio - timedelta(days=5), '50'),
+                ('LOTE-VALIDO', data_cardapio + timedelta(days=5), '30'),
+            ],
+            legado='10',
+        )
+
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.get(
+            reverse('cardapio-disponibilidade'),
+            {'data': data_cardapio.isoformat()},
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        arroz = next(item for item in resposta.data if item['item_generico_id'] == self.arroz.id)
+        self.assertEqual(Decimal(arroz['saldo_atual']), Decimal('90'))
+        self.assertEqual(Decimal(arroz['saldo_utilizavel']), Decimal('40'))
+        self.assertEqual(Decimal(arroz['disponivel']), Decimal('40'))
+
+    def test_aprovacao_cardapio_utiliza_fefo_sem_consumir_vencido_ou_legado(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [
+                ('LOTE-VENCIDO', data_cardapio - timedelta(days=1), '100'),
+                ('LOTE-A', data_cardapio + timedelta(days=1), '50'),
+                ('LOTE-B', data_cardapio + timedelta(days=10), '50'),
+            ],
+            legado='50',
+        )
+        cardapio = self._criar_cardapio(arroz='70', feijao='1', data=data_cardapio)
+        itens = self._itens(cardapio)
+
+        self._aprovar(cardapio, arroz='70', feijao='1')
+
+        self.assertEqual(self._saldo_lote(self.arroz, 'LOTE-VENCIDO'), Decimal('100'))
+        self.assertEqual(self._saldo_lote(self.arroz, 'LOTE-A'), Decimal('0'))
+        self.assertEqual(self._saldo_lote(self.arroz, 'LOTE-B'), Decimal('30'))
+        self.assertEqual(
+            self._saldo_lote(self.arroz, LoteEstoque.NUMERO_LOTE_LEGADO),
+            Decimal('50'),
+        )
+        retirada = MovimentacaoEstoque.objects.get(
+            item_cardapio_id=itens['Arroz'],
+            tipo=MovimentacaoEstoque.Tipo.SAIDA_PRODUCAO,
+            quantidade=Decimal('70'),
+        )
+        self.assertEqual(
+            dict(MovimentacaoLote.objects.filter(movimentacao=retirada).values_list('lote__numero_lote', 'quantidade')),
+            {'LOTE-A': Decimal('50'), 'LOTE-B': Decimal('20')},
+        )
+
+    def test_devolucao_do_cardapio_retorna_ao_ultimo_lote_retirado(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [
+                ('LOTE-A', data_cardapio + timedelta(days=1), '50'),
+                ('LOTE-B', data_cardapio + timedelta(days=10), '50'),
+            ],
+        )
+        cardapio = self._criar_cardapio(arroz='80', feijao='1', data=data_cardapio)
+        itens = self._itens(cardapio)
+        self._aprovar(cardapio, arroz='80', feijao='1')
+
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.post(reverse('cardapio-informar-consumo', args=[cardapio['id']]), {'itens': [
+            {'item': itens['Arroz'], 'quantidade': '60'},
+            {'item': itens['Feijão carioca'], 'quantidade': '1'},
+        ]}, format='json')
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+
+        self.client.force_authenticate(self.estoquista)
+        resposta = self.client.post(reverse('cardapio-confirmar-consumo', args=[cardapio['id']]))
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        self.assertEqual(self._saldo_lote(self.arroz, 'LOTE-A'), Decimal('0'))
+        self.assertEqual(self._saldo_lote(self.arroz, 'LOTE-B'), Decimal('40'))
+        devolucao = MovimentacaoEstoque.objects.get(
+            item_cardapio_id=itens['Arroz'],
+            tipo=MovimentacaoEstoque.Tipo.DEVOLUCAO_PREPARO,
+        )
+        self.assertEqual(devolucao.quantidade, Decimal('20'))
+        self.assertEqual(
+            list(MovimentacaoLote.objects.filter(movimentacao=devolucao).values_list('lote__numero_lote', 'quantidade')),
+            [('LOTE-B', Decimal('20'))],
+        )
+
+    def test_alteracao_aceita_devolve_aos_lotes_originais(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [
+                ('LOTE-A', data_cardapio + timedelta(days=1), '50'),
+                ('LOTE-B', data_cardapio + timedelta(days=10), '50'),
+            ],
+        )
+        cardapio = self._criar_cardapio(arroz='80', feijao='1', data=data_cardapio)
+        self._aprovar(cardapio, arroz='80', feijao='1')
+
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.post(
+            reverse('cardapio-solicitar-alteracao', args=[cardapio['id']]),
+            {'motivo': 'Ajustar preparo.'},
+        )
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+
+        self.client.force_authenticate(self.estoquista)
+        resposta = self.client.post(reverse('cardapio-aceitar-alteracao', args=[cardapio['id']]))
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        self.assertEqual(self._saldo_lote(self.arroz, 'LOTE-A'), Decimal('50'))
+        self.assertEqual(self._saldo_lote(self.arroz, 'LOTE-B'), Decimal('50'))
+
+    def test_devolucao_do_cardapio_nao_excede_retirada_liquida(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [
+                ('LOTE-A', data_cardapio + timedelta(days=1), '50'),
+                ('LOTE-B', data_cardapio + timedelta(days=10), '50'),
+            ],
+        )
+        cardapio = self._criar_cardapio(arroz='80', feijao='1', data=data_cardapio)
+        self._aprovar(cardapio, arroz='80', feijao='1')
+        item = Cardapio.objects.get(pk=cardapio['id']).itens.get(item_generico=self.arroz)
+
+        with self.assertRaises(ValidationError):
+            registrar_devolucao_cardapio(
+                item_cardapio=item,
+                quantidade=Decimal('81'),
+                usuario=self.estoquista,
+                observacao='Teste de limite.',
+            )
+
+        self.assertEqual(self._saldo_lote(self.arroz, 'LOTE-A'), Decimal('0'))
+        self.assertEqual(self._saldo_lote(self.arroz, 'LOTE-B'), Decimal('20'))
+
+    def test_criacao_cardapio_valida_estoque_na_data_planejada(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [('LOTE-VENCE-ANTES', data_cardapio - timedelta(days=5), '50')],
+        )
+
+        resposta = self._post_cardapio(arroz='50', feijao='1', data=data_cardapio)
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Arroz', str(resposta.data))
+        self.assertFalse(Cardapio.objects.exists())
+
+    def test_criacao_cardapio_aceita_lote_valido_na_data_planejada(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [('LOTE-VALIDO-NA-DATA', data_cardapio, '50')],
+        )
+
+        resposta = self._post_cardapio(arroz='50', feijao='1', data=data_cardapio)
+
+        self.assertEqual(resposta.status_code, status.HTTP_201_CREATED, resposta.data)
+
+    def test_edicao_cardapio_revalida_estoque_com_nova_data(self):
+        data_inicial = hoje_no_ru() + timedelta(days=10)
+        data_nova = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [('LOTE-VALIDO-SOMENTE-NO-INICIO', hoje_no_ru() + timedelta(days=15), '50')],
+        )
+        cardapio = self._criar_cardapio(arroz='50', feijao='1', data=data_inicial)
+
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.patch(
+            reverse('cardapio-detail', args=[cardapio['id']]),
+            {'data': data_nova.isoformat()},
+            format='json',
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Arroz', str(resposta.data))
+        self.assertEqual(Cardapio.objects.get(pk=cardapio['id']).data, data_inicial)

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone as dt_timezone
+from datetime import date, datetime, timedelta, timezone as dt_timezone
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -7,6 +7,7 @@ from django.db import DatabaseError, transaction
 from django.db.models import Sum
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient, APITestCase
 
@@ -20,6 +21,8 @@ from utils.estoque_services import (
     registrar_carga_inicial,
     registrar_recebimento,
     registrar_saida,
+    FUSO_ESTOQUE,
+    saldo_utilizavel_estoque,
 )
 from licitacao.models import Ata, ItemAta, Licitacao
 from usuario.models import Usuario
@@ -90,6 +93,33 @@ class EstoqueBaseMixin:
             'quantidade': quantidade,
         }
 
+    def lote_estoque(self, numero, saldo, validade=None, legado=False):
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        saldo = Decimal(str(saldo)).quantize(Decimal('0.001'))
+        if legado:
+            lote, _ = LoteEstoque.objects.get_or_create(
+                estoque=estoque,
+                numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+                defaults={
+                    'data_validade': None,
+                    'saldo_atual': Decimal('0.000'),
+                    'legado': True,
+                },
+            )
+            lote.saldo_atual = saldo
+            lote.save(update_fields=['saldo_atual', 'data_atualizacao'])
+        else:
+            lote = LoteEstoque.objects.create(
+                estoque=estoque,
+                numero_lote=numero,
+                data_validade=validade,
+                saldo_atual=saldo,
+                legado=False,
+            )
+        total = LoteEstoque.objects.filter(estoque=estoque).aggregate(total=Sum('saldo_atual'))['total']
+        Estoque.objects.filter(pk=estoque.pk).update(saldo_atual=total or Decimal('0.000'))
+        return lote
+
 
 class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
     def setUp(self):
@@ -137,11 +167,15 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
             item_generico_id=self.genero.id, quantidade='10', justificativa='Implantação',
             usuario=self.estoquista,
         )
+        lote_legado = LoteEstoque.objects.get(
+            estoque__item_generico=self.genero,
+            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+        )
         quantidade_antes = MovimentacaoEstoque.objects.count()
         with self.assertRaises(ValidationError):
             registrar_saida(
                 item_generico_id=self.genero.id, quantidade='11', tipo_saida='PERDA',
-                justificativa='Avaria', usuario=self.estoquista,
+                justificativa='Avaria', usuario=self.estoquista, lote_id=lote_legado.id,
             )
         self.assertEqual(MovimentacaoEstoque.objects.count(), quantidade_antes)
         self.assertEqual(Estoque.objects.get(item_generico=self.genero).saldo_atual, Decimal('10.000'))
@@ -699,6 +733,175 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
                 quantidade=Decimal('1.000'),
                 saldo_lote_resultante=Decimal('0.000'),
             )
+
+
+    def test_saida_producao_utiliza_fefo(self):
+        lote_a = self.lote_estoque('LOTE-A', '20', date(2099, 1, 1))
+        lote_b = self.lote_estoque('LOTE-B', '50', date(2099, 2, 1))
+        lote_c = self.lote_estoque('LOTE-C', '100', date(2099, 3, 1))
+
+        movimento = registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='60',
+            tipo_saida='PRODUCAO',
+            justificativa='Uso em producao.',
+            usuario=self.estoquista,
+            data_hora=datetime(2098, 1, 1, 12, tzinfo=dt_timezone.utc),
+        )
+
+        lote_a.refresh_from_db()
+        lote_b.refresh_from_db()
+        lote_c.refresh_from_db()
+        self.assertEqual(lote_a.saldo_atual, Decimal('0.000'))
+        self.assertEqual(lote_b.saldo_atual, Decimal('10.000'))
+        self.assertEqual(lote_c.saldo_atual, Decimal('100.000'))
+        self.assertEqual(movimento.quantidade, Decimal('60.000'))
+        self.assertEqual(
+            set(movimento.alocacoes_lote.values_list('lote_id', 'quantidade')),
+            {(lote_a.id, Decimal('20.000')), (lote_b.id, Decimal('40.000'))},
+        )
+
+    def test_fefo_utiliza_legado_somente_depois_dos_lotes_reais_validos(self):
+        lote_legado = self.lote_estoque('LEGADO', '50', legado=True)
+        lote_a = self.lote_estoque('LOTE-A', '40', date(2099, 1, 1))
+        lote_b = self.lote_estoque('LOTE-B', '30', date(2099, 2, 1))
+
+        registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='60',
+            tipo_saida='PRODUCAO',
+            justificativa='Uso em producao.',
+            usuario=self.estoquista,
+            data_hora=datetime(2098, 1, 1, 12, tzinfo=dt_timezone.utc),
+        )
+
+        lote_legado.refresh_from_db()
+        lote_a.refresh_from_db()
+        lote_b.refresh_from_db()
+        self.assertEqual(lote_a.saldo_atual, Decimal('0.000'))
+        self.assertEqual(lote_b.saldo_atual, Decimal('10.000'))
+        self.assertEqual(lote_legado.saldo_atual, Decimal('50.000'))
+
+    def test_saida_producao_nao_utiliza_lote_vencido(self):
+        vencido = self.lote_estoque('LOTE-VENCIDO', '100', date(2026, 10, 29))
+        valido = self.lote_estoque('LOTE-VALIDO', '20', date(2026, 10, 31))
+        movimentos_antes = MovimentacaoEstoque.objects.count()
+
+        with self.assertRaises(ValidationError):
+            registrar_saida(
+                item_generico_id=self.genero.id,
+                quantidade='30',
+                tipo_saida='PRODUCAO',
+                justificativa='Uso em producao.',
+                usuario=self.estoquista,
+                data_hora=datetime(2026, 10, 30, 12, tzinfo=dt_timezone.utc),
+            )
+
+        vencido.refresh_from_db()
+        valido.refresh_from_db()
+        self.assertEqual(vencido.saldo_atual, Decimal('100.000'))
+        self.assertEqual(valido.saldo_atual, Decimal('20.000'))
+        self.assertEqual(MovimentacaoEstoque.objects.count(), movimentos_antes)
+
+    def test_saida_doacao_utiliza_fefo_e_ignora_vencidos(self):
+        vencido = self.lote_estoque('LOTE-VENCIDO', '100', date(2026, 10, 29))
+        lote_a = self.lote_estoque('LOTE-A', '10', date(2026, 10, 30))
+        lote_b = self.lote_estoque('LOTE-B', '50', date(2026, 11, 1))
+
+        registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='15',
+            tipo_saida='DOACAO',
+            justificativa='Doacao autorizada.',
+            usuario=self.estoquista,
+            data_hora=datetime(2026, 10, 30, 12, tzinfo=dt_timezone.utc),
+        )
+
+        vencido.refresh_from_db()
+        lote_a.refresh_from_db()
+        lote_b.refresh_from_db()
+        self.assertEqual(vencido.saldo_atual, Decimal('100.000'))
+        self.assertEqual(lote_a.saldo_atual, Decimal('0.000'))
+        self.assertEqual(lote_b.saldo_atual, Decimal('45.000'))
+
+    def test_perda_requer_e_movimenta_apenas_lote_informado(self):
+        lote_a = self.lote_estoque('LOTE-VENCIDO', '30', date(2026, 10, 29))
+        lote_b = self.lote_estoque('LOTE-VALIDO', '100', date(2026, 12, 1))
+
+        movimento = registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='20',
+            tipo_saida='PERDA',
+            lote_id=lote_a.id,
+            justificativa='Avaria no lote.',
+            usuario=self.estoquista,
+            data_hora=datetime(2026, 10, 30, 12, tzinfo=dt_timezone.utc),
+        )
+
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote_a.refresh_from_db()
+        lote_b.refresh_from_db()
+        self.assertEqual(lote_a.saldo_atual, Decimal('10.000'))
+        self.assertEqual(lote_b.saldo_atual, Decimal('100.000'))
+        self.assertEqual(estoque.saldo_atual, Decimal('110.000'))
+        self.assertEqual(movimento.alocacoes_lote.count(), 1)
+        self.assertEqual(movimento.alocacoes_lote.get().lote_id, lote_a.id)
+
+    def test_perda_sem_lote_e_rejeitada(self):
+        self.lote_estoque('LOTE-A', '30', date(2026, 12, 1))
+        movimentos_antes = MovimentacaoEstoque.objects.count()
+
+        with self.assertRaises(ValidationError):
+            registrar_saida(
+                item_generico_id=self.genero.id,
+                quantidade='20',
+                tipo_saida='PERDA',
+                justificativa='Avaria no lote.',
+                usuario=self.estoquista,
+            )
+
+        self.assertEqual(MovimentacaoEstoque.objects.count(), movimentos_antes)
+
+    def test_perda_maior_que_saldo_do_lote_e_rejeitada(self):
+        lote_a = self.lote_estoque('LOTE-A', '10', date(2026, 12, 1))
+        lote_b = self.lote_estoque('LOTE-B', '100', date(2026, 12, 2))
+        movimentos_antes = MovimentacaoEstoque.objects.count()
+
+        with self.assertRaises(ValidationError):
+            registrar_saida(
+                item_generico_id=self.genero.id,
+                quantidade='20',
+                tipo_saida='PERDA',
+                lote_id=lote_a.id,
+                justificativa='Avaria no lote.',
+                usuario=self.estoquista,
+            )
+
+        lote_a.refresh_from_db()
+        lote_b.refresh_from_db()
+        self.assertEqual(lote_a.saldo_atual, Decimal('10.000'))
+        self.assertEqual(lote_b.saldo_atual, Decimal('100.000'))
+        self.assertEqual(MovimentacaoEstoque.objects.count(), movimentos_antes)
+
+    def test_saldo_utilizavel_exclui_lotes_vencidos_e_aparece_na_listagem(self):
+        hoje = timezone.localtime(timezone.now(), FUSO_ESTOQUE).date()
+        self.lote_estoque('LOTE-VENCIDO', '30', hoje - timedelta(days=1))
+        self.lote_estoque('LOTE-VALIDO', '50', hoje)
+        self.lote_estoque('LEGADO', '20', legado=True)
+        estoque = Estoque.objects.get(item_generico=self.genero)
+
+        self.assertEqual(estoque.saldo_atual, Decimal('100.000'))
+        self.assertEqual(saldo_utilizavel_estoque(estoque, hoje), Decimal('70.000'))
+
+        cliente = APIClient()
+        cliente.force_authenticate(self.diretor)
+        resposta = cliente.get(reverse('estoque-list'), {'page_size': 100})
+        linha = next(
+            item for item in resposta.data['results']
+            if item['item_generico_id'] == self.genero.id
+        )
+        self.assertEqual(Decimal(linha['saldo_atual']), Decimal('100.000'))
+        self.assertEqual(Decimal(linha['saldo_utilizavel']), Decimal('70.000'))
 
 
 class PermissoesEstoqueTests(EstoqueBaseMixin, APITestCase):

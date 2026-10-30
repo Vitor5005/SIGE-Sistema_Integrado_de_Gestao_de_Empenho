@@ -1,4 +1,5 @@
 from django.db.models import Count, Q
+from django.utils.dateparse import parse_date
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -84,7 +85,16 @@ class CardapioViewSet(AuditoriaRBACMixin, BaseFiltroMixin, viewsets.ModelViewSet
         """Saldo disponível por gênero, descontando cardápios enviados (exceto o informado em ?cardapio=)."""
         excluir = request.query_params.get('cardapio')
         excluir = int(excluir) if excluir and excluir.isdigit() else None
-        return Response(services.disponibilidade(excluir_cardapio_id=excluir))
+        data = request.query_params.get('data')
+        data_referencia = parse_date(data) if data is not None else None
+        if data is not None and data_referencia is None:
+            raise ValidationError({'data': 'Informe uma data válida.'})
+        return Response(
+            services.disponibilidade(
+                excluir_cardapio_id=excluir,
+                data_referencia=data_referencia,
+            )
+        )
 
     @action(detail=True, methods=['post'])
     def enviar(self, request, pk=None):

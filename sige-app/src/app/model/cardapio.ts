@@ -93,6 +93,7 @@ export interface DisponibilidadeGenero {
   conteudo_embalagem: number | null;
   unidade_embalagem: string | null;
   saldo_atual: number;
+  saldo_utilizavel: number;
   reservado: number;
   disponivel: number;
 }

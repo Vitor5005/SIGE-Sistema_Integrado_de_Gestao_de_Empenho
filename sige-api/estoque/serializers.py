@@ -3,6 +3,7 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from estoque.models import Estoque, LoteEstoque, MovimentacaoEstoque
+from utils.estoque_services import lote_vencido, saldo_utilizavel_estoque
 
 
 class EstoqueSerializer(serializers.ModelSerializer):
@@ -18,13 +19,18 @@ class EstoqueSerializer(serializers.ModelSerializer):
     unidade_embalagem = serializers.CharField(source='item_generico.unidade_embalagem', read_only=True)
     imagem = serializers.ImageField(source='item_generico.imagem', read_only=True)
     possui_carga_inicial = serializers.BooleanField(read_only=True, default=False)
+    saldo_utilizavel = serializers.SerializerMethodField()
+
+    def get_saldo_utilizavel(self, estoque):
+        return saldo_utilizavel_estoque(estoque)
 
     class Meta:
         model = Estoque
         fields = (
             'id', 'item_generico_id', 'catmat', 'descricao', 'unidade_medida',
             'categoria', 'categoria_descricao', 'conteudo_embalagem',
-            'unidade_embalagem', 'imagem', 'saldo_atual', 'data_atualizacao', 'possui_carga_inicial',
+            'unidade_embalagem', 'imagem', 'saldo_atual', 'saldo_utilizavel', 'data_atualizacao',
+            'possui_carga_inicial',
         )
 
 
@@ -47,12 +53,38 @@ class MovimentacaoEstoqueSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class LoteSaidaSerializer(serializers.ModelSerializer):
+    vencido = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LoteEstoque
+        fields = ('id', 'numero_lote', 'data_validade', 'saldo_atual', 'legado', 'vencido')
+        read_only_fields = fields
+
+    def get_vencido(self, lote):
+        return lote_vencido(lote)
+
+
 class SaidaSerializer(serializers.Serializer):
     item_generico_id = serializers.IntegerField(min_value=1)
     quantidade = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0.001'))
     tipo_saida = serializers.ChoiceField(choices=['PRODUCAO', 'DOACAO', 'PERDA'])
+    lote_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     justificativa = serializers.CharField(allow_blank=False, trim_whitespace=True)
     data_hora = serializers.DateTimeField(required=False)
+
+    def validate(self, attrs):
+        tipo_saida = attrs.get('tipo_saida')
+        lote_id = attrs.get('lote_id')
+        if tipo_saida == 'PERDA' and lote_id is None:
+            raise serializers.ValidationError({
+                'lote_id': 'Selecione o lote que est\u00e1 sendo baixado por perda ou vencimento.',
+            })
+        if tipo_saida != 'PERDA' and lote_id is not None:
+            raise serializers.ValidationError({
+                'lote_id': 'O lote s\u00f3 deve ser informado para sa\u00eddas por perda ou vencimento.',
+            })
+        return attrs
 
 
 class CargaInicialSerializer(serializers.Serializer):

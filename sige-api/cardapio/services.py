@@ -10,7 +10,11 @@ from rest_framework.exceptions import ValidationError
 
 from cardapio.models import Cardapio, ItemCardapio
 from estoque.models import Estoque
-from utils.estoque_services import registrar_devolucao_cardapio, registrar_saida_cardapio
+from utils.estoque_services import (
+    registrar_devolucao_cardapio,
+    registrar_saida_cardapio,
+    saldo_utilizavel_estoque,
+)
 
 ZERO = Decimal('0.000')
 TRES_CASAS = Decimal('0.001')
@@ -44,8 +48,10 @@ def _retirar(item, quantidade, usuario, observacao):
         )
     except ValidationError:
         raise ValidationError({
-            'itens': [f'{item.item_generico.descricao}: saldo em estoque insuficiente para retirar '
-                      f'{quantidade.normalize():f} {item.item_generico.unidade_medida}.'],
+            'itens': [
+                f'{item.item_generico.descricao}: quantidade disponível para uso insuficiente para retirar '
+                f'{quantidade.normalize():f} {item.item_generico.unidade_medida}.',
+            ],
         })
 
 
@@ -67,13 +73,15 @@ def quantidades_reservadas(excluir_cardapio_id=None):
     }
 
 
-def disponibilidade(excluir_cardapio_id=None):
-    """Saldo físico, reservado e disponível de cada gênero com registro de estoque."""
+def disponibilidade(excluir_cardapio_id=None, data_referencia=None):
+    """Saldo físico, utilizável, reservado e disponível de cada gênero com estoque."""
+    data_referencia = data_referencia or hoje_no_ru()
     reservado = quantidades_reservadas(excluir_cardapio_id)
     dados = []
     for estoque in Estoque.objects.select_related('item_generico').order_by('item_generico__descricao'):
         genero = estoque.item_generico
         reservado_item = reservado.get(genero.id, ZERO)
+        saldo_utilizavel = saldo_utilizavel_estoque(estoque, data_referencia)
         dados.append({
             'item_generico_id': genero.id,
             'catmat': genero.catmat,
@@ -83,13 +91,20 @@ def disponibilidade(excluir_cardapio_id=None):
             'conteudo_embalagem': genero.conteudo_embalagem,
             'unidade_embalagem': genero.unidade_embalagem,
             'saldo_atual': estoque.saldo_atual,
+            'saldo_utilizavel': saldo_utilizavel,
             'reservado': reservado_item,
-            'disponivel': max(estoque.saldo_atual - reservado_item, ZERO),
+            'disponivel': max(saldo_utilizavel - reservado_item, ZERO),
         })
     return dados
 
 
-def faltas_de_saldo(planejado, generos, excluir_cardapio_id=None, bloquear=False):
+def faltas_de_saldo(
+    planejado,
+    generos,
+    excluir_cardapio_id=None,
+    bloquear=False,
+    data_referencia=None,
+):
     """Mensagens dos gêneros sem saldo ou com quantidade acima do disponível.
 
     `planejado` soma por gênero o que o cardápio pretende usar; `generos` mapeia o id para o
@@ -98,7 +113,10 @@ def faltas_de_saldo(planejado, generos, excluir_cardapio_id=None, bloquear=False
     estoques = Estoque.objects.filter(item_generico_id__in=planejado)
     if bloquear:
         estoques = estoques.select_for_update()
-    saldos = {estoque.item_generico_id: estoque.saldo_atual for estoque in estoques}
+    saldos = {
+        estoque.item_generico_id: saldo_utilizavel_estoque(estoque, data_referencia)
+        for estoque in estoques
+    }
     reservado = quantidades_reservadas(excluir_cardapio_id=excluir_cardapio_id)
 
     faltas = []
@@ -123,7 +141,13 @@ def _validar_disponibilidade(cardapio):
         generos[item.item_generico_id] = item.item_generico
 
     # Bloqueia os saldos envolvidos para que dois envios simultâneos não reservem o mesmo saldo.
-    faltas = faltas_de_saldo(planejado, generos, excluir_cardapio_id=cardapio.pk, bloquear=True)
+    faltas = faltas_de_saldo(
+        planejado,
+        generos,
+        excluir_cardapio_id=cardapio.pk,
+        bloquear=True,
+        data_referencia=cardapio.data,
+    )
     if faltas:
         raise ValidationError({'itens': faltas})
 

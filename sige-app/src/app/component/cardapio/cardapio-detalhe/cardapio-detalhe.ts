@@ -109,8 +109,8 @@ export class CardapioDetalhe implements OnInit {
     this.prepararQuantidades();
 
     if (this.modoAprovacao) {
-      // Saldo físico sem a reserva deste próprio cardápio: é o limite do que pode sair agora.
-      this.cardapioService.disponibilidade(cardapio.id).subscribe({
+      // O limite da retirada considera o saldo utilizável na data planejada do cardápio.
+      this.cardapioService.disponibilidade(cardapio.id, cardapio.data).subscribe({
         next: (dados) => {
           this.saldos = new Map(dados.map((item) => [item.item_generico_id, item]));
           this.prepararQuantidades();
@@ -186,7 +186,7 @@ export class CardapioDetalhe implements OnInit {
 
   saldoAtual(item: ItemCardapio): number | null {
     const saldo = this.saldos.get(item.item_generico);
-    return saldo ? Number(saldo.saldo_atual) : null;
+    return saldo ? Number(saldo.disponivel) : null;
   }
 
   /** Soma do que está sendo liberado para o mesmo gênero (ele pode aparecer em mais de uma linha). */
@@ -206,7 +206,7 @@ export class CardapioDetalhe implements OnInit {
     }
     const saldo = this.saldoAtual(item);
     if (saldo !== null && this.totalLiberadoDoGenero(item) > saldo + 0.0005) {
-      return `Saldo em estoque: ${formatarQuantidade(saldo)} ${item.unidade_medida}.`;
+      return `Saldo disponível: ${formatarQuantidade(saldo)} ${item.unidade_medida}.`;
     }
     return '';
   }

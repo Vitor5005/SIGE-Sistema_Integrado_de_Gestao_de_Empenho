@@ -11,18 +11,29 @@
           @if(itensSemCargaInicial.length){<option value="CARGA_INICIAL">Carga inicial (implantação)</option>}
         </select></div>
       <div class="col-md-8"><label class="form-label">Gênero alimentício</label>
-        <select class="form-select" [(ngModel)]="itemGenericoId" name="genero" required>
+        <select class="form-select" [ngModel]="itemGenericoId" (ngModelChange)="trocarGenero($event)" name="genero" required>
           <option [ngValue]="undefined">Selecione</option>
           @for(item of itensDaOperacao;track item.id){<option [ngValue]="item.item_generico_id">{{item.catmat}} - {{item.descricao}}</option>}
         </select></div>
       <div class="col-12"><p class="text-muted small mb-0">{{descricaoOperacao}}</p></div>
       @if(operacao==='SAIDA'){<div class="col-md-4"><label class="form-label">Motivo da saída</label>
-        <select class="form-select" [(ngModel)]="tipoSaida" name="tipoSaida">
+        <select class="form-select" [ngModel]="tipoSaida" (ngModelChange)="trocarTipoSaida($event)" name="tipoSaida">
           <option value="PRODUCAO">Consumo no preparo de refeições</option><option value="DOACAO">Doação</option><option value="PERDA">Perda ou vencimento</option>
         </select></div>}
+      @if(operacao==='SAIDA' && tipoSaida==='PERDA'){<div class="col-md-8"><label class="form-label">Lote *</label>
+        <select class="form-select" [(ngModel)]="loteId" name="lotePerda" [disabled]="carregandoLotes || !itemSelecionado" required>
+          <option [ngValue]="undefined">{{carregandoLotes ? 'Carregando lotes...' : 'Selecione o lote'}}</option>
+          @for(lote of lotesPerda;track lote.id){<option [ngValue]="lote.id">
+            {{lote.numero_lote}}{{lote.vencido ? ' — Vencido' : ''}} — {{formatarDataValidade(lote.data_validade)}} — {{lote.saldo_atual|number:'1.0-3'}} {{itemSelecionado?.unidade_medida}}
+          </option>}
+        </select>
+        @if(loteSelecionado){<small class="text-muted d-block mt-1">Saldo do lote: <b>{{loteSelecionado.saldo_atual|number:'1.0-3'}} {{itemSelecionado?.unidade_medida}}</b></small>}
+      </div>}
       <div class="col-md-4"><label class="form-label">{{rotuloQuantidade}}</label>
         <input class="form-control" type="number" step="0.001" min="0" [(ngModel)]="quantidade" name="quantidade" required>
-        @if(itemSelecionado){<small class="text-muted d-block mt-1">Saldo no sistema: <b>{{itemSelecionado.saldo_atual|number:'1.0-3'}} {{itemSelecionado.unidade_medida}}</b></small>}
+        @if(itemSelecionado){<small class="text-muted d-block mt-1">Saldo físico: <b>{{itemSelecionado.saldo_atual|number:'1.0-3'}} {{itemSelecionado.unidade_medida}}</b></small>}
+        @if(itemSelecionado && operacao==='SAIDA' && (tipoSaida==='PRODUCAO' || tipoSaida==='DOACAO')){
+        <small class="text-muted d-block mt-1">Disponível para uso: <b>{{itemSelecionado.saldo_utilizavel|number:'1.0-3'}} {{itemSelecionado.unidade_medida}}</b><br>Lotes vencidos não são considerados disponíveis para produção ou doação.</small>}
         @if(operacao==='INVENTARIO' && diferencaInventario!==null){
         <small class="d-block" [class.text-success]="diferencaInventario>0" [class.text-danger]="diferencaInventario<0" [class.text-muted]="diferencaInventario===0">
           @if(diferencaInventario===0){Contagem confere com o sistema; nada a ajustar.}

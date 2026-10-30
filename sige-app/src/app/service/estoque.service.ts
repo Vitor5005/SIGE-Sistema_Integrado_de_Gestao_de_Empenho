@@ -3,7 +3,13 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../environments/environment';
-import { EstoqueConsolidado, EstoqueItem, ItemRecebimento, MovimentacaoEstoque } from '../model/estoque';
+import {
+  EstoqueConsolidado,
+  EstoqueItem,
+  ItemRecebimento,
+  LoteSaida,
+  MovimentacaoEstoque,
+} from '../model/estoque';
 import { normalizePaginatedResponse, PaginatedResponse } from '../model/pagination';
 
 @Injectable({ providedIn: 'root' })
@@ -44,6 +50,11 @@ export class EstoqueService {
 
   registrarSaida(payload: object): Observable<MovimentacaoEstoque> {
     return this.http.post<MovimentacaoEstoque>(this.apiUrl + 'saidas/', payload);
+  }
+
+  listarLotesParaPerda(itemGenericoId: number): Observable<LoteSaida[]> {
+    const params = new HttpParams().set('item_generico_id', itemGenericoId);
+    return this.http.get<LoteSaida[]>(this.apiUrl + 'lotes-para-perda/', { params });
   }
 
   registrarCargaInicial(payload: object): Observable<MovimentacaoEstoque> {

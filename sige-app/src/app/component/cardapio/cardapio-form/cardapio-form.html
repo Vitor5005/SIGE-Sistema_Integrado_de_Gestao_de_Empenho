@@ -41,7 +41,7 @@
         </div>
         <div class="cardapio-campo">
           <label for="data">Data *</label>
-          <input id="data" name="data" type="date" [(ngModel)]="data" [disabled]="salvando" [min]="hoje()"
+          <input id="data" name="data" type="date" [(ngModel)]="data" (ngModelChange)="aoAlterarData($event)" [disabled]="salvando" [min]="hoje()"
             [class.campo-invalido]="(formSubmitted && !data) || dataNoPassado">
           @if (dataNoPassado) {
           <small class="mensagem-campo-invalido">A data não pode estar no passado.</small>
