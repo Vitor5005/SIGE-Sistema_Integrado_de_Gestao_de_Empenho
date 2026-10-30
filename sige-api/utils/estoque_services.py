@@ -1,13 +1,21 @@
 from decimal import Decimal
 
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from empenho.models import Empenho, ItemEmpenho
 from entrega.models import ItemOrdem, OrdemEntrega
 from utils.pendencias import sincronizar_pendencias
-from estoque.models import Estoque, Inventario, ItemInventario, MovimentacaoEstoque
+from estoque.models import (
+    Estoque,
+    Inventario,
+    ItemInventario,
+    LoteEstoque,
+    MovimentacaoEstoque,
+    MovimentacaoLote,
+)
 
 
 ZERO = Decimal('0.000')
@@ -34,6 +42,41 @@ def _estoque_bloqueado(item_generico_id):
     )
 
 
+def _lote_legado_bloqueado(estoque):
+    LoteEstoque.objects.get_or_create(
+        estoque=estoque,
+        numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+        defaults={
+            'data_validade': None,
+            'saldo_atual': estoque.saldo_atual,
+            'legado': True,
+        },
+    )
+    lote = LoteEstoque.objects.select_for_update().get(
+        estoque=estoque,
+        numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+    )
+    if not lote.legado or lote.data_validade is not None:
+        raise ValidationError({
+            'estoque': 'O lote legado do estoque está inconsistente.',
+        })
+    return lote
+
+
+def _validar_consistencia_lotes(estoque):
+    total_lotes = (
+        LoteEstoque.objects
+        .filter(estoque_id=estoque.id)
+        .aggregate(total=Sum('saldo_atual'))['total']
+        or ZERO
+    ).quantize(Decimal('0.001'))
+    if total_lotes != estoque.saldo_atual:
+        raise ValidationError({
+            'estoque': 'Inconsistência entre o saldo consolidado e os saldos dos lotes.',
+        })
+
+
+@transaction.atomic
 def _registrar_movimentacao(
     *, item_generico_id, tipo, sentido, quantidade, usuario, data_hora,
     observacao='', item_ordem=None, item_inventario=None, movimentacao_estornada=None,
@@ -44,9 +87,15 @@ def _registrar_movimentacao(
         raise ValidationError({'quantidade': 'A quantidade deve ser maior que zero.'})
 
     estoque = _estoque_bloqueado(item_generico_id)
+    lote = _lote_legado_bloqueado(estoque)
+    _validar_consistencia_lotes(estoque)
+
     delta = quantidade if sentido == MovimentacaoEstoque.Sentido.ENTRADA else -quantidade
     novo_saldo = (estoque.saldo_atual + delta).quantize(Decimal('0.001'))
+    novo_saldo_lote = (lote.saldo_atual + delta).quantize(Decimal('0.001'))
     if novo_saldo < ZERO:
+        raise ValidationError({'quantidade': 'A quantidade informada excede o saldo em estoque.'})
+    if novo_saldo_lote < ZERO:
         raise ValidationError({'quantidade': 'A quantidade informada excede o saldo em estoque.'})
 
     movimento = MovimentacaoEstoque.objects.create(
@@ -68,6 +117,19 @@ def _registrar_movimentacao(
         saldo_atual=novo_saldo,
         data_atualizacao=timezone.now(),
     )
+    LoteEstoque.objects.filter(pk=lote.pk).update(
+        saldo_atual=novo_saldo_lote,
+        data_atualizacao=timezone.now(),
+    )
+    MovimentacaoLote.objects.create(
+        movimentacao=movimento,
+        lote=lote,
+        quantidade=quantidade,
+        saldo_lote_resultante=novo_saldo_lote,
+    )
+    estoque.saldo_atual = novo_saldo
+    lote.saldo_atual = novo_saldo_lote
+    _validar_consistencia_lotes(estoque)
     return movimento
 
 

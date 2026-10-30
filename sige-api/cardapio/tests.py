@@ -8,7 +8,7 @@ from rest_framework.test import APITestCase
 from cadastro.models import ItemGenerico
 from cardapio.models import Cardapio
 from cardapio.serializers import hoje_no_ru
-from estoque.models import Estoque, MovimentacaoEstoque
+from estoque.models import Estoque, LoteEstoque, MovimentacaoEstoque
 from usuario.models import Usuario
 from utils.rbac import Papel
 
@@ -31,7 +31,19 @@ class CardapioFluxoTests(APITestCase):
         self._definir_saldo(self.feijao, '15')
 
     def _definir_saldo(self, genero, saldo):
-        Estoque.objects.update_or_create(item_generico=genero, defaults={'saldo_atual': Decimal(saldo)})
+        saldo_decimal = Decimal(str(saldo)).quantize(Decimal('0.001'))
+        estoque, _ = Estoque.objects.update_or_create(
+            item_generico=genero, defaults={'saldo_atual': saldo_decimal},
+        )
+        LoteEstoque.objects.update_or_create(
+            estoque=estoque,
+            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+            defaults={
+                'data_validade': None,
+                'saldo_atual': saldo_decimal,
+                'legado': True,
+            },
+        )
 
     def _saldo(self, genero):
         return Estoque.objects.get(item_generico=genero).saldo_atual

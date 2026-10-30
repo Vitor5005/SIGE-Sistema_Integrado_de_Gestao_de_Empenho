@@ -29,6 +29,53 @@ class Estoque(models.Model):
         return f'{self.item_generico} - {self.saldo_atual}'
 
 
+class LoteEstoque(models.Model):
+    NUMERO_LOTE_LEGADO = 'LEGADO'
+
+    estoque = models.ForeignKey(
+        Estoque,
+        on_delete=models.PROTECT,
+        related_name='lotes',
+    )
+    numero_lote = models.CharField(max_length=100)
+    data_validade = models.DateField(null=True, blank=True)
+    saldo_atual = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    legado = models.BooleanField(default=False)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['estoque_id', 'data_validade', 'numero_lote', 'id']
+        indexes = [
+            models.Index(fields=['estoque', 'data_validade'], name='lote_estoque_val_idx'),
+            models.Index(fields=['data_validade', 'saldo_atual'], name='lote_validade_saldo_idx'),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['estoque', 'numero_lote'],
+                name='lote_unico_por_estoque',
+            ),
+            models.CheckConstraint(
+                condition=Q(saldo_atual__gte=0),
+                name='lote_saldo_nao_negativo',
+            ),
+            models.CheckConstraint(
+                condition=~Q(numero_lote=''),
+                name='lote_numero_nao_vazio',
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(legado=True, data_validade__isnull=True)
+                    | Q(legado=False, data_validade__isnull=False)
+                ),
+                name='lote_validade_coerente',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.estoque.item_generico} - Lote {self.numero_lote}'
+
+
 class Inventario(models.Model):
     class Tipo(models.TextChoices):
         CARGA_INICIAL = 'CARGA_INICIAL', 'Carga inicial'
@@ -101,7 +148,6 @@ class MovimentacaoEstoque(models.Model):
         ENTRADA = 'E', 'Entrada'
         SAIDA = 'S', 'Saída'
 
-    # TODO: adicionar lote e data de validade somente após definição do domínio.
     estoque = models.ForeignKey(Estoque, on_delete=models.PROTECT, related_name='movimentacoes')
     tipo = models.CharField(max_length=20, choices=Tipo.choices)
     sentido = models.CharField(max_length=1, choices=Sentido.choices)
@@ -212,3 +258,66 @@ class MovimentacaoEstoque(models.Model):
     def delete(self, *args, **kwargs):
         raise ValidationError('Movimentações de estoque não podem ser excluídas; use estorno.')
 
+class MovimentacaoLoteQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError('Movimentações por lote são imutáveis; use estorno.')
+
+    def delete(self):
+        raise ValidationError('Movimentações por lote não podem ser excluídas; use estorno.')
+
+
+class MovimentacaoLote(models.Model):
+    movimentacao = models.ForeignKey(
+        MovimentacaoEstoque,
+        on_delete=models.PROTECT,
+        related_name='alocacoes_lote',
+    )
+    lote = models.ForeignKey(
+        LoteEstoque,
+        on_delete=models.PROTECT,
+        related_name='movimentacoes',
+    )
+    quantidade = models.DecimalField(max_digits=12, decimal_places=3)
+    saldo_lote_resultante = models.DecimalField(max_digits=12, decimal_places=3)
+
+    objects = MovimentacaoLoteQuerySet.as_manager()
+
+    class Meta:
+        ordering = ['movimentacao_id', 'id']
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(quantidade__gt=0),
+                name='mov_lote_quantidade_positiva',
+            ),
+            models.CheckConstraint(
+                condition=Q(saldo_lote_resultante__gte=0),
+                name='mov_lote_saldo_nao_negativo',
+            ),
+            models.UniqueConstraint(
+                fields=['movimentacao', 'lote'],
+                name='mov_lote_unico',
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if (
+            self.movimentacao_id
+            and self.lote_id
+            and self.movimentacao.estoque_id != self.lote.estoque_id
+        ):
+            raise ValidationError({
+                'lote': (
+                    'O lote informado não pertence ao mesmo estoque '
+                    'da movimentação.'
+                )
+            })
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValidationError('Movimentações por lote são imutáveis; use estorno.')
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError('Movimentações por lote não podem ser excluídas; use estorno.')

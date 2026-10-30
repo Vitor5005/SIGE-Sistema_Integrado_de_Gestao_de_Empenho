@@ -22,6 +22,7 @@ import django
 django.setup()
 
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
@@ -33,6 +34,7 @@ from estoque.models import (
     Estoque,
     Inventario,
     ItemInventario,
+    LoteEstoque,
     MovimentacaoEstoque,
 )
 from usuario.models import Usuario
@@ -658,6 +660,7 @@ def clean_database():
     Ata.objects.all().delete()
     Licitacao.objects.all().delete()
     Fornecedor.objects.all().delete()
+    LoteEstoque.objects.all().delete()
     Estoque.objects.all().delete()
     ItemGenerico.objects.all().delete()
     Endereco.objects.all().delete()
@@ -706,6 +709,29 @@ def validar_seed():
     for empenho in Empenho.objects.all():
         if not Decimal('0.00') <= empenho.saldo_utilizado <= empenho.valor_total:
             raise RuntimeError('O saldo utilizado do empenho está inconsistente.')
+    for estoque in Estoque.objects.select_related('item_generico'):
+        lote_legado = LoteEstoque.objects.filter(
+            estoque=estoque,
+            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+        ).first()
+        if (
+            lote_legado is None
+            or not lote_legado.legado
+            or lote_legado.data_validade is not None
+        ):
+            raise RuntimeError(
+                f'Lote LEGADO inconsistente para {estoque.item_generico.descricao}.'
+            )
+        saldo_lotes = (
+            LoteEstoque.objects.filter(estoque=estoque).aggregate(total=Sum('saldo_atual'))['total']
+            or Decimal('0.000')
+        ).quantize(Decimal('0.001'))
+        saldo_consolidado = estoque.saldo_atual.quantize(Decimal('0.001'))
+        if saldo_lotes != saldo_consolidado:
+            raise RuntimeError(
+                f'Estoque inconsistente para {estoque.item_generico.descricao}: '
+                f'saldo consolidado = {saldo_consolidado}; saldo dos lotes = {saldo_lotes}.'
+            )
     if Estoque.objects.filter(saldo_atual__lt=0).exists():
         raise RuntimeError('A demonstração não pode possuir saldo negativo em estoque.')
 

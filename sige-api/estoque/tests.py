@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import DatabaseError, transaction
+from django.db.models import Sum
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
@@ -12,9 +13,10 @@ from rest_framework.test import APIClient, APITestCase
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
 from entrega.models import ItemOrdem, OrdemEntrega
-from estoque.models import Estoque, MovimentacaoEstoque
+from estoque.models import Estoque, LoteEstoque, MovimentacaoEstoque, MovimentacaoLote
 from utils.estoque_services import (
     estornar_movimentacao,
+    registrar_ajuste,
     registrar_carga_inicial,
     registrar_recebimento,
     registrar_saida,
@@ -248,6 +250,176 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
                     'UPDATE estoque_movimentacaoestoque SET observacao=%s WHERE id=%s',
                     ['alterada', movimento.pk],
                 )
+
+    def test_novo_genero_cria_estoque_e_lote_legado_zero(self):
+        genero = ItemGenerico.objects.create(
+            catmat='654322', descricao='Arroz', unidade_medida='KG', categoria='SM',
+        )
+
+        estoque = Estoque.objects.get(item_generico=genero)
+        lote = LoteEstoque.objects.get(
+            estoque=estoque,
+            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+        )
+
+        self.assertTrue(lote.legado)
+        self.assertIsNone(lote.data_validade)
+        self.assertEqual(lote.saldo_atual, Decimal('0.000'))
+        self.assertEqual(estoque.saldo_atual, Decimal('0.000'))
+
+    def test_fluxo_atual_movimenta_lote_legado_e_preserva_invariante(self):
+        carga = registrar_carga_inicial(
+            item_generico_id=self.genero.id,
+            quantidade='100',
+            justificativa='Implantação',
+            usuario=self.estoquista,
+        )
+        saida = registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='35',
+            tipo_saida='PRODUCAO',
+            justificativa='Produção do almoço',
+            usuario=self.estoquista,
+        )
+
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote = LoteEstoque.objects.get(
+            estoque=estoque,
+            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+        )
+        self.assertEqual(estoque.saldo_atual, Decimal('65.000'))
+        self.assertEqual(lote.saldo_atual, Decimal('65.000'))
+        self.assertEqual(
+            LoteEstoque.objects.filter(estoque=estoque).aggregate(total=Sum('saldo_atual'))['total'],
+            estoque.saldo_atual,
+        )
+
+        self.assertEqual(carga.alocacoes_lote.count(), 1)
+        alocacao_carga = carga.alocacoes_lote.get()
+        self.assertEqual(alocacao_carga.lote, lote)
+        self.assertEqual(alocacao_carga.quantidade, Decimal('100.000'))
+        self.assertEqual(alocacao_carga.saldo_lote_resultante, Decimal('100.000'))
+
+        self.assertEqual(saida.alocacoes_lote.count(), 1)
+        alocacao_saida = saida.alocacoes_lote.get()
+        self.assertEqual(alocacao_saida.lote, lote)
+        self.assertEqual(alocacao_saida.quantidade, Decimal('35.000'))
+        self.assertEqual(alocacao_saida.saldo_lote_resultante, Decimal('65.000'))
+
+    def test_recebimento_atual_registra_lote_legado(self):
+        _, movimentos = registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'quantidade_recebida': '500',
+            }],
+            usuario=self.estoquista,
+        )
+
+        movimento = movimentos[0]
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote = LoteEstoque.objects.get(
+            estoque=estoque,
+            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+        )
+        alocacao = movimento.alocacoes_lote.get()
+
+        self.assertEqual(alocacao.quantidade, movimento.quantidade)
+        self.assertEqual(alocacao.lote, lote)
+        self.assertEqual(lote.saldo_atual, estoque.saldo_atual)
+
+    def test_estorno_atual_restaura_lote_legado(self):
+        original = registrar_carga_inicial(
+            item_generico_id=self.genero.id,
+            quantidade='25',
+            justificativa='Implantação',
+            usuario=self.estoquista,
+        )
+        estorno = estornar_movimentacao(
+            movimentacao_id=original.id,
+            justificativa='Lançamento incorreto',
+            usuario=self.estoquista,
+        )
+
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote = LoteEstoque.objects.get(
+            estoque=estoque,
+            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+        )
+        self.assertEqual(estoque.saldo_atual, Decimal('0.000'))
+        self.assertEqual(lote.saldo_atual, Decimal('0.000'))
+        self.assertEqual(original.alocacoes_lote.count(), 1)
+        self.assertEqual(estorno.alocacoes_lote.count(), 1)
+        self.assertEqual(original.alocacoes_lote.get().lote, lote)
+        self.assertEqual(estorno.alocacoes_lote.get().lote, lote)
+
+    def test_ajuste_atual_preserva_saldo_por_lote(self):
+        registrar_carga_inicial(
+            item_generico_id=self.genero.id,
+            quantidade='50',
+            justificativa='Implantação',
+            usuario=self.estoquista,
+        )
+        ajuste = registrar_ajuste(
+            item_generico_id=self.genero.id,
+            quantidade_contada='47',
+            justificativa='Contagem mensal',
+            usuario=self.estoquista,
+        )
+
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote = LoteEstoque.objects.get(
+            estoque=estoque,
+            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+        )
+        self.assertEqual(estoque.saldo_atual, Decimal('47.000'))
+        self.assertEqual(lote.saldo_atual, Decimal('47.000'))
+        self.assertEqual(ajuste.alocacoes_lote.count(), 1)
+
+    def test_movimentacao_lote_e_imutavel(self):
+        movimento = registrar_carga_inicial(
+            item_generico_id=self.genero.id,
+            quantidade='10',
+            justificativa='Implantação',
+            usuario=self.estoquista,
+        )
+        alocacao = movimento.alocacoes_lote.get()
+
+        alocacao.quantidade = Decimal('1')
+        with self.assertRaises(DjangoValidationError):
+            alocacao.save()
+        with self.assertRaises(DjangoValidationError):
+            MovimentacaoLote.objects.filter(pk=alocacao.pk).update(quantidade=Decimal('1'))
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    'UPDATE estoque_movimentacaolote SET quantidade=%s WHERE id=%s',
+                    [Decimal('1'), alocacao.pk],
+                )
+
+    def test_movimentacao_lote_rejeita_lote_de_outro_estoque(self):
+        movimento = registrar_carga_inicial(
+            item_generico_id=self.genero.id,
+            quantidade='10',
+            justificativa='Implantação',
+            usuario=self.estoquista,
+        )
+        outro_genero = ItemGenerico.objects.create(
+            catmat='654323', descricao='Feijão', unidade_medida='KG', categoria='SM',
+        )
+        lote_outro_estoque = LoteEstoque.objects.get(
+            estoque__item_generico=outro_genero,
+            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
+        )
+
+        with self.assertRaises(DjangoValidationError):
+            MovimentacaoLote.objects.create(
+                movimentacao=movimento,
+                lote=lote_outro_estoque,
+                quantidade=Decimal('1.000'),
+                saldo_lote_resultante=Decimal('0.000'),
+            )
 
 
 class PermissoesEstoqueTests(EstoqueBaseMixin, APITestCase):
