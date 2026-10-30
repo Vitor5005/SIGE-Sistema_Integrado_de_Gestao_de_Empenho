@@ -24,6 +24,15 @@ export interface LoteSaida {
   vencido: boolean;
 }
 
+export interface LoteInventario {
+  id: number;
+  numero_lote: string;
+  data_validade: string | null;
+  saldo_atual: number;
+  legado: boolean;
+  vencido: boolean;
+}
+
 export interface MovimentacaoEstoque {
   id: number;
   item_generico_id: number;
