@@ -23,7 +23,11 @@ class PendenciaFornecedorTests(EstoqueBaseMixin, APITestCase):
             ordem_id=self.ordem.id,
             itens_recebidos=[{
                 'item_ordem_id': self.item_ordem.id,
-                'quantidade_recebida': quantidade,
+                'lotes': [self.lote_recebimento(
+                    quantidade,
+                    numero='TESTE-PENDENCIA-001',
+                    validade='2099-12-31',
+                )],
                 'observacao': observacao,
             }],
             usuario=self.estoquista,

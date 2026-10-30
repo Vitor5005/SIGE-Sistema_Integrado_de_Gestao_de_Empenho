@@ -1,35 +1,174 @@
 <main class="sige-page-container estoque-pagina estoque-subpagina">
-  <header class="estoque-topo"><div><h1>Registrar recebimento</h1><p>Somente a quantidade aceita entra no estoque. O restante continua pendente para outra entrega.</p></div>
-    <a class="sige-button sige-button--secondary" routerLink="/visualizar-entregas">Voltar às entregas</a></header>
-  @if(erro){<div class="alert alert-danger" role="alert">{{erro}}</div>}
-  @if(ordem){
-    <div class="card p-4 mb-4"><div class="row">
-      <div class="col-md-3"><strong>Ordem</strong><br>{{ordem.codigo}}</div>
-      <div class="col-md-3"><strong>Empenho</strong><br>{{ordem.empenho.codigo}}</div>
-      <div class="col-md-3"><strong>Fornecedor</strong><br>{{ordem.empenho.ata.fornecedor.nome_fantasia}}</div>
-      <div class="col-md-3"><label class="form-label" for="dataEntradaRecebimento"><strong>Data de entrada</strong></label><input id="dataEntradaRecebimento" class="form-control" type="datetime-local" [(ngModel)]="dataEntrada"></div>
-    </div></div>
-    <div class="table-responsive"><table class="table tabela-estoque"><caption class="visually-hidden">Itens do recebimento</caption><thead><tr><th scope="col">Gênero</th><th scope="col">Unidade</th><th scope="col">Solicitado</th><th scope="col">Já recebido</th><th scope="col">Pendente</th><th scope="col">Receber agora</th><th scope="col">Valor unitário</th><th scope="col">Total desta entrada</th><th scope="col">Observação</th></tr></thead>
-      <tbody>@for(item of itens;track item.id){<tr><td>{{item.item_empenho.item_ata.item_generico.catmat}} - {{item.item_empenho.item_ata.item_generico.descricao}}</td>
-        <td>{{item.item_empenho.item_ata.item_generico.unidade_medida}}</td><td>{{item.quantidade_solicitada|number:'1.0-3'}}</td>
-        <td>{{item.quantidade_entregue|number:'1.0-3'}}</td><td>{{item.quantidade_pendente|number:'1.0-3'}}</td>
-        <td><input class="form-control" type="number" min="0" [max]="item.quantidade_pendente" step="0.001" [(ngModel)]="item.quantidade_receber" [disabled]="item.quantidade_pendente <= 0" [attr.aria-label]="'Quantidade a receber de ' + item.item_empenho.item_ata.item_generico.descricao"></td>
-        <td>{{item.item_empenho.item_ata.valor_unitario|currency:'BRL'}}</td><td>{{total(item)|currency:'BRL'}}</td>
-        <td class="celula-observacao"><input class="form-control" maxlength="255" placeholder="Motivo da pendência" [(ngModel)]="item.observacao" [attr.aria-label]="'Observação sobre ' + item.item_empenho.item_ata.item_generico.descricao" [attr.aria-describedby]="'observacaoAjuda' + item.id">
-          <small class="texto-apoio-observacao" [id]="'observacaoAjuda' + item.id">Obrigatória quando parte da quantidade continuar pendente.</small></td></tr>}</tbody></table></div>
+  <header class="estoque-topo">
+    <div>
+      <h1>Registrar recebimento</h1>
+      <p>Informe os lotes recebidos. O restante continua pendente para outra entrega.</p>
+    </div>
+    <a class="sige-button sige-button--secondary" routerLink="/visualizar-entregas">Voltar às entregas</a>
+  </header>
+
+  @if (erro) {
+    <div class="alert alert-danger" role="alert">{{ erro }}</div>
+  }
+
+  @if (ordem) {
+    <section class="card p-4 mb-4" aria-label="Dados da ordem de entrega">
+      <div class="row">
+        <div class="col-md-3"><strong>Ordem</strong><br>{{ ordem.codigo }}</div>
+        <div class="col-md-3"><strong>Empenho</strong><br>{{ ordem.empenho.codigo }}</div>
+        <div class="col-md-3"><strong>Fornecedor</strong><br>{{ ordem.empenho.ata.fornecedor.nome_fantasia }}</div>
+        <div class="col-md-3">
+          <label class="form-label" for="dataEntradaRecebimento"><strong>Data de entrada</strong></label>
+          <input id="dataEntradaRecebimento" class="form-control" type="datetime-local" [(ngModel)]="dataEntrada">
+        </div>
+      </div>
+    </section>
+
+    <section class="recebimento-itens" aria-label="Itens do recebimento">
+      @for (item of itens; track item.id) {
+        <article class="recebimento-item">
+          <header class="recebimento-item__cabecalho">
+            <div>
+              <h2>{{ item.item_empenho.item_ata.item_generico.catmat }} - {{ item.item_empenho.item_ata.item_generico.descricao }}</h2>
+              <p>Unidade: {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</p>
+            </div>
+          </header>
+
+          <dl class="recebimento-item__resumo">
+            <div>
+              <dt>Solicitado</dt>
+              <dd>{{ item.quantidade_solicitada | number:'1.0-3' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</dd>
+            </div>
+            <div>
+              <dt>Já recebido</dt>
+              <dd>{{ item.quantidade_entregue | number:'1.0-3' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</dd>
+            </div>
+            <div>
+              <dt>Pendente</dt>
+              <dd>{{ item.quantidade_pendente | number:'1.0-3' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</dd>
+            </div>
+            <div>
+              <dt>Valor unitário</dt>
+              <dd>{{ item.item_empenho.item_ata.valor_unitario | currency:'BRL' }}</dd>
+            </div>
+          </dl>
+
+          @if (item.quantidade_pendente > 0) {
+            <section class="recebimento-lotes" [attr.aria-label]="'Lotes desta entrada para ' + item.item_empenho.item_ata.item_generico.descricao">
+              <h3>Lotes desta entrada</h3>
+
+              @for (lote of item.lotes; track $index) {
+                <div class="recebimento-lote">
+                  <div class="recebimento-lote__campo">
+                    <label [for]="'numeroLote' + item.id + '-' + $index">Número do lote</label>
+                    <input
+                      [id]="'numeroLote' + item.id + '-' + $index"
+                      class="form-control"
+                      type="text"
+                      maxlength="100"
+                      [(ngModel)]="lote.numero_lote"
+                      [attr.aria-label]="'Número do lote de ' + item.item_empenho.item_ata.item_generico.descricao">
+                  </div>
+
+                  <div class="recebimento-lote__campo">
+                    <label [for]="'validadeLote' + item.id + '-' + $index">Validade</label>
+                    <input
+                      [id]="'validadeLote' + item.id + '-' + $index"
+                      class="form-control"
+                      type="date"
+                      [attr.min]="dataMinimaValidade || null"
+                      [(ngModel)]="lote.data_validade"
+                      [attr.aria-label]="'Validade do lote de ' + item.item_empenho.item_ata.item_generico.descricao">
+                  </div>
+
+                  <div class="recebimento-lote__campo">
+                    <label [for]="'quantidadeLote' + item.id + '-' + $index">Quantidade</label>
+                    <div class="input-group">
+                      <input
+                        [id]="'quantidadeLote' + item.id + '-' + $index"
+                        class="form-control"
+                        type="number"
+                        min="0.001"
+                        step="0.001"
+                        [(ngModel)]="lote.quantidade"
+                        [attr.aria-label]="'Quantidade do lote de ' + item.item_empenho.item_ata.item_generico.descricao">
+                      <span class="input-group-text">{{ item.item_empenho.item_ata.item_generico.unidade_medida }}</span>
+                    </div>
+                  </div>
+
+                  <div class="recebimento-lote__acoes">
+                    <button
+                      type="button"
+                      class="sige-button sige-button--secondary"
+                      [disabled]="quantidadeRestante(item) <= 0"
+                      (click)="preencherRestante(item, $index)">
+                      Preencher restante
+                    </button>
+                    <button type="button" class="sige-button sige-button--secondary" (click)="removerLote(item, $index)">Remover</button>
+                  </div>
+
+                  @if (mensagemValidadeProxima(lote)) {
+                    <small class="recebimento-validade-aviso" role="status">{{ mensagemValidadeProxima(lote) }}</small>
+                  }
+                </div>
+              }
+
+              <button type="button" class="sige-button sige-button--secondary" (click)="adicionarLote(item)">+ Adicionar lote</button>
+            </section>
+          } @else {
+            <p class="recebimento-item__sem-pendencia">Este item já está totalmente recebido.</p>
+          }
+
+          <section class="recebimento-resumo-entrada" aria-label="Resumo da entrada">
+            <div>
+              <span>Total desta entrada</span>
+              <strong>{{ quantidadeReceber(item) | number:'1.0-3' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</strong>
+            </div>
+            <div>
+              <span>Valor desta entrada</span>
+              <strong>{{ total(item) | currency:'BRL' }}</strong>
+            </div>
+            <div>
+              <span>Permanecerá pendente</span>
+              <strong>{{ quantidadeRestante(item) | number:'1.0-3' }} {{ item.item_empenho.item_ata.item_generico.unidade_medida }}</strong>
+            </div>
+            @if (item.quantidade_pendente > 0 && quantidadeReceber(item) > 0 && quantidadeRestante(item) === 0) {
+              <p class="recebimento-resumo-entrada__concluido">Item totalmente recebido nesta entrada.</p>
+            }
+          </section>
+
+          @if (item.quantidade_pendente > 0) {
+            <div class="recebimento-observacao">
+              <label class="form-label" [for]="'observacaoEntrega' + item.id">Observação da entrega</label>
+              <input
+                [id]="'observacaoEntrega' + item.id"
+                class="form-control"
+                maxlength="255"
+                placeholder="Motivo da pendência"
+                [(ngModel)]="item.observacao"
+                [attr.aria-describedby]="'observacaoAjuda' + item.id">
+              <small class="texto-apoio-observacao" [id]="'observacaoAjuda' + item.id">Obrigatória quando parte da quantidade continuar pendente.</small>
+            </div>
+          }
+        </article>
+      }
+    </section>
+
     @if (ordem.status !== 'con' && itensQueFicaraoPendentes.length) {
       <div class="alert alert-warning" role="status">
         <strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Entrega incompleta.</strong>
         Ao confirmar, será registrada uma pendência do fornecedor
-        <b>{{ordem.empenho.ata.fornecedor.nome_fantasia}}</b> e quem solicitou a ordem será alertado:
+        <b>{{ ordem.empenho.ata.fornecedor.nome_fantasia }}</b> e quem solicitou a ordem será alertado:
         <ul class="mb-0 mt-2">
           @for (pendente of itensQueFicaraoPendentes; track pendente.descricao) {
-            <li>{{pendente.faltante | number:'1.0-3'}} {{pendente.unidade}} de {{pendente.descricao}}</li>
+            <li>{{ pendente.faltante | number:'1.0-3' }} {{ pendente.unidade }} de {{ pendente.descricao }}</li>
           }
         </ul>
       </div>
     }
-    <button type="button" class="sige-button sige-button--primary" [disabled]="processando||ordem.status==='con'" (click)="confirmar()">{{processando?'Registrando...':'Confirmar recebimento'}}</button>
+
+    <button type="button" class="sige-button sige-button--primary" [disabled]="processando || ordem.status === 'con'" (click)="confirmar()">
+      {{ processando ? 'Registrando...' : 'Confirmar recebimento' }}
+    </button>
   }
 </main>
-

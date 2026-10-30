@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from estoque.models import Estoque, MovimentacaoEstoque
+from estoque.models import Estoque, LoteEstoque, MovimentacaoEstoque
 
 
 class EstoqueSerializer(serializers.ModelSerializer):
@@ -75,10 +75,45 @@ class EstornoSerializer(serializers.Serializer):
     data_hora = serializers.DateTimeField(required=False)
 
 
+class LoteRecebimentoSerializer(serializers.Serializer):
+    numero_lote = serializers.CharField(
+        max_length=100,
+        allow_blank=False,
+        trim_whitespace=True,
+    )
+    data_validade = serializers.DateField()
+    quantidade = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=3,
+        min_value=Decimal('0.001'),
+    )
+
+    def validate_numero_lote(self, valor):
+        numero_lote = valor.strip()
+        if not numero_lote:
+            raise serializers.ValidationError('Informe o n\u00famero do lote.')
+        if numero_lote.casefold() == LoteEstoque.NUMERO_LOTE_LEGADO.casefold():
+            raise serializers.ValidationError(
+                'O identificador LEGADO \u00e9 reservado para saldos anteriores ao controle de lotes.'
+            )
+        return numero_lote
+
+
 class ItemRecebimentoSerializer(serializers.Serializer):
     item_ordem_id = serializers.IntegerField(min_value=1)
-    quantidade_recebida = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0.001'))
+    lotes = LoteRecebimentoSerializer(many=True, allow_empty=False)
     observacao = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+    def validate_lotes(self, lotes):
+        numeros_informados = set()
+        for lote in lotes:
+            numero_normalizado = lote['numero_lote'].strip().casefold()
+            if numero_normalizado in numeros_informados:
+                raise serializers.ValidationError(
+                    'O mesmo lote foi informado mais de uma vez para este item.'
+                )
+            numeros_informados.add(numero_normalizado)
+        return lotes
 
 
 class RecebimentoSerializer(serializers.Serializer):

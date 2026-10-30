@@ -78,6 +78,18 @@ class EstoqueBaseMixin:
             quantidade_solicitada=Decimal('500.00'), quantidade_entregue=Decimal('0.00'),
         )
 
+    def lote_recebimento(
+        self,
+        quantidade,
+        numero='LOTE-TESTE-001',
+        validade='2099-12-31',
+    ):
+        return {
+            'numero_lote': numero,
+            'data_validade': validade,
+            'quantidade': quantidade,
+        }
+
 
 class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
     def setUp(self):
@@ -86,7 +98,10 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
     def test_cenario_aceitacao_com_saldos_esperados(self):
         registrar_recebimento(
             ordem_id=self.ordem.id,
-            itens_recebidos=[{'item_ordem_id': self.item_ordem.id, 'quantidade_recebida': '500'}],
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'lotes': [self.lote_recebimento('500')],
+            }],
             usuario=self.estoquista,
             data_entrada=datetime(2026, 1, 12, tzinfo=dt_timezone.utc),
         )
@@ -135,7 +150,13 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
         with self.assertRaises(ValidationError):
             registrar_recebimento(
                 ordem_id=self.ordem.id,
-                itens_recebidos=[{'item_ordem_id': self.item_ordem.id, 'quantidade_recebida': '501'}],
+                itens_recebidos=[{
+                    'item_ordem_id': self.item_ordem.id,
+                    'lotes': [
+                        self.lote_recebimento('300', numero='LOTE-A'),
+                        self.lote_recebimento('201', numero='LOTE-B'),
+                    ],
+                }],
                 usuario=self.estoquista,
             )
         self.ordem.refresh_from_db()
@@ -147,7 +168,7 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
             ordem_id=self.ordem.id,
             itens_recebidos=[{
                 'item_ordem_id': self.item_ordem.id,
-                'quantidade_recebida': '100',
+                'lotes': [self.lote_recebimento('100')],
                 'observacao': 'Fornecedor entregara os 400 kg restantes depois.',
             }],
             usuario=self.estoquista,
@@ -163,7 +184,7 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
             ordem_id=self.ordem.id,
             itens_recebidos=[{
                 'item_ordem_id': self.item_ordem.id,
-                'quantidade_recebida': '400',
+                'lotes': [self.lote_recebimento('400')],
             }],
             usuario=self.estoquista,
         )
@@ -182,7 +203,7 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
                 ordem_id=self.ordem.id,
                 itens_recebidos=[{
                     'item_ordem_id': self.item_ordem.id,
-                    'quantidade_recebida': '100',
+                    'lotes': [self.lote_recebimento('100')],
                 }],
                 usuario=self.estoquista,
             )
@@ -194,7 +215,10 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
             with self.assertRaises(RuntimeError):
                 registrar_recebimento(
                     ordem_id=self.ordem.id,
-                    itens_recebidos=[{'item_ordem_id': self.item_ordem.id, 'quantidade_recebida': '500'}],
+                    itens_recebidos=[{
+                        'item_ordem_id': self.item_ordem.id,
+                        'lotes': [self.lote_recebimento('500')],
+                    }],
                     usuario=self.estoquista,
                 )
         self.ordem.refresh_from_db()
@@ -306,27 +330,282 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
         self.assertEqual(alocacao_saida.quantidade, Decimal('35.000'))
         self.assertEqual(alocacao_saida.saldo_lote_resultante, Decimal('65.000'))
 
-    def test_recebimento_atual_registra_lote_legado(self):
+    def test_recebimento_registra_lote_real_e_alocacao_explicita(self):
         _, movimentos = registrar_recebimento(
             ordem_id=self.ordem.id,
             itens_recebidos=[{
                 'item_ordem_id': self.item_ordem.id,
-                'quantidade_recebida': '500',
+                'lotes': [self.lote_recebimento('500')],
             }],
             usuario=self.estoquista,
         )
 
         movimento = movimentos[0]
         estoque = Estoque.objects.get(item_generico=self.genero)
-        lote = LoteEstoque.objects.get(
-            estoque=estoque,
-            numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO,
-        )
+        lote_legado = LoteEstoque.objects.get(estoque=estoque, numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO)
+        lote_real = LoteEstoque.objects.get(estoque=estoque, numero_lote='LOTE-TESTE-001')
         alocacao = movimento.alocacoes_lote.get()
 
-        self.assertEqual(alocacao.quantidade, movimento.quantidade)
-        self.assertEqual(alocacao.lote, lote)
-        self.assertEqual(lote.saldo_atual, estoque.saldo_atual)
+        self.assertEqual(estoque.saldo_atual, Decimal('500.000'))
+        self.assertEqual(lote_legado.saldo_atual, Decimal('0.000'))
+        self.assertEqual(lote_real.saldo_atual, Decimal('500.000'))
+        self.assertEqual(movimento.quantidade, Decimal('500.000'))
+        self.assertEqual(movimento.alocacoes_lote.count(), 1)
+        self.assertEqual(alocacao.lote, lote_real)
+        self.assertEqual(alocacao.quantidade, Decimal('500.000'))
+        self.assertEqual(alocacao.saldo_lote_resultante, Decimal('500.000'))
+
+    def test_recebimento_pode_distribuir_item_em_multiplos_lotes(self):
+        _, movimentos = registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'lotes': [
+                    self.lote_recebimento('200', numero='LOTE-A'),
+                    self.lote_recebimento('300', numero='LOTE-B'),
+                ],
+            }],
+            usuario=self.estoquista,
+        )
+
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote_a = LoteEstoque.objects.get(estoque=estoque, numero_lote='LOTE-A')
+        lote_b = LoteEstoque.objects.get(estoque=estoque, numero_lote='LOTE-B')
+        movimento = movimentos[0]
+
+        self.assertEqual(estoque.saldo_atual, Decimal('500.000'))
+        self.assertEqual(lote_a.saldo_atual, Decimal('200.000'))
+        self.assertEqual(lote_b.saldo_atual, Decimal('300.000'))
+        self.assertEqual(MovimentacaoEstoque.objects.count(), 1)
+        self.assertEqual(movimento.quantidade, Decimal('500.000'))
+        self.assertEqual(movimento.alocacoes_lote.count(), 2)
+        self.assertEqual(
+            sum(
+                movimento.alocacoes_lote.values_list('quantidade', flat=True),
+                Decimal('0.000'),
+            ),
+            Decimal('500.000'),
+        )
+
+    def test_novo_recebimento_do_mesmo_lote_acumula_saldo(self):
+        registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'lotes': [self.lote_recebimento('100', numero='ABC')],
+                'observacao': 'Complemento pendente.',
+            }],
+            usuario=self.estoquista,
+        )
+        registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'lotes': [self.lote_recebimento('400', numero='ABC')],
+            }],
+            usuario=self.estoquista,
+        )
+
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote = LoteEstoque.objects.get(estoque=estoque, numero_lote='ABC')
+        self.ordem.refresh_from_db()
+
+        self.assertEqual(LoteEstoque.objects.filter(estoque=estoque, numero_lote__iexact='ABC').count(), 1)
+        self.assertEqual(lote.saldo_atual, Decimal('500.000'))
+        self.assertEqual(self.ordem.status, 'con')
+
+    def test_mesmo_numero_de_lote_com_validade_diferente_e_rejeitado(self):
+        registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'lotes': [self.lote_recebimento('100', numero='ABC', validade='2099-12-31')],
+                'observacao': 'Complemento pendente.',
+            }],
+            usuario=self.estoquista,
+        )
+        movimentos_antes = MovimentacaoEstoque.objects.count()
+
+        with self.assertRaises(ValidationError):
+            registrar_recebimento(
+                ordem_id=self.ordem.id,
+                itens_recebidos=[{
+                    'item_ordem_id': self.item_ordem.id,
+                    'lotes': [self.lote_recebimento('400', numero='ABC', validade='2099-11-30')],
+                }],
+                usuario=self.estoquista,
+            )
+
+        self.item_ordem.refresh_from_db()
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote = LoteEstoque.objects.get(estoque=estoque, numero_lote='ABC')
+        self.assertEqual(self.item_ordem.quantidade_entregue, Decimal('100.00'))
+        self.assertEqual(estoque.saldo_atual, Decimal('100.000'))
+        self.assertEqual(lote.saldo_atual, Decimal('100.000'))
+        self.assertEqual(MovimentacaoEstoque.objects.count(), movimentos_antes)
+
+    def test_recebimento_rejeita_lote_duplicado_no_mesmo_item(self):
+        with self.assertRaises(ValidationError):
+            registrar_recebimento(
+                ordem_id=self.ordem.id,
+                itens_recebidos=[{
+                    'item_ordem_id': self.item_ordem.id,
+                    'lotes': [
+                        self.lote_recebimento('200', numero='ABC'),
+                        self.lote_recebimento('300', numero='abc'),
+                    ],
+                }],
+                usuario=self.estoquista,
+            )
+
+        self.assertFalse(MovimentacaoEstoque.objects.exists())
+
+    def test_recebimento_rejeita_numero_lote_legado(self):
+        for numero_lote in ('LEGADO', 'legado'):
+            with self.subTest(numero_lote=numero_lote):
+                with self.assertRaises(ValidationError):
+                    registrar_recebimento(
+                        ordem_id=self.ordem.id,
+                        itens_recebidos=[{
+                            'item_ordem_id': self.item_ordem.id,
+                            'lotes': [self.lote_recebimento('500', numero=numero_lote)],
+                        }],
+                        usuario=self.estoquista,
+                    )
+        self.assertFalse(MovimentacaoEstoque.objects.exists())
+
+    def test_recebimento_rejeita_lote_vencido_antes_da_entrada(self):
+        data_entrada = datetime(2026, 10, 30, 12, tzinfo=dt_timezone.utc)
+        with self.assertRaises(ValidationError):
+            registrar_recebimento(
+                ordem_id=self.ordem.id,
+                itens_recebidos=[{
+                    'item_ordem_id': self.item_ordem.id,
+                    'lotes': [self.lote_recebimento('500', validade='2026-10-29')],
+                }],
+                usuario=self.estoquista,
+                data_entrada=data_entrada,
+            )
+
+        self.assertFalse(MovimentacaoEstoque.objects.exists())
+        registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'lotes': [self.lote_recebimento('500', validade='2026-10-30')],
+            }],
+            usuario=self.estoquista,
+            data_entrada=data_entrada,
+        )
+        self.assertEqual(Estoque.objects.get(item_generico=self.genero).saldo_atual, Decimal('500.000'))
+
+    def test_validade_do_lote_considera_data_local_de_rio_branco(self):
+        data_entrada = datetime(2026, 10, 31, 2, tzinfo=dt_timezone.utc)
+        _, movimentos = registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'lotes': [self.lote_recebimento(
+                    '100',
+                    numero='LOTE-RIO-BRANCO-001',
+                    validade='2026-10-30',
+                )],
+                'observacao': 'Entrega parcial para validar a data operacional.',
+            }],
+            usuario=self.estoquista,
+            data_entrada=data_entrada,
+        )
+
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote = LoteEstoque.objects.get(
+            estoque=estoque,
+            numero_lote='LOTE-RIO-BRANCO-001',
+        )
+        self.assertEqual(movimentos[0].quantidade, Decimal('100.000'))
+        self.assertEqual(estoque.saldo_atual, Decimal('100.000'))
+        self.assertEqual(lote.saldo_atual, Decimal('100.000'))
+
+        with self.assertRaises(ValidationError):
+            registrar_recebimento(
+                ordem_id=self.ordem.id,
+                itens_recebidos=[{
+                    'item_ordem_id': self.item_ordem.id,
+                    'lotes': [self.lote_recebimento(
+                        '400',
+                        numero='LOTE-RIO-BRANCO-002',
+                        validade='2026-10-29',
+                    )],
+                }],
+                usuario=self.estoquista,
+                data_entrada=data_entrada,
+            )
+
+        self.assertEqual(Estoque.objects.get(item_generico=self.genero).saldo_atual, Decimal('100.000'))
+
+    def test_estorno_de_recebimento_reverte_os_mesmos_lotes(self):
+        _, movimentos = registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'lotes': [
+                    self.lote_recebimento('200', numero='LOTE-A'),
+                    self.lote_recebimento('300', numero='LOTE-B'),
+                ],
+            }],
+            usuario=self.estoquista,
+        )
+        original = movimentos[0]
+        estorno = estornar_movimentacao(
+            movimentacao_id=original.id,
+            justificativa='Recebimento informado incorretamente.',
+            usuario=self.estoquista,
+        )
+
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote_a = LoteEstoque.objects.get(estoque=estoque, numero_lote='LOTE-A')
+        lote_b = LoteEstoque.objects.get(estoque=estoque, numero_lote='LOTE-B')
+        self.assertEqual(estoque.saldo_atual, Decimal('0.000'))
+        self.assertEqual(lote_a.saldo_atual, Decimal('0.000'))
+        self.assertEqual(lote_b.saldo_atual, Decimal('0.000'))
+        self.assertEqual(
+            set(estorno.alocacoes_lote.values_list('lote__numero_lote', 'quantidade')),
+            {('LOTE-A', Decimal('200.000')), ('LOTE-B', Decimal('300.000'))},
+        )
+        self.assertFalse(
+            estorno.alocacoes_lote.filter(lote__numero_lote=LoteEstoque.NUMERO_LOTE_LEGADO).exists()
+        )
+
+    def test_estorno_de_entrada_rejeitado_se_lote_ja_foi_consumido(self):
+        _, movimentos = registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'lotes': [self.lote_recebimento('100', numero='LOTE-A')],
+                'observacao': 'Complemento pendente.',
+            }],
+            usuario=self.estoquista,
+        )
+        original = movimentos[0]
+        registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='20',
+            tipo_saida='PRODUCAO',
+            justificativa='Consumo de teste.',
+            usuario=self.estoquista,
+        )
+
+        with self.assertRaises(ValidationError):
+            estornar_movimentacao(
+                movimentacao_id=original.id,
+                justificativa='Tentativa de estorno.',
+                usuario=self.estoquista,
+            )
+
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote = LoteEstoque.objects.get(estoque=estoque, numero_lote='LOTE-A')
+        self.assertEqual(estoque.saldo_atual, Decimal('80.000'))
+        self.assertEqual(lote.saldo_atual, Decimal('80.000'))
+        self.assertFalse(MovimentacaoEstoque.objects.filter(movimentacao_estornada=original).exists())
 
     def test_estorno_atual_restaura_lote_legado(self):
         original = registrar_carga_inicial(
@@ -537,7 +816,7 @@ class PainelNutricionistaTests(EstoqueBaseMixin, APITestCase):
         registrar_recebimento(
             ordem_id=self.ordem.id,
             itens_recebidos=[{
-                'item_ordem_id': self.item_ordem.id, 'quantidade_recebida': '200',
+                'item_ordem_id': self.item_ordem.id, 'lotes': [self.lote_recebimento('200')],
                 'observacao': 'Restante na próxima semana',
             }],
             usuario=self.estoquista,

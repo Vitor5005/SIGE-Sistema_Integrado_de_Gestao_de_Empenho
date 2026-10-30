@@ -22,7 +22,7 @@ import django
 django.setup()
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.utils import timezone
 
 from cadastro.models import Endereco, Fornecedor, ItemGenerico
@@ -38,7 +38,7 @@ from estoque.models import (
     MovimentacaoEstoque,
 )
 from usuario.models import Usuario
-from utils.estoque_services import registrar_carga_inicial, registrar_recebimento
+from utils.estoque_services import FUSO_ESTOQUE, registrar_carga_inicial, registrar_recebimento
 from utils.rbac import Papel
 
 
@@ -561,12 +561,66 @@ def _quantidade_parcial(item_ordem):
     return quantidade
 
 
+def _data_validade_lote_demo(*, catmat, sequencia, data_entrada, hoje):
+    dias_por_situacao = (-3, 5, 20, 120)
+    try:
+        indice_situacao = (int(str(catmat)[-1]) + sequencia - 1) % len(dias_por_situacao)
+    except (TypeError, ValueError):
+        indice_situacao = (
+            sum(ord(caractere) for caractere in f'{catmat}-{sequencia}')
+            % len(dias_por_situacao)
+        )
+    data_validade = hoje + timedelta(days=dias_por_situacao[indice_situacao])
+    if timezone.is_aware(data_entrada):
+        data_recebimento = timezone.localtime(data_entrada, FUSO_ESTOQUE).date()
+    else:
+        data_recebimento = data_entrada.date()
+    if data_validade < data_recebimento:
+        data_validade = data_recebimento + timedelta(days=1)
+    return data_validade
+
+
+def _lotes_recebimento_demo(*, item_ordem, quantidade, data_entrada, dividir, hoje):
+    item_generico = item_ordem.item_empenho.item_ata.item_generico
+    catmat = item_generico.catmat
+    unidade = item_generico.unidade_medida
+
+    def criar_lote(sequencia, quantidade_lote):
+        return {
+            'numero_lote': f'DEMO-{catmat}-{sequencia:03d}',
+            'data_validade': _data_validade_lote_demo(
+                catmat=catmat,
+                sequencia=sequencia,
+                data_entrada=data_entrada,
+                hoje=hoje,
+            ),
+            'quantidade': quantidade_lote,
+        }
+
+    if dividir:
+        primeira_parcela = arredondar_quantidade_por_unidade(
+            quantidade / Decimal('2'),
+            unidade,
+            permitir_zero=False,
+        )
+        segunda_parcela = quantidade - primeira_parcela
+        if primeira_parcela > Decimal('0.000') and segunda_parcela > Decimal('0.000'):
+            return [
+                criar_lote(1, primeira_parcela),
+                criar_lote(2, segunda_parcela),
+            ]
+    return [criar_lote(1, quantidade)]
+
+
 def seed_recebimentos(ordens, estoquista):
     """Registra recebimentos reais para produzir cenários esp, par e con."""
+    hoje = timezone.localtime(timezone.now(), FUSO_ESTOQUE).date()
+    indice_item_recebimento = 0
     for indice, ordem in enumerate(ordens):
         cenario = ('con', 'par', 'esp')[indice % 3]
         if cenario == 'esp':
             continue
+        data_entrada = ordem.data_emissao + timedelta(days=3 + indice % 4)
         itens_recebidos = []
         for item_ordem in ItemOrdem.objects.filter(ordem_entrega=ordem).select_related(
             'item_empenho__item_ata__item_generico'
@@ -583,17 +637,24 @@ def seed_recebimentos(ordens, estoquista):
             itens_recebidos.append(
                 {
                     'item_ordem_id': item_ordem.id,
-                    'quantidade_recebida': quantidade,
+                    'lotes': _lotes_recebimento_demo(
+                        item_ordem=item_ordem,
+                        quantidade=quantidade,
+                        data_entrada=data_entrada,
+                        dividir=indice_item_recebimento % 2 == 0,
+                        hoje=hoje,
+                    ),
                     'observacao': observacao,
                 }
             )
+            indice_item_recebimento += 1
         if not itens_recebidos:
             raise RuntimeError('A ordem de demonstração não possui itens para receber.')
         registrar_recebimento(
             ordem_id=ordem.id,
             itens_recebidos=itens_recebidos,
             usuario=estoquista,
-            data_entrada=ordem.data_emissao + timedelta(days=3 + indice % 4),
+            data_entrada=data_entrada,
         )
 
 
@@ -734,6 +795,21 @@ def validar_seed():
             )
     if Estoque.objects.filter(saldo_atual__lt=0).exists():
         raise RuntimeError('A demonstração não pode possuir saldo negativo em estoque.')
+    if LoteEstoque.objects.filter(saldo_atual__lt=0).exists():
+        raise RuntimeError('A demonstração não pode possuir saldo negativo em lote.')
+    if not LoteEstoque.objects.filter(legado=False, saldo_atual__gt=0).exists():
+        raise RuntimeError('A demonstração deve possuir ao menos um lote real com saldo positivo.')
+    estoques_com_multiplos_lotes_reais = (
+        LoteEstoque.objects
+        .filter(legado=False, saldo_atual__gt=0)
+        .values('estoque_id')
+        .annotate(total=Count('id'))
+        .filter(total__gte=2)
+    )
+    if not estoques_com_multiplos_lotes_reais.exists():
+        raise RuntimeError(
+            'A demonstração deve possuir ao menos um estoque com dois lotes reais positivos.'
+        )
 
 
 def imprimir_resumo():

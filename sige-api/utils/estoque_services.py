@@ -1,8 +1,11 @@
+from datetime import date, datetime
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from rest_framework.exceptions import ValidationError
 
 from empenho.models import Empenho, ItemEmpenho
@@ -19,6 +22,7 @@ from estoque.models import (
 
 
 ZERO = Decimal('0.000')
+FUSO_ESTOQUE = ZoneInfo('America/Rio_Branco')
 
 
 def _decimal(valor, campo='quantidade'):
@@ -76,27 +80,191 @@ def _validar_consistencia_lotes(estoque):
         })
 
 
+def _numero_lote(valor):
+    texto = str(valor or '').strip()
+    if not texto:
+        raise ValidationError({'numero_lote': 'Informe o número do lote.'})
+    if texto.casefold() == LoteEstoque.NUMERO_LOTE_LEGADO.casefold():
+        raise ValidationError({
+            'numero_lote': (
+                'O identificador LEGADO é reservado para saldos anteriores ao controle de lotes.'
+            ),
+        })
+    if len(texto) > 100:
+        raise ValidationError({
+            'numero_lote': 'O número do lote deve possuir no máximo 100 caracteres.',
+        })
+    return texto
+
+
+def _data_validade(valor):
+    if isinstance(valor, datetime):
+        data_validade = None
+    elif isinstance(valor, date):
+        data_validade = valor
+    elif isinstance(valor, str):
+        try:
+            data_validade = parse_date(valor)
+        except (TypeError, ValueError):
+            data_validade = None
+    else:
+        data_validade = None
+
+    if data_validade is None:
+        raise ValidationError({'data_validade': 'Informe uma data de validade válida.'})
+    return data_validade
+
+
+def _data_local(momento):
+    if isinstance(momento, datetime):
+        if timezone.is_aware(momento):
+            return timezone.localtime(momento, FUSO_ESTOQUE).date()
+        return momento.date()
+    if isinstance(momento, date):
+        return momento
+    raise ValidationError({'data_entrada': 'Informe uma data de entrada válida.'})
+
+
+def _lote_recebimento_bloqueado(*, estoque, numero_lote, data_validade):
+    numero_lote = _numero_lote(numero_lote)
+    data_validade = _data_validade(data_validade)
+    lote = (
+        LoteEstoque.objects.select_for_update()
+        .filter(estoque=estoque, numero_lote__iexact=numero_lote)
+        .first()
+    )
+    if lote:
+        if lote.legado:
+            raise ValidationError({
+                'numero_lote': (
+                    'O identificador LEGADO é reservado para saldos anteriores ao controle de lotes.'
+                ),
+            })
+        if lote.data_validade != data_validade:
+            raise ValidationError({
+                'data_validade': (
+                    f'O lote {numero_lote} já está registrado com outra data de validade.'
+                ),
+            })
+        return lote
+
+    lote = LoteEstoque(
+        estoque=estoque,
+        numero_lote=numero_lote,
+        data_validade=data_validade,
+        saldo_atual=ZERO,
+        legado=False,
+    )
+    lote.full_clean()
+    lote.save()
+    return lote
+
+
+def _resolver_alocacoes_lote(*, estoque, quantidade, sentido, alocacoes_lote):
+    if not alocacoes_lote:
+        raise ValidationError({'lotes': 'Informe ao menos um lote para a movimentação.'})
+
+    alocacoes = []
+    lote_ids = set()
+    total = ZERO
+    for alocacao in alocacoes_lote:
+        if not isinstance(alocacao, dict) or alocacao.get('lote_id') is None:
+            raise ValidationError({'lotes': 'Informe um lote válido para a movimentação.'})
+
+        try:
+            lote = LoteEstoque.objects.select_for_update().get(pk=alocacao['lote_id'])
+        except (LoteEstoque.DoesNotExist, TypeError, ValueError) as exc:
+            raise ValidationError({'lotes': 'Informe um lote válido para a movimentação.'}) from exc
+        if lote.estoque_id != estoque.id:
+            raise ValidationError({'lotes': 'O lote informado não pertence ao mesmo estoque.'})
+        if lote.pk in lote_ids:
+            raise ValidationError({'lotes': 'O mesmo lote foi informado mais de uma vez para a movimentação.'})
+
+        quantidade_lote = _decimal(alocacao.get('quantidade'))
+        if quantidade_lote <= ZERO:
+            raise ValidationError({'quantidade': 'A quantidade deve ser maior que zero.'})
+
+        lote_ids.add(lote.pk)
+        total = (total + quantidade_lote).quantize(Decimal('0.001'))
+        alocacoes.append({'lote': lote, 'quantidade': quantidade_lote})
+
+    if total != quantidade:
+        raise ValidationError({
+            'lotes': (
+                'A soma das quantidades dos lotes deve ser igual à quantidade total da movimentação.'
+            ),
+        })
+    return alocacoes
+
+
+def _alocacoes_saida_compativel(*, estoque, quantidade):
+    lotes = list(
+        LoteEstoque.objects.select_for_update()
+        .filter(estoque=estoque, saldo_atual__gt=ZERO)
+    )
+    lotes.sort(key=lambda lote: (
+        0 if lote.legado else 1,
+        lote.data_validade if lote.data_validade is not None else date.max,
+        lote.id,
+    ))
+
+    restante = quantidade
+    alocacoes = []
+    for lote in lotes:
+        if restante <= ZERO:
+            break
+        quantidade_lote = min(_decimal(lote.saldo_atual), restante)
+        if quantidade_lote > ZERO:
+            alocacoes.append({'lote': lote, 'quantidade': quantidade_lote})
+            restante = (restante - quantidade_lote).quantize(Decimal('0.001'))
+
+    if restante > ZERO:
+        raise ValidationError({'quantidade': 'A quantidade informada excede o saldo em estoque.'})
+    return alocacoes
+
+
 @transaction.atomic
 def _registrar_movimentacao(
     *, item_generico_id, tipo, sentido, quantidade, usuario, data_hora,
     observacao='', item_ordem=None, item_inventario=None, movimentacao_estornada=None,
-    item_cardapio=None,
+    item_cardapio=None, alocacoes_lote=None,
 ):
     quantidade = _decimal(quantidade)
     if quantidade <= ZERO:
         raise ValidationError({'quantidade': 'A quantidade deve ser maior que zero.'})
 
     estoque = _estoque_bloqueado(item_generico_id)
-    lote = _lote_legado_bloqueado(estoque)
     _validar_consistencia_lotes(estoque)
+
+    if alocacoes_lote is not None:
+        alocacoes = _resolver_alocacoes_lote(
+            estoque=estoque,
+            quantidade=quantidade,
+            sentido=sentido,
+            alocacoes_lote=alocacoes_lote,
+        )
+    elif sentido == MovimentacaoEstoque.Sentido.ENTRADA:
+        lote = _lote_legado_bloqueado(estoque)
+        alocacoes = [{'lote': lote, 'quantidade': quantidade}]
+    else:
+        alocacoes = _alocacoes_saida_compativel(estoque=estoque, quantidade=quantidade)
 
     delta = quantidade if sentido == MovimentacaoEstoque.Sentido.ENTRADA else -quantidade
     novo_saldo = (estoque.saldo_atual + delta).quantize(Decimal('0.001'))
-    novo_saldo_lote = (lote.saldo_atual + delta).quantize(Decimal('0.001'))
     if novo_saldo < ZERO:
         raise ValidationError({'quantidade': 'A quantidade informada excede o saldo em estoque.'})
-    if novo_saldo_lote < ZERO:
-        raise ValidationError({'quantidade': 'A quantidade informada excede o saldo em estoque.'})
+
+    novos_saldos_lote = []
+    for alocacao in alocacoes:
+        delta_lote = (
+            alocacao['quantidade']
+            if sentido == MovimentacaoEstoque.Sentido.ENTRADA
+            else -alocacao['quantidade']
+        )
+        novo_saldo_lote = (alocacao['lote'].saldo_atual + delta_lote).quantize(Decimal('0.001'))
+        if novo_saldo_lote < ZERO:
+            raise ValidationError({'quantidade': 'A quantidade informada excede o saldo em estoque.'})
+        novos_saldos_lote.append((alocacao['lote'], alocacao['quantidade'], novo_saldo_lote))
 
     movimento = MovimentacaoEstoque.objects.create(
         estoque=estoque,
@@ -113,22 +281,24 @@ def _registrar_movimentacao(
         usuario=usuario,
         papel=usuario.papel,
     )
+    agora = timezone.now()
     Estoque.objects.filter(pk=estoque.pk).update(
         saldo_atual=novo_saldo,
-        data_atualizacao=timezone.now(),
-    )
-    LoteEstoque.objects.filter(pk=lote.pk).update(
-        saldo_atual=novo_saldo_lote,
-        data_atualizacao=timezone.now(),
-    )
-    MovimentacaoLote.objects.create(
-        movimentacao=movimento,
-        lote=lote,
-        quantidade=quantidade,
-        saldo_lote_resultante=novo_saldo_lote,
+        data_atualizacao=agora,
     )
     estoque.saldo_atual = novo_saldo
-    lote.saldo_atual = novo_saldo_lote
+    for lote, quantidade_lote, novo_saldo_lote in novos_saldos_lote:
+        LoteEstoque.objects.filter(pk=lote.pk).update(
+            saldo_atual=novo_saldo_lote,
+            data_atualizacao=agora,
+        )
+        MovimentacaoLote.objects.create(
+            movimentacao=movimento,
+            lote=lote,
+            quantidade=quantidade_lote,
+            saldo_lote_resultante=novo_saldo_lote,
+        )
+        lote.saldo_atual = novo_saldo_lote
     _validar_consistencia_lotes(estoque)
     return movimento
 
@@ -276,6 +446,13 @@ def estornar_movimentacao(*, movimentacao_id, justificativa, usuario, data_hora=
         if original.sentido == MovimentacaoEstoque.Sentido.ENTRADA
         else MovimentacaoEstoque.Sentido.ENTRADA
     )
+    alocacoes_estorno = [
+        {
+            'lote_id': alocacao.lote_id,
+            'quantidade': alocacao.quantidade,
+        }
+        for alocacao in original.alocacoes_lote.all()
+    ]
     return _registrar_movimentacao(
         item_generico_id=original.estoque.item_generico_id,
         tipo=MovimentacaoEstoque.Tipo.ESTORNO,
@@ -285,6 +462,7 @@ def estornar_movimentacao(*, movimentacao_id, justificativa, usuario, data_hora=
         data_hora=data_hora or timezone.now(),
         observacao=_justificativa(justificativa),
         movimentacao_estornada=original,
+        alocacoes_lote=alocacoes_estorno,
     )
 
 
@@ -310,19 +488,53 @@ def registrar_recebimento(*, ordem_id, itens_recebidos, usuario, data_entrada=No
         raise ValidationError({'itens': 'Informe itens pertencentes à ordem de entrega.'})
 
     momento = data_entrada or timezone.now()
+    data_recebimento = _data_local(momento)
     valor_deste_recebimento = Decimal('0.00')
     movimentos = []
 
     for item_ordem in itens_ordem:
         recebido = por_id.get(item_ordem.pk)
-        quantidade = _decimal(recebido.get('quantidade_recebida'), 'quantidade_recebida') if recebido else ZERO
+        lotes_normalizados = []
+        quantidade = ZERO
+        if recebido:
+            lotes_recebidos = recebido.get('lotes')
+            if not lotes_recebidos:
+                raise ValidationError({'lotes': 'Informe ao menos um lote para o item recebido.'})
+
+            numeros_lote = set()
+            for lote_recebido in lotes_recebidos:
+                if not isinstance(lote_recebido, dict):
+                    raise ValidationError({'lotes': 'Informe um lote válido para o item recebido.'})
+
+                numero_lote = _numero_lote(lote_recebido.get('numero_lote'))
+                if numero_lote.casefold() in numeros_lote:
+                    raise ValidationError({
+                        'lotes': 'O mesmo lote foi informado mais de uma vez para este item.',
+                    })
+                data_validade = _data_validade(lote_recebido.get('data_validade'))
+                if data_validade < data_recebimento:
+                    raise ValidationError({
+                        'data_validade': 'A validade do lote não pode ser anterior à data do recebimento.',
+                    })
+                quantidade_lote = _decimal(lote_recebido.get('quantidade'))
+                if quantidade_lote <= ZERO:
+                    raise ValidationError({'quantidade': 'A quantidade deve ser maior que zero.'})
+
+                numeros_lote.add(numero_lote.casefold())
+                lotes_normalizados.append({
+                    'numero_lote': numero_lote,
+                    'data_validade': data_validade,
+                    'quantidade': quantidade_lote,
+                })
+                quantidade = (quantidade + quantidade_lote).quantize(Decimal('0.001'))
+
         solicitada = _decimal(item_ordem.quantidade_solicitada)
         entregue_antes = _decimal(item_ordem.quantidade_entregue)
         pendente_antes = solicitada - entregue_antes
-        if recebido and quantidade <= ZERO:
-            raise ValidationError({'quantidade_recebida': 'A quantidade recebida deve ser maior que zero.'})
         if quantidade > pendente_antes:
-            raise ValidationError({'quantidade_recebida': 'A quantidade recebida não pode exceder a quantidade pendente.'})
+            raise ValidationError({
+                'lotes': 'A quantidade total dos lotes não pode exceder a quantidade pendente.',
+            })
         if recebido and quantidade < pendente_antes and not str(recebido.get('observacao') or '').strip():
             raise ValidationError({'observacao': 'Informe o motivo da entrega parcial e da quantidade pendente.'})
 
@@ -331,6 +543,18 @@ def registrar_recebimento(*, ordem_id, itens_recebidos, usuario, data_entrada=No
         item_ordem.save(update_fields=['quantidade_entregue', 'observacao'])
 
         if quantidade > ZERO:
+            estoque = _estoque_bloqueado(item_ordem.item_empenho.item_ata.item_generico_id)
+            alocacoes_lote = []
+            for lote_recebido in lotes_normalizados:
+                lote = _lote_recebimento_bloqueado(
+                    estoque=estoque,
+                    numero_lote=lote_recebido['numero_lote'],
+                    data_validade=lote_recebido['data_validade'],
+                )
+                alocacoes_lote.append({
+                    'lote_id': lote.pk,
+                    'quantidade': lote_recebido['quantidade'],
+                })
             movimento = _registrar_movimentacao(
                 item_generico_id=item_ordem.item_empenho.item_ata.item_generico_id,
                 tipo=MovimentacaoEstoque.Tipo.ENTRADA_FORNECEDOR,
@@ -339,6 +563,7 @@ def registrar_recebimento(*, ordem_id, itens_recebidos, usuario, data_entrada=No
                 usuario=usuario,
                 data_hora=momento,
                 item_ordem=item_ordem,
+                alocacoes_lote=alocacoes_lote,
             )
             movimentos.append(movimento)
             valor_deste_recebimento += quantidade * item_ordem.item_empenho.item_ata.valor_unitario

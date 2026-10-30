@@ -45,9 +45,15 @@ export interface EstoqueConsolidado {
   saldo_estoque: number;
 }
 
+export interface LoteRecebimento {
+  numero_lote: string;
+  data_validade: string;
+  quantidade: number;
+}
+
 export interface ItemRecebimento {
   item_ordem_id: number;
-  quantidade_recebida: number;
+  lotes: LoteRecebimento[];
   observacao?: string;
 }
 
