@@ -26,22 +26,24 @@ export class Estoque {
   consolidado: EstoqueConsolidado[] = [];
   termoBuscaAtual = '';
   filtrosAtivos: Record<string, any> = {};
+  readonly campoCategoria = 'item_generico__categoria';
+  readonly categorias = [
+    { valor: 'tempS', label: 'Temperos Secos' },
+    { valor: 'SM', label: 'Secos / Mercearia' },
+    { valor: 'Lac', label: 'Lácteos e Derivados' },
+    { valor: 'Oli', label: 'Óleos, Azeites e Vinagres' },
+    { valor: 'MolCo', label: 'Molhos e Condimentos' },
+    { valor: 'Fr', label: 'Frutas' },
+    { valor: 'Le', label: 'Legumes' },
+    { valor: 'Pr', label: 'Proteínas' },
+  ];
   filtros: FiltroConfig[] = [
     {
-      campo: 'item_generico__categoria',
+      campo: this.campoCategoria,
       label: 'Categoria',
       tipo: 'select',
-      opcoes: [
-        { valor: 'tempS', label: 'Temperos Secos' },
-        { valor: 'SM', label: 'Secos / Mercearia' },
-        { valor: 'Lac', label: 'Lácteos e Derivados' },
-        { valor: 'Oli', label: 'Óleos, Azeites e Vinagres' },
-        { valor: 'MolCo', label: 'Molhos e Condimentos' },
-        { valor: 'Fr', label: 'Frutas' },
-        { valor: 'Le', label: 'Legumes' },
-        { valor: 'Pr', label: 'Proteínas' }
-      ]
-    }
+      opcoes: this.categorias,
+    },
   ];
   agruparPorCategoria = false;
   modoVisualizacao: 'cards' | 'tabela' = 'cards';
@@ -61,6 +63,23 @@ export class Estoque {
 
   get podeVerIndicadoresValidade(): boolean {
     return this.podeVerValidadeEstoquista || this.podeVerValidadeNutricionista;
+  }
+
+  get categoriaSelecionada(): string {
+    return String(this.filtrosAtivos[this.campoCategoria] ?? '');
+  }
+
+  get temFiltrosAtivos(): boolean {
+    return Object.keys(this.filtrosAtivos).some(campo => {
+      const valor = this.filtrosAtivos[campo];
+      return Array.isArray(valor)
+        ? valor.length > 0
+        : valor !== null && valor !== undefined && valor !== '';
+    });
+  }
+
+  get descricaoCategoriaSelecionada(): string {
+    return this.categorias.find(categoria => categoria.valor === this.categoriaSelecionada)?.label ?? '';
   }
 
   constructor(
@@ -99,7 +118,7 @@ export class Estoque {
       this.salvarEstadoListagem();
     }
 
-    const categoria = this.filtrosAtivos['item_generico__categoria'] || '';
+    const categoria = this.filtrosAtivos[this.campoCategoria] || '';
     this.carregando = true;
     this.estoqueService.listar(this.termoBuscaAtual, 1, 100, categoria).subscribe({
       next: resposta => {
@@ -124,6 +143,35 @@ export class Estoque {
     } catch {
       // Sem acesso ao armazenamento do navegador, a escolha vale só nesta visita.
     }
+  }
+
+  alterarCategoria(categoria: string): void {
+    const filtros = { ...this.filtrosAtivos };
+    if (categoria) {
+      filtros[this.campoCategoria] = categoria;
+    } else {
+      delete filtros[this.campoCategoria];
+    }
+    this.aplicarFiltros(filtros);
+  }
+
+  removerCategoria(): void {
+    this.alterarCategoria('');
+  }
+
+  limparFiltros(): void {
+    this.aplicarFiltros({});
+  }
+
+  unidadeComEmbalagem(item: EstoqueItem): string {
+    if (!item.conteudo_embalagem || !item.unidade_embalagem) {
+      return item.unidade_medida;
+    }
+    return `${item.unidade_medida} (${item.conteudo_embalagem} ${item.unidade_embalagem})`;
+  }
+
+  saldoUtilizavelDiferente(item: EstoqueItem): boolean {
+    return Number(item.saldo_utilizavel) !== Number(item.saldo_atual);
   }
 
   iconeCategoria(categoria: string): string {

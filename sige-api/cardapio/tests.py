@@ -1,6 +1,9 @@
 from datetime import timedelta
 from decimal import Decimal
+import tempfile
 
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework import status
@@ -85,8 +88,8 @@ class CardapioFluxoTests(APITestCase):
             numero_lote=numero_lote,
         ).saldo_atual
 
-    def _criar_cardapio(self, arroz='38', feijao='15'):
-        resposta = self._post_cardapio(arroz, feijao)
+    def _criar_cardapio(self, arroz='38', feijao='15', data=None):
+        resposta = self._post_cardapio(arroz, feijao, data=data)
         self.assertEqual(resposta.status_code, status.HTTP_201_CREATED, resposta.data)
         return resposta.data
 
@@ -433,6 +436,146 @@ class CardapioFluxoTests(APITestCase):
         self.assertEqual(Decimal(arroz['saldo_atual']), Decimal('90'))
         self.assertEqual(Decimal(arroz['saldo_utilizavel']), Decimal('40'))
         self.assertEqual(Decimal(arroz['disponivel']), Decimal('40'))
+
+    def test_disponibilidade_mantem_codigo_e_informa_descricao_da_categoria(self):
+        self.client.force_authenticate(self.nutricionista)
+
+        resposta = self.client.get(reverse('cardapio-disponibilidade'))
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        arroz = next(item for item in resposta.data if item['item_generico_id'] == self.arroz.id)
+        self.assertEqual(arroz['categoria'], self.arroz.categoria)
+        self.assertEqual(arroz['categoria_descricao'], self.arroz.get_categoria_display())
+
+    def test_disponibilidade_informa_imagem_do_genero_e_nulo_sem_imagem(self):
+        with tempfile.TemporaryDirectory() as diretorio_midias:
+            with override_settings(MEDIA_ROOT=diretorio_midias):
+                self.arroz.imagem.save(
+                    'arroz-cardapio.jpg',
+                    SimpleUploadedFile('arroz-cardapio.jpg', b'imagem de teste', content_type='image/jpeg'),
+                    save=True,
+                )
+
+                self.client.force_authenticate(self.nutricionista)
+                resposta = self.client.get(reverse('cardapio-disponibilidade'))
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        arroz = next(item for item in resposta.data if item['item_generico_id'] == self.arroz.id)
+        feijao = next(item for item in resposta.data if item['item_generico_id'] == self.feijao.id)
+        self.assertTrue(arroz['imagem'].endswith('/generos/arroz-cardapio.jpg'))
+        self.assertIsNone(feijao['imagem'])
+
+    def test_disponibilidade_informa_generos_prioritarios_na_data_do_cardapio(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [
+                ('EXPIRADO-NA-DATA', data_cardapio - timedelta(days=1), '50'),
+                ('VENCE-NO-DIA', data_cardapio, '5'),
+                ('CRITICO', data_cardapio + timedelta(days=7), '10'),
+                ('ATENCAO', data_cardapio + timedelta(days=30), '15'),
+                ('REGULAR', data_cardapio + timedelta(days=31), '20'),
+            ],
+            legado='10',
+        )
+
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.get(
+            reverse('cardapio-disponibilidade'),
+            {'data': data_cardapio.isoformat()},
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        arroz = next(item for item in resposta.data if item['item_generico_id'] == self.arroz.id)
+        self.assertEqual(Decimal(arroz['quantidade_prioritaria']), Decimal('30'))
+        self.assertEqual(
+            [lote['numero_lote'] for lote in arroz['lotes_prioritarios']],
+            ['VENCE-NO-DIA', 'CRITICO', 'ATENCAO'],
+        )
+        lotes = {lote['numero_lote']: lote for lote in arroz['lotes_prioritarios']}
+        self.assertEqual(lotes['VENCE-NO-DIA']['dias_para_validade'], 0)
+        self.assertEqual(lotes['VENCE-NO-DIA']['status'], 'VENCE_HOJE')
+        self.assertEqual(lotes['CRITICO']['dias_para_validade'], 7)
+        self.assertEqual(lotes['CRITICO']['status'], 'CRITICO')
+        self.assertEqual(lotes['ATENCAO']['dias_para_validade'], 30)
+        self.assertEqual(lotes['ATENCAO']['status'], 'ATENCAO')
+        self.assertEqual(arroz['proxima_validade'], data_cardapio.isoformat())
+        self.assertEqual(arroz['dias_para_proxima_validade'], 0)
+        self.assertEqual(arroz['status_proxima_validade'], 'VENCE_HOJE')
+        self.assertEqual(arroz['status_proxima_validade_descricao'], 'Vence hoje')
+
+    def test_reservas_reduzem_prioridade_por_validade_em_ordem_fefo(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [
+                ('LOTE-A', data_cardapio + timedelta(days=3), '10'),
+                ('LOTE-B', data_cardapio + timedelta(days=15), '15'),
+                ('LOTE-C', data_cardapio + timedelta(days=60), '50'),
+            ],
+            legado='10',
+        )
+        cardapio_reservado = self._criar_cardapio(arroz='12', feijao='1', data=data_cardapio)
+        resposta_envio = self.client.post(reverse('cardapio-enviar', args=[cardapio_reservado['id']]))
+        self.assertEqual(resposta_envio.status_code, status.HTTP_200_OK, resposta_envio.data)
+        self.assertFalse(MovimentacaoLote.objects.exists())
+
+        resposta = self.client.get(
+            reverse('cardapio-disponibilidade'),
+            {'data': data_cardapio.isoformat()},
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        arroz = next(item for item in resposta.data if item['item_generico_id'] == self.arroz.id)
+        self.assertEqual(Decimal(arroz['quantidade_prioritaria']), Decimal('13'))
+        self.assertEqual(
+            [lote['numero_lote'] for lote in arroz['lotes_prioritarios']],
+            ['LOTE-B'],
+        )
+        self.assertEqual(
+            Decimal(arroz['lotes_prioritarios'][0]['quantidade_disponivel']),
+            Decimal('13'),
+        )
+        self.assertEqual(
+            arroz['proxima_validade'],
+            (data_cardapio + timedelta(days=15)).isoformat(),
+        )
+        self.assertFalse(MovimentacaoLote.objects.exists())
+
+    def test_disponibilidade_sem_prioridade_mantem_proxima_validade_real(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=20)
+        self._definir_lotes(
+            self.arroz,
+            [('LOTE-REGULAR', data_cardapio + timedelta(days=31), '20')],
+            legado='10',
+        )
+        self._definir_lotes(self.feijao, [], legado='10')
+
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.get(
+            reverse('cardapio-disponibilidade'),
+            {'data': data_cardapio.isoformat()},
+        )
+
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+        arroz = next(item for item in resposta.data if item['item_generico_id'] == self.arroz.id)
+        self.assertEqual(Decimal(arroz['quantidade_prioritaria']), Decimal('0'))
+        self.assertEqual(arroz['lotes_prioritarios'], [])
+        self.assertEqual(
+            arroz['proxima_validade'],
+            (data_cardapio + timedelta(days=31)).isoformat(),
+        )
+        self.assertEqual(arroz['dias_para_proxima_validade'], 31)
+        self.assertEqual(arroz['status_proxima_validade'], 'REGULAR')
+        self.assertEqual(arroz['status_proxima_validade_descricao'], 'Regular')
+
+        feijao = next(item for item in resposta.data if item['item_generico_id'] == self.feijao.id)
+        self.assertEqual(Decimal(feijao['quantidade_prioritaria']), Decimal('0'))
+        self.assertEqual(feijao['lotes_prioritarios'], [])
+        self.assertIsNone(feijao['proxima_validade'])
+        self.assertIsNone(feijao['dias_para_proxima_validade'])
+        self.assertIsNone(feijao['status_proxima_validade'])
+        self.assertIsNone(feijao['status_proxima_validade_descricao'])
 
     def test_aprovacao_cardapio_utiliza_fefo_sem_consumir_vencido_ou_legado(self):
         data_cardapio = hoje_no_ru() + timedelta(days=20)

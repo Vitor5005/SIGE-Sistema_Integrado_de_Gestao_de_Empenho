@@ -7,57 +7,102 @@
   </header>
 
   <div class="sige-list-toolbar estoque-toolbar">
-    <div class="sige-list-toolbar__search estoque-toolbar__search">
-      <app-barra-pesquisa
-        [filtros]="filtros"
-        placeholder="Buscar por CATMAT, descrição, unidade ou categoria..."
-        [termoInicial]="termoBuscaAtual"
-        [valoresIniciais]="filtrosAtivos"
-        (pesquisar)="carregar($event)"
-        (filtrosAlterados)="aplicarFiltros($event)">
-      </app-barra-pesquisa>
-      <div class="estoque-toolbar__opcoes">
-        <div class="form-check estoque-toolbar__grouping">
-          <input class="form-check-input" type="checkbox" id="agruparCategoria" [checked]="agruparPorCategoria" (change)="alternarAgrupamento()">
-          <label class="form-check-label" for="agruparCategoria">Agrupar por categoria</label>
+    <div class="estoque-toolbar__principal">
+      <div class="sige-list-toolbar__search estoque-toolbar__search">
+        <app-barra-pesquisa
+          [filtros]="filtros"
+          placeholder="Buscar por CATMAT, descrição, unidade ou categoria..."
+          [termoInicial]="termoBuscaAtual"
+          [valoresIniciais]="filtrosAtivos"
+          (pesquisar)="carregar($event)"
+          (filtrosAlterados)="aplicarFiltros($event)">
+        </app-barra-pesquisa>
+      </div>
+
+      <div class="estoque-visualizacao" role="group" aria-label="Forma de visualização">
+        <button type="button" class="estoque-visualizacao__opcao" [class.is-active]="modoVisualizacao === 'cards'"
+          [attr.aria-pressed]="modoVisualizacao === 'cards'" (click)="alterarVisualizacao('cards')">
+          <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i> Cards
+        </button>
+        <button type="button" class="estoque-visualizacao__opcao" [class.is-active]="modoVisualizacao === 'tabela'"
+          [attr.aria-pressed]="modoVisualizacao === 'tabela'" (click)="alterarVisualizacao('tabela')">
+          <i class="bi bi-list-ul" aria-hidden="true"></i> Tabela
+        </button>
+      </div>
+
+      <label class="estoque-toolbar__categoria" for="categoria-estoque">
+        <span>Categoria</span>
+        <select id="categoria-estoque" #categoriaEstoque [value]="categoriaSelecionada"
+          (change)="alterarCategoria(categoriaEstoque.value)">
+          <option value="">Todas as categorias</option>
+          @for (categoria of categorias; track categoria.valor) {
+            <option [value]="categoria.valor">{{ categoria.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    @if (temFiltrosAtivos) {
+      <div class="estoque-toolbar__filtros-ativos" role="group" aria-label="Filtros ativos">
+        @if (descricaoCategoriaSelecionada) {
+          <span class="estoque-toolbar__filtro-chip">
+            <span>Categoria: {{ descricaoCategoriaSelecionada }}</span>
+            <button type="button" class="estoque-toolbar__filtro-chip-remover"
+              aria-label="Remover filtro de categoria" (click)="removerCategoria()">
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+          </span>
+        }
+        <button type="button" class="estoque-toolbar__limpar-filtros" (click)="limparFiltros()">Limpar filtros</button>
+      </div>
+    }
+
+    <div class="estoque-toolbar__secundaria">
+      <div class="estoque-toolbar__secundaria-info">
+      <div class="form-check estoque-toolbar__grouping">
+        <input class="form-check-input" type="checkbox" id="agruparCategoria" [checked]="agruparPorCategoria" (change)="alternarAgrupamento()">
+        <label class="form-check-label" for="agruparCategoria">Agrupar por categoria</label>
+      </div>
+
+      @if (!carregando && !erro) {
+        <div class="sige-list-meta estoque-toolbar__meta" aria-live="polite">
+          <strong>{{ totalItens }}</strong> {{ totalItens === 1 ? 'item encontrado' : 'itens encontrados' }}
         </div>
-        <div class="estoque-visualizacao" role="group" aria-label="Forma de visualização">
-          <button type="button" class="estoque-visualizacao__opcao" [class.is-active]="modoVisualizacao === 'cards'"
-            [attr.aria-pressed]="modoVisualizacao === 'cards'" (click)="alterarVisualizacao('cards')">
-            <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i> Cards
-          </button>
-          <button type="button" class="estoque-visualizacao__opcao" [class.is-active]="modoVisualizacao === 'tabela'"
-            [attr.aria-pressed]="modoVisualizacao === 'tabela'" (click)="alterarVisualizacao('tabela')">
-            <i class="bi bi-list-ul" aria-hidden="true"></i> Tabela
-          </button>
+      }
+
+      @if (podeVerIndicadoresValidade) {
+        <div class="estoque-validade-legenda" aria-label="Legenda de validade">
+          @if (podeVerValidadeEstoquista) {
+            <span class="estoque-validade-legenda__item estoque-validade-legenda__item--vencido">Vencido</span>
+          }
+          <span class="estoque-validade-legenda__item estoque-validade-legenda__item--vence-hoje">Vence hoje</span>
+          <span class="estoque-validade-legenda__item estoque-validade-legenda__item--critico">Crítico</span>
+          <span class="estoque-validade-legenda__item estoque-validade-legenda__item--atencao">Atenção</span>
         </div>
+      }
+
+      </div>
+
+      <div class="sige-list-toolbar__actions estoque-acoes estoque-toolbar__actions estoque-toolbar__acoes">
+        @if (pode(Recurso.ESTOQUE, Acao.CONSULTAR)) {
+          <a class="sige-button sige-button--secondary" routerLink="/estoque/validades" (click)="salvarEstadoListagem()"><i class="bi bi-calendar2-week" aria-hidden="true"></i> Lotes e validades</a>
+        }
+        @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
+          <a class="sige-button sige-button--primary" routerLink="/estoque/extrato" (click)="salvarEstadoListagem()"><i class="bi bi-clock-history" aria-hidden="true"></i> Extrato</a>
+        }
+        @if (pode(Recurso.ESTOQUE, Acao.REGISTRAR_SAIDA)) {
+          <a class="sige-button sige-button--primary" routerLink="/estoque/movimentacao" (click)="salvarEstadoListagem()">Nova movimentação</a>
+        }
       </div>
     </div>
-    <div class="sige-list-toolbar__actions estoque-acoes estoque-toolbar__actions">
-      @if (pode(Recurso.ESTOQUE, Acao.CONSULTAR)) {
-        <a class="sige-button sige-button--secondary" routerLink="/estoque/validades" (click)="salvarEstadoListagem()"><i class="bi bi-calendar2-week" aria-hidden="true"></i> Lotes e validades</a>
-      }
-      @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
-        <a class="sige-button sige-button--primary" routerLink="/estoque/extrato" (click)="salvarEstadoListagem()"><i class="bi bi-clock-history" aria-hidden="true"></i> Extrato</a>
-      }
-      @if (pode(Recurso.ESTOQUE, Acao.REGISTRAR_SAIDA)) {
-        <a class="sige-button sige-button--primary" routerLink="/estoque/movimentacao" (click)="salvarEstadoListagem()">Nova movimentação</a>
-      }
-    </div>
   </div>
-
-  @if (!carregando && !erro) {
-  <div class="sige-list-meta" aria-live="polite">
-    <strong>{{ totalItens }}</strong> {{ totalItens === 1 ? 'item encontrado' : 'itens encontrados' }}
-  </div>
-  }
 
   @if (erro) { <div class="alert alert-danger" role="alert">{{ erro }}</div> }
   @if (carregando) { <div class="estado" role="status" aria-live="polite">Carregando estoque...</div> }
 
   @if (modoVisualizacao === 'cards') {
   @if (!carregando) {
-  <ul class="estoque-cards" aria-label="Saldos atuais do estoque">
+  <ul class="estoque-cards estoque-cards--principal" aria-label="Saldos atuais do estoque">
     @for (item of itens; track item.id; let indice = $index) {
       @if (iniciaCategoria(indice)) {
         <li class="estoque-cards__categoria"><h2>{{ item.categoria_descricao }}</h2></li>
@@ -77,47 +122,54 @@
           }
         </div>
         <div class="estoque-card__corpo">
-          <span class="estoque-card__catmat">CATMAT {{ item.catmat }}</span>
           <h3 class="estoque-card__titulo" [attr.title]="item.descricao">{{ item.descricao }}</h3>
-          <dl class="estoque-card__dados">
-            <div>
-              <dt><i class="bi bi-box" aria-hidden="true"></i> Unidade:</dt>
-              <dd>{{ item.unidade_medida }} @if(item.conteudo_embalagem){({{ item.conteudo_embalagem }} {{ item.unidade_embalagem }})}</dd>
-            </div>
-            <div>
-              <dt><i class="bi bi-tag" aria-hidden="true"></i> Categoria:</dt>
-              <dd>{{ item.categoria_descricao }}</dd>
-            </div>
-          </dl>
+          <span class="estoque-card__categoria">{{ item.categoria_descricao }}</span>
+          <span class="estoque-card__meta">CATMAT {{ item.catmat }} · {{ unidadeComEmbalagem(item) }}</span>
         </div>
         <div class="estoque-card__saldo" [class.estoque-card__saldo--zerado]="+item.saldo_atual <= 0">
-          <span><i class="bi bi-box-seam" aria-hidden="true"></i> Saldo no estoque</span>
+          <span><i class="bi bi-box-seam" aria-hidden="true"></i> Saldo físico</span>
           <strong>{{ item.saldo_atual | number:'1.0-3' }} <small>{{ item.unidade_medida }}</small></strong>
         </div>
+        @if (saldoUtilizavelDiferente(item)) {
+          <div class="estoque-card__saldo estoque-card__saldo--disponivel">
+            <span><i class="bi bi-check2-circle" aria-hidden="true"></i> Disponível para uso</span>
+            <strong>{{ item.saldo_utilizavel | number:'1.0-3' }} <small>{{ item.unidade_medida }}</small></strong>
+          </div>
+        }
         @if (podeVerIndicadoresValidade && (temValidadePrioritaria(item) || textoProximaValidade(item))) {
           <div class="estoque-validade-resumo">
             @if (temValidadePrioritaria(item)) {
-              <div class="estoque-validade-resumo__badges">
-                @if (podeVerValidadeEstoquista && item.lotes_vencidos > 0) {
-                  <span class="badge text-bg-danger estoque-validade-badge">{{ item.lotes_vencidos }} {{ item.lotes_vencidos === 1 ? 'vencido' : 'vencidos' }}</span>
-                }
-                @if (item.lotes_vence_hoje > 0) {
-                  <span class="badge text-bg-danger estoque-validade-badge">{{ item.lotes_vence_hoje }} {{ item.lotes_vence_hoje === 1 ? 'vence hoje' : 'vencem hoje' }}</span>
-                }
-                @if (item.lotes_criticos > 0) {
-                  <span class="badge text-bg-warning estoque-validade-badge">{{ item.lotes_criticos }} em até 7 dias</span>
-                }
-                @if (item.lotes_atencao > 0) {
-                  <span class="badge text-bg-info estoque-validade-badge">{{ item.lotes_atencao }} em 8–30 dias</span>
-                }
-              </div>
+              @if (podeVerValidadeEstoquista && item.lotes_vencidos > 0) {
+                <div class="estoque-validade-resumo__estado estoque-validade-resumo__estado--vencido">
+                  <strong class="estoque-validade-resumo__estado-titulo"><i class="bi bi-x-octagon-fill" aria-hidden="true"></i> Vencido</strong>
+                  <span>{{ item.lotes_vencidos }} {{ item.lotes_vencidos === 1 ? 'lote vencido' : 'lotes vencidos' }}</span>
+                </div>
+              }
+              @if (item.lotes_vence_hoje > 0) {
+                <div class="estoque-validade-resumo__estado estoque-validade-resumo__estado--vence-hoje">
+                  <strong class="estoque-validade-resumo__estado-titulo"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Vence hoje</strong>
+                  <span>{{ item.lotes_vence_hoje }} {{ item.lotes_vence_hoje === 1 ? 'lote vence hoje' : 'lotes vencem hoje' }}</span>
+                </div>
+              }
+              @if (item.lotes_criticos > 0) {
+                <div class="estoque-validade-resumo__estado estoque-validade-resumo__estado--critico">
+                  <strong class="estoque-validade-resumo__estado-titulo"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Crítico</strong>
+                  <span>{{ item.lotes_criticos }} {{ item.lotes_criticos === 1 ? 'lote em até 7 dias' : 'lotes em até 7 dias' }}</span>
+                </div>
+              }
+              @if (item.lotes_atencao > 0) {
+                <div class="estoque-validade-resumo__estado estoque-validade-resumo__estado--atencao">
+                  <strong class="estoque-validade-resumo__estado-titulo"><i class="bi bi-info-circle-fill" aria-hidden="true"></i> Atenção</strong>
+                  <span>{{ item.lotes_atencao }} {{ item.lotes_atencao === 1 ? 'lote em 8–30 dias' : 'lotes em 8–30 dias' }}</span>
+                </div>
+              }
             }
             @if (textoProximaValidade(item)) {
               <span class="estoque-validade-proxima" [class]="classeProximaValidade(item)">{{ textoProximaValidade(item) }}</span>
             }
           </div>
         }
-        <span class="estoque-card__ver-lotes">Ver lotes <i class="bi bi-chevron-right" aria-hidden="true"></i></span>
+        <span class="estoque-card__rodape">Ver lotes <i class="bi bi-chevron-right" aria-hidden="true"></i></span>
       </li>
     } @empty {
       <li class="estoque-cards__vazio estado">Nenhum saldo encontrado.</li>
@@ -126,10 +178,9 @@
   }
   } @else {
     <div class="sige-list-table-wrap">
-      <table class="sige-list-table estoque-table" [class.estoque-table--com-validade]="podeVerIndicadoresValidade">
+      <table class="sige-list-table estoque-table estoque-table--principal" [class.estoque-table--com-validade]="podeVerIndicadoresValidade">
         <colgroup>
-          <col class="estoque-col-catmat">
-          <col class="estoque-col-descricao">
+          <col class="estoque-col-genero">
           <col class="estoque-col-unidade">
           <col class="estoque-col-categoria">
           <col class="estoque-col-saldo">
@@ -138,11 +189,11 @@
           }
         </colgroup>
         <caption class="visually-hidden">Saldos atuais do estoque</caption>
-        <thead><tr><th scope="col">CATMAT</th><th scope="col">Descrição</th><th scope="col">Unidade</th><th scope="col">Categoria</th><th scope="col" class="sige-cell--number">Saldo no estoque</th>@if (podeVerIndicadoresValidade) {<th scope="col">Validades</th>}</tr></thead>
+        <thead><tr><th scope="col">Gênero</th><th scope="col">Unidade</th><th scope="col">Categoria</th><th scope="col" class="sige-cell--number">Saldo físico</th>@if (podeVerIndicadoresValidade) {<th scope="col">Validades</th>}</tr></thead>
         <tbody>
           @for (item of itens; track item.id; let indice = $index) {
             @if (iniciaCategoria(indice)) {
-              <tr class="grupo-categoria"><td [attr.colspan]="podeVerIndicadoresValidade ? 6 : 5">{{ item.categoria_descricao }}</td></tr>
+              <tr class="grupo-categoria"><td [attr.colspan]="podeVerIndicadoresValidade ? 5 : 4">{{ item.categoria_descricao }}</td></tr>
             }
             <tr
               class="estoque-table__row is-clickable"
@@ -151,39 +202,71 @@
               [attr.aria-label]="'Ver lotes de ' + item.descricao"
               (click)="abrirLotes(item)"
               (keydown)="abrirLotesPorTeclado($event, item)">
-              <td>{{ item.catmat }}</td><td class="sige-cell--truncate" [attr.title]="item.descricao">{{ item.descricao }}</td>
-              <td class="estoque-cell-unidade">{{ item.unidade_medida }} @if(item.conteudo_embalagem){({{ item.conteudo_embalagem }} {{ item.unidade_embalagem }})}</td>
-              <td class="estoque-cell-categoria" [attr.title]="item.categoria_descricao">{{ item.categoria_descricao }}</td><td class="sige-cell--number"><strong>{{ item.saldo_atual | number:'1.0-3' }}</strong></td>
+              <td>
+                <span class="estoque-table__genero">
+                  <span class="estoque-table__visual">
+                    @if (item.imagem && !imagensComErro.has(item.imagem)) {
+                      <img [src]="item.imagem" [alt]="item.descricao" loading="lazy" (error)="imagensComErro.add(item.imagem)">
+                    } @else {
+                      <i [class]="'bi ' + iconeCategoria(item.categoria)" aria-hidden="true"></i>
+                    }
+                  </span>
+                  <span>
+                    <strong [attr.title]="item.descricao">{{ item.descricao }}</strong>
+                    <small>CATMAT {{ item.catmat }}</small>
+                  </span>
+                </span>
+              </td>
+              <td class="estoque-cell-unidade">{{ unidadeComEmbalagem(item) }}</td>
+              <td class="estoque-table__categoria" [attr.title]="item.categoria_descricao"><span>{{ item.categoria_descricao }}</span></td>
+              <td class="sige-cell--number estoque-table__saldo">
+                <strong>{{ item.saldo_atual | number:'1.0-3' }} {{ item.unidade_medida }}</strong>
+                @if (saldoUtilizavelDiferente(item)) {
+                  <small>Disponível: {{ item.saldo_utilizavel | number:'1.0-3' }} {{ item.unidade_medida }}</small>
+                }
+              </td>
               @if (podeVerIndicadoresValidade) {
                 <td>
                   @if (temValidadePrioritaria(item) || textoProximaValidade(item)) {
                     <div class="estoque-validade-resumo">
                       @if (temValidadePrioritaria(item)) {
-                        <div class="estoque-validade-resumo__badges">
-                          @if (podeVerValidadeEstoquista && item.lotes_vencidos > 0) {
-                            <span class="badge text-bg-danger estoque-validade-badge">{{ item.lotes_vencidos }} {{ item.lotes_vencidos === 1 ? 'vencido' : 'vencidos' }}</span>
-                          }
-                          @if (item.lotes_vence_hoje > 0) {
-                            <span class="badge text-bg-danger estoque-validade-badge">{{ item.lotes_vence_hoje }} {{ item.lotes_vence_hoje === 1 ? 'vence hoje' : 'vencem hoje' }}</span>
-                          }
-                          @if (item.lotes_criticos > 0) {
-                            <span class="badge text-bg-warning estoque-validade-badge">{{ item.lotes_criticos }} em até 7 dias</span>
-                          }
-                          @if (item.lotes_atencao > 0) {
-                            <span class="badge text-bg-info estoque-validade-badge">{{ item.lotes_atencao }} em 8–30 dias</span>
-                          }
-                        </div>
+                        @if (podeVerValidadeEstoquista && item.lotes_vencidos > 0) {
+                          <div class="estoque-validade-resumo__estado estoque-validade-resumo__estado--vencido">
+                            <strong class="estoque-validade-resumo__estado-titulo"><i class="bi bi-x-octagon-fill" aria-hidden="true"></i> Vencido</strong>
+                            <span>{{ item.lotes_vencidos }} {{ item.lotes_vencidos === 1 ? 'lote vencido' : 'lotes vencidos' }}</span>
+                          </div>
+                        }
+                        @if (item.lotes_vence_hoje > 0) {
+                          <div class="estoque-validade-resumo__estado estoque-validade-resumo__estado--vence-hoje">
+                            <strong class="estoque-validade-resumo__estado-titulo"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Vence hoje</strong>
+                            <span>{{ item.lotes_vence_hoje }} {{ item.lotes_vence_hoje === 1 ? 'lote vence hoje' : 'lotes vencem hoje' }}</span>
+                          </div>
+                        }
+                        @if (item.lotes_criticos > 0) {
+                          <div class="estoque-validade-resumo__estado estoque-validade-resumo__estado--critico">
+                            <strong class="estoque-validade-resumo__estado-titulo"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Crítico</strong>
+                            <span>{{ item.lotes_criticos }} {{ item.lotes_criticos === 1 ? 'lote em até 7 dias' : 'lotes em até 7 dias' }}</span>
+                          </div>
+                        }
+                        @if (item.lotes_atencao > 0) {
+                          <div class="estoque-validade-resumo__estado estoque-validade-resumo__estado--atencao">
+                            <strong class="estoque-validade-resumo__estado-titulo"><i class="bi bi-info-circle-fill" aria-hidden="true"></i> Atenção</strong>
+                            <span>{{ item.lotes_atencao }} {{ item.lotes_atencao === 1 ? 'lote em 8–30 dias' : 'lotes em 8–30 dias' }}</span>
+                          </div>
+                        }
                       }
                       @if (textoProximaValidade(item)) {
                         <span class="estoque-validade-proxima" [class]="classeProximaValidade(item)">{{ textoProximaValidade(item) }}</span>
                       }
                     </div>
+                  } @else {
+                    <span class="estoque-table__sem-validade" aria-label="Sem prioridade de validade">—</span>
                   }
                 </td>
               }
             </tr>
           } @empty {
-            <tr><td [attr.colspan]="podeVerIndicadoresValidade ? 6 : 5" class="estado">Nenhum saldo encontrado.</td></tr>
+            <tr><td [attr.colspan]="podeVerIndicadoresValidade ? 5 : 4" class="estado">Nenhum saldo encontrado.</td></tr>
           }
         </tbody>
       </table>

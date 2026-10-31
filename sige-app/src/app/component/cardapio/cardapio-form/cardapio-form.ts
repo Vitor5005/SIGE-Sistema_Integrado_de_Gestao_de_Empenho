@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
@@ -12,6 +12,7 @@ import {
   REFEICOES,
   RefeicaoCardapio,
 } from '../../../model/cardapio';
+import { environment } from '../../../environments/environment';
 import { OpcaoReforcoGenero } from '../../../model/solicitacao_reforco';
 import { Acao, obterNomeUsuarioAtual, pode, Recurso } from '../../../security/rbac';
 import { CardapioService, mensagemErroCardapio } from '../../../service/cardapio.service';
@@ -63,7 +64,7 @@ interface PedidoReforco {
   templateUrl: './cardapio-form.html',
   styleUrl: './cardapio-form.scss',
 })
-export class CardapioForm implements OnInit {
+export class CardapioForm implements OnDestroy, OnInit {
   readonly refeicoes = REFEICOES;
   readonly formatarQuantidade = formatarQuantidade;
   readonly unidadeComEmbalagem = unidadeComEmbalagem;
@@ -90,6 +91,20 @@ export class CardapioForm implements OnInit {
   /** Linhas cuja quantidade foi reduzida automaticamente ao saldo disponível. */
   private linhasAjustadas = new WeakSet<LinhaForm>();
   private disponibilidadePorGenero = new Map<number, DisponibilidadeGenero>();
+  /** Evita que uma consulta anterior substitua a disponibilidade da data mais recente. */
+  private consultaDisponibilidadeAtual = 0;
+  /** URLs de foto que falharam nesta disponibilidade; o ícone de categoria assume o lugar. */
+  private imagensGeneroComErro = new Set<number>();
+
+  /** Estado local do overlay de escolha de genero. */
+  linhaSelecionando: LinhaForm | null = null;
+  modoVisualizacaoGenero: 'cards' | 'tabela' = 'cards';
+  buscaGenero = '';
+  filtroPrioridadeGenero: 'TODOS' | 'PRIORITARIOS' = 'TODOS';
+  categoriaGenero = '';
+  private readonly chaveModoVisualizacaoGenero = 'sige.cardapio.seletor-genero.visualizacao';
+  private overflowOriginalDoCorpo = '';
+  private scrollDoCorpoBloqueado = false;
 
   reforco: PedidoReforco | null = null;
 
@@ -110,6 +125,8 @@ export class CardapioForm implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.restaurarModoVisualizacaoGenero();
+
     const id = Number(this.route.snapshot.queryParamMap.get('id'));
     this.id = Number.isInteger(id) && id > 0 ? id : null;
 
@@ -136,6 +153,12 @@ export class CardapioForm implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    // Invalida respostas ainda em transito e sempre devolve o scroll da pagina.
+    this.consultaDisponibilidadeAtual += 1;
+    this.desbloquearScrollDaPagina();
+  }
+
   get modoEdicao(): boolean {
     return this.id !== null;
   }
@@ -152,6 +175,7 @@ export class CardapioForm implements OnInit {
 
   aoAlterarData(data: string): void {
     this.data = data;
+    this.fecharSelecaoGenero();
     this.carregarDisponibilidade();
   }
 
@@ -160,9 +184,18 @@ export class CardapioForm implements OnInit {
   }
 
   private carregarDisponibilidade(): void {
+    const consulta = ++this.consultaDisponibilidadeAtual;
+    this.disponibilidadeCarregada = false;
+    this.disponibilidade = [];
+    this.disponibilidadePorGenero = new Map<number, DisponibilidadeGenero>();
+    this.fecharSelecaoGenero();
     this.cardapioService.disponibilidade(this.id ?? undefined, this.data || undefined).subscribe({
       next: (dados) => {
+        if (consulta !== this.consultaDisponibilidadeAtual) {
+          return;
+        }
         // Gêneros com saldo primeiro; os zerados aparecem no fim, desabilitados.
+        this.imagensGeneroComErro.clear();
         this.disponibilidade = [...dados].sort((a, b) =>
           Number(Number(b.disponivel) > 0) - Number(Number(a.disponivel) > 0)
           || a.descricao.localeCompare(b.descricao));
@@ -170,6 +203,9 @@ export class CardapioForm implements OnInit {
         this.disponibilidadeCarregada = true;
       },
       error: () => {
+        if (consulta !== this.consultaDisponibilidadeAtual) {
+          return;
+        }
         this.erro = 'Não foi possível consultar os saldos do estoque. Tente recarregar a página.';
       },
     });
@@ -219,6 +255,348 @@ export class CardapioForm implements OnInit {
 
   removerSecao(indice: number): void {
     this.secoes.splice(indice, 1);
+  }
+
+  get generosPrioritarios(): DisponibilidadeGenero[] {
+    return this.disponibilidade
+      .filter((genero) => Number(genero.quantidade_prioritaria) > 0 && Number(genero.disponivel) > 0)
+      .sort((a, b) => {
+        const diasA = a.dias_para_proxima_validade ?? Number.MAX_SAFE_INTEGER;
+        const diasB = b.dias_para_proxima_validade ?? Number.MAX_SAFE_INTEGER;
+        return diasA - diasB || a.descricao.localeCompare(b.descricao);
+      });
+  }
+
+  generoJaIncluido(generoId: number): boolean {
+    return this.secoes.some((secao) => secao.linhas.some((linha) => linha.item_generico === generoId));
+  }
+
+  adicionarGeneroPrioritario(genero: DisponibilidadeGenero): void {
+    if (this.generoJaIncluido(genero.item_generico_id)) {
+      return;
+    }
+
+    let linha = this.secoes
+      .flatMap((secao) => secao.linhas)
+      .find((candidata) => !this.linhaPreenchida(candidata));
+
+    if (!linha) {
+      const novaLinha = this.linhaVazia();
+      if (!this.secoes.length) {
+        this.secoes.push({ titulo: '', linhas: [novaLinha] });
+      } else {
+        this.secoes[0].linhas.push(novaLinha);
+      }
+      linha = novaLinha;
+    }
+
+    linha.item_generico = genero.item_generico_id;
+    this.ajustarAoSaldo(linha);
+    this.focarQuantidadeDaLinha(linha);
+  }
+
+  // ---- Overlay de selecao de generos ----
+
+  get categoriasGeneros(): { valor: string; descricao: string }[] {
+    const categorias = new Map<string, string>();
+    this.disponibilidade.forEach((genero) => {
+      if (genero.categoria && genero.categoria_descricao) {
+        categorias.set(genero.categoria, genero.categoria_descricao);
+      }
+    });
+
+    return Array.from(categorias, ([valor, descricao]) => ({ valor, descricao }))
+      .sort((categoriaA, categoriaB) => categoriaA.descricao.localeCompare(categoriaB.descricao, 'pt-BR'));
+  }
+
+  get generosParaSelecao(): DisponibilidadeGenero[] {
+    const busca = this.normalizarTexto(this.buscaGenero.trim());
+    const generosDisponiveis = this.disponibilidade
+      .filter((genero) => Number(genero.disponivel) > 0);
+    const generosPorBusca = generosDisponiveis.filter((genero) =>
+      !busca || this.normalizarTexto(`${genero.descricao} ${genero.catmat}`).includes(busca));
+    const generosPorCategoria = generosPorBusca.filter((genero) =>
+      !this.categoriaGenero || genero.categoria === this.categoriaGenero);
+    const resultado = generosPorCategoria.filter((genero) =>
+      this.filtroPrioridadeGenero !== 'PRIORITARIOS' || this.generoTemPrioridade(genero));
+
+    return [...resultado].sort((generoA, generoB) => this.compararGenerosSelecao(generoA, generoB));
+  }
+
+  generoTemPrioridade(genero: DisponibilidadeGenero): boolean {
+    return Number(genero.quantidade_prioritaria) > 0;
+  }
+
+  get quantidadeResultadosGenero(): number {
+    return this.generosParaSelecao.length;
+  }
+
+  get temFiltrosGeneroAtivos(): boolean {
+    return Boolean(
+      this.buscaGenero.trim()
+      || this.categoriaGenero
+      || this.filtroPrioridadeGenero !== 'TODOS',
+    );
+  }
+
+  get temGenerosPrioritariosNosResultados(): boolean {
+    return this.generosParaSelecao.some((genero) => this.generoTemPrioridade(genero));
+  }
+
+  private compararGenerosSelecao(generoA: DisponibilidadeGenero, generoB: DisponibilidadeGenero): number {
+    const prioridadeA = this.generoTemPrioridade(generoA);
+    const prioridadeB = this.generoTemPrioridade(generoB);
+
+    if (this.filtroPrioridadeGenero === 'TODOS' && prioridadeA !== prioridadeB) {
+      return Number(prioridadeB) - Number(prioridadeA);
+    }
+
+    if (this.filtroPrioridadeGenero === 'PRIORITARIOS' || prioridadeA) {
+      const diasA = this.diasParaOrdenacao(generoA);
+      const diasB = this.diasParaOrdenacao(generoB);
+      if (diasA !== diasB) {
+        return diasA < diasB ? -1 : 1;
+      }
+    }
+
+    return generoA.descricao.localeCompare(generoB.descricao, 'pt-BR', { sensitivity: 'base' });
+  }
+
+  private diasParaOrdenacao(genero: DisponibilidadeGenero): number {
+    const dias = genero.dias_para_proxima_validade;
+    if (dias === null || dias === undefined) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    const valor = Number(dias);
+    return Number.isFinite(valor) ? valor : Number.POSITIVE_INFINITY;
+  }
+
+  generoPodeSerSelecionado(genero: DisponibilidadeGenero): boolean {
+    return Number(genero.disponivel) > 0;
+  }
+
+  generoSelecionadoNoOverlay(genero: DisponibilidadeGenero): boolean {
+    const itemGenericoSelecionado = this.linhaSelecionando?.item_generico;
+    return itemGenericoSelecionado !== null
+      && itemGenericoSelecionado !== undefined
+      && Number(itemGenericoSelecionado) === Number(genero.item_generico_id);
+  }
+
+  urlImagemGenero(genero: DisponibilidadeGenero): string | null {
+    const imagem = genero.imagem?.trim();
+    if (!imagem) {
+      return null;
+    }
+
+    if (/^https?:\/\//i.test(imagem)) {
+      return imagem;
+    }
+
+    const caminho = imagem.startsWith('/') ? imagem : `/${imagem}`;
+    if (!/^https?:\/\//i.test(environment.API_URL)) {
+      return caminho;
+    }
+
+    return `${new URL(environment.API_URL).origin}${caminho}`;
+  }
+
+  podeExibirImagemGenero(genero: DisponibilidadeGenero): boolean {
+    return Boolean(this.urlImagemGenero(genero)) && !this.imagensGeneroComErro.has(genero.item_generico_id);
+  }
+
+  aoErroImagemGenero(generoId: number): void {
+    this.imagensGeneroComErro.add(generoId);
+  }
+
+  abrirSelecaoGenero(linha: LinhaForm): void {
+    if (this.salvando || !this.disponibilidadeCarregada) {
+      return;
+    }
+
+    this.linhaSelecionando = linha;
+    this.buscaGenero = '';
+    this.filtroPrioridadeGenero = 'TODOS';
+    this.categoriaGenero = '';
+    this.bloquearScrollDaPagina();
+    setTimeout(() => {
+      if (typeof document === 'undefined' || !this.linhaSelecionando) {
+        return;
+      }
+      document.getElementById('busca-genero-overlay')?.focus();
+    });
+  }
+
+  fecharSelecaoGenero(): void {
+    this.linhaSelecionando = null;
+    this.desbloquearScrollDaPagina();
+  }
+
+  alterarModoVisualizacaoGenero(modo: 'cards' | 'tabela'): void {
+    this.modoVisualizacaoGenero = modo;
+
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    try {
+      localStorage.setItem(this.chaveModoVisualizacaoGenero, modo);
+    } catch {
+      // O armazenamento pode estar indisponível em navegação privada ou testes.
+    }
+  }
+
+  limparFiltrosGenero(): void {
+    this.buscaGenero = '';
+    this.categoriaGenero = '';
+    this.filtroPrioridadeGenero = 'TODOS';
+  }
+
+  selecionarGenero(genero: DisponibilidadeGenero): void {
+    const linha = this.linhaSelecionando;
+    if (!linha || !this.generoPodeSerSelecionado(genero)) {
+      return;
+    }
+
+    linha.item_generico = genero.item_generico_id;
+    this.ajustarAoSaldo(linha);
+    this.fecharSelecaoGenero();
+    this.focarQuantidadeDaLinha(linha);
+  }
+
+  aoAcionarGeneroPorTeclado(event: KeyboardEvent, genero: DisponibilidadeGenero): void {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    event.preventDefault();
+    this.selecionarGenero(genero);
+  }
+
+  @HostListener('document:keydown.escape')
+  aoPressionarEscape(): void {
+    if (!this.linhaSelecionando) {
+      return;
+    }
+    this.fecharSelecaoGenero();
+  }
+
+  iconeCategoria(categoria: string): string {
+    switch (categoria) {
+      case 'tempS':
+        return 'bi bi-flower1';
+      case 'SM':
+        return 'bi bi-box-seam';
+      case 'Lac':
+        return 'bi bi-cup-straw';
+      case 'Oli':
+        return 'bi bi-droplet-half';
+      case 'MolCo':
+        return 'bi bi-basket';
+      case 'Fr':
+        return 'bi bi-basket2';
+      case 'Le':
+        return 'bi bi-flower2';
+      case 'Pr':
+        return 'bi bi-egg-fried';
+      default:
+        return 'bi bi-basket';
+    }
+  }
+
+  textoStatusPrioridade(genero: DisponibilidadeGenero): string {
+    switch (genero.status_proxima_validade) {
+      case 'VENCE_HOJE':
+        return 'Vence na data';
+      case 'CRITICO':
+        return 'Crítico';
+      case 'ATENCAO':
+        return 'Atenção';
+      default:
+        return '';
+    }
+  }
+
+  private restaurarModoVisualizacaoGenero(): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    try {
+      const modoArmazenado = localStorage.getItem(this.chaveModoVisualizacaoGenero);
+      if (modoArmazenado === 'cards' || modoArmazenado === 'tabela') {
+        this.modoVisualizacaoGenero = modoArmazenado;
+      }
+    } catch {
+      // O armazenamento pode estar indisponível em navegação privada ou testes.
+    }
+  }
+
+  private normalizarTexto(valor: string): string {
+    return valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
+  }
+
+  private bloquearScrollDaPagina(): void {
+    if (this.scrollDoCorpoBloqueado || typeof document === 'undefined') {
+      return;
+    }
+    this.overflowOriginalDoCorpo = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    this.scrollDoCorpoBloqueado = true;
+  }
+
+  private desbloquearScrollDaPagina(): void {
+    if (!this.scrollDoCorpoBloqueado || typeof document === 'undefined') {
+      return;
+    }
+    document.body.style.overflow = this.overflowOriginalDoCorpo;
+    this.scrollDoCorpoBloqueado = false;
+  }
+
+  private focarQuantidadeDaLinha(linha: LinhaForm): void {
+    const localizacao = this.localizarLinha(linha);
+    if (!localizacao) {
+      return;
+    }
+    setTimeout(() => {
+      if (typeof document === 'undefined') {
+        return;
+      }
+      const quantidade = document.getElementById(
+        `quantidade${localizacao.indiceSecao}-${localizacao.indiceLinha}`,
+      ) as HTMLInputElement | null;
+      quantidade?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      quantidade?.focus();
+    });
+  }
+
+  private localizarLinha(linha: LinhaForm): { indiceSecao: number; indiceLinha: number } | null {
+    for (let indiceSecao = 0; indiceSecao < this.secoes.length; indiceSecao += 1) {
+      const indiceLinha = this.secoes[indiceSecao].linhas.indexOf(linha);
+      if (indiceLinha >= 0) {
+        return { indiceSecao, indiceLinha };
+      }
+    }
+    return null;
+  }
+
+  formatarDataCivil(data: string | null): string {
+    if (!data) {
+      return '';
+    }
+    const [ano, mes, dia] = data.split('-');
+    return ano && mes && dia ? `${dia}/${mes}/${ano}` : data;
+  }
+
+  textoPrazoPrioridade(genero: DisponibilidadeGenero): string {
+    const dias = genero.dias_para_proxima_validade;
+    if (dias === 0) {
+      return 'Vence na data do cardápio';
+    }
+    if (dias === 1) {
+      return 'Vence em 1 dia';
+    }
+    return dias !== null && dias > 1 ? `Vence em ${dias} dias` : '';
   }
 
   // ---- Saldos ----

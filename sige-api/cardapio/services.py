@@ -11,9 +11,13 @@ from rest_framework.exceptions import ValidationError
 from cardapio.models import Cardapio, ItemCardapio
 from estoque.models import Estoque
 from utils.estoque_services import (
+    STATUS_VALIDADE_DESCRICOES,
+    dias_para_data_validade,
+    lotes_utilizaveis_queryset,
     registrar_devolucao_cardapio,
     registrar_saida_cardapio,
     saldos_utilizaveis_por_estoque,
+    status_data_validade,
 )
 
 ZERO = Decimal('0.000')
@@ -84,6 +88,74 @@ def quantidades_reservadas(excluir_cardapio_id=None):
     }
 
 
+def _prioridades_validade_por_estoque(estoques, reservado_por_genero, data_referencia):
+    """Simula as reservas em FEFO para informar lotes próximos do vencimento.
+
+    A simulação é somente leitura: a retirada real continua sendo feita no fluxo de
+    aprovação do cardápio. Todos os lotes utilizáveis são carregados em uma consulta.
+    """
+    prioridades = {
+        estoque.id: {
+            'quantidade_prioritaria': ZERO,
+            'lotes_prioritarios': [],
+            'proxima_validade': None,
+            'dias_para_proxima_validade': None,
+            'status_proxima_validade': None,
+            'status_proxima_validade_descricao': None,
+        }
+        for estoque in estoques
+    }
+    if not prioridades:
+        return prioridades
+
+    reserva_restante_por_estoque = {
+        estoque.id: reservado_por_genero.get(estoque.item_generico_id, ZERO)
+        for estoque in estoques
+    }
+    lotes = (
+        lotes_utilizaveis_queryset(data_referencia)
+        .filter(estoque_id__in=list(prioridades))
+        .order_by('estoque_id', 'legado', 'data_validade', 'id')
+    )
+
+    for lote in lotes:
+        dados_estoque = prioridades[lote.estoque_id]
+        reserva_restante = reserva_restante_por_estoque[lote.estoque_id]
+        quantidade_disponivel = lote.saldo_atual
+        if reserva_restante > ZERO:
+            consumido_pela_reserva = min(reserva_restante, quantidade_disponivel)
+            reserva_restante_por_estoque[lote.estoque_id] = reserva_restante - consumido_pela_reserva
+            quantidade_disponivel -= consumido_pela_reserva
+
+        if quantidade_disponivel <= ZERO or lote.legado:
+            continue
+
+        dias_para_validade = dias_para_data_validade(lote.data_validade, data_referencia)
+        status_validade = status_data_validade(lote.data_validade, data_referencia)
+        if dados_estoque['proxima_validade'] is None:
+            dados_estoque.update({
+                'proxima_validade': lote.data_validade.isoformat(),
+                'dias_para_proxima_validade': dias_para_validade,
+                'status_proxima_validade': status_validade,
+                'status_proxima_validade_descricao': STATUS_VALIDADE_DESCRICOES[status_validade],
+            })
+
+        if status_validade not in {'VENCE_HOJE', 'CRITICO', 'ATENCAO'}:
+            continue
+
+        dados_estoque['quantidade_prioritaria'] += quantidade_disponivel
+        dados_estoque['lotes_prioritarios'].append({
+            'id': lote.id,
+            'numero_lote': lote.numero_lote,
+            'data_validade': lote.data_validade.isoformat(),
+            'dias_para_validade': dias_para_validade,
+            'status': status_validade,
+            'status_descricao': STATUS_VALIDADE_DESCRICOES[status_validade],
+            'quantidade_disponivel': quantidade_disponivel,
+        })
+    return prioridades
+
+
 def disponibilidade(excluir_cardapio_id=None, data_referencia=None):
     """Saldo físico, utilizável, reservado e disponível de cada gênero com estoque."""
     data_referencia = data_referencia or hoje_no_ru()
@@ -92,23 +164,32 @@ def disponibilidade(excluir_cardapio_id=None, data_referencia=None):
     saldos_utilizaveis = saldos_utilizaveis_por_estoque(
         [estoque.id for estoque in estoques], data_referencia,
     )
+    prioridades_por_estoque = _prioridades_validade_por_estoque(
+        estoques,
+        reservado,
+        data_referencia,
+    )
     dados = []
     for estoque in estoques:
         genero = estoque.item_generico
         reservado_item = reservado.get(genero.id, ZERO)
         saldo_utilizavel = saldos_utilizaveis.get(estoque.id, ZERO)
+        prioridades = prioridades_por_estoque[estoque.id]
         dados.append({
             'item_generico_id': genero.id,
             'catmat': genero.catmat,
             'descricao': genero.descricao,
             'unidade_medida': genero.unidade_medida,
             'categoria': genero.categoria,
+            'categoria_descricao': genero.get_categoria_display(),
+            'imagem': genero.imagem.url if genero.imagem else None,
             'conteudo_embalagem': genero.conteudo_embalagem,
             'unidade_embalagem': genero.unidade_embalagem,
             'saldo_atual': estoque.saldo_atual,
             'saldo_utilizavel': saldo_utilizavel,
             'reservado': reservado_item,
             'disponivel': max(saldo_utilizavel - reservado_item, ZERO),
+            **prioridades,
         })
     return dados
 

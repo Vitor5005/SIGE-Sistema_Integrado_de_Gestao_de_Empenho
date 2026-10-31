@@ -4,27 +4,39 @@
       <h1 class="sige-list-title"><i class="bi bi-calendar2-week" aria-hidden="true"></i> Lotes e validades</h1>
       <p class="sige-list-description">Consulte os saldos por lote e acompanhe os prazos de validade do estoque.</p>
     </div>
-    <a class="sige-button sige-button--secondary" routerLink="/estoque">Voltar ao estoque</a>
+    <a class="sige-button sige-button--secondary" routerLink="/estoque">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i>
+      <span>Voltar ao estoque</span>
+    </a>
   </header>
 
   @if (resumo) {
     <section class="validades-resumo" aria-label="Resumo geral dos lotes com saldo">
-      <h2 class="validades-resumo__titulo">Resumo geral dos lotes com saldo</h2>
+      <div class="validades-resumo__cabecalho">
+        <h2 class="validades-resumo__titulo">Resumo geral dos lotes com saldo</h2>
+        <p class="validades-resumo__descricao">Clique em uma situação para filtrar a listagem.</p>
+      </div>
       @for (card of cardsResumo; track card.status) {
         <button
           type="button"
           class="validade-card"
           [class.is-active]="filtrosAtivos['status'] === card.status"
           [attr.aria-pressed]="filtrosAtivos['status'] === card.status"
+          [attr.data-status]="card.status"
           (click)="aplicarStatus(card.status)">
-          <span class="validade-card__rotulo">{{ card.label }}</span>
+          <span class="validade-card__cabecalho">
+            <span class="validade-card__icone" aria-hidden="true">
+              <i [class]="'bi ' + card.icone"></i>
+            </span>
+            <span class="validade-card__rotulo">{{ card.label }}</span>
+          </span>
           <strong class="validade-card__valor">{{ valorResumo(card.campo) }}</strong>
         </button>
       }
     </section>
   }
 
-  <section class="sige-list-toolbar" aria-label="Busca e filtros de lotes">
+  <section class="sige-list-toolbar validades-toolbar" aria-label="Busca e filtros de lotes">
     <div class="sige-list-toolbar__search">
       <app-barra-pesquisa
         [filtros]="filtros"
@@ -38,7 +50,8 @@
   </section>
 
   @if (!carregando && !erro) {
-    <p class="sige-list-meta" aria-live="polite">
+    <p class="sige-list-meta validades-lista-meta" aria-live="polite">
+      <i class="bi bi-list-ul" aria-hidden="true"></i>
       {{ total }} {{ total === 1 ? 'lote encontrado' : 'lotes encontrados' }}
     </p>
   }
@@ -46,11 +59,20 @@
   <div class="sige-list-table-wrap">
     <table class="sige-list-table validades-tabela">
       <caption class="visually-hidden">Lotes e validades do estoque</caption>
+      <colgroup>
+        <col class="validades-col-genero">
+        <col class="validades-col-lote">
+        <col class="validades-col-saldo">
+        <col class="validades-col-validade">
+        <col class="validades-col-prazo">
+        <col class="validades-col-status">
+        @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
+          <col class="validades-col-rastreabilidade">
+        }
+      </colgroup>
       <thead>
         <tr>
           <th scope="col">Gênero</th>
-          <th scope="col">CATMAT</th>
-          <th scope="col">Categoria</th>
           <th scope="col">Lote</th>
           <th scope="col" class="sige-cell--number">Saldo</th>
           <th scope="col">Validade</th>
@@ -63,23 +85,34 @@
       </thead>
       <tbody>
         @if (carregando) {
-          <tr><td [attr.colspan]="pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO) ? 9 : 8" class="estado" role="status">Carregando lotes e validades...</td></tr>
+          <tr><td [attr.colspan]="pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO) ? 7 : 6" class="estado" role="status">Carregando lotes e validades...</td></tr>
         } @else if (erro) {
-          <tr><td [attr.colspan]="pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO) ? 9 : 8" class="estado">{{ erro }}</td></tr>
+          <tr><td [attr.colspan]="pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO) ? 7 : 6" class="estado">{{ erro }}</td></tr>
         } @else {
           @for (lote of lotes; track lote.id) {
-            <tr>
-              <td class="sige-cell--truncate" [attr.title]="lote.descricao">{{ lote.descricao }}</td>
-              <td>{{ lote.catmat }}</td>
-              <td>{{ lote.categoria_descricao }}</td>
-              <td>{{ lote.numero_lote }}</td>
-              <td class="sige-cell--number"><strong>{{ lote.saldo_atual | number:'1.0-3' }} {{ lote.unidade_medida }}</strong></td>
-              <td>{{ formatarDataCivil(lote.data_validade) }}</td>
-              <td>{{ prazoValidade(lote.dias_para_validade) }}</td>
-              <td><span class="badge" [class]="classeStatus(lote.status)">{{ lote.status_descricao }}</span></td>
+            <tr class="validades-linha" [class]="classeLinhaStatus(lote.status)" [attr.data-status]="lote.status">
+              <td>
+                <div class="validades-genero">
+                  <strong class="validades-genero__nome" [attr.title]="lote.descricao">{{ lote.descricao }}</strong>
+                  <span class="validades-genero__meta">CATMAT {{ lote.catmat }}</span>
+                  <span class="validades-genero__categoria">{{ lote.categoria_descricao }}</span>
+                </div>
+              </td>
+              <td class="validades-lote">
+                @if (lote.legado) {
+                  <span class="validades-lote-legado">LEGADO</span>
+                } @else {
+                  <strong class="validades-lote__numero">{{ lote.numero_lote }}</strong>
+                }
+              </td>
+              <td class="sige-cell--number validades-saldo"><strong>{{ lote.saldo_atual | number:'1.0-3' }} {{ lote.unidade_medida }}</strong></td>
+              <td class="validades-validade">{{ formatarDataCivil(lote.data_validade) }}</td>
+              <td class="validades-prazo">{{ prazoValidade(lote.dias_para_validade) }}</td>
+              <td><span class="badge validades-status" [class]="classeStatus(lote.status)">{{ lote.status_descricao }}</span></td>
               @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
-                <td>
-                  <button type="button" class="sige-button sige-button--secondary" (click)="abrirRastreabilidade(lote.id)">
+                <td class="validades-rastreabilidade">
+                  <button type="button" class="sige-button sige-button--secondary validades-rastreabilidade__acao" (click)="abrirRastreabilidade(lote.id)">
+                    <i class="bi bi-clock-history" aria-hidden="true"></i>
                     Ver histórico
                   </button>
                 </td>
@@ -87,7 +120,7 @@
             </tr>
           }
           @if (lotes.length === 0) {
-            <tr><td [attr.colspan]="pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO) ? 9 : 8" class="estado">Nenhum lote encontrado para os filtros informados.</td></tr>
+            <tr><td [attr.colspan]="pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO) ? 7 : 6" class="estado">Nenhum lote encontrado para os filtros informados.</td></tr>
           }
         }
       </tbody>

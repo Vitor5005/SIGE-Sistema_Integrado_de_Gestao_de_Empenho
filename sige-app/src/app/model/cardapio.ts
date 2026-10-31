@@ -1,3 +1,5 @@
+import type { StatusValidade } from './estoque';
+
 export type RefeicaoCardapio = 'CAFE' | 'ALMOCO' | 'JANTAR';
 
 export type StatusCardapio =
@@ -84,18 +86,36 @@ export interface CardapioInsert {
   itens: ItemCardapio[];
 }
 
+export interface LotePrioritarioCardapio {
+  id: number;
+  numero_lote: string;
+  data_validade: string;
+  dias_para_validade: number;
+  status: StatusValidade;
+  status_descricao: string;
+  quantidade_disponivel: number;
+}
+
 export interface DisponibilidadeGenero {
   item_generico_id: number;
   catmat: string;
   descricao: string;
   unidade_medida: string;
   categoria: string;
+  categoria_descricao: string;
+  imagem: string | null;
   conteudo_embalagem: number | null;
   unidade_embalagem: string | null;
   saldo_atual: number;
   saldo_utilizavel: number;
   reservado: number;
   disponivel: number;
+  quantidade_prioritaria: number;
+  lotes_prioritarios: LotePrioritarioCardapio[];
+  proxima_validade: string | null;
+  dias_para_proxima_validade: number | null;
+  status_proxima_validade: StatusValidade | null;
+  status_proxima_validade_descricao: string | null;
 }
 
 export interface QuantidadeItemCardapio {

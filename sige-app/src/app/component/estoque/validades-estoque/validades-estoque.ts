@@ -22,6 +22,7 @@ interface CardResumoValidade {
   status: StatusValidade;
   label: string;
   campo: CampoResumoValidade;
+  icone: string;
 }
 
 @Component({
@@ -73,12 +74,12 @@ export class ValidadesEstoque {
   ];
 
   readonly cardsResumo: CardResumoValidade[] = [
-    { status: 'VENCIDO', label: 'Vencidos', campo: 'vencidos' },
-    { status: 'VENCE_HOJE', label: 'Vence hoje', campo: 'vence_hoje' },
-    { status: 'CRITICO', label: 'Críticos', campo: 'criticos' },
-    { status: 'ATENCAO', label: 'Atenção', campo: 'atencao' },
-    { status: 'REGULAR', label: 'Regulares', campo: 'regulares' },
-    { status: 'SEM_VALIDADE', label: 'Sem validade', campo: 'sem_validade' },
+    { status: 'VENCIDO', label: 'Vencidos', campo: 'vencidos', icone: 'bi-x-octagon' },
+    { status: 'VENCE_HOJE', label: 'Vence hoje', campo: 'vence_hoje', icone: 'bi-exclamation-circle' },
+    { status: 'CRITICO', label: 'Críticos', campo: 'criticos', icone: 'bi-exclamation-triangle' },
+    { status: 'ATENCAO', label: 'Atenção', campo: 'atencao', icone: 'bi-info-circle' },
+    { status: 'REGULAR', label: 'Regulares', campo: 'regulares', icone: 'bi-check-circle' },
+    { status: 'SEM_VALIDADE', label: 'Sem validade', campo: 'sem_validade', icone: 'bi-dash-circle' },
   ];
 
   lotes: LoteValidade[] = [];
@@ -218,6 +219,23 @@ export class ValidadesEstoque {
         return 'text-bg-success';
       default:
         return 'text-bg-secondary';
+    }
+  }
+
+  classeLinhaStatus(status: StatusValidade): string {
+    switch (status) {
+      case 'VENCIDO':
+        return 'validades-linha--vencido';
+      case 'VENCE_HOJE':
+        return 'validades-linha--vence-hoje';
+      case 'CRITICO':
+        return 'validades-linha--critico';
+      case 'ATENCAO':
+        return 'validades-linha--atencao';
+      case 'REGULAR':
+        return 'validades-linha--regular';
+      case 'SEM_VALIDADE':
+        return 'validades-linha--sem-validade';
     }
   }
 }

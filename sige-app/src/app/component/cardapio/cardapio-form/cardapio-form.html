@@ -94,6 +94,57 @@
         </div>
       </div>
       } @else {
+      @if (generosPrioritarios.length > 0) {
+      <aside class="prioridade-validade" aria-labelledby="generos-prioritarios-title">
+        <div class="prioridade-validade__cabecalho">
+          <i class="bi bi-clock-history" aria-hidden="true"></i>
+          <div>
+            <h3 id="generos-prioritarios-title">Gêneros para priorizar</h3>
+            <p>Alguns gêneros disponíveis possuem lotes próximos do vencimento na data deste cardápio. Considere preparações que utilizem estes gêneros.</p>
+          </div>
+        </div>
+
+        <div class="prioridade-validade__lista">
+          @for (genero of generosPrioritarios; track genero.item_generico_id) {
+          <article class="prioridade-validade__item">
+            <div>
+              <h4 class="prioridade-validade__titulo">{{ genero.descricao }}</h4>
+              <p class="prioridade-validade__meta">CATMAT {{ genero.catmat }} · {{ unidadeComEmbalagem(genero) }}</p>
+            </div>
+
+            <div class="prioridade-validade__status"
+              [class.prioridade-validade__status--vence-hoje]="genero.status_proxima_validade === 'VENCE_HOJE'"
+              [class.prioridade-validade__status--critico]="genero.status_proxima_validade === 'CRITICO'"
+              [class.prioridade-validade__status--atencao]="genero.status_proxima_validade === 'ATENCAO'">
+              <i class="bi bi-calendar-event" aria-hidden="true"></i>
+              @if (genero.status_proxima_validade === 'VENCE_HOJE') {
+              <span>{{ textoPrazoPrioridade(genero) }}</span>
+              } @else {
+              <span>{{ genero.status_proxima_validade_descricao }} · {{ textoPrazoPrioridade(genero) }}</span>
+              }
+            </div>
+            <p class="prioridade-validade__meta">Próxima validade: {{ formatarDataCivil(genero.proxima_validade) }}</p>
+            <p class="prioridade-validade__quantidade">
+              {{ formatarQuantidade(genero.quantidade_prioritaria) }} {{ genero.unidade_medida }} disponíveis em lotes próximos do vencimento
+            </p>
+            <p class="prioridade-validade__meta">
+              {{ genero.lotes_prioritarios.length }} {{ genero.lotes_prioritarios.length === 1 ? 'lote próximo do vencimento' : 'lotes próximos do vencimento' }}
+            </p>
+
+            <div class="prioridade-validade__acao">
+              @if (generoJaIncluido(genero.item_generico_id)) {
+              <span class="prioridade-validade__incluido"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Já incluído</span>
+              } @else {
+              <button type="button" class="sige-button sige-button--secondary sige-button--sm" [disabled]="salvando"
+                (click)="adicionarGeneroPrioritario(genero)">+ Adicionar ao cardápio</button>
+              }
+            </div>
+          </article>
+          }
+        </div>
+      </aside>
+      }
+
       @for (secao of secoes; track secao; let indiceSecao = $index) {
       <div class="detalhamento-secao">
         <div class="detalhamento-secao__titulo">
@@ -120,21 +171,39 @@
 
         @for (linha of secao.linhas; track linha; let indiceLinha = $index) {
         <div class="detalhamento-linha" [class.detalhamento-linha--erro]="excedeSaldo(linha.item_generico)">
-          <div class="cardapio-campo">
+          <div class="cardapio-campo cardapio-campo--genero">
             <label class="detalhamento-rotulo" [for]="'genero' + indiceSecao + '-' + indiceLinha">Gênero</label>
-            <select [id]="'genero' + indiceSecao + '-' + indiceLinha" [name]="'genero' + indiceSecao + '-' + indiceLinha"
-              [ngModel]="linha.item_generico" (ngModelChange)="linha.item_generico = $event; ajustarAoSaldo(linha)"
-              [disabled]="salvando"
-              [class.campo-invalido]="(formSubmitted && linhaInvalida(linha) && !linha.item_generico) || generoSemSaldo(linha.item_generico)">
-              <option [ngValue]="null">Selecione um gênero</option>
-              @for (genero of disponibilidade; track genero.item_generico_id) {
-              <option [ngValue]="genero.item_generico_id"
-                [disabled]="+genero.disponivel <= 0 && linha.item_generico !== genero.item_generico_id">
-                {{ genero.descricao }} · {{ unidadeComEmbalagem(genero) }} ·
-                {{ +genero.disponivel > 0 ? 'disponível ' + formatarQuantidade(genero.disponivel) : 'sem saldo' }}
-              </option>
+            @if (generoDe(linha.item_generico); as genero) {
+            <div class="genero-selecionado" [class.genero-selecionado--sem-saldo]="generoSemSaldo(linha.item_generico)">
+              <div class="genero-selecionado__identificacao">
+                <strong>{{ genero.descricao }}</strong>
+                <span>CATMAT {{ genero.catmat }}</span>
+              </div>
+              <p class="genero-selecionado__disponibilidade">
+                Disponível na data: {{ formatarQuantidade(genero.disponivel) }} {{ genero.unidade_medida }}
+              </p>
+              @if (generoTemPrioridade(genero)) {
+              <p class="genero-selecionado__prioridade"
+                [class.genero-selecionado__prioridade--vence-hoje]="genero.status_proxima_validade === 'VENCE_HOJE'"
+                [class.genero-selecionado__prioridade--critico]="genero.status_proxima_validade === 'CRITICO'">
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                {{ formatarQuantidade(genero.quantidade_prioritaria) }} {{ genero.unidade_medida }} em lotes próximos do vencimento
+                · {{ textoPrazoPrioridade(genero) }}
+              </p>
               }
-            </select>
+              <button [id]="'genero' + indiceSecao + '-' + indiceLinha" type="button" class="genero-selecionado__alterar" [disabled]="salvando"
+                (click)="abrirSelecaoGenero(linha)">
+                <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Alterar gênero
+              </button>
+            </div>
+            } @else {
+            <button [id]="'genero' + indiceSecao + '-' + indiceLinha" type="button" class="genero-seletor"
+              [disabled]="salvando || !disponibilidadeCarregada" (click)="abrirSelecaoGenero(linha)"
+              [class.campo-invalido]="formSubmitted && linhaInvalida(linha) && !linha.item_generico">
+              <i class="bi bi-search" aria-hidden="true"></i>
+              <span>Selecionar gênero</span>
+            </button>
+            }
             @if (generoDe(linha.item_generico); as genero) {
             @if (generoSemSaldo(linha.item_generico)) {
             <small class="mensagem-campo-invalido">Sem saldo em estoque. Escolha outro gênero.</small>
@@ -158,11 +227,6 @@
               <i class="bi bi-plus-circle" aria-hidden="true"></i> Pedir reforço
             </button>
             }
-            } @else {
-            <small class="texto-apoio">
-              Disponível: {{ formatarQuantidade(genero.disponivel) }} {{ genero.unidade_medida }}
-              @if (+genero.reservado > 0) { ({{ formatarQuantidade(genero.reservado) }} reservado(s) em outros cardápios) }
-            </small>
             }
             }
           </div>
@@ -399,7 +463,7 @@
             <tr>
               <th scope="col">Gênero</th>
               <th scope="col" class="sige-cell--number">Quantidade do cardápio</th>
-              <th scope="col" class="sige-cell--number">Disponível hoje</th>
+              <th scope="col" class="sige-cell--number">Disponível na data</th>
               <th scope="col" class="sige-cell--number">Restará</th>
               <th scope="col">Situação</th>
             </tr>
@@ -458,5 +522,218 @@
     </div>
   </div>
   }
+  }
+
+  @if (linhaSelecionando) {
+  <div class="seletor-genero-overlay" role="presentation" (click)="fecharSelecaoGenero()">
+    <section class="seletor-genero" role="dialog" aria-modal="true" aria-labelledby="seletor-genero-titulo"
+      tabindex="-1" (click)="$event.stopPropagation()" (keydown.escape)="fecharSelecaoGenero()">
+      <header class="seletor-genero__cabecalho">
+        <div>
+          <h2 id="seletor-genero-titulo">Selecionar gênero</h2>
+          @if (data) {
+          <p>Escolha um gênero disponível para o cardápio de {{ formatarDataCivil(data) }}.</p>
+          } @else {
+          <p>Escolha um gênero disponível para este cardápio.</p>
+          }
+        </div>
+        <button type="button" class="seletor-genero__fechar" aria-label="Fechar seleção de gênero"
+          (click)="fecharSelecaoGenero()">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="seletor-genero__filtros">
+        <div class="seletor-genero__filtros-principais">
+          <label class="seletor-genero__busca" for="busca-genero-overlay">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <span class="visually-hidden">Pesquisar por gênero ou CATMAT</span>
+            <input id="busca-genero-overlay" name="pesquisaGenero" type="search"
+              placeholder="Pesquisar por gênero ou CATMAT..." [(ngModel)]="buscaGenero"
+              [ngModelOptions]="{ standalone: true }" autocomplete="off">
+          </label>
+
+          <div class="seletor-genero__modos" aria-label="Modo de visualização">
+            <button type="button" [class.seletor-genero__modo--ativo]="modoVisualizacaoGenero === 'cards'"
+              [attr.aria-pressed]="modoVisualizacaoGenero === 'cards'"
+              (click)="alterarModoVisualizacaoGenero('cards')">
+              <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i> Cards
+            </button>
+            <button type="button" [class.seletor-genero__modo--ativo]="modoVisualizacaoGenero === 'tabela'"
+              [attr.aria-pressed]="modoVisualizacaoGenero === 'tabela'"
+              (click)="alterarModoVisualizacaoGenero('tabela')">
+              <i class="bi bi-list-ul" aria-hidden="true"></i> Tabela
+            </button>
+          </div>
+
+          <div class="seletor-genero__filtro-rapido" aria-label="Filtrar gêneros">
+            <button type="button" [class.seletor-genero__filtro--ativo]="filtroPrioridadeGenero === 'TODOS'"
+              [attr.aria-pressed]="filtroPrioridadeGenero === 'TODOS'"
+              (click)="filtroPrioridadeGenero = 'TODOS'">Todos</button>
+            <button type="button" [class.seletor-genero__filtro--ativo]="filtroPrioridadeGenero === 'PRIORITARIOS'"
+              [attr.aria-pressed]="filtroPrioridadeGenero === 'PRIORITARIOS'"
+              (click)="filtroPrioridadeGenero = 'PRIORITARIOS'">
+              Próximos do vencimento
+            </button>
+          </div>
+
+          <label class="seletor-genero__categoria" for="categoria-genero">
+            <span>Categoria</span>
+            <select id="categoria-genero" name="categoriaGenero" [(ngModel)]="categoriaGenero"
+              [ngModelOptions]="{ standalone: true }">
+              <option value="">Todas as categorias</option>
+              @for (categoria of categoriasGeneros; track categoria.valor) {
+              <option [value]="categoria.valor">{{ categoria.descricao }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="seletor-genero__rodape">
+          <p class="seletor-genero__resultados">
+            {{ quantidadeResultadosGenero }} {{ quantidadeResultadosGenero === 1 ? 'gênero encontrado' : 'gêneros encontrados' }}
+          </p>
+          @if (temGenerosPrioritariosNosResultados) {
+          <div class="seletor-genero__legenda" aria-label="Legenda de prioridade de validade">
+            <span class="seletor-genero__legenda-item seletor-genero__legenda-item--vence-hoje">Vence na data</span>
+            <span class="seletor-genero__legenda-item seletor-genero__legenda-item--critico">Crítico</span>
+            <span class="seletor-genero__legenda-item seletor-genero__legenda-item--atencao">Atenção</span>
+          </div>
+          }
+          @if (temFiltrosGeneroAtivos) {
+          <button type="button" class="seletor-genero__limpar-filtros" (click)="limparFiltrosGenero()">
+            Limpar filtros
+          </button>
+          }
+        </div>
+      </div>
+
+      <div class="seletor-genero__conteudo" aria-live="polite">
+        @if (!generosParaSelecao.length) {
+        <div class="seletor-genero__vazio">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <strong>Nenhum gênero encontrado</strong>
+          <p>Tente alterar a busca ou os filtros.</p>
+          @if (temFiltrosGeneroAtivos) {
+          <div class="seletor-genero__vazio-acoes">
+            <button type="button" class="sige-button sige-button--secondary sige-button--sm" (click)="limparFiltrosGenero()">
+              Limpar filtros
+            </button>
+          </div>
+          }
+        </div>
+        } @else if (modoVisualizacaoGenero === 'cards') {
+        <div class="seletor-genero__lista">
+          @for (genero of generosParaSelecao; track genero.item_generico_id) {
+          <button type="button" class="seletor-genero__card" [class.is-selected]="generoSelecionadoNoOverlay(genero)"
+            [class.seletor-genero__card--prioritario]="generoTemPrioridade(genero)"
+            (click)="selecionarGenero(genero)">
+            <span class="seletor-genero__visual">
+              @if (podeExibirImagemGenero(genero)) {
+              <img class="seletor-genero__imagem" [src]="urlImagemGenero(genero)!" [alt]="genero.descricao" loading="lazy"
+                (error)="aoErroImagemGenero(genero.item_generico_id)">
+              } @else {
+              <i [class]="iconeCategoria(genero.categoria)" aria-hidden="true"></i>
+              }
+            </span>
+            <span class="seletor-genero__card-conteudo">
+              <span class="seletor-genero__card-cabecalho">
+                <strong>{{ genero.descricao }}</strong>
+                @if (generoSelecionadoNoOverlay(genero)) {
+                <span class="seletor-genero__card-selecionado">
+                  <i class="bi bi-check-lg" aria-hidden="true"></i> Selecionado
+                </span>
+                }
+              </span>
+              <span class="seletor-genero__categoria-badge">{{ genero.categoria_descricao }}</span>
+              <span class="seletor-genero__card-meta">CATMAT {{ genero.catmat }} · {{ unidadeComEmbalagem(genero) }}</span>
+            </span>
+            <span class="seletor-genero__saldo">
+              <span>Disponível na data</span>
+              <strong class="seletor-genero__saldo-valor">{{ formatarQuantidade(genero.disponivel) }} {{ genero.unidade_medida }}</strong>
+            </span>
+            @if (generoTemPrioridade(genero)) {
+            <span class="seletor-genero__status"
+              [class.seletor-genero__status--vence-hoje]="genero.status_proxima_validade === 'VENCE_HOJE'"
+              [class.seletor-genero__status--critico]="genero.status_proxima_validade === 'CRITICO'"
+              [class.seletor-genero__status--atencao]="genero.status_proxima_validade === 'ATENCAO'">
+              <span class="seletor-genero__status-titulo">
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                {{ textoStatusPrioridade(genero) }}
+              </span>
+              <span>{{ formatarQuantidade(genero.quantidade_prioritaria) }} {{ genero.unidade_medida }} próximos do vencimento</span>
+              <span>{{ textoPrazoPrioridade(genero) }}</span>
+            </span>
+            }
+          </button>
+          }
+        </div>
+        } @else {
+        <div class="seletor-genero__tabela-wrap">
+          <table class="seletor-genero__tabela">
+            <caption class="visually-hidden">Gêneros disponíveis para o cardápio</caption>
+            <thead>
+              <tr>
+                <th scope="col">Gênero</th>
+                <th scope="col">Categoria</th>
+                <th scope="col">Unidade</th>
+                <th scope="col" class="seletor-genero__tabela-numero">Disponível na data</th>
+                <th scope="col">Validade</th>
+                <th scope="col" class="seletor-genero__tabela-selecao">Seleção</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (genero of generosParaSelecao; track genero.item_generico_id) {
+              <tr class="seletor-genero__tabela-linha" [class.is-selected]="generoSelecionadoNoOverlay(genero)"
+                tabindex="0" role="button" [attr.aria-label]="'Selecionar ' + genero.descricao"
+                (click)="selecionarGenero(genero)" (keydown)="aoAcionarGeneroPorTeclado($event, genero)">
+                <td>
+                  <span class="seletor-genero__tabela-genero">
+                    <span class="seletor-genero__visual seletor-genero__visual--compacto">
+                      @if (podeExibirImagemGenero(genero)) {
+                      <img class="seletor-genero__imagem" [src]="urlImagemGenero(genero)!" [alt]="genero.descricao" loading="lazy"
+                        (error)="aoErroImagemGenero(genero.item_generico_id)">
+                      } @else {
+                      <i [class]="iconeCategoria(genero.categoria)" aria-hidden="true"></i>
+                      }
+                    </span>
+                    <span>
+                      <strong>{{ genero.descricao }}</strong>
+                      <small>CATMAT {{ genero.catmat }}</small>
+                    </span>
+                  </span>
+                </td>
+                <td>{{ genero.categoria_descricao }}</td>
+                <td>{{ unidadeComEmbalagem(genero) }}</td>
+                <td class="seletor-genero__tabela-numero"><strong>{{ formatarQuantidade(genero.disponivel) }} {{ genero.unidade_medida }}</strong></td>
+                <td>
+                  @if (generoTemPrioridade(genero)) {
+                  <span class="seletor-genero__tabela-validade"
+                    [class.seletor-genero__tabela-validade--vence-hoje]="genero.status_proxima_validade === 'VENCE_HOJE'"
+                    [class.seletor-genero__tabela-validade--critico]="genero.status_proxima_validade === 'CRITICO'"
+                    [class.seletor-genero__tabela-validade--atencao]="genero.status_proxima_validade === 'ATENCAO'">
+                    <strong>{{ textoStatusPrioridade(genero) }}</strong>
+                    <span>{{ textoPrazoPrioridade(genero) }}</span>
+                  </span>
+                  } @else {
+                  <span aria-label="Sem prioridade de validade">—</span>
+                  }
+                </td>
+                <td class="seletor-genero__tabela-selecao">
+                  @if (generoSelecionadoNoOverlay(genero)) {
+                  <span class="seletor-genero__tabela-selecionado"><i class="bi bi-check-lg" aria-hidden="true"></i> Selecionado</span>
+                  } @else {
+                  <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                  }
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        }
+      </div>
+    </section>
+  </div>
   }
 </main>
