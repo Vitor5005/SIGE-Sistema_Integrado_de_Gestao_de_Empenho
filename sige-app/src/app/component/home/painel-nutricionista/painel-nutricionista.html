@@ -2,7 +2,7 @@
   <div class="painel-cabecalho">
     <div>
       <h2 id="painel-nutri-title">Planejamento de cardápio</h2>
-      <p>O que há no estoque, o que está chegando e quanto ainda pode ser pedido.</p>
+      <p>O que está disponível para uso, o que está chegando e quanto ainda pode ser pedido.</p>
     </div>
   </div>
 
@@ -18,7 +18,7 @@
 
       <div class="kpi-grid">
         <div class="kpi">
-          <span class="kpi-rotulo">Gêneros em estoque</span>
+          <span class="kpi-rotulo">Gêneros disponíveis para uso</span>
           <span class="kpi-valor">{{ quantidadeEmEstoque }} <small>de {{ generos.length }}</small></span>
         </div>
         <div class="kpi">
@@ -34,6 +34,26 @@
           <span class="kpi-valor">{{ formatarMoeda(saldoArps) }}</span>
         </div>
       </div>
+
+      @if (totalLotesProximosVencimento > 0) {
+        <aside class="validade-planejamento" aria-label="Validades para priorizar">
+          <div class="validade-planejamento__conteudo">
+            <h3>Validades para priorizar</h3>
+            <p>
+              {{ totalLotesProximosVencimento }}
+              {{ totalLotesProximosVencimento === 1 ? 'lote utilizável vence' : 'lotes utilizáveis vencem' }}
+              nos próximos 30 dias. Priorize {{ totalLotesProximosVencimento === 1 ? 'esse gênero' : 'esses gêneros' }}
+              no planejamento do cardápio.
+            </p>
+            <div class="validade-planejamento__resumo">
+              <span>Vence hoje: <strong>{{ lotesVencemHoje }}</strong></span>
+              <span>Até 7 dias: <strong>{{ lotesCriticos }}</strong></span>
+              <span>8 a 30 dias: <strong>{{ lotesAtencao }}</strong></span>
+            </div>
+          </div>
+          <a class="validade-planejamento__acao" routerLink="/estoque/validades">Ver lotes e validades</a>
+        </aside>
+      }
 
       <article class="sige-section painel-card" aria-labelledby="cardapio-title">
         <header class="painel-card-cabecalho">
@@ -119,8 +139,8 @@
       <div class="painel-grid">
         <article class="sige-section painel-card" aria-labelledby="estoque-atual-title">
           <header class="painel-card-cabecalho">
-            <h3 id="estoque-atual-title">Estoque atual</h3>
-            <p>Quantidade de cada gênero disponível agora, separada por unidade de medida.</p>
+            <h3 id="estoque-atual-title">Disponível para uso</h3>
+            <p>Quantidade utilizável de cada gênero agora, desconsiderando lotes vencidos.</p>
           </header>
           @for (grupo of gruposEstoque; track grupo.unidade) {
             <div class="grupo-unidade">
@@ -143,7 +163,7 @@
               }
             </div>
           } @empty {
-            <p class="painel-estado">Nenhum gênero com saldo em estoque no momento.</p>
+            <p class="painel-estado">Nenhum gênero disponível para uso no momento.</p>
           }
         </article>
 

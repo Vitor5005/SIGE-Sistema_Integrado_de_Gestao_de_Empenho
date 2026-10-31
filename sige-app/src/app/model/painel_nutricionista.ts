@@ -34,6 +34,13 @@ export interface SaldoArp {
   saldo_disponivel: number;
 }
 
+export interface ResumoValidadesNutricionista {
+  total_proximos: number;
+  vence_hoje: number;
+  criticos: number;
+  atencao: number;
+}
+
 export interface PainelNutricionista {
   generos: DisponibilidadeGenero[];
   movimentacao: {
@@ -42,4 +49,5 @@ export interface PainelNutricionista {
   };
   empenhos: SaldoEmpenho[];
   arps: SaldoArp[];
+  validades: ResumoValidadesNutricionista;
 }

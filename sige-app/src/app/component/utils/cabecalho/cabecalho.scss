@@ -356,8 +356,40 @@
   .alerta-empenho,
   .alerta-solicitante,
   .alerta-resumo,
+  .alerta-prazo,
   .alerta-motivo {
     margin: 0;
+  }
+
+  .alerta-prazo {
+    color: var(--sige-text-secondary);
+    font-size: 0.75rem;
+  }
+
+  .alerta-status {
+    flex: none;
+    padding: 0.15rem var(--sige-space-2);
+    border-radius: var(--sige-radius-pill);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    white-space: nowrap;
+
+    &--vencido,
+    &--vence_hoje {
+      color: var(--sige-color-white);
+      background: var(--sige-danger);
+    }
+
+    &--critico {
+      color: var(--sige-text-primary);
+      background: var(--sige-surface-muted);
+      border: 1px solid var(--sige-border);
+    }
+
+    &--atencao {
+      color: var(--sige-color-primary-strong);
+      background: var(--sige-surface-subtle);
+    }
   }
 
   .alerta-empenho {

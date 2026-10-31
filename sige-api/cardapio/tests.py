@@ -594,3 +594,70 @@ class CardapioFluxoTests(APITestCase):
         self.assertEqual(resposta.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('Arroz', str(resposta.data))
         self.assertEqual(Cardapio.objects.get(pk=cardapio['id']).data, data_inicial)
+
+    def test_fluxo_multigenero_preserva_saldos_com_locks_deterministicos(self):
+        data_cardapio = hoje_no_ru() + timedelta(days=1)
+        self._definir_lotes(
+            self.arroz,
+            [('ARROZ-LOCK', data_cardapio + timedelta(days=1), '40')],
+        )
+        self._definir_lotes(
+            self.feijao,
+            [('FEIJAO-LOCK', data_cardapio + timedelta(days=1), '20')],
+        )
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.post(reverse('cardapio-list'), {
+            'refeicao': 'JANTAR',
+            'data': data_cardapio.isoformat(),
+            'estimativa_pessoas': 550,
+            'preparacoes': 'ARROZ BRANCO\nFEIJÃO CARIOCA',
+            'itens': [
+                {
+                    'item_generico': self.feijao.id,
+                    'quantidade_planejada': '10',
+                    'secao': '',
+                },
+                {
+                    'item_generico': self.arroz.id,
+                    'quantidade_planejada': '20',
+                    'secao': '',
+                },
+            ],
+        }, format='json')
+        self.assertEqual(resposta.status_code, status.HTTP_201_CREATED, resposta.data)
+        cardapio = resposta.data
+        itens = self._itens(cardapio)
+
+        resposta = self.client.post(reverse('cardapio-enviar', args=[cardapio['id']]))
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+
+        self.client.force_authenticate(self.estoquista)
+        resposta = self.client.post(reverse('cardapio-aprovar', args=[cardapio['id']]), {
+            'itens': [
+                {'item': itens['Feijão carioca'], 'quantidade': '10'},
+                {'item': itens['Arroz'], 'quantidade': '20'},
+            ],
+        }, format='json')
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+
+        self.client.force_authenticate(self.nutricionista)
+        resposta = self.client.post(reverse('cardapio-informar-consumo', args=[cardapio['id']]), {
+            'itens': [
+                {'item': itens['Feijão carioca'], 'quantidade': '10'},
+                {'item': itens['Arroz'], 'quantidade': '20'},
+            ],
+        }, format='json')
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+
+        self.client.force_authenticate(self.estoquista)
+        resposta = self.client.post(reverse('cardapio-confirmar-consumo', args=[cardapio['id']]))
+        self.assertEqual(resposta.status_code, status.HTTP_200_OK, resposta.data)
+
+        for genero, saldo_esperado in ((self.arroz, Decimal('20.000')), (self.feijao, Decimal('10.000'))):
+            estoque = Estoque.objects.get(item_generico=genero)
+            saldo_lotes = sum(
+                LoteEstoque.objects.filter(estoque=estoque).values_list('saldo_atual', flat=True),
+                Decimal('0.000'),
+            )
+            self.assertEqual(estoque.saldo_atual, saldo_esperado)
+            self.assertEqual(saldo_lotes, estoque.saldo_atual)

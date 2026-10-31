@@ -4,12 +4,17 @@ import { map, Observable } from 'rxjs';
 
 import { environment } from '../environments/environment';
 import {
+  AlertasValidade,
   EstoqueConsolidado,
   EstoqueItem,
   ItemRecebimento,
   LoteInventario,
   LoteSaida,
+  LoteValidade,
   MovimentacaoEstoque,
+  MovimentacaoEstoqueExtrato,
+  RastreabilidadeLote,
+  ResumoValidades,
 } from '../model/estoque';
 import { normalizePaginatedResponse, PaginatedResponse } from '../model/pagination';
 
@@ -17,6 +22,7 @@ import { normalizePaginatedResponse, PaginatedResponse } from '../model/paginati
 export class EstoqueService {
   private readonly apiUrl = environment.API_URL + '/estoques/';
   private readonly movimentosUrl = environment.API_URL + '/movimentacoes-estoque/';
+  private readonly lotesValidadeUrl = environment.API_URL + '/lotes-estoque/';
 
   constructor(private http: HttpClient) {}
 
@@ -32,13 +38,24 @@ export class EstoqueService {
     return this.http.get<EstoqueConsolidado[]>(this.apiUrl + 'consolidado/');
   }
 
-  extrato(generoId?: number, dataInicio?: string, dataFim?: string): Observable<PaginatedResponse<MovimentacaoEstoque>> {
+  extrato(
+    generoId?: number,
+    dataInicio?: string,
+    dataFim?: string,
+    loteId?: number,
+  ): Observable<PaginatedResponse<MovimentacaoEstoqueExtrato>> {
     let params = new HttpParams().set('page_size', 100);
     if (generoId) params = params.set('genero_id', generoId);
     if (dataInicio) params = params.set('data_inicio', dataInicio);
     if (dataFim) params = params.set('data_fim', dataFim);
-    return this.http.get<PaginatedResponse<MovimentacaoEstoque> | MovimentacaoEstoque[]>(this.movimentosUrl, { params })
+    if (loteId) params = params.set('lote_id', loteId);
+    return this.http.get<PaginatedResponse<MovimentacaoEstoqueExtrato> | MovimentacaoEstoqueExtrato[]>(this.movimentosUrl, { params })
       .pipe(map(normalizePaginatedResponse));
+  }
+
+  rastreabilidadeLote(loteId: number): Observable<RastreabilidadeLote> {
+    const params = new HttpParams().set('lote_id', loteId);
+    return this.http.get<RastreabilidadeLote>(this.movimentosUrl + 'rastreabilidade-lote/', { params });
   }
 
   receber(ordemId: number, dataEntrada: string, itens: ItemRecebimento[]): Observable<unknown> {
@@ -61,6 +78,33 @@ export class EstoqueService {
   listarLotesParaInventario(itemGenericoId: number): Observable<LoteInventario[]> {
     const params = new HttpParams().set('item_generico_id', itemGenericoId);
     return this.http.get<LoteInventario[]>(this.apiUrl + 'lotes-para-inventario/', { params });
+  }
+
+  listarLotesValidade(
+    search = '',
+    page = 1,
+    pageSize = 10,
+    filtros: Record<string, any> = {},
+  ): Observable<PaginatedResponse<LoteValidade>> {
+    let params = new HttpParams().set('page', page).set('page_size', pageSize);
+    if (search) params = params.set('search', search);
+
+    Object.entries(filtros).forEach(([campo, valor]) => {
+      if (valor !== null && valor !== undefined && valor !== '') {
+        params = params.set(campo, String(valor));
+      }
+    });
+
+    return this.http.get<PaginatedResponse<LoteValidade> | LoteValidade[]>(this.lotesValidadeUrl, { params })
+      .pipe(map(normalizePaginatedResponse));
+  }
+
+  resumoValidades(): Observable<ResumoValidades> {
+    return this.http.get<ResumoValidades>(this.lotesValidadeUrl + 'resumo/');
+  }
+
+  alertasValidade(): Observable<AlertasValidade> {
+    return this.http.get<AlertasValidade>(this.lotesValidadeUrl + 'alertas-validade/');
   }
 
   registrarCargaInicial(payload: object): Observable<MovimentacaoEstoque> {

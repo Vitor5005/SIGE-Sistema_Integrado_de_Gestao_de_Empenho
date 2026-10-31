@@ -34,6 +34,9 @@
       </div>
     </div>
     <div class="sige-list-toolbar__actions estoque-acoes estoque-toolbar__actions">
+      @if (pode(Recurso.ESTOQUE, Acao.CONSULTAR)) {
+        <a class="sige-button sige-button--secondary" routerLink="/estoque/validades" (click)="salvarEstadoListagem()"><i class="bi bi-calendar2-week" aria-hidden="true"></i> Lotes e validades</a>
+      }
       @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
         <a class="sige-button sige-button--primary" routerLink="/estoque/extrato" (click)="salvarEstadoListagem()"><i class="bi bi-clock-history" aria-hidden="true"></i> Extrato</a>
       }

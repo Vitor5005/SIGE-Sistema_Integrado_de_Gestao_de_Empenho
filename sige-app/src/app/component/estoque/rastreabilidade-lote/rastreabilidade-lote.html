@@ -1,0 +1,82 @@
+@if (loteId !== null) {
+  <div class="rastreabilidade-backdrop" (click)="fecharDrawer()">
+    <aside class="rastreabilidade-drawer" role="dialog" aria-modal="true" aria-labelledby="rastreabilidadeTitulo" (click)="$event.stopPropagation()">
+      <header class="rastreabilidade-drawer__header">
+        <h2 id="rastreabilidadeTitulo">Rastreabilidade do lote</h2>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="fecharDrawer()">Fechar</button>
+      </header>
+
+      <div class="rastreabilidade-drawer__body">
+        @if (carregando) {
+          <p class="estado" role="status">Carregando rastreabilidade...</p>
+        } @else if (erro) {
+          <div class="alert alert-danger" role="alert">{{ erro }}</div>
+        } @else if (rastreabilidade) {
+          <section class="rastreabilidade-drawer__section rastreabilidade-resumo">
+            <h3>{{ rastreabilidade.lote.descricao }}</h3>
+            <p>{{ rastreabilidade.lote.catmat }} · Lote <strong>{{ rastreabilidade.lote.numero_lote }}</strong></p>
+            <dl>
+              <div><dt>Saldo atual</dt><dd>{{ rastreabilidade.lote.saldo_atual | number:'1.0-3' }} {{ rastreabilidade.lote.unidade_medida }}</dd></div>
+              <div><dt>Validade</dt><dd>{{ formatarDataCivil(rastreabilidade.lote.data_validade) }}</dd></div>
+              <div><dt>Situação</dt><dd><span class="badge" [class]="classeStatus(rastreabilidade.lote.status)">{{ rastreabilidade.lote.status_descricao }}</span></dd></div>
+            </dl>
+          </section>
+
+          <section class="rastreabilidade-drawer__section rastreabilidade-origem">
+            <h3>Origem registrada</h3>
+            <p>{{ rastreabilidade.origem.descricao }}</p>
+            @if (rastreabilidade.origem.tipo === 'FORNECEDOR') {
+              <dl>
+                @if (rastreabilidade.origem.fornecedor_nome) {<div><dt>Fornecedor</dt><dd>{{ rastreabilidade.origem.fornecedor_nome }}</dd></div>}
+                @if (rastreabilidade.origem.ordem_codigo) {<div><dt>Ordem de entrega</dt><dd>{{ rastreabilidade.origem.ordem_codigo }}</dd></div>}
+                @if (rastreabilidade.origem.empenho_codigo) {<div><dt>Empenho</dt><dd>{{ rastreabilidade.origem.empenho_codigo }}</dd></div>}
+                @if (rastreabilidade.origem.ata_numero) {<div><dt>Ata</dt><dd>{{ rastreabilidade.origem.ata_numero }}</dd></div>}
+                @if (rastreabilidade.origem.data_hora) {<div><dt>Data de entrada</dt><dd>{{ rastreabilidade.origem.data_hora | date:'dd/MM/yyyy HH:mm' }}</dd></div>}
+                @if (rastreabilidade.origem.quantidade_origem !== null) {<div><dt>Quantidade de origem</dt><dd>{{ rastreabilidade.origem.quantidade_origem | number:'1.0-3' }} {{ rastreabilidade.lote.unidade_medida }}</dd></div>}
+              </dl>
+            } @else if (rastreabilidade.origem.tipo === 'CARGA_INICIAL') {
+              <dl>
+                @if (rastreabilidade.origem.data_hora) {<div><dt>Data</dt><dd>{{ rastreabilidade.origem.data_hora | date:'dd/MM/yyyy HH:mm' }}</dd></div>}
+                @if (rastreabilidade.origem.quantidade_origem !== null) {<div><dt>Quantidade registrada</dt><dd>{{ rastreabilidade.origem.quantidade_origem | number:'1.0-3' }} {{ rastreabilidade.lote.unidade_medida }}</dd></div>}
+              </dl>
+            } @else if (rastreabilidade.origem.tipo === 'INVENTARIO') {
+              <dl>
+                @if (rastreabilidade.origem.inventario_id) {<div><dt>Inventário</dt><dd>#{{ rastreabilidade.origem.inventario_id }}</dd></div>}
+                @if (rastreabilidade.origem.data_hora) {<div><dt>Data</dt><dd>{{ rastreabilidade.origem.data_hora | date:'dd/MM/yyyy HH:mm' }}</dd></div>}
+                @if (rastreabilidade.origem.quantidade_origem !== null) {<div><dt>Quantidade identificada</dt><dd>{{ rastreabilidade.origem.quantidade_origem | number:'1.0-3' }} {{ rastreabilidade.lote.unidade_medida }}</dd></div>}
+              </dl>
+            }
+          </section>
+
+          <section class="rastreabilidade-drawer__section rastreabilidade-historico">
+            <h3>Histórico de movimentações</h3>
+            @if (rastreabilidade.movimentacoes.length === 0) {
+              <p class="estado">Nenhuma movimentação registrada para este lote.</p>
+            } @else {
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead><tr><th scope="col">Data/hora</th><th scope="col">Movimento</th><th scope="col">Entrada</th><th scope="col">Saída</th><th scope="col">Saldo do lote</th><th scope="col">Referência</th><th scope="col">Usuário</th></tr></thead>
+                  <tbody>
+                    @for (movimento of rastreabilidade.movimentacoes; track movimento.movimentacao_id) {
+                      <tr>
+                        <td>{{ movimento.data_hora | date:'dd/MM/yyyy HH:mm' }}</td>
+                        <td>{{ movimento.tipo_descricao }}</td>
+                        <td>{{ movimento.sentido === 'E' ? (movimento.quantidade_lote | number:'1.0-3') : '—' }}</td>
+                        <td>{{ movimento.sentido === 'S' ? (movimento.quantidade_lote | number:'1.0-3') : '—' }}</td>
+                        <td>{{ movimento.saldo_lote_resultante | number:'1.0-3' }}</td>
+                        <td>{{ referenciaMovimentacao(movimento) }} @if (movimento.fornecedor_nome) {<small class="d-block">{{ movimento.fornecedor_nome }}</small>}</td>
+                        <td>{{ movimento.usuario_nome }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+
+          <a class="sige-button sige-button--secondary" [routerLink]="'/estoque/extrato'" [queryParams]="{ lote_id: rastreabilidade.lote.id }" (click)="fecharDrawer()">Ver movimentações no extrato</a>
+        }
+      </div>
+    </aside>
+  </div>
+}

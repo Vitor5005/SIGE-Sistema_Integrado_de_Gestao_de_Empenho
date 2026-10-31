@@ -1,0 +1,114 @@
+<main class="sige-list-page estoque-pagina">
+  <header class="sige-list-header">
+    <div>
+      <h1 class="sige-list-title"><i class="bi bi-calendar2-week" aria-hidden="true"></i> Lotes e validades</h1>
+      <p class="sige-list-description">Consulte os saldos por lote e acompanhe os prazos de validade do estoque.</p>
+    </div>
+    <a class="sige-button sige-button--secondary" routerLink="/estoque">Voltar ao estoque</a>
+  </header>
+
+  @if (resumo) {
+    <section class="validades-resumo" aria-label="Resumo geral dos lotes com saldo">
+      <h2 class="validades-resumo__titulo">Resumo geral dos lotes com saldo</h2>
+      @for (card of cardsResumo; track card.status) {
+        <button
+          type="button"
+          class="validade-card"
+          [class.is-active]="filtrosAtivos['status'] === card.status"
+          [attr.aria-pressed]="filtrosAtivos['status'] === card.status"
+          (click)="aplicarStatus(card.status)">
+          <span class="validade-card__rotulo">{{ card.label }}</span>
+          <strong class="validade-card__valor">{{ valorResumo(card.campo) }}</strong>
+        </button>
+      }
+    </section>
+  }
+
+  <section class="sige-list-toolbar" aria-label="Busca e filtros de lotes">
+    <div class="sige-list-toolbar__search">
+      <app-barra-pesquisa
+        [filtros]="filtros"
+        placeholder="Buscar por gênero, CATMAT ou número do lote..."
+        [termoInicial]="termoBuscaAtual"
+        [valoresIniciais]="filtrosAtivos"
+        (pesquisar)="carregar($event)"
+        (filtrosAlterados)="aplicarFiltros($event)">
+      </app-barra-pesquisa>
+    </div>
+  </section>
+
+  @if (!carregando && !erro) {
+    <p class="sige-list-meta" aria-live="polite">
+      {{ total }} {{ total === 1 ? 'lote encontrado' : 'lotes encontrados' }}
+    </p>
+  }
+
+  <div class="sige-list-table-wrap">
+    <table class="sige-list-table validades-tabela">
+      <caption class="visually-hidden">Lotes e validades do estoque</caption>
+      <thead>
+        <tr>
+          <th scope="col">Gênero</th>
+          <th scope="col">CATMAT</th>
+          <th scope="col">Categoria</th>
+          <th scope="col">Lote</th>
+          <th scope="col" class="sige-cell--number">Saldo</th>
+          <th scope="col">Validade</th>
+          <th scope="col">Prazo</th>
+          <th scope="col">Situação</th>
+          @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
+            <th scope="col">Rastreabilidade</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @if (carregando) {
+          <tr><td [attr.colspan]="pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO) ? 9 : 8" class="estado" role="status">Carregando lotes e validades...</td></tr>
+        } @else if (erro) {
+          <tr><td [attr.colspan]="pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO) ? 9 : 8" class="estado">{{ erro }}</td></tr>
+        } @else {
+          @for (lote of lotes; track lote.id) {
+            <tr>
+              <td class="sige-cell--truncate" [attr.title]="lote.descricao">{{ lote.descricao }}</td>
+              <td>{{ lote.catmat }}</td>
+              <td>{{ lote.categoria_descricao }}</td>
+              <td>{{ lote.numero_lote }}</td>
+              <td class="sige-cell--number"><strong>{{ lote.saldo_atual | number:'1.0-3' }} {{ lote.unidade_medida }}</strong></td>
+              <td>{{ formatarDataCivil(lote.data_validade) }}</td>
+              <td>{{ prazoValidade(lote.dias_para_validade) }}</td>
+              <td><span class="badge" [class]="classeStatus(lote.status)">{{ lote.status_descricao }}</span></td>
+              @if (pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO)) {
+                <td>
+                  <button type="button" class="sige-button sige-button--secondary" (click)="abrirRastreabilidade(lote.id)">
+                    Ver histórico
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+          @if (lotes.length === 0) {
+            <tr><td [attr.colspan]="pode(Recurso.MOVIMENTACAO_ESTOQUE, Acao.CONSULTAR_EXTRATO) ? 9 : 8" class="estado">Nenhum lote encontrado para os filtros informados.</td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (!carregando && !erro && total > 0) {
+    <app-paginacao
+      class="paginacao-lista"
+      [currentPage]="currentPage"
+      [pageSize]="pageSize"
+      [totalItems]="total"
+      totalLabel="Total de lotes"
+      [showTotal]="false"
+      (pageChange)="irParaPagina($event)"
+      (pageSizeChange)="alterarPageSize($event)">
+    </app-paginacao>
+  }
+
+  <app-rastreabilidade-lote
+    [loteId]="loteRastreabilidadeId"
+    (fechar)="fecharRastreabilidade()">
+  </app-rastreabilidade-lote>
+</main>

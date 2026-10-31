@@ -10,12 +10,18 @@
     <button type="button" class="sige-button sige-button--primary" (click)="carregar()">Consultar</button>
   </section>
   @if(erro){<div class="alert alert-danger" role="alert">{{erro}}</div>} @if(sucesso){<div class="alert alert-success" role="status" aria-live="polite">{{sucesso}}</div>}
+  @if(loteId){<div class="filtro-lote-ativo" role="status"><span>Extrato filtrado por lote: <strong>{{descricaoFiltroLote()}}</strong></span><button type="button" class="btn btn-sm btn-outline-secondary" (click)="limparFiltroLote()">Limpar filtro de lote</button></div>}
   <div class="table-responsive"><table class="table tabela-estoque"><caption class="visually-hidden">Movimentações do estoque</caption><thead><tr><th scope="col">Data/hora</th><th scope="col">Gênero</th><th scope="col">Tipo</th><th scope="col">Entrada</th><th scope="col">Saída</th><th scope="col">Saldo</th><th scope="col">Motivo/observação</th><th scope="col">Ações</th></tr></thead>
     <tbody>@for(m of movimentos; track m.id){<tr><td>{{m.data_hora|date:'dd/MM/yyyy HH:mm'}}</td><td>{{m.genero}}</td><td>{{textoTipoMovimentacao(m.tipo)}}</td>
       <td>{{m.sentido==='E'?(m.quantidade|number:'1.0-3'):'—'}}</td><td>{{m.sentido==='S'?(m.quantidade|number:'1.0-3'):'—'}}</td>
       <td>{{m.saldo_resultante|number:'1.0-3'}}</td><td>{{m.observacao||'—'}}</td><td>
+      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="alternarDetalhes(m.id)">Lotes ({{m.alocacoes_lote.length}})</button>
       @if(m.cardapio_id){<a class="btn btn-sm btn-outline-primary" [routerLink]="['/cardapio']" [queryParams]="{ id: m.cardapio_id }">Ver cardápio</a>}
-      @else if(pode(Recurso.ESTOQUE,Acao.ESTORNAR)&&m.tipo!=='ESTORNO'){<button type="button" class="btn btn-sm btn-outline-danger" (click)="estornar(m)">Estornar</button>}</td></tr>}
+      @else if(pode(Recurso.ESTOQUE,Acao.ESTORNAR)&&podeEstornarMovimento(m)){<button type="button" class="btn btn-sm btn-outline-danger" (click)="estornar(m)">Estornar</button>}</td></tr>
+      @if(estaExpandida(m.id)){<tr class="movimentacao-lotes"><td colspan="8"><section aria-label="Detalhamento por lote"><header class="movimentacao-lotes__cabecalho"><strong>Detalhamento por lote</strong></header><div class="table-responsive"><table class="table table-sm movimentacao-lotes__table"><thead><tr><th scope="col">Lote</th><th scope="col">Validade</th><th scope="col">Quantidade</th><th scope="col">Saldo do lote após movimento</th><th scope="col">Ação</th></tr></thead><tbody>@for(alocacao of m.alocacoes_lote;track alocacao.lote_id){<tr><td>{{alocacao.numero_lote}}</td><td>{{formatarDataCivil(alocacao.data_validade)}}</td><td>{{alocacao.quantidade|number:'1.0-3'}}</td><td>{{alocacao.saldo_lote_resultante|number:'1.0-3'}}</td><td><button type="button" class="btn btn-sm btn-outline-primary" (click)="abrirRastreabilidade(alocacao.lote_id)">Rastrear</button></td></tr>}@if(m.alocacoes_lote.length===0){<tr><td colspan="5" class="estado">Nenhum lote registrado para esta movimentação.</td></tr>}</tbody></table></div></section></td></tr>}
+      }
       @empty{<tr><td colspan="8" class="estado">Nenhuma movimentação encontrada.</td></tr>}</tbody></table></div>
 </main>
+
+<app-rastreabilidade-lote [loteId]="loteRastreabilidadeId" (fechar)="fecharRastreabilidade()"></app-rastreabilidade-lote>
 

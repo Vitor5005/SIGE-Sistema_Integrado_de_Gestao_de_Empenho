@@ -2,8 +2,14 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from estoque.models import Estoque, LoteEstoque, MovimentacaoEstoque
-from utils.estoque_services import lote_vencido, saldo_utilizavel_estoque
+from estoque.models import Estoque, LoteEstoque, MovimentacaoEstoque, MovimentacaoLote
+from utils.estoque_services import (
+    STATUS_VALIDADE_DESCRICOES,
+    dias_para_validade,
+    lote_vencido,
+    saldo_utilizavel_estoque,
+    status_lote_validade,
+)
 
 
 class EstoqueSerializer(serializers.ModelSerializer):
@@ -22,6 +28,11 @@ class EstoqueSerializer(serializers.ModelSerializer):
     saldo_utilizavel = serializers.SerializerMethodField()
 
     def get_saldo_utilizavel(self, estoque):
+        if hasattr(estoque, 'lotes_utilizaveis_prefetch'):
+            return sum(
+                (lote.saldo_atual for lote in estoque.lotes_utilizaveis_prefetch),
+                Decimal('0.000'),
+            ).quantize(Decimal('0.001'))
         return saldo_utilizavel_estoque(estoque)
 
     class Meta:
@@ -53,6 +64,119 @@ class MovimentacaoEstoqueSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class AlocacaoLoteMovimentacaoSerializer(serializers.ModelSerializer):
+    lote_id = serializers.IntegerField(read_only=True)
+    numero_lote = serializers.CharField(source='lote.numero_lote', read_only=True)
+    data_validade = serializers.DateField(source='lote.data_validade', read_only=True, allow_null=True)
+    legado = serializers.BooleanField(source='lote.legado', read_only=True)
+
+    class Meta:
+        model = MovimentacaoLote
+        fields = (
+            'lote_id', 'numero_lote', 'data_validade', 'legado',
+            'quantidade', 'saldo_lote_resultante',
+        )
+        read_only_fields = fields
+
+
+class MovimentacaoEstoqueExtratoSerializer(MovimentacaoEstoqueSerializer):
+    inventario_id = serializers.IntegerField(
+        source='item_inventario.inventario_id',
+        read_only=True,
+        allow_null=True,
+    )
+    alocacoes_lote = AlocacaoLoteMovimentacaoSerializer(many=True, read_only=True)
+
+    class Meta(MovimentacaoEstoqueSerializer.Meta):
+        fields = MovimentacaoEstoqueSerializer.Meta.fields + (
+            'inventario_id',
+            'alocacoes_lote',
+        )
+        read_only_fields = fields
+
+
+def _referencias_fornecedor(movimentacao):
+    item_ordem = getattr(movimentacao, 'item_ordem', None)
+    if item_ordem is None:
+        return {
+            'ordem_codigo': None,
+            'fornecedor_nome': None,
+            'empenho_codigo': None,
+            'ata_numero': None,
+        }
+
+    ordem = getattr(item_ordem, 'ordem_entrega', None)
+    item_empenho = getattr(item_ordem, 'item_empenho', None)
+    empenho = getattr(item_empenho, 'empenho', None)
+    ata = getattr(empenho, 'ata', None)
+    fornecedor = getattr(ata, 'fornecedor', None)
+    return {
+        'ordem_codigo': getattr(ordem, 'codigo', None),
+        'fornecedor_nome': (
+            (getattr(fornecedor, 'nome_fantasia', None) or getattr(fornecedor, 'razao_social', None))
+            if fornecedor is not None
+            else None
+        ),
+        'empenho_codigo': getattr(empenho, 'codigo', None),
+        'ata_numero': getattr(ata, 'numero_ata', None),
+    }
+
+
+class HistoricoMovimentacaoLoteSerializer(serializers.ModelSerializer):
+    movimentacao_id = serializers.IntegerField(read_only=True)
+    data_hora = serializers.DateTimeField(source='movimentacao.data_hora', read_only=True)
+    tipo = serializers.CharField(source='movimentacao.tipo', read_only=True)
+    tipo_descricao = serializers.SerializerMethodField()
+    sentido = serializers.CharField(source='movimentacao.sentido', read_only=True)
+    quantidade_movimentacao = serializers.DecimalField(
+        source='movimentacao.quantidade', max_digits=12, decimal_places=3, read_only=True,
+    )
+    quantidade_lote = serializers.DecimalField(
+        source='quantidade', max_digits=12, decimal_places=3, read_only=True,
+    )
+    saldo_estoque_resultante = serializers.DecimalField(
+        source='movimentacao.saldo_resultante', max_digits=12, decimal_places=3, read_only=True,
+    )
+    observacao = serializers.CharField(source='movimentacao.observacao', read_only=True, allow_null=True)
+    usuario_nome = serializers.CharField(source='movimentacao.usuario.username', read_only=True)
+    papel = serializers.CharField(source='movimentacao.papel', read_only=True)
+    ordem_codigo = serializers.SerializerMethodField()
+    fornecedor_nome = serializers.SerializerMethodField()
+    cardapio_id = serializers.SerializerMethodField()
+    inventario_id = serializers.SerializerMethodField()
+    movimentacao_estornada_id = serializers.IntegerField(
+        source='movimentacao.movimentacao_estornada_id', read_only=True, allow_null=True,
+    )
+
+    class Meta:
+        model = MovimentacaoLote
+        fields = (
+            'movimentacao_id', 'data_hora', 'tipo', 'tipo_descricao', 'sentido',
+            'quantidade_movimentacao', 'quantidade_lote', 'saldo_estoque_resultante',
+            'saldo_lote_resultante', 'observacao', 'usuario_nome', 'papel',
+            'ordem_codigo', 'fornecedor_nome', 'cardapio_id', 'inventario_id',
+            'movimentacao_estornada_id',
+        )
+        read_only_fields = fields
+
+    def get_tipo_descricao(self, alocacao):
+        return alocacao.movimentacao.get_tipo_display()
+
+    def get_ordem_codigo(self, alocacao):
+        return _referencias_fornecedor(alocacao.movimentacao)['ordem_codigo']
+
+    def get_fornecedor_nome(self, alocacao):
+        return _referencias_fornecedor(alocacao.movimentacao)['fornecedor_nome']
+
+    def get_cardapio_id(self, alocacao):
+        item_cardapio = alocacao.movimentacao.item_cardapio
+        return item_cardapio.cardapio_id if item_cardapio is not None else None
+
+    def get_inventario_id(self, alocacao):
+        item_inventario = alocacao.movimentacao.item_inventario
+        return item_inventario.inventario_id if item_inventario is not None else None
+
+
 class LoteSaidaSerializer(serializers.ModelSerializer):
     vencido = serializers.SerializerMethodField()
 
@@ -75,6 +199,39 @@ class LoteInventarioSerializer(serializers.ModelSerializer):
 
     def get_vencido(self, lote):
         return lote_vencido(lote)
+
+
+class LoteValidadeSerializer(serializers.ModelSerializer):
+    estoque_id = serializers.IntegerField(read_only=True)
+    item_generico_id = serializers.IntegerField(source='estoque.item_generico_id', read_only=True)
+    catmat = serializers.CharField(source='estoque.item_generico.catmat', read_only=True)
+    descricao = serializers.CharField(source='estoque.item_generico.descricao', read_only=True)
+    unidade_medida = serializers.CharField(source='estoque.item_generico.unidade_medida', read_only=True)
+    categoria = serializers.CharField(source='estoque.item_generico.categoria', read_only=True)
+    categoria_descricao = serializers.CharField(
+        source='estoque.item_generico.get_categoria_display', read_only=True
+    )
+    dias_para_validade = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    status_descricao = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LoteEstoque
+        fields = (
+            'id', 'estoque_id', 'item_generico_id', 'catmat', 'descricao', 'unidade_medida',
+            'categoria', 'categoria_descricao', 'numero_lote', 'data_validade', 'saldo_atual',
+            'legado', 'dias_para_validade', 'status', 'status_descricao',
+        )
+        read_only_fields = fields
+
+    def get_dias_para_validade(self, lote):
+        return dias_para_validade(lote)
+
+    def get_status(self, lote):
+        return status_lote_validade(lote)
+
+    def get_status_descricao(self, lote):
+        return STATUS_VALIDADE_DESCRICOES[self.get_status(lote)]
 
 
 class LoteRecebimentoSerializer(serializers.Serializer):

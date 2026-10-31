@@ -13,7 +13,7 @@ from estoque.models import Estoque
 from utils.estoque_services import (
     registrar_devolucao_cardapio,
     registrar_saida_cardapio,
-    saldo_utilizavel_estoque,
+    saldos_utilizaveis_por_estoque,
 )
 
 ZERO = Decimal('0.000')
@@ -62,6 +62,17 @@ def _bloquear(cardapio_id, status_permitidos, mensagem):
     return cardapio
 
 
+def _bloquear_estoques_dos_itens(itens):
+    item_generico_ids = sorted({item.item_generico_id for item in itens})
+    if not item_generico_ids:
+        return []
+    return list(
+        Estoque.objects.select_for_update()
+        .filter(item_generico_id__in=item_generico_ids)
+        .order_by('item_generico_id')
+    )
+
+
 def quantidades_reservadas(excluir_cardapio_id=None):
     """Soma, por gênero, o planejado em cardápios enviados que ainda aguardam aprovação."""
     itens = ItemCardapio.objects.filter(cardapio__status=Cardapio.Status.ENVIADO)
@@ -77,11 +88,15 @@ def disponibilidade(excluir_cardapio_id=None, data_referencia=None):
     """Saldo físico, utilizável, reservado e disponível de cada gênero com estoque."""
     data_referencia = data_referencia or hoje_no_ru()
     reservado = quantidades_reservadas(excluir_cardapio_id)
+    estoques = list(Estoque.objects.select_related('item_generico').order_by('item_generico__descricao'))
+    saldos_utilizaveis = saldos_utilizaveis_por_estoque(
+        [estoque.id for estoque in estoques], data_referencia,
+    )
     dados = []
-    for estoque in Estoque.objects.select_related('item_generico').order_by('item_generico__descricao'):
+    for estoque in estoques:
         genero = estoque.item_generico
         reservado_item = reservado.get(genero.id, ZERO)
-        saldo_utilizavel = saldo_utilizavel_estoque(estoque, data_referencia)
+        saldo_utilizavel = saldos_utilizaveis.get(estoque.id, ZERO)
         dados.append({
             'item_generico_id': genero.id,
             'catmat': genero.catmat,
@@ -110,11 +125,15 @@ def faltas_de_saldo(
     `planejado` soma por gênero o que o cardápio pretende usar; `generos` mapeia o id para o
     ItemGenerico (para as mensagens). Com `bloquear`, trava os saldos até o fim da transação.
     """
-    estoques = Estoque.objects.filter(item_generico_id__in=planejado)
+    estoques = Estoque.objects.filter(item_generico_id__in=planejado).order_by('item_generico_id')
     if bloquear:
         estoques = estoques.select_for_update()
+    estoques = list(estoques)
+    saldos_por_estoque = saldos_utilizaveis_por_estoque(
+        [estoque.id for estoque in estoques], data_referencia,
+    )
     saldos = {
-        estoque.item_generico_id: saldo_utilizavel_estoque(estoque, data_referencia)
+        estoque.item_generico_id: saldos_por_estoque.get(estoque.id, ZERO)
         for estoque in estoques
     }
     reservado = quantidades_reservadas(excluir_cardapio_id=excluir_cardapio_id)
@@ -199,10 +218,11 @@ def aprovar(*, cardapio_id, quantidades, usuario):
 
     `quantidades` mapeia o id do item do cardápio para a quantidade liberada; um item
     ausente é liberado integralmente. A liberada pode ser menor que a planejada (inclusive 0),
-    nunca maior, e nunca acima do saldo físico.
+    nunca maior, e nunca acima do saldo utilizável.
     """
     cardapio = _bloquear(cardapio_id, [Cardapio.Status.ENVIADO], 'Somente cardápios enviados podem ser aprovados.')
     itens = list(cardapio.itens.select_related('item_generico'))
+    _bloquear_estoques_dos_itens(itens)
     ids_validos = {item.id for item in itens}
     desconhecidos = set(quantidades) - ids_validos
     if desconhecidos:
@@ -277,13 +297,15 @@ def confirmar_consumo(*, cardapio_id, usuario):
     """Acerta o estoque pela diferença entre o liberado e o consumido de cada item.
 
     Consumiu menos: a sobra volta ao estoque (DEVOLUCAO_PREPARO).
-    Consumiu mais: o excedente é retirado (SAIDA_PRODUCAO), limitado ao saldo físico.
+    Consumiu mais: o excedente é retirado (SAIDA_PRODUCAO), limitado ao saldo utilizável.
     """
     cardapio = _bloquear(
         cardapio_id, [Cardapio.Status.CONSUMO_INFORMADO], 'Não há consumo aguardando confirmação.',
     )
     referencia = _referencia(cardapio)
-    for item in cardapio.itens.select_related('item_generico'):
+    itens = list(cardapio.itens.select_related('item_generico'))
+    _bloquear_estoques_dos_itens(itens)
+    for item in itens:
         diferenca = (item.quantidade_consumida or ZERO) - (item.quantidade_liberada or ZERO)
         if diferenca > ZERO:
             _retirar(item, diferenca, usuario, f'Consumo acima do liberado no {referencia}.')
@@ -349,6 +371,7 @@ def aceitar_alteracao(*, cardapio_id, usuario):
         cardapio_id, [Cardapio.Status.ALTERACAO_SOLICITADA], 'Não há pedido de alteração aguardando o estoque.',
     )
     itens = list(cardapio.itens.select_related('item_generico'))
+    _bloquear_estoques_dos_itens(itens)
     referencia = _referencia(cardapio)
     for item in itens:
         if item.quantidade_liberada and item.quantidade_liberada > ZERO:

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Observable } from 'rxjs';
 
 import { EstoqueItem, LoteInventario, LoteSaida } from '../../../model/estoque';
 import { EstoqueService } from '../../../service/estoque.service';
@@ -213,7 +214,7 @@ export class MovimentarEstoque {
       justificativa: this.justificativa,
       data_hora: new Date(this.dataHora).toISOString(),
     };
-    const requisicao = this.operacao === 'SAIDA'
+    const requisicao: Observable<unknown> = this.operacao === 'SAIDA'
       ? this.estoqueService.registrarSaida({
         ...base,
         quantidade: this.quantidade,

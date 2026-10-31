@@ -289,6 +289,37 @@
         }
         }
 
+        @if (podeVerAlertasValidade) {
+        <span class="dropdown-header">Validades do estoque</span>
+
+        @if (erroAlertasValidade) {
+        <p class="alertas-vazio">Não foi possível carregar os alertas de validade.</p>
+        } @else if (!alertasValidade.length) {
+        <p class="alertas-vazio">Nenhum lote exige atenção por validade no momento.</p>
+        } @else {
+        <ul class="alertas-lista">
+          @for (lote of alertasValidade; track lote.id) {
+          <li class="alerta-item alerta-item--validade">
+            <div class="alerta-topo">
+              <strong>{{ lote.descricao }}</strong>
+              <span [class]="classeStatusValidade(lote)">{{ lote.status_descricao }}</span>
+            </div>
+            <p class="alerta-resumo">Lote <b>{{ lote.numero_lote }}</b> · {{ lote.saldo_atual | number: '1.0-3' }} {{ lote.unidade_medida }}</p>
+            <p class="alerta-prazo">Validade: {{ formatarDataCivil(lote.data_validade) }} · {{ textoPrazoValidade(lote) }}</p>
+            <div class="alerta-rodape">
+              <span></span>
+              <a class="alerta-ciente" routerLink="/estoque/validades">Ver validades</a>
+            </div>
+          </li>
+          }
+        </ul>
+        @if (totalAlertasValidade > alertasValidade.length) {
+        <p class="alertas-vazio">E mais {{ totalAlertasValidade - alertasValidade.length }} lote(s).</p>
+        }
+        <p class="alertas-vazio"><a routerLink="/estoque/validades">Ver todos os lotes e validades</a></p>
+        }
+        }
+
         @if (podeVerEntregasProximas) {
         <span class="dropdown-header">Entregas previstas</span>
 

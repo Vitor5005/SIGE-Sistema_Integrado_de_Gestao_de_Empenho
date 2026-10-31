@@ -1,16 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import { MovimentacaoEstoque } from '../../../model/estoque';
+import { MovimentacaoEstoque, MovimentacaoEstoqueExtrato } from '../../../model/estoque';
 import { EstoqueService } from '../../../service/estoque.service';
 import { Acao, pode, Recurso } from '../../../security/rbac';
+import { RastreabilidadeLote } from '../rastreabilidade-lote/rastreabilidade-lote';
 
 @Component({
   selector: 'app-extrato-estoque',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RastreabilidadeLote, RouterLink],
   templateUrl: './extrato-estoque.html',
   styleUrl: '../estoque.scss',
 })
@@ -22,7 +23,10 @@ export class ExtratoEstoque {
   generoId?: number;
   dataInicio = '';
   dataFim = '';
-  movimentos: MovimentacaoEstoque[] = [];
+  loteId?: number;
+  loteRastreabilidadeId: number | null = null;
+  movimentos: MovimentacaoEstoqueExtrato[] = [];
+  movimentosExpandidos = new Set<number>();
   justificativa = '';
   erro = '';
   sucesso = '';
@@ -39,19 +43,88 @@ export class ExtratoEstoque {
     ESTORNO: 'Estorno',
   };
 
-  constructor(private estoqueService: EstoqueService) {}
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private estoqueService: EstoqueService,
+  ) {}
 
-  ngOnInit(): void { this.carregar(); }
+  ngOnInit(): void {
+    const loteId = Number(this.route.snapshot.queryParamMap.get('lote_id'));
+    this.loteId = Number.isInteger(loteId) && loteId > 0 ? loteId : undefined;
+    this.carregar();
+  }
 
   textoTipoMovimentacao(tipo: string): string {
     return this.tiposMovimentacao[tipo] ?? tipo;
   }
 
   carregar(): void {
-    this.estoqueService.extrato(this.generoId, this.dataInicio || undefined, this.dataFim || undefined).subscribe({
+    this.estoqueService.extrato(
+      this.generoId,
+      this.dataInicio || undefined,
+      this.dataFim || undefined,
+      this.loteId,
+    ).subscribe({
       next: resposta => this.movimentos = resposta.results,
       error: () => this.erro = 'Não foi possível carregar o extrato.',
     });
+  }
+
+  alternarDetalhes(movimentoId: number): void {
+    if (this.movimentosExpandidos.has(movimentoId)) {
+      this.movimentosExpandidos.delete(movimentoId);
+    } else {
+      this.movimentosExpandidos.add(movimentoId);
+    }
+  }
+
+  estaExpandida(movimentoId: number): boolean {
+    return this.movimentosExpandidos.has(movimentoId);
+  }
+
+  abrirRastreabilidade(loteId: number): void {
+    this.loteRastreabilidadeId = loteId;
+  }
+
+  fecharRastreabilidade(): void {
+    this.loteRastreabilidadeId = null;
+  }
+
+  limparFiltroLote(): void {
+    this.loteId = undefined;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { lote_id: null },
+      queryParamsHandling: 'merge',
+    });
+    this.carregar();
+  }
+
+  descricaoFiltroLote(): string {
+    if (!this.loteId) return '';
+
+    for (const movimento of this.movimentos) {
+      const alocacao = movimento.alocacoes_lote.find(item => item.lote_id === this.loteId);
+      if (alocacao) return `Lote ${alocacao.numero_lote}`;
+    }
+
+    return `Lote #${this.loteId}`;
+  }
+
+  formatarDataCivil(data: string | null): string {
+    if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data)) return '—';
+    const [ano, mes, dia] = data.split('-');
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  podeEstornarMovimento(movimento: MovimentacaoEstoqueExtrato): boolean {
+    return (
+      movimento.tipo !== 'ESTORNO'
+      && movimento.tipo !== 'AJUSTE_POSITIVO'
+      && movimento.tipo !== 'AJUSTE_NEGATIVO'
+      && movimento.cardapio_id === null
+    );
   }
 
   estornar(movimento: MovimentacaoEstoque): void {

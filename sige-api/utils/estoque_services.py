@@ -4,7 +4,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework.exceptions import ValidationError
@@ -25,6 +25,14 @@ from estoque.models import (
 
 ZERO = Decimal('0.000')
 FUSO_ESTOQUE = ZoneInfo('America/Rio_Branco')
+STATUS_VALIDADE_DESCRICOES = {
+    'VENCIDO': 'Vencido',
+    'VENCE_HOJE': 'Vence hoje',
+    'CRITICO': 'Crítico',
+    'ATENCAO': 'Atenção',
+    'REGULAR': 'Regular',
+    'SEM_VALIDADE': 'Sem validade',
+}
 
 
 def _decimal(valor, campo='quantidade'):
@@ -112,6 +120,36 @@ def _data_referencia_lotes(data_referencia=None):
     return _data_local(data_referencia)
 
 
+def data_atual_estoque():
+    return timezone.localtime(timezone.now(), FUSO_ESTOQUE).date()
+
+
+def dias_para_validade(lote, data_referencia=None):
+    if lote.legado or lote.data_validade is None:
+        return None
+    referencia = (
+        _data_referencia_lotes(data_referencia)
+        if data_referencia is not None
+        else data_atual_estoque()
+    )
+    return (lote.data_validade - referencia).days
+
+
+def status_lote_validade(lote, data_referencia=None):
+    dias = dias_para_validade(lote, data_referencia)
+    if dias is None:
+        return 'SEM_VALIDADE'
+    if dias < 0:
+        return 'VENCIDO'
+    if dias == 0:
+        return 'VENCE_HOJE'
+    if dias <= 7:
+        return 'CRITICO'
+    if dias <= 30:
+        return 'ATENCAO'
+    return 'REGULAR'
+
+
 def lote_vencido(lote, data_referencia=None):
     if lote.legado:
         return False
@@ -120,13 +158,53 @@ def lote_vencido(lote, data_referencia=None):
     return lote.data_validade < _data_referencia_lotes(data_referencia)
 
 
+def lotes_utilizaveis_queryset(data_referencia=None):
+    referencia = (
+        data_atual_estoque()
+        if data_referencia is None
+        else _data_referencia_lotes(data_referencia)
+    )
+    return LoteEstoque.objects.filter(
+        saldo_atual__gt=ZERO,
+    ).filter(
+        Q(legado=True)
+        | Q(legado=False, data_validade__gte=referencia)
+    )
+
+
+def saldos_utilizaveis_por_estoque(estoque_ids, data_referencia=None):
+    ids = list(dict.fromkeys(estoque_ids))
+    if not ids:
+        return {}
+    return {
+        registro['estoque_id']: _decimal(registro['total'])
+        for registro in (
+            lotes_utilizaveis_queryset(data_referencia)
+            .filter(estoque_id__in=ids)
+            .values('estoque_id')
+            .annotate(total=Sum('saldo_atual'))
+        )
+    }
+
+
 def saldo_utilizavel_estoque(estoque, data_referencia=None):
-    referencia = _data_referencia_lotes(data_referencia)
-    total = ZERO
-    for lote in LoteEstoque.objects.filter(estoque=estoque, saldo_atual__gt=ZERO):
-        if lote.legado or not lote_vencido(lote, referencia):
-            total = (total + _decimal(lote.saldo_atual)).quantize(Decimal('0.001'))
-    return total.quantize(Decimal('0.001'))
+    return saldos_utilizaveis_por_estoque(
+        [estoque.id],
+        data_referencia,
+    ).get(estoque.id, ZERO)
+
+
+def _bloquear_estoques_em_ordem(item_generico_ids):
+    ids = sorted(set(item_generico_ids))
+    for item_generico_id in ids:
+        Estoque.objects.get_or_create(item_generico_id=item_generico_id)
+    estoques = list(
+        Estoque.objects.select_for_update()
+        .select_related('item_generico')
+        .filter(item_generico_id__in=ids)
+        .order_by('item_generico_id')
+    )
+    return {estoque.item_generico_id: estoque for estoque in estoques}
 
 
 def _lote_recebimento_bloqueado(*, estoque, numero_lote, data_validade):
@@ -756,6 +834,16 @@ def estornar_movimentacao(*, movimentacao_id, justificativa, usuario, data_hora=
     original = MovimentacaoEstoque.objects.select_for_update().select_related('estoque').get(pk=movimentacao_id)
     if original.tipo == MovimentacaoEstoque.Tipo.ESTORNO:
         raise ValidationError({'movimentacao': 'Não é permitido estornar um estorno.'})
+    if original.tipo in {
+        MovimentacaoEstoque.Tipo.AJUSTE_POSITIVO,
+        MovimentacaoEstoque.Tipo.AJUSTE_NEGATIVO,
+    }:
+        raise ValidationError({
+            'movimentacao': (
+                'Movimentações de inventário não são estornadas individualmente; '
+                'registre uma nova contagem para corrigir o estoque.'
+            ),
+        })
     if MovimentacaoEstoque.objects.filter(movimentacao_estornada=original).exists():
         raise ValidationError({'movimentacao': 'Esta movimentação já foi estornada.'})
     if original.item_cardapio_id:
@@ -809,6 +897,10 @@ def registrar_recebimento(*, ordem_id, itens_recebidos, usuario, data_entrada=No
     if not por_id or not set(por_id).issubset(ids_validos):
         raise ValidationError({'itens': 'Informe itens pertencentes à ordem de entrega.'})
 
+    estoques_por_item_generico = _bloquear_estoques_em_ordem(
+        item_ordem.item_empenho.item_ata.item_generico_id
+        for item_ordem in itens_ordem
+    )
     momento = data_entrada or timezone.now()
     data_recebimento = _data_local(momento)
     valor_deste_recebimento = Decimal('0.00')
@@ -865,7 +957,9 @@ def registrar_recebimento(*, ordem_id, itens_recebidos, usuario, data_entrada=No
         item_ordem.save(update_fields=['quantidade_entregue', 'observacao'])
 
         if quantidade > ZERO:
-            estoque = _estoque_bloqueado(item_ordem.item_empenho.item_ata.item_generico_id)
+            estoque = estoques_por_item_generico[
+                item_ordem.item_empenho.item_ata.item_generico_id
+            ]
             alocacoes_lote = []
             for lote_recebido in lotes_normalizados:
                 lote = _lote_recebimento_bloqueado(

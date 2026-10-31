@@ -1,11 +1,13 @@
 from datetime import date, datetime, timedelta, timezone as dt_timezone
 from decimal import Decimal
+import threading
+from unittest import skipUnless
 from unittest.mock import patch
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import DatabaseError, transaction
+from django.db import DatabaseError, close_old_connections, connection, transaction
 from django.db.models import Sum
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -22,17 +24,24 @@ from estoque.models import (
     MovimentacaoEstoque,
     MovimentacaoLote,
 )
+from estoque.serializers import LoteValidadeSerializer
 from utils.estoque_services import (
+    STATUS_VALIDADE_DESCRICOES,
+    dias_para_validade,
     estornar_movimentacao,
     registrar_ajuste,
     registrar_carga_inicial,
     registrar_recebimento,
     registrar_saida,
     FUSO_ESTOQUE,
+    data_atual_estoque,
     saldo_utilizavel_estoque,
+    saldos_utilizaveis_por_estoque,
+    status_lote_validade,
 )
 from licitacao.models import Ata, ItemAta, Licitacao
 from usuario.models import Usuario
+from utils.painel_nutricionista import montar_painel
 from utils.rbac import Acao, Papel, Recurso, tem_permissao
 
 
@@ -142,6 +151,47 @@ class EstoqueBaseMixin:
         total = LoteEstoque.objects.filter(estoque=estoque).aggregate(total=Sum('saldo_atual'))['total']
         Estoque.objects.filter(pk=estoque.pk).update(saldo_atual=total or Decimal('0.000'))
         return lote
+
+    def assert_integridade_estoque(self, estoque):
+        precisao = Decimal('0.001')
+        estoque.refresh_from_db()
+        lotes = list(LoteEstoque.objects.filter(estoque=estoque))
+        saldo_lotes = sum((lote.saldo_atual for lote in lotes), Decimal('0.000')).quantize(precisao)
+        self.assertEqual(saldo_lotes, estoque.saldo_atual.quantize(precisao))
+
+        movimentos = list(
+            MovimentacaoEstoque.objects.filter(estoque=estoque)
+            .prefetch_related('alocacoes_lote__lote')
+        )
+        saldo_razao_estoque = Decimal('0.000')
+        saldo_razao_lotes = {lote.id: Decimal('0.000') for lote in lotes}
+        for movimento in movimentos:
+            alocacoes = list(movimento.alocacoes_lote.all())
+            self.assertTrue(alocacoes)
+            quantidade_alocada = sum(
+                (alocacao.quantidade for alocacao in alocacoes),
+                Decimal('0.000'),
+            ).quantize(precisao)
+            self.assertEqual(quantidade_alocada, movimento.quantidade.quantize(precisao))
+
+            sinal = Decimal('1') if movimento.sentido == MovimentacaoEstoque.Sentido.ENTRADA else Decimal('-1')
+            saldo_razao_estoque += sinal * movimento.quantidade
+            for alocacao in alocacoes:
+                self.assertEqual(alocacao.lote.estoque_id, estoque.id)
+                saldo_razao_lotes[alocacao.lote_id] = (
+                    saldo_razao_lotes.get(alocacao.lote_id, Decimal('0.000'))
+                    + sinal * alocacao.quantidade
+                )
+
+        self.assertEqual(
+            saldo_razao_estoque.quantize(precisao),
+            estoque.saldo_atual.quantize(precisao),
+        )
+        for lote in lotes:
+            self.assertEqual(
+                saldo_razao_lotes.get(lote.id, Decimal('0.000')).quantize(precisao),
+                lote.saldo_atual.quantize(precisao),
+            )
 
 
 class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
@@ -869,6 +919,141 @@ class RegrasEstoqueTests(EstoqueBaseMixin, TestCase):
             )
 
 
+class HardeningEstoqueTests(EstoqueBaseMixin, TestCase):
+    def setUp(self):
+        self.criar_cenario()
+
+    def test_fluxo_integrado_por_lotes_preserva_todas_as_invariantes(self):
+        registrar_carga_inicial(
+            item_generico_id=self.genero.id,
+            lotes=[
+                self.lote_recebimento('50', numero='INTEGRADO-A', validade='2099-01-01'),
+                self.lote_recebimento('50', numero='INTEGRADO-B', validade='2099-02-01'),
+            ],
+            justificativa='Carga inicial integrada.',
+            usuario=self.estoquista,
+        )
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        self.assert_integridade_estoque(estoque)
+
+        saida = registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='60',
+            tipo_saida='PRODUCAO',
+            justificativa='ProduÃ§Ã£o integrada.',
+            usuario=self.estoquista,
+        )
+        self.assert_integridade_estoque(estoque)
+
+        lote_b = LoteEstoque.objects.get(estoque=estoque, numero_lote='INTEGRADO-B')
+        registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='5',
+            tipo_saida='PERDA',
+            lote_id=lote_b.id,
+            justificativa='Perda integrada.',
+            usuario=self.estoquista,
+        )
+        self.assert_integridade_estoque(estoque)
+
+        registrar_ajuste(
+            item_generico_id=self.genero.id,
+            lotes=[
+                {'lote_id': lote_b.id, 'quantidade_contada': '30'},
+                {
+                    'numero_lote': 'INTEGRADO-C',
+                    'data_validade': '2099-03-01',
+                    'quantidade_contada': '15',
+                },
+            ],
+            justificativa='InventÃ¡rio integrado.',
+            usuario=self.estoquista,
+        )
+        self.assert_integridade_estoque(estoque)
+
+        estornar_movimentacao(
+            movimentacao_id=saida.id,
+            justificativa='Estorno integrado.',
+            usuario=self.estoquista,
+        )
+        self.assert_integridade_estoque(estoque)
+
+    def test_saldos_utilizaveis_em_lote_e_bulk_sao_equivalentes(self):
+        referencia = date(2026, 10, 30)
+        self.lote_estoque('BULK-VENCIDO', '30', referencia - timedelta(days=1))
+        self.lote_estoque('BULK-VALIDO', '50', referencia)
+        self.lote_estoque('LEGADO', '20', legado=True)
+        estoque_principal = Estoque.objects.get(item_generico=self.genero)
+
+        outro_genero = ItemGenerico.objects.create(
+            catmat='654322', descricao='MacarrÃ£o', unidade_medida='KG', categoria='SM',
+        )
+        outro_estoque = Estoque.objects.get(item_generico=outro_genero)
+        LoteEstoque.objects.create(
+            estoque=outro_estoque,
+            numero_lote='BULK-OUTRO-VENCIDO',
+            data_validade=referencia - timedelta(days=1),
+            saldo_atual=Decimal('10.000'),
+            legado=False,
+        )
+        LoteEstoque.objects.create(
+            estoque=outro_estoque,
+            numero_lote='BULK-OUTRO-HOJE',
+            data_validade=referencia,
+            saldo_atual=Decimal('25.000'),
+            legado=False,
+        )
+        Estoque.objects.filter(pk=outro_estoque.pk).update(saldo_atual=Decimal('35.000'))
+
+        saldos_bulk = saldos_utilizaveis_por_estoque(
+            [estoque_principal.id, outro_estoque.id],
+            referencia,
+        )
+
+        self.assertEqual(
+            saldos_bulk.get(estoque_principal.id, Decimal('0.000')),
+            saldo_utilizavel_estoque(estoque_principal, referencia),
+        )
+        self.assertEqual(
+            saldos_bulk.get(outro_estoque.id, Decimal('0.000')),
+            saldo_utilizavel_estoque(outro_estoque, referencia),
+        )
+
+    def test_listagem_estoque_preserva_saldo_utilizavel_com_prefetch(self):
+        hoje = data_atual_estoque()
+        self.lote_estoque('PREFETCH-VENCIDO', '30', hoje - timedelta(days=1))
+        self.lote_estoque('PREFETCH-VALIDO', '50', hoje)
+        self.lote_estoque('LEGADO', '20', legado=True)
+
+        outro_genero = ItemGenerico.objects.create(
+            catmat='654321', descricao='Arroz integral', unidade_medida='KG', categoria='SM',
+        )
+        outro_estoque = Estoque.objects.get(item_generico=outro_genero)
+        LoteEstoque.objects.create(
+            estoque=outro_estoque,
+            numero_lote='PREFETCH-OUTRO-VENCIDO',
+            data_validade=hoje - timedelta(days=1),
+            saldo_atual=Decimal('10.000'),
+            legado=False,
+        )
+        LoteEstoque.objects.create(
+            estoque=outro_estoque,
+            numero_lote='PREFETCH-OUTRO-VALIDO',
+            data_validade=hoje + timedelta(days=1),
+            saldo_atual=Decimal('40.000'),
+            legado=False,
+        )
+        Estoque.objects.filter(pk=outro_estoque.pk).update(saldo_atual=Decimal('50.000'))
+
+        cliente = APIClient()
+        cliente.force_authenticate(self.diretor)
+        resposta = cliente.get(reverse('estoque-list'), {'page_size': 100})
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        por_genero = {linha['item_generico_id']: linha for linha in resposta.data['results']}
+        self.assertEqual(Decimal(por_genero[self.genero.id]['saldo_utilizavel']), Decimal('70.000'))
+        self.assertEqual(Decimal(por_genero[outro_genero.id]['saldo_utilizavel']), Decimal('40.000'))
+
+
 class PermissoesEstoqueTests(EstoqueBaseMixin, APITestCase):
     def setUp(self):
         self.criar_cenario()
@@ -1119,6 +1304,44 @@ class InventarioPorLoteTests(EstoqueBaseMixin, APITestCase):
         self.assertEqual(len(movimentos), 2)
         self.assertEqual(item.movimentacoes_estoque.count(), 2)
 
+    def test_ajustes_de_inventario_nao_podem_ser_estornados_individualmente(self):
+        self.carga([
+            self.lote_recebimento('30', numero='LOTE-A'),
+            self.lote_recebimento('20', numero='LOTE-B'),
+        ])
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        lote_a = LoteEstoque.objects.get(estoque=estoque, numero_lote='LOTE-A')
+        lote_b = LoteEstoque.objects.get(estoque=estoque, numero_lote='LOTE-B')
+        _, movimentos = self.inventariar([
+            {'lote_id': lote_a.id, 'quantidade_contada': '20'},
+            {'lote_id': lote_b.id, 'quantidade_contada': '30'},
+        ])
+        saldos_antes = {
+            lote.id: lote.saldo_atual
+            for lote in LoteEstoque.objects.filter(estoque=estoque)
+        }
+
+        for movimento in movimentos:
+            with self.subTest(tipo=movimento.tipo), self.assertRaises(ValidationError) as erro:
+                estornar_movimentacao(
+                    movimentacao_id=movimento.id,
+                    justificativa='CorreÃ§Ã£o indevida de inventÃ¡rio.',
+                    usuario=self.estoquista,
+                )
+            self.assertIn('nova contagem', str(erro.exception).lower())
+
+        self.assertFalse(MovimentacaoEstoque.objects.filter(
+            tipo=MovimentacaoEstoque.Tipo.ESTORNO,
+        ).exists())
+        self.assertEqual(
+            {
+                lote.id: lote.saldo_atual
+                for lote in LoteEstoque.objects.filter(estoque=estoque)
+            },
+            saldos_antes,
+        )
+        self.assert_integridade_estoque(estoque)
+
     def test_inventario_regulariza_legado_e_descobre_lote(self):
         lote_legado = self.lote_estoque('LEGADO', '50', legado=True)
         item, movimentos = self.inventariar([
@@ -1226,6 +1449,336 @@ class InventarioPorLoteTests(EstoqueBaseMixin, APITestCase):
         self.assertEqual(len(resposta.data), 2)
 
 
+class LotesValidadeTests(EstoqueBaseMixin, APITestCase):
+    def setUp(self):
+        self.criar_cenario()
+        self.client.force_authenticate(self.diretor)
+
+    def _resultados(self, resposta):
+        return resposta.data['results']
+
+    def test_status_lote_validade_respeita_faixas(self):
+        referencia = date(2026, 10, 30)
+        faixas = (
+            ('VENCIDO', date(2026, 10, 29), -1),
+            ('VENCE_HOJE', date(2026, 10, 30), 0),
+            ('CRITICO', date(2026, 10, 31), 1),
+            ('CRITICO', date(2026, 11, 6), 7),
+            ('ATENCAO', date(2026, 11, 7), 8),
+            ('ATENCAO', date(2026, 11, 29), 30),
+            ('REGULAR', date(2026, 11, 30), 31),
+        )
+        for indice, (status, validade, dias) in enumerate(faixas, start=1):
+            with self.subTest(status=status, validade=validade):
+                lote = self.lote_estoque(f'FAIXA-{indice}', '1', validade)
+                self.assertEqual(dias_para_validade(lote, referencia), dias)
+                self.assertEqual(status_lote_validade(lote, referencia), status)
+
+        legado = self.lote_estoque('LEGADO', '1', legado=True)
+        self.assertIsNone(dias_para_validade(legado, referencia))
+        self.assertEqual(status_lote_validade(legado, referencia), 'SEM_VALIDADE')
+
+    def test_lote_validade_serializer_expoe_campos_calculados(self):
+        lote = self.lote_estoque('SERIAL-001', '12.5', date(2099, 12, 31))
+        dados = LoteValidadeSerializer(lote).data
+
+        self.assertEqual(dados['descricao'], self.genero.descricao)
+        self.assertEqual(dados['catmat'], self.genero.catmat)
+        self.assertEqual(dados['unidade_medida'], self.genero.unidade_medida)
+        self.assertEqual(dados['numero_lote'], 'SERIAL-001')
+        self.assertEqual(Decimal(dados['saldo_atual']), Decimal('12.500'))
+        self.assertEqual(dados['data_validade'], '2099-12-31')
+        self.assertEqual(dados['dias_para_validade'], dias_para_validade(lote))
+        self.assertEqual(dados['status'], status_lote_validade(lote))
+        self.assertEqual(dados['status_descricao'], STATUS_VALIDADE_DESCRICOES[dados['status']])
+
+    def test_listagem_exclui_lotes_zerados_e_aceita_saldo_positivo_false(self):
+        lote_positivo = self.lote_estoque('POSITIVO', '10', date(2099, 12, 31))
+        lote_zerado = self.lote_estoque('ZERADO', '0', date(2099, 12, 31))
+
+        resposta = self.client.get(reverse('lote-estoque-list'))
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        ids = {item['id'] for item in self._resultados(resposta)}
+        self.assertIn(lote_positivo.id, ids)
+        self.assertNotIn(lote_zerado.id, ids)
+
+        resposta = self.client.get(reverse('lote-estoque-list'), {'saldo_positivo': 'false'})
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        ids = {item['id'] for item in self._resultados(resposta)}
+        self.assertEqual(ids, {lote_positivo.id, lote_zerado.id})
+
+    def test_listagem_ordena_e_filtra_status_de_validade(self):
+        hoje = timezone.localtime(timezone.now(), FUSO_ESTOQUE).date()
+        vencido = self.lote_estoque('VENCIDO', '1', hoje - timedelta(days=1))
+        vence_hoje = self.lote_estoque('HOJE', '1', hoje)
+        critico = self.lote_estoque('CRITICO', '1', hoje + timedelta(days=1))
+        atencao = self.lote_estoque('ATENCAO', '1', hoje + timedelta(days=8))
+        regular = self.lote_estoque('REGULAR', '1', hoje + timedelta(days=31))
+        legado = self.lote_estoque('LEGADO', '1', legado=True)
+
+        resposta = self.client.get(reverse('lote-estoque-list'))
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual(
+            [item['id'] for item in self._resultados(resposta)],
+            [vencido.id, vence_hoje.id, critico.id, atencao.id, regular.id, legado.id],
+        )
+
+        esperados = {
+            'VENCIDO': {vencido.id},
+            'CRITICO': {critico.id},
+            'ATENCAO': {atencao.id},
+            'SEM_VALIDADE': {legado.id},
+        }
+        for status, ids_esperados in esperados.items():
+            with self.subTest(status=status):
+                resposta = self.client.get(reverse('lote-estoque-list'), {'status': status})
+                self.assertEqual(resposta.status_code, 200, resposta.data)
+                self.assertEqual(
+                    {item['id'] for item in self._resultados(resposta)},
+                    ids_esperados,
+                )
+
+    def test_listagem_rejeita_status_invalido(self):
+        resposta = self.client.get(reverse('lote-estoque-list'), {'status': 'QUALQUER_COISA'})
+        self.assertEqual(resposta.status_code, 400)
+
+    def test_listagem_busca_categoria_e_periodo_de_validade(self):
+        hoje = timezone.localtime(timezone.now(), FUSO_ESTOQUE).date()
+        lote_principal = self.lote_estoque('ABC123', '10', hoje + timedelta(days=10))
+        outro_genero = ItemGenerico.objects.create(
+            catmat='654322', descricao='Feijao branco', unidade_medida='KG', categoria='NP',
+        )
+        outro_estoque = Estoque.objects.get(item_generico=outro_genero)
+        lote_outro = LoteEstoque.objects.create(
+            estoque=outro_estoque,
+            numero_lote='OUTRO-001',
+            data_validade=hoje + timedelta(days=20),
+            saldo_atual=Decimal('10.000'),
+            legado=False,
+        )
+
+        for busca, ids_esperados in (
+            ('ABC123', {lote_principal.id}),
+            (self.genero.descricao, {lote_principal.id}),
+        ):
+            with self.subTest(busca=busca):
+                resposta = self.client.get(reverse('lote-estoque-list'), {'search': busca})
+                self.assertEqual(resposta.status_code, 200, resposta.data)
+                self.assertEqual(
+                    {item['id'] for item in self._resultados(resposta)},
+                    ids_esperados,
+                )
+
+        resposta = self.client.get(reverse('lote-estoque-list'), {'categoria': 'NP'})
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual({item['id'] for item in self._resultados(resposta)}, {lote_outro.id})
+
+        resposta = self.client.get(reverse('lote-estoque-list'), {
+            'data_validade__gte': (hoje + timedelta(days=9)).isoformat(),
+            'data_validade__lte': (hoje + timedelta(days=11)).isoformat(),
+        })
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual({item['id'] for item in self._resultados(resposta)}, {lote_principal.id})
+
+    def test_resumo_conta_somente_lotes_positivos_por_status(self):
+        hoje = timezone.localtime(timezone.now(), FUSO_ESTOQUE).date()
+        self.lote_estoque('VENCIDO', '1', hoje - timedelta(days=1))
+        self.lote_estoque('HOJE', '1', hoje)
+        self.lote_estoque('CRITICO', '1', hoje + timedelta(days=1))
+        self.lote_estoque('ATENCAO', '1', hoje + timedelta(days=8))
+        self.lote_estoque('REGULAR', '1', hoje + timedelta(days=31))
+        self.lote_estoque('LEGADO', '1', legado=True)
+        self.lote_estoque('ZERADO', '0', hoje + timedelta(days=2))
+
+        resposta = self.client.get(reverse('lote-estoque-resumo'))
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual(resposta.data, {
+            'total_lotes': 6,
+            'vencidos': 1,
+            'vence_hoje': 1,
+            'criticos': 1,
+            'atencao': 1,
+            'regulares': 1,
+            'sem_validade': 1,
+        })
+
+    def test_consulta_lotes_validades_usa_permissao_estoque_consultar(self):
+        usuarios = (self.diretor, self.tecnico, self.nutricionista, self.estoquista)
+        for usuario in usuarios:
+            with self.subTest(usuario=usuario.papel):
+                self.client.force_authenticate(usuario)
+                resposta = self.client.get(reverse('lote-estoque-list'))
+                self.assertEqual(resposta.status_code, 200, resposta.data)
+
+
+class ExtratoPorLoteTests(EstoqueBaseMixin, APITestCase):
+    def setUp(self):
+        self.criar_cenario()
+        self.client.force_authenticate(self.diretor)
+
+    def receber(self, lotes):
+        total = sum(Decimal(str(lote['quantidade'])) for lote in lotes)
+        _, movimentos = registrar_recebimento(
+            ordem_id=self.ordem.id,
+            itens_recebidos=[{
+                'item_ordem_id': self.item_ordem.id,
+                'lotes': lotes,
+                'observacao': 'Entrega parcial para teste de rastreabilidade.' if total < 500 else '',
+            }],
+            usuario=self.estoquista,
+        )
+        return movimentos[0]
+
+    def resposta_rastreabilidade(self, lote):
+        return self.client.get(
+            reverse('movimentacao-estoque-rastreabilidade-lote'),
+            {'lote_id': lote.id},
+        )
+
+    def test_extrato_expoe_alocacoes_sem_duplicar_movimento(self):
+        movimento = self.receber([self.lote_recebimento('500', numero='EXTRATO-A')])
+
+        resposta = self.client.get(reverse('movimentacao-estoque-list'))
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        movimentos = [item for item in resposta.data['results'] if item['id'] == movimento.id]
+        self.assertEqual(len(movimentos), 1)
+        alocacoes = movimentos[0]['alocacoes_lote']
+        self.assertEqual(len(alocacoes), 1)
+        self.assertEqual(alocacoes[0]['numero_lote'], 'EXTRATO-A')
+        self.assertEqual(Decimal(alocacoes[0]['quantidade']), Decimal('500.000'))
+        self.assertEqual(Decimal(alocacoes[0]['saldo_lote_resultante']), Decimal('500.000'))
+
+    def test_extrato_mantem_uma_linha_com_duas_alocacoes(self):
+        self.receber([
+            self.lote_recebimento('200', numero='EXTRATO-A'),
+            self.lote_recebimento('300', numero='EXTRATO-B'),
+        ])
+        saida = registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='250',
+            tipo_saida='PRODUCAO',
+            justificativa='Teste de FEFO para extrato',
+            usuario=self.estoquista,
+        )
+
+        resposta = self.client.get(reverse('movimentacao-estoque-list'))
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        movimentos = [item for item in resposta.data['results'] if item['id'] == saida.id]
+        self.assertEqual(len(movimentos), 1)
+        self.assertEqual(len(movimentos[0]['alocacoes_lote']), 2)
+
+    def test_extrato_filtra_por_lote_e_rejeita_lote_invalido(self):
+        carga = self.registrar_carga_teste('100', numero='FILTRO-A')
+        lote_a = LoteEstoque.objects.get(estoque__item_generico=self.genero, numero_lote='FILTRO-A')
+        registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='10',
+            tipo_saida='PERDA',
+            lote_id=lote_a.id,
+            justificativa='Perda do lote A',
+            usuario=self.estoquista,
+        )
+
+        resposta = self.client.get(reverse('movimentacao-estoque-list'), {'lote_id': lote_a.id})
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual({item['id'] for item in resposta.data['results']}, {
+            carga.id,
+            MovimentacaoEstoque.objects.filter(
+                estoque__item_generico=self.genero,
+                tipo=MovimentacaoEstoque.Tipo.SAIDA_PERDA,
+            ).get().id,
+        })
+        for lote_id in ('abc', '0'):
+            with self.subTest(lote_id=lote_id):
+                resposta = self.client.get(reverse('movimentacao-estoque-list'), {'lote_id': lote_id})
+                self.assertEqual(resposta.status_code, 400, resposta.data)
+
+    def test_rastreabilidade_deriva_origem_fornecedor_e_historico_do_lote(self):
+        self.receber([self.lote_recebimento('500', numero='ORIGEM-FORNECEDOR')])
+        lote = LoteEstoque.objects.get(
+            estoque__item_generico=self.genero,
+            numero_lote='ORIGEM-FORNECEDOR',
+        )
+        registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='20',
+            tipo_saida='PRODUCAO',
+            justificativa='Consumo de teste',
+            usuario=self.estoquista,
+        )
+
+        resposta = self.resposta_rastreabilidade(lote)
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual(resposta.data['origem']['tipo'], 'FORNECEDOR')
+        self.assertEqual(resposta.data['origem']['ordem_codigo'], self.ordem.codigo)
+        self.assertEqual(resposta.data['origem']['fornecedor_nome'], 'T. LEITE SILVA')
+        self.assertEqual(resposta.data['origem']['empenho_codigo'], self.empenho.codigo)
+        self.assertEqual(resposta.data['origem']['ata_numero'], self.empenho.ata.numero_ata)
+        self.assertEqual(Decimal(resposta.data['origem']['quantidade_origem']), Decimal('500.000'))
+        self.assertEqual([item['sentido'] for item in resposta.data['movimentacoes']], ['S', 'E'])
+        self.assertEqual(Decimal(resposta.data['movimentacoes'][0]['quantidade_lote']), Decimal('20.000'))
+        self.assertEqual(Decimal(resposta.data['movimentacoes'][0]['saldo_lote_resultante']), Decimal('480.000'))
+        self.assertEqual(Decimal(resposta.data['movimentacoes'][1]['saldo_lote_resultante']), Decimal('500.000'))
+
+    def test_rastreabilidade_identifica_carga_inicial_inventario_e_legado(self):
+        self.registrar_carga_teste('10', numero='ORIGEM-CARGA')
+        lote_carga = LoteEstoque.objects.get(
+            estoque__item_generico=self.genero,
+            numero_lote='ORIGEM-CARGA',
+        )
+        resposta = self.resposta_rastreabilidade(lote_carga)
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual(resposta.data['origem']['tipo'], 'CARGA_INICIAL')
+        self.assertIsNone(resposta.data['origem']['fornecedor_nome'])
+        self.assertIsNone(resposta.data['origem']['ordem_codigo'])
+
+        outro_genero = ItemGenerico.objects.create(
+            catmat='654321', descricao='Feijão para inventário', unidade_medida='KG', categoria='NP',
+        )
+        registrar_ajuste(
+            item_generico_id=outro_genero.id,
+            lotes=[{
+                'numero_lote': 'ORIGEM-INVENTARIO',
+                'data_validade': '2099-12-31',
+                'quantidade_contada': '8',
+            }],
+            justificativa='Lote encontrado no inventário',
+            usuario=self.estoquista,
+        )
+        lote_inventario = LoteEstoque.objects.get(
+            estoque__item_generico=outro_genero,
+            numero_lote='ORIGEM-INVENTARIO',
+        )
+        resposta = self.resposta_rastreabilidade(lote_inventario)
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual(resposta.data['origem']['tipo'], 'INVENTARIO')
+        self.assertIsNotNone(resposta.data['origem']['inventario_id'])
+
+        lote_legado = self.lote_estoque('LEGADO', '5', legado=True)
+        resposta = self.resposta_rastreabilidade(lote_legado)
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual(resposta.data['origem']['tipo'], 'LEGADO')
+
+    def test_rastreabilidade_rejeita_lote_inexistente_e_respeita_permissao(self):
+        resposta = self.client.get(
+            reverse('movimentacao-estoque-rastreabilidade-lote'),
+            {'lote_id': 999999},
+        )
+        self.assertEqual(resposta.status_code, 404, resposta.data)
+
+        lote = self.lote_estoque('PERMISSAO', '1', date(2099, 12, 31))
+        for usuario, status_esperado in (
+            (self.diretor, 200),
+            (self.nutricionista, 200),
+            (self.estoquista, 200),
+            (self.tecnico, 403),
+        ):
+            with self.subTest(usuario=usuario.papel):
+                self.client.force_authenticate(usuario)
+                resposta = self.resposta_rastreabilidade(lote)
+                self.assertEqual(resposta.status_code, status_esperado, resposta.data)
+
+
 class PainelNutricionistaTests(EstoqueBaseMixin, APITestCase):
     """Home do Nutricionista: disponibilidade por gênero, movimentação semanal e saldos."""
 
@@ -1276,3 +1829,219 @@ class PainelNutricionistaTests(EstoqueBaseMixin, APITestCase):
         arp = dados['arps'][0]
         self.assertEqual(arp['valor_registrado'], Decimal('31200.00'))
         self.assertEqual(arp['saldo_disponivel'], Decimal('31200.00'))
+
+
+class AlertasValidadeTests(EstoqueBaseMixin, APITestCase):
+    def setUp(self):
+        self.criar_cenario()
+        self.url = reverse('lote-estoque-alertas-validade')
+
+    def _criar_lotes_alertaveis(self):
+        hoje = data_atual_estoque()
+        return {
+            'vencido': self.lote_estoque('ALERTA-VENCIDO', '1', hoje - timedelta(days=1)),
+            'hoje': self.lote_estoque('ALERTA-HOJE', '1', hoje),
+            'critico': self.lote_estoque('ALERTA-CRITICO', '1', hoje + timedelta(days=1)),
+            'atencao': self.lote_estoque('ALERTA-ATENCAO', '1', hoje + timedelta(days=8)),
+            'regular': self.lote_estoque('ALERTA-REGULAR', '1', hoje + timedelta(days=31)),
+            'legado': self.lote_estoque('LEGADO', '1', legado=True),
+            'zerado': self.lote_estoque('ALERTA-ZERADO', '0', hoje + timedelta(days=2)),
+        }
+
+    def test_alertas_validade_estoquista_incluem_vencidos_e_ate_30_dias(self):
+        lotes = self._criar_lotes_alertaveis()
+        self.client.force_authenticate(self.estoquista)
+
+        resposta = self.client.get(self.url)
+
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual(resposta.data['total'], 4)
+        self.assertEqual(resposta.data['vencidos'], 1)
+        self.assertEqual(resposta.data['vence_hoje'], 1)
+        self.assertEqual(resposta.data['criticos'], 1)
+        self.assertEqual(resposta.data['atencao'], 1)
+        ids = {lote['id'] for lote in resposta.data['results']}
+        self.assertEqual(ids, {
+            lotes['vencido'].id,
+            lotes['hoje'].id,
+            lotes['critico'].id,
+            lotes['atencao'].id,
+        })
+        self.assertNotIn(lotes['regular'].id, ids)
+        self.assertNotIn(lotes['legado'].id, ids)
+        self.assertNotIn(lotes['zerado'].id, ids)
+
+    def test_alertas_validade_nutricionista_excluem_vencidos(self):
+        lotes = self._criar_lotes_alertaveis()
+        self.client.force_authenticate(self.nutricionista)
+
+        resposta = self.client.get(self.url)
+
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual(resposta.data['total'], 3)
+        self.assertEqual(resposta.data['vencidos'], 0)
+        self.assertEqual(resposta.data['vence_hoje'], 1)
+        self.assertEqual(resposta.data['criticos'], 1)
+        self.assertEqual(resposta.data['atencao'], 1)
+        self.assertEqual(
+            {lote['id'] for lote in resposta.data['results']},
+            {lotes['hoje'].id, lotes['critico'].id, lotes['atencao'].id},
+        )
+
+    def test_alertas_validade_diretor_e_tecnico_recebem_resposta_vazia(self):
+        self._criar_lotes_alertaveis()
+        for usuario in (self.diretor, self.tecnico):
+            with self.subTest(usuario=usuario.papel):
+                self.client.force_authenticate(usuario)
+                resposta = self.client.get(self.url)
+                self.assertEqual(resposta.status_code, 200, resposta.data)
+                self.assertEqual(resposta.data['total'], 0)
+                self.assertEqual(resposta.data['results'], [])
+
+    def test_alertas_validade_limitam_results_e_desaparecem_quando_lote_zera(self):
+        hoje = data_atual_estoque()
+        for indice in range(6):
+            self.lote_estoque(f'ALERTA-LIMITE-{indice}', '1', hoje + timedelta(days=indice + 1))
+        self.client.force_authenticate(self.estoquista)
+
+        resposta = self.client.get(self.url)
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        self.assertEqual(resposta.data['total'], 6)
+        self.assertEqual(len(resposta.data['results']), 5)
+
+        lote = self.lote_estoque('ALERTA-DINAMICO', '10', hoje + timedelta(days=2))
+        resposta = self.client.get(self.url)
+        self.assertEqual(resposta.data['total'], 7)
+        registrar_saida(
+            item_generico_id=self.genero.id,
+            quantidade='10',
+            tipo_saida='PERDA',
+            lote_id=lote.id,
+            justificativa='Baixa para teste de alerta dinâmico',
+            usuario=self.estoquista,
+        )
+        resposta = self.client.get(self.url)
+        self.assertEqual(resposta.data['total'], 6)
+        self.assertNotIn(lote.id, {item['id'] for item in resposta.data['results']})
+
+
+class PainelNutricionistaValidadeTests(EstoqueBaseMixin, TestCase):
+    def setUp(self):
+        self.criar_cenario()
+        self.referencia = date(2026, 10, 30)
+
+    def _genero_no_painel(self, dados):
+        return next(
+            genero
+            for genero in dados['generos']
+            if genero['item_generico_id'] == self.genero.id
+        )
+
+    def test_painel_nutricionista_usa_saldo_utilizavel(self):
+        self.lote_estoque('PAINEL-VENCIDO', '30', self.referencia - timedelta(days=1))
+        self.lote_estoque('PAINEL-VALIDO', '70', self.referencia)
+
+        dados = montar_painel(hoje=self.referencia)
+
+        self.assertEqual(self._genero_no_painel(dados)['em_estoque'], Decimal('70.000'))
+
+    def test_painel_nutricionista_inclui_lote_que_vence_hoje(self):
+        self.lote_estoque('PAINEL-HOJE', '25', self.referencia)
+
+        dados = montar_painel(hoje=self.referencia)
+
+        self.assertEqual(self._genero_no_painel(dados)['em_estoque'], Decimal('25.000'))
+
+    def test_painel_nutricionista_resume_lotes_utilizaveis_proximos(self):
+        self.lote_estoque('PAINEL-VENCIDO', '1', self.referencia - timedelta(days=1))
+        self.lote_estoque('PAINEL-HOJE', '1', self.referencia)
+        self.lote_estoque('PAINEL-CRITICO', '1', self.referencia + timedelta(days=1))
+        self.lote_estoque('PAINEL-ATENCAO', '1', self.referencia + timedelta(days=8))
+        self.lote_estoque('PAINEL-REGULAR', '1', self.referencia + timedelta(days=31))
+        self.lote_estoque('LEGADO', '1', legado=True)
+
+        dados = montar_painel(hoje=self.referencia)
+
+        self.assertEqual(dados['validades'], {
+            'total_proximos': 3,
+            'vence_hoje': 1,
+            'criticos': 1,
+            'atencao': 1,
+        })
+
+    def test_movimentacao_semanal_usa_dia_local_de_rio_branco(self):
+        momento_utc = datetime(2026, 11, 2, 2, tzinfo=dt_timezone.utc)
+        self.registrar_carga_teste(
+            '10',
+            numero='PAINEL-FUSO',
+            validade='2099-12-31',
+            data_hora=momento_utc,
+        )
+
+        dados = montar_painel(hoje=date(2026, 11, 2))
+        serie = dados['movimentacao']['por_genero'][self.genero.id]
+
+        self.assertEqual(dados['movimentacao']['semanas'][-1], '2026-11-02')
+        self.assertEqual(serie['entradas'][-2], Decimal('10.000'))
+        self.assertEqual(serie['entradas'][-1], Decimal('0'))
+
+
+@skipUnless(connection.vendor == 'mysql', 'Teste de concorrência específico do MySQL.')
+class EstoqueConcorrenciaTests(EstoqueBaseMixin, TransactionTestCase):
+    def setUp(self):
+        self.criar_cenario()
+
+    def test_duas_saidas_concorrentes_respeitam_o_lock_do_estoque(self):
+        self.registrar_carga_teste('100', numero='CONCORRENCIA-A')
+        estoque = Estoque.objects.get(item_generico=self.genero)
+        usuario_id = self.estoquista.id
+        barreira = threading.Barrier(2)
+        resultados = []
+        erros_inesperados = []
+        resultados_lock = threading.Lock()
+
+        def registrar_saida_concorrente():
+            close_old_connections()
+            try:
+                usuario = Usuario.objects.get(pk=usuario_id)
+                barreira.wait()
+                registrar_saida(
+                    item_generico_id=self.genero.id,
+                    quantidade='60',
+                    tipo_saida='PRODUCAO',
+                    justificativa='Teste de concorrência.',
+                    usuario=usuario,
+                )
+                resultado = 'sucesso'
+            except ValidationError:
+                resultado = 'validacao'
+            except Exception as exc:
+                with resultados_lock:
+                    erros_inesperados.append(exc)
+                return
+            finally:
+                close_old_connections()
+
+            with resultados_lock:
+                resultados.append(resultado)
+
+        primeira = threading.Thread(target=registrar_saida_concorrente)
+        segunda = threading.Thread(target=registrar_saida_concorrente)
+        primeira.start()
+        segunda.start()
+        primeira.join()
+        segunda.join()
+
+        self.assertFalse(erros_inesperados, erros_inesperados)
+        self.assertEqual(resultados.count('sucesso'), 1)
+        self.assertEqual(resultados.count('validacao'), 1)
+
+        estoque.refresh_from_db()
+        lote = LoteEstoque.objects.get(estoque=estoque, numero_lote='CONCORRENCIA-A')
+        self.assertEqual(estoque.saldo_atual, Decimal('40.000'))
+        self.assertEqual(lote.saldo_atual, Decimal('40.000'))
+        self.assertEqual(MovimentacaoEstoque.objects.filter(
+            estoque=estoque,
+            tipo=MovimentacaoEstoque.Tipo.SAIDA_PRODUCAO,
+        ).count(), 1)
+        self.assert_integridade_estoque(estoque)

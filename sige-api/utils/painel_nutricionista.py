@@ -2,27 +2,37 @@ from collections import defaultdict
 from datetime import datetime, time, timedelta
 from decimal import Decimal
 
-from django.db.models import Case, DecimalField, F, Sum, Value, When
+from django.db.models import Case, Count, DecimalField, F, Q, Sum, Value, When
 from django.utils import timezone
 
 from cadastro.models import ItemGenerico
 from empenho.models import Empenho, ItemEmpenho, OperacaoItem
 from entrega.models import ItemOrdem
-from estoque.models import Estoque, MovimentacaoEstoque
+from estoque.models import LoteEstoque, MovimentacaoEstoque
 from licitacao.models import Ata, ItemAta
+from utils.estoque_services import FUSO_ESTOQUE, data_atual_estoque
 
 
 ZERO = Decimal('0')
 SEMANAS_MOVIMENTACAO = 8
 
 
-def _disponibilidade_por_genero():
+def _disponibilidade_por_genero(hoje):
     """
     Para cada gênero, o que o Nutricionista pode contar para montar o cardápio,
     do mais imediato ao mais distante: em estoque, a caminho (ordens emitidas e
     ainda não entregues), empenhado sem ordem e o saldo livre nas ARPs.
     """
-    em_estoque = dict(Estoque.objects.values_list('item_generico_id', 'saldo_atual'))
+    em_estoque = dict(
+        LoteEstoque.objects.filter(saldo_atual__gt=0)
+        .filter(
+            Q(legado=True)
+            | Q(legado=False, data_validade__gte=hoje)
+        )
+        .values('estoque__item_generico_id')
+        .annotate(total=Sum('saldo_atual'))
+        .values_list('estoque__item_generico_id', 'total')
+    )
 
     a_caminho = dict(
         ItemOrdem.objects.exclude(ordem_entrega__status='con')
@@ -70,18 +80,45 @@ def _disponibilidade_por_genero():
     return generos
 
 
+def _resumo_validades(hoje):
+    limite = hoje + timedelta(days=30)
+    return LoteEstoque.objects.filter(
+        saldo_atual__gt=0,
+        legado=False,
+        data_validade__gte=hoje,
+        data_validade__lte=limite,
+    ).aggregate(
+        total_proximos=Count('id'),
+        vence_hoje=Count('id', filter=Q(data_validade=hoje)),
+        criticos=Count(
+            'id',
+            filter=Q(
+                data_validade__gte=hoje + timedelta(days=1),
+                data_validade__lte=hoje + timedelta(days=7),
+            ),
+        ),
+        atencao=Count(
+            'id',
+            filter=Q(
+                data_validade__gte=hoje + timedelta(days=8),
+                data_validade__lte=limite,
+            ),
+        ),
+    )
+
+
 def _movimentacao_semanal(hoje):
     """Entradas e saídas de cada gênero nas últimas semanas (segunda a domingo)."""
     inicio_semana_atual = hoje - timedelta(days=hoje.weekday())
     semanas = [inicio_semana_atual - timedelta(weeks=n) for n in range(SEMANAS_MOVIMENTACAO - 1, -1, -1)]
-    inicio = timezone.make_aware(datetime.combine(semanas[0], time.min))
+    inicio = timezone.make_aware(datetime.combine(semanas[0], time.min), FUSO_ESTOQUE)
 
     por_genero = {}
     movimentos = MovimentacaoEstoque.objects.filter(data_hora__gte=inicio).values(
         'estoque__item_generico_id', 'sentido', 'quantidade', 'data_hora',
     )
     for movimento in movimentos:
-        dia = timezone.localtime(movimento['data_hora']).date()
+        dia = timezone.localtime(movimento['data_hora'], FUSO_ESTOQUE).date()
         indice = (dia - semanas[0]).days // 7
         if not 0 <= indice < SEMANAS_MOVIMENTACAO:
             continue
@@ -133,9 +170,11 @@ def _saldos_arps():
 
 
 def montar_painel(hoje=None):
+    referencia = hoje or data_atual_estoque()
     return {
-        'generos': _disponibilidade_por_genero(),
-        'movimentacao': _movimentacao_semanal(hoje or timezone.localdate()),
+        'generos': _disponibilidade_por_genero(referencia),
+        'movimentacao': _movimentacao_semanal(referencia),
         'empenhos': _saldos_empenhos(),
         'arps': _saldos_arps(),
+        'validades': _resumo_validades(referencia),
     }

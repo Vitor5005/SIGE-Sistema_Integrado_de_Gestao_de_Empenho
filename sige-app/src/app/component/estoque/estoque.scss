@@ -728,3 +728,229 @@
     flex-basis: 100%;
   }
 }
+
+.validades-resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: var(--sige-space-3);
+}
+
+.validades-resumo__titulo {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--sige-text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.validade-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sige-space-1);
+  min-width: 0;
+  padding: var(--sige-space-3);
+  color: var(--sige-text-primary);
+  text-align: left;
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+  box-shadow: var(--sige-shadow-sm);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--sige-color-primary);
+  }
+
+  &.is-active {
+    color: var(--sige-color-white);
+    background: var(--sige-color-primary);
+    border-color: var(--sige-color-primary);
+  }
+}
+
+.validade-card__rotulo {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.validade-card__valor {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.validades-tabela {
+  min-width: 58rem;
+}
+
+.movimentacao-lotes {
+  padding: var(--sige-space-3);
+  background: var(--sige-surface-muted);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+}
+
+.movimentacao-lotes__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sige-space-3);
+  margin-bottom: var(--sige-space-3);
+
+  h3 {
+    margin: 0;
+    color: var(--sige-text-primary);
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+}
+
+.movimentacao-lotes__table {
+  width: 100%;
+  margin: 0;
+  background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+
+  th,
+  td {
+    vertical-align: middle;
+  }
+}
+
+.filtro-lote-ativo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sige-space-3);
+  padding: var(--sige-space-2) var(--sige-space-3);
+  color: var(--sige-text-primary);
+  background: var(--sige-surface-muted);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+}
+
+.rastreabilidade-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  justify-content: flex-end;
+  background: rgb(0 0 0 / 45%);
+}
+
+.rastreabilidade-drawer {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 52rem);
+  height: 100vh;
+  color: var(--sige-text-primary);
+  background: var(--sige-surface-card);
+  box-shadow: var(--sige-shadow-md);
+}
+
+.rastreabilidade-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sige-space-3);
+  padding: var(--sige-space-4);
+  border-bottom: 1px solid var(--sige-border);
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+}
+
+.rastreabilidade-drawer__body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--sige-space-4);
+  overflow-y: auto;
+}
+
+.rastreabilidade-drawer__section {
+  padding-block: var(--sige-space-4);
+  border-bottom: 1px solid var(--sige-border);
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  h3 {
+    margin: 0 0 var(--sige-space-3);
+    color: var(--sige-text-primary);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+}
+
+.rastreabilidade-resumo,
+.rastreabilidade-origem {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sige-space-3);
+  margin: 0;
+
+  div {
+    min-width: 0;
+    padding: var(--sige-space-2) var(--sige-space-3);
+    background: var(--sige-surface-muted);
+    border-radius: var(--sige-radius-md);
+  }
+
+  dt {
+    color: var(--sige-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  dd {
+    margin: var(--sige-space-1) 0 0;
+    color: var(--sige-text-primary);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+}
+
+.rastreabilidade-historico {
+  width: 100%;
+  min-width: 43rem;
+  margin: 0;
+
+  th,
+  td {
+    vertical-align: top;
+  }
+}
+
+@media (max-width: 800px) {
+  .movimentacao-lotes__cabecalho,
+  .filtro-lote-ativo {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .rastreabilidade-drawer {
+    width: 100%;
+  }
+
+  .rastreabilidade-drawer__header,
+  .rastreabilidade-drawer__body {
+    padding: var(--sige-space-3);
+  }
+
+  .rastreabilidade-resumo,
+  .rastreabilidade-origem {
+    grid-template-columns: 1fr;
+  }
+}

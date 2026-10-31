@@ -100,6 +100,12 @@ export const routes: Routes = [
         data: { permission: { recurso: Recurso.ESTOQUE, acao: Acao.CONSULTAR } },
       },
       {
+        path: 'estoque/validades',
+        loadComponent: () => import('./component/estoque/validades-estoque/validades-estoque').then(m => m.ValidadesEstoque),
+        canActivate: [permissionGuard],
+        data: { permission: { recurso: Recurso.ESTOQUE, acao: Acao.CONSULTAR } },
+      },
+      {
         path: 'estoque/extrato',
         loadComponent: () => import('./component/estoque/extrato-estoque/extrato-estoque').then(m => m.ExtratoEstoque),
         canActivate: [permissionGuard],

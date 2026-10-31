@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, RouteReuseStrategy, Router, RouterLink, RouterLinkActive } from "@angular/router";
 import { filter, forkJoin, Observable } from 'rxjs';
 import { CardapioResumo } from '../../../model/cardapio';
+import { LoteValidade } from '../../../model/estoque';
 import { OrdemEntrega } from '../../../model/ordem_entrega';
 import { PendenciaFornecedor } from '../../../model/pendencia_fornecedor';
 import { ReforcoParaPedido } from '../../../model/reforco_para_pedido';
@@ -11,6 +12,7 @@ import { SolicitacaoReforco } from '../../../model/solicitacao_reforco';
 import { IdRouteReuseStrategy } from '../../../routing/id-route-reuse.strategy';
 import { Auth } from '../../../service/auth';
 import { CardapioService } from '../../../service/cardapio.service';
+import { EstoqueService } from '../../../service/estoque.service';
 import { OrdemEntregaService } from '../../../service/ordem-entrega.service';
 import { PendenciaFornecedorService } from '../../../service/pendencia-fornecedor.service';
 import { ReforcoParaPedidoService } from '../../../service/reforco-para-pedido.service';
@@ -41,6 +43,7 @@ export class Cabecalho {
     private reforcoParaPedidoService: ReforcoParaPedidoService,
     private ordemEntregaService: OrdemEntregaService,
     private cardapioService: CardapioService,
+    private estoqueService: EstoqueService,
   ) { }
 
   /** Quantos dias antes da data prevista a entrega passa a aparecer para o Estoquista. */
@@ -69,14 +72,28 @@ export class Cabecalho {
   totalCardapiosPendentes = 0;
   erroCardapiosPendentes = false;
 
+  alertasValidade: LoteValidade[] = [];
+  totalAlertasValidade = 0;
+  totalValidadesVencidas = 0;
+  totalValidadesHoje = 0;
+  totalValidadesCriticas = 0;
+  totalValidadesAtencao = 0;
+  erroAlertasValidade = false;
+
   /** Estoquista aprova retiradas e confirma consumos; Nutricionista corrige recusas e informa o consumo real. */
   get podeVerCardapios(): boolean {
     return pode(Recurso.CARDAPIO, Acao.APROVAR) || pode(Recurso.CARDAPIO, Acao.EDITAR);
   }
 
+  get podeVerAlertasValidade(): boolean {
+    return pode(Recurso.ESTOQUE, Acao.REGISTRAR_SAIDA)
+      || pode(Recurso.PAINEL_NUTRICIONISTA, Acao.CONSULTAR);
+  }
+
   get podeVerAlertas(): boolean {
     return this.podeVerPendencias || this.podeVerReforcos || this.podeVerRespostasReforco
-      || this.podeVerReforcosParaPedido || this.podeVerEntregasProximas || this.podeVerCardapios;
+      || this.podeVerReforcosParaPedido || this.podeVerEntregasProximas || this.podeVerCardapios
+      || this.podeVerAlertasValidade;
   }
 
   limpandoAlertas = false;
@@ -144,7 +161,8 @@ export class Cabecalho {
       + (this.podeVerRespostasReforco ? this.totalRespostasReforco : 0)
       + (this.podeVerReforcosParaPedido ? this.totalReforcosParaPedido : 0)
       + (this.podeVerEntregasProximas ? this.totalEntregasProximas : 0)
-      + (this.podeVerCardapios ? this.totalCardapiosPendentes : 0);
+      + (this.podeVerCardapios ? this.totalCardapiosPendentes : 0)
+      + (this.podeVerAlertasValidade ? this.totalAlertasValidade : 0);
   }
 
   carregarAlertas(): void {
@@ -154,6 +172,61 @@ export class Cabecalho {
     this.carregarReforcosParaPedido();
     this.carregarEntregasProximas();
     this.carregarCardapiosPendentes();
+    this.carregarAlertasValidade();
+  }
+
+  carregarAlertasValidade(): void {
+    if (!this.podeVerAlertasValidade) {
+      return;
+    }
+
+    this.estoqueService.alertasValidade().subscribe({
+      next: (resposta) => {
+        this.alertasValidade = resposta.results;
+        this.totalAlertasValidade = resposta.total;
+        this.totalValidadesVencidas = resposta.vencidos;
+        this.totalValidadesHoje = resposta.vence_hoje;
+        this.totalValidadesCriticas = resposta.criticos;
+        this.totalValidadesAtencao = resposta.atencao;
+        this.erroAlertasValidade = false;
+      },
+      error: () => {
+        this.alertasValidade = [];
+        this.totalAlertasValidade = 0;
+        this.totalValidadesVencidas = 0;
+        this.totalValidadesHoje = 0;
+        this.totalValidadesCriticas = 0;
+        this.totalValidadesAtencao = 0;
+        this.erroAlertasValidade = true;
+      },
+    });
+  }
+
+  formatarDataCivil(data: string | null): string {
+    if (!data) {
+      return '—';
+    }
+    const [ano, mes, dia] = data.split('-');
+    return ano && mes && dia ? `${dia}/${mes}/${ano}` : data;
+  }
+
+  textoPrazoValidade(lote: LoteValidade): string {
+    const dias = lote.dias_para_validade;
+    if (dias === null) {
+      return '';
+    }
+    if (dias < 0) {
+      const quantidade = Math.abs(dias);
+      return `Vencido há ${quantidade} ${quantidade === 1 ? 'dia' : 'dias'}`;
+    }
+    if (dias === 0) {
+      return 'Vence hoje';
+    }
+    return `Vence em ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+  }
+
+  classeStatusValidade(lote: LoteValidade): string {
+    return `alerta-status alerta-status--${lote.status.toLowerCase()}`;
   }
 
   carregarCardapiosPendentes(): void {

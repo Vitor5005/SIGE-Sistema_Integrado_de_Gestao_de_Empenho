@@ -42,7 +42,7 @@ interface Medidor {
 
 // Do mais imediato ao mais distante: a ordem define a rampa de cor (escuro = pode usar já).
 export const ETAPAS: { chave: Etapa; rotulo: string; descricao: string }[] = [
-  { chave: 'em_estoque', rotulo: 'Em estoque', descricao: 'Pode usar agora' },
+  { chave: 'em_estoque', rotulo: 'Disponível para uso', descricao: 'Lotes válidos disponíveis agora' },
   { chave: 'a_caminho', rotulo: 'A caminho', descricao: 'Ordem emitida, aguardando entrega' },
   { chave: 'empenhado', rotulo: 'Empenhado', descricao: 'Já empenhado; falta emitir a ordem de entrega' },
   { chave: 'na_arp', rotulo: 'Na ARP', descricao: 'Registrado na ata; falta empenhar' },
@@ -110,6 +110,22 @@ export class PainelNutricionista implements OnInit {
 
   get quantidadeEmEstoque(): number {
     return this.generos.filter((g) => +g.em_estoque > 0).length;
+  }
+
+  get totalLotesProximosVencimento(): number {
+    return +(this.dados?.validades?.total_proximos ?? 0);
+  }
+
+  get lotesVencemHoje(): number {
+    return +(this.dados?.validades?.vence_hoje ?? 0);
+  }
+
+  get lotesCriticos(): number {
+    return +(this.dados?.validades?.criticos ?? 0);
+  }
+
+  get lotesAtencao(): number {
+    return +(this.dados?.validades?.atencao ?? 0);
   }
 
   get quantidadeACaminho(): number {
