@@ -5,9 +5,11 @@ from rest_framework import serializers
 from estoque.models import Estoque, LoteEstoque, MovimentacaoEstoque, MovimentacaoLote
 from utils.estoque_services import (
     STATUS_VALIDADE_DESCRICOES,
+    dias_para_data_validade,
     dias_para_validade,
     lote_vencido,
     saldo_utilizavel_estoque,
+    status_data_validade,
     status_lote_validade,
 )
 
@@ -26,6 +28,14 @@ class EstoqueSerializer(serializers.ModelSerializer):
     imagem = serializers.ImageField(source='item_generico.imagem', read_only=True)
     possui_carga_inicial = serializers.BooleanField(read_only=True, default=False)
     saldo_utilizavel = serializers.SerializerMethodField()
+    lotes_vencidos = serializers.IntegerField(read_only=True, default=0)
+    lotes_vence_hoje = serializers.IntegerField(read_only=True, default=0)
+    lotes_criticos = serializers.IntegerField(read_only=True, default=0)
+    lotes_atencao = serializers.IntegerField(read_only=True, default=0)
+    proxima_validade = serializers.DateField(read_only=True, allow_null=True)
+    dias_para_proxima_validade = serializers.SerializerMethodField()
+    status_proxima_validade = serializers.SerializerMethodField()
+    status_proxima_validade_descricao = serializers.SerializerMethodField()
 
     def get_saldo_utilizavel(self, estoque):
         if hasattr(estoque, 'lotes_utilizaveis_prefetch'):
@@ -35,13 +45,29 @@ class EstoqueSerializer(serializers.ModelSerializer):
             ).quantize(Decimal('0.001'))
         return saldo_utilizavel_estoque(estoque)
 
+    def get_dias_para_proxima_validade(self, estoque):
+        return dias_para_data_validade(getattr(estoque, 'proxima_validade', None))
+
+    def get_status_proxima_validade(self, estoque):
+        proxima_validade = getattr(estoque, 'proxima_validade', None)
+        if proxima_validade is None:
+            return None
+        return status_data_validade(proxima_validade)
+
+    def get_status_proxima_validade_descricao(self, estoque):
+        status = self.get_status_proxima_validade(estoque)
+        return STATUS_VALIDADE_DESCRICOES[status] if status is not None else None
+
     class Meta:
         model = Estoque
         fields = (
             'id', 'item_generico_id', 'catmat', 'descricao', 'unidade_medida',
             'categoria', 'categoria_descricao', 'conteudo_embalagem',
             'unidade_embalagem', 'imagem', 'saldo_atual', 'saldo_utilizavel', 'data_atualizacao',
-            'possui_carga_inicial',
+            'possui_carga_inicial', 'lotes_vencidos', 'lotes_vence_hoje',
+            'lotes_criticos', 'lotes_atencao', 'proxima_validade',
+            'dias_para_proxima_validade', 'status_proxima_validade',
+            'status_proxima_validade_descricao',
         )
 
 

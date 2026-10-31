@@ -124,19 +124,19 @@ def data_atual_estoque():
     return timezone.localtime(timezone.now(), FUSO_ESTOQUE).date()
 
 
-def dias_para_validade(lote, data_referencia=None):
-    if lote.legado or lote.data_validade is None:
+def dias_para_data_validade(data_validade, data_referencia=None):
+    if data_validade is None:
         return None
     referencia = (
         _data_referencia_lotes(data_referencia)
         if data_referencia is not None
         else data_atual_estoque()
     )
-    return (lote.data_validade - referencia).days
+    return (data_validade - referencia).days
 
 
-def status_lote_validade(lote, data_referencia=None):
-    dias = dias_para_validade(lote, data_referencia)
+def status_data_validade(data_validade, data_referencia=None):
+    dias = dias_para_data_validade(data_validade, data_referencia)
     if dias is None:
         return 'SEM_VALIDADE'
     if dias < 0:
@@ -148,6 +148,18 @@ def status_lote_validade(lote, data_referencia=None):
     if dias <= 30:
         return 'ATENCAO'
     return 'REGULAR'
+
+
+def dias_para_validade(lote, data_referencia=None):
+    if lote.legado or lote.data_validade is None:
+        return None
+    return dias_para_data_validade(lote.data_validade, data_referencia)
+
+
+def status_lote_validade(lote, data_referencia=None):
+    if lote.legado:
+        return 'SEM_VALIDADE'
+    return status_data_validade(lote.data_validade, data_referencia)
 
 
 def lote_vencido(lote, data_referencia=None):

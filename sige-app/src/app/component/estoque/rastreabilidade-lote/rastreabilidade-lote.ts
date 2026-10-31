@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -16,17 +16,20 @@ import { EstoqueService } from '../../../service/estoque.service';
   templateUrl: './rastreabilidade-lote.html',
   styleUrl: '../estoque.scss',
 })
-export class RastreabilidadeLote implements OnChanges {
+export class RastreabilidadeLote implements OnChanges, OnDestroy {
   @Input() loteId: number | null = null;
+  @Input() embutido = false;
   @Output() fechar = new EventEmitter<void>();
 
   rastreabilidade: DadosRastreabilidadeLote | null = null;
   carregando = false;
   erro = '';
+  private overflowBodyAnterior: string | null = null;
 
   constructor(private estoqueService: EstoqueService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
+    this.sincronizarScrollPagina();
     if (!changes['loteId']) return;
 
     this.rastreabilidade = null;
@@ -38,12 +41,16 @@ export class RastreabilidadeLote implements OnChanges {
     }
   }
 
-  @HostListener('document:keydown.escape')
-  aoPressionarEscape(): void {
-    if (this.loteId !== null) this.fecharDrawer();
+  ngOnDestroy(): void {
+    this.liberarScrollPagina();
   }
 
-  fecharDrawer(): void {
+  @HostListener('document:keydown.escape')
+  aoPressionarEscape(): void {
+    if (!this.embutido && this.loteId !== null) this.solicitarFechamento();
+  }
+
+  solicitarFechamento(): void {
     this.fechar.emit();
   }
 
@@ -77,6 +84,39 @@ export class RastreabilidadeLote implements OnChanges {
       return `Movimento estornado #${movimentacao.movimentacao_estornada_id}`;
     }
     return '—';
+  }
+
+  formatarQuantidade(quantidade: number | null | undefined): string {
+    if (quantidade === null || quantidade === undefined) return '—';
+    const valor = Number(quantidade);
+    if (!Number.isFinite(valor)) return '—';
+    const unidade = this.rastreabilidade?.lote.unidade_medida;
+    const texto = valor.toLocaleString('pt-BR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 3,
+    });
+    return unidade ? `${texto} ${unidade}` : texto;
+  }
+
+  private sincronizarScrollPagina(): void {
+    const loteValido = this.loteId !== null && Number.isInteger(this.loteId) && this.loteId > 0;
+    if (!this.embutido && loteValido) {
+      this.bloquearScrollPagina();
+      return;
+    }
+    this.liberarScrollPagina();
+  }
+
+  private bloquearScrollPagina(): void {
+    if (this.overflowBodyAnterior !== null) return;
+    this.overflowBodyAnterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+
+  private liberarScrollPagina(): void {
+    if (this.overflowBodyAnterior === null) return;
+    document.body.style.overflow = this.overflowBodyAnterior;
+    this.overflowBodyAnterior = null;
   }
 
   private carregar(loteId: number): void {

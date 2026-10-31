@@ -1,0 +1,148 @@
+@if (item) {
+  <div class="estoque-modal-backdrop" (click)="fecharModal()">
+    <section
+      class="estoque-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detalhesLotesTitulo"
+      (click)="$event.stopPropagation()">
+      <header class="estoque-modal__header">
+        <div class="estoque-modal__header-main">
+          @if (loteSelecionadoId === null) {
+            <h2 id="detalhesLotesTitulo">Lotes de {{ item.descricao }}</h2>
+            <p>CATMAT {{ item.catmat }}</p>
+          } @else {
+            <button type="button" class="lotes-item-voltar" (click)="voltarAosLotes()">
+              <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar aos lotes
+            </button>
+            <h2 id="detalhesLotesTitulo">Histórico do lote</h2>
+            <p>
+              {{ item.descricao }} · CATMAT {{ item.catmat }} ·
+              {{ loteSelecionado ? 'Lote ' + loteSelecionado.numero_lote : 'Lote #' + loteSelecionadoId }}
+            </p>
+          }
+        </div>
+        <button type="button" class="btn-close" aria-label="Fechar" (click)="fecharModal()"></button>
+      </header>
+
+      <div class="estoque-modal__body">
+        @if (loteSelecionadoId !== null) {
+          <app-rastreabilidade-lote
+            [loteId]="loteSelecionadoId"
+            [embutido]="true"
+            (fechar)="fecharModal()">
+          </app-rastreabilidade-lote>
+        } @else {
+          <section class="lotes-item-resumo" aria-label="Resumo do gênero">
+            <div>
+              <span>Saldo físico</span>
+              <strong>{{ item.saldo_atual | number:'1.0-3' }} {{ item.unidade_medida }}</strong>
+            </div>
+            <div>
+              <span>Disponível para uso</span>
+              <strong>{{ item.saldo_utilizavel | number:'1.0-3' }} {{ item.unidade_medida }}</strong>
+            </div>
+            <div>
+              <span>Total de lotes registrados</span>
+              <strong>{{ total }}</strong>
+            </div>
+          </section>
+
+          @if (deveExibirResumoValidade) {
+            <section class="lotes-validade-resumo" aria-labelledby="lotesValidadeTitulo">
+              <h3 id="lotesValidadeTitulo" class="lotes-validade-resumo__titulo">Situação das validades</h3>
+
+              @if (temValidadePrioritaria(item)) {
+                <div class="lotes-validade-resumo__badges">
+                  @if (podeVerValidadeEstoquista && item.lotes_vencidos > 0) {
+                    <span class="badge text-bg-danger">
+                      {{ item.lotes_vencidos }} {{ item.lotes_vencidos === 1 ? 'vencido' : 'vencidos' }}
+                    </span>
+                  }
+                  @if (item.lotes_vence_hoje > 0) {
+                    <span class="badge text-bg-danger">
+                      {{ item.lotes_vence_hoje }} {{ item.lotes_vence_hoje === 1 ? 'vence hoje' : 'vencem hoje' }}
+                    </span>
+                  }
+                  @if (item.lotes_criticos > 0) {
+                    <span class="badge text-bg-warning">{{ item.lotes_criticos }} em até 7 dias</span>
+                  }
+                  @if (item.lotes_atencao > 0) {
+                    <span class="badge text-bg-info">{{ item.lotes_atencao }} em 8–30 dias</span>
+                  }
+                </div>
+              }
+
+              @if (item.proxima_validade) {
+                <p class="lotes-validade-resumo__proxima" [ngClass]="classeProximaValidade(item)">
+                  <span>{{ rotuloProximaValidade }}:</span>
+                  <strong>{{ textoProximaValidade(item) }}</strong>
+                </p>
+              }
+            </section>
+          }
+
+          @if (carregando) {
+            <p class="estado" role="status">Carregando lotes...</p>
+          } @else if (erro) {
+            <p class="alert alert-danger" role="alert">{{ erro }}</p>
+          } @else if (total === 0) {
+            <p class="estado">Nenhum lote registrado para este gênero.</p>
+          } @else {
+            <div class="sige-list-table-wrap lotes-item-tabela">
+              <table class="sige-list-table">
+                <caption class="visually-hidden">Lotes registrados para {{ item.descricao }}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Lote</th>
+                    <th scope="col" class="sige-cell--number">Saldo</th>
+                    <th scope="col">Validade</th>
+                    <th scope="col">Prazo</th>
+                    <th scope="col">Situação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (lote of lotes; track lote.id) {
+                    <tr
+                      class="lotes-item-row"
+                      [class.is-clickable]="podeConsultarHistorico"
+                      [class.is-zero]="+lote.saldo_atual === 0"
+                      [attr.role]="podeConsultarHistorico ? 'button' : null"
+                      [attr.tabindex]="podeConsultarHistorico ? 0 : null"
+                      [attr.aria-label]="podeConsultarHistorico ? 'Ver histórico do lote ' + lote.numero_lote : null"
+                      (click)="selecionarLote(lote)"
+                      (keydown)="selecionarLotePorTeclado($event, lote)">
+                      <td>{{ lote.numero_lote }}</td>
+                      <td class="sige-cell--number"><strong>{{ lote.saldo_atual | number:'1.0-3' }} {{ lote.unidade_medida }}</strong></td>
+                      <td>{{ formatarDataCivil(lote.data_validade) }}</td>
+                      <td>{{ prazoValidade(lote.dias_para_validade) }}</td>
+                      <td>
+                        <div class="lote-situacao">
+                          <span class="badge" [class]="classeStatus(lote.status)">{{ lote.status_descricao }}</span>
+                          @if (podeConsultarHistorico) {
+                            <i class="bi bi-chevron-right lote-situacao__chevron" aria-hidden="true"></i>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <app-paginacao
+              class="paginacao-lista"
+              [currentPage]="currentPage"
+              [pageSize]="pageSize"
+              [totalItems]="total"
+              totalLabel="Total de lotes"
+              [showTotal]="false"
+              (pageChange)="irParaPagina($event)"
+              (pageSizeChange)="alterarPageSize($event)">
+            </app-paginacao>
+          }
+        }
+      </div>
+    </section>
+  </div>
+}

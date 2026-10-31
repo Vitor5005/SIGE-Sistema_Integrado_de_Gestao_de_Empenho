@@ -27,6 +27,7 @@ from estoque.models import (
 from estoque.serializers import LoteValidadeSerializer
 from utils.estoque_services import (
     STATUS_VALIDADE_DESCRICOES,
+    dias_para_data_validade,
     dias_para_validade,
     estornar_movimentacao,
     registrar_ajuste,
@@ -37,6 +38,7 @@ from utils.estoque_services import (
     data_atual_estoque,
     saldo_utilizavel_estoque,
     saldos_utilizaveis_por_estoque,
+    status_data_validade,
     status_lote_validade,
 )
 from licitacao.models import Ata, ItemAta, Licitacao
@@ -940,7 +942,7 @@ class HardeningEstoqueTests(EstoqueBaseMixin, TestCase):
             item_generico_id=self.genero.id,
             quantidade='60',
             tipo_saida='PRODUCAO',
-            justificativa='ProduÃ§Ã£o integrada.',
+            justificativa='Produção integrada.',
             usuario=self.estoquista,
         )
         self.assert_integridade_estoque(estoque)
@@ -966,7 +968,7 @@ class HardeningEstoqueTests(EstoqueBaseMixin, TestCase):
                     'quantidade_contada': '15',
                 },
             ],
-            justificativa='InventÃ¡rio integrado.',
+            justificativa='Inventário integrado.',
             usuario=self.estoquista,
         )
         self.assert_integridade_estoque(estoque)
@@ -986,7 +988,7 @@ class HardeningEstoqueTests(EstoqueBaseMixin, TestCase):
         estoque_principal = Estoque.objects.get(item_generico=self.genero)
 
         outro_genero = ItemGenerico.objects.create(
-            catmat='654322', descricao='MacarrÃ£o', unidade_medida='KG', categoria='SM',
+            catmat='654322', descricao='Macarrão', unidade_medida='KG', categoria='SM',
         )
         outro_estoque = Estoque.objects.get(item_generico=outro_genero)
         LoteEstoque.objects.create(
@@ -1325,7 +1327,7 @@ class InventarioPorLoteTests(EstoqueBaseMixin, APITestCase):
             with self.subTest(tipo=movimento.tipo), self.assertRaises(ValidationError) as erro:
                 estornar_movimentacao(
                     movimentacao_id=movimento.id,
-                    justificativa='CorreÃ§Ã£o indevida de inventÃ¡rio.',
+                    justificativa='Correção indevida de inventário.',
                     usuario=self.estoquista,
                 )
             self.assertIn('nova contagem', str(erro.exception).lower())
@@ -1478,6 +1480,25 @@ class LotesValidadeTests(EstoqueBaseMixin, APITestCase):
         self.assertIsNone(dias_para_validade(legado, referencia))
         self.assertEqual(status_lote_validade(legado, referencia), 'SEM_VALIDADE')
 
+    def test_helpers_genericos_de_validade_respeitam_limites(self):
+        referencia = date(2026, 10, 30)
+        faixas = (
+            (date(2026, 10, 29), -1, 'VENCIDO'),
+            (date(2026, 10, 30), 0, 'VENCE_HOJE'),
+            (date(2026, 11, 6), 7, 'CRITICO'),
+            (date(2026, 11, 7), 8, 'ATENCAO'),
+            (date(2026, 11, 29), 30, 'ATENCAO'),
+            (date(2026, 11, 30), 31, 'REGULAR'),
+        )
+
+        for validade, dias, status in faixas:
+            with self.subTest(validade=validade):
+                self.assertEqual(dias_para_data_validade(validade, referencia), dias)
+                self.assertEqual(status_data_validade(validade, referencia), status)
+
+        self.assertIsNone(dias_para_data_validade(None, referencia))
+        self.assertEqual(status_data_validade(None, referencia), 'SEM_VALIDADE')
+
     def test_lote_validade_serializer_expoe_campos_calculados(self):
         lote = self.lote_estoque('SERIAL-001', '12.5', date(2099, 12, 31))
         dados = LoteValidadeSerializer(lote).data
@@ -1609,6 +1630,84 @@ class LotesValidadeTests(EstoqueBaseMixin, APITestCase):
                 self.client.force_authenticate(usuario)
                 resposta = self.client.get(reverse('lote-estoque-list'))
                 self.assertEqual(resposta.status_code, 200, resposta.data)
+
+
+class IndicadoresValidadeEstoqueTests(EstoqueBaseMixin, APITestCase):
+    def setUp(self):
+        self.criar_cenario()
+        self.client.force_authenticate(self.diretor)
+
+    def _listar_na_referencia(self, referencia):
+        with patch(
+            'estoque.views.data_atual_estoque', return_value=referencia
+        ), patch(
+            'utils.estoque_services.data_atual_estoque', return_value=referencia
+        ):
+            return self.client.get(reverse('estoque-list'), {'page_size': 100})
+
+    def _dados_do_genero(self, resposta):
+        return next(
+            item
+            for item in resposta.data['results']
+            if item['item_generico_id'] == self.genero.id
+        )
+
+    def test_listagem_estoque_informa_resumo_de_validade_por_genero(self):
+        referencia = date(2026, 10, 30)
+        self.lote_estoque('IND-VENCIDO', '10', referencia - timedelta(days=1))
+        self.lote_estoque('IND-HOJE', '10', referencia)
+        self.lote_estoque('IND-CRITICO', '10', referencia + timedelta(days=3))
+        self.lote_estoque('IND-ATENCAO', '10', referencia + timedelta(days=15))
+        self.lote_estoque('IND-REGULAR', '10', referencia + timedelta(days=60))
+        self.lote_estoque('IND-LEGADO', '10', legado=True)
+        self.lote_estoque('IND-ZERO-VENCIDO', '0', referencia - timedelta(days=2))
+        self.lote_estoque('IND-ZERO-CRITICO', '0', referencia + timedelta(days=2))
+
+        resposta = self._listar_na_referencia(referencia)
+
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        dados = self._dados_do_genero(resposta)
+        self.assertEqual(dados['lotes_vencidos'], 1)
+        self.assertEqual(dados['lotes_vence_hoje'], 1)
+        self.assertEqual(dados['lotes_criticos'], 1)
+        self.assertEqual(dados['lotes_atencao'], 1)
+        self.assertEqual(dados['proxima_validade'], referencia.isoformat())
+        self.assertEqual(dados['dias_para_proxima_validade'], 0)
+        self.assertEqual(dados['status_proxima_validade'], 'VENCE_HOJE')
+        self.assertEqual(
+            dados['status_proxima_validade_descricao'],
+            STATUS_VALIDADE_DESCRICOES['VENCE_HOJE'],
+        )
+
+    def test_listagem_estoque_ignora_vencido_na_proxima_validade(self):
+        referencia = date(2026, 10, 30)
+        self.lote_estoque('PROX-VENCIDO', '10', referencia - timedelta(days=1))
+        self.lote_estoque('PROX-CRITICO', '10', referencia + timedelta(days=5))
+        self.lote_estoque('PROX-ATENCAO', '10', referencia + timedelta(days=20))
+
+        resposta = self._listar_na_referencia(referencia)
+
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        dados = self._dados_do_genero(resposta)
+        self.assertEqual(dados['lotes_vencidos'], 1)
+        self.assertEqual(dados['proxima_validade'], (referencia + timedelta(days=5)).isoformat())
+        self.assertEqual(dados['dias_para_proxima_validade'], 5)
+        self.assertEqual(dados['status_proxima_validade'], 'CRITICO')
+
+    def test_listagem_estoque_sem_proxima_validade_utilizavel(self):
+        referencia = date(2026, 10, 30)
+        self.lote_estoque('SEM-PROXIMA-VENCIDO', '10', referencia - timedelta(days=1))
+        self.lote_estoque('LEGADO', '10', legado=True)
+
+        resposta = self._listar_na_referencia(referencia)
+
+        self.assertEqual(resposta.status_code, 200, resposta.data)
+        dados = self._dados_do_genero(resposta)
+        self.assertGreater(dados['lotes_vencidos'], 0)
+        self.assertIsNone(dados['proxima_validade'])
+        self.assertIsNone(dados['dias_para_proxima_validade'])
+        self.assertIsNone(dados['status_proxima_validade'])
+        self.assertIsNone(dados['status_proxima_validade_descricao'])
 
 
 class ExtratoPorLoteTests(EstoqueBaseMixin, APITestCase):

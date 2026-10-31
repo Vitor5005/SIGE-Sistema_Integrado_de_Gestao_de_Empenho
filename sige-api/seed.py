@@ -833,14 +833,14 @@ def validar_seed():
     for movimento in movimentos:
         alocacoes = list(movimento.alocacoes_lote.all())
         if not alocacoes:
-            raise RuntimeError(f'MovimentaÃ§Ã£o {movimento.id} nÃ£o possui alocaÃ§Ãµes de lote.')
+            raise RuntimeError(f'Movimentação {movimento.id} não possui alocações de lote.')
         soma_alocacoes = sum(
             (alocacao.quantidade for alocacao in alocacoes),
             Decimal('0.000'),
         ).quantize(Decimal('0.001'))
         if soma_alocacoes != movimento.quantidade.quantize(Decimal('0.001')):
             raise RuntimeError(
-                f'MovimentaÃ§Ã£o {movimento.id} possui soma de alocaÃ§Ãµes divergente.'
+                f'Movimentação {movimento.id} possui soma de alocações divergente.'
             )
 
         sinal = Decimal('1') if movimento.sentido == MovimentacaoEstoque.Sentido.ENTRADA else Decimal('-1')
@@ -851,7 +851,7 @@ def validar_seed():
         for alocacao in alocacoes:
             if alocacao.lote.estoque_id != movimento.estoque_id:
                 raise RuntimeError(
-                    f'MovimentaÃ§Ã£o {movimento.id} possui lote de outro estoque.'
+                    f'Movimentação {movimento.id} possui lote de outro estoque.'
                 )
             saldo_razao_lotes[alocacao.lote_id] = (
                 saldo_razao_lotes.get(alocacao.lote_id, Decimal('0.000'))
@@ -862,13 +862,13 @@ def validar_seed():
         saldo_razao = saldo_razao_estoques.get(estoque.id, Decimal('0.000')).quantize(Decimal('0.001'))
         if saldo_razao != estoque.saldo_atual.quantize(Decimal('0.001')):
             raise RuntimeError(
-                f'Livro-razÃ£o consolidado divergente para o estoque {estoque.id}.'
+                f'Livro-razão consolidado divergente para o estoque {estoque.id}.'
             )
 
     for lote in LoteEstoque.objects.all():
         saldo_razao = saldo_razao_lotes.get(lote.id, Decimal('0.000')).quantize(Decimal('0.001'))
         if saldo_razao != lote.saldo_atual.quantize(Decimal('0.001')):
-            raise RuntimeError(f'Livro-razÃ£o divergente para o lote {lote.id}.')
+            raise RuntimeError(f'Livro-razão divergente para o lote {lote.id}.')
 
     for movimento in MovimentacaoEstoque.objects.filter(
         tipo=MovimentacaoEstoque.Tipo.CARGA_INICIAL,

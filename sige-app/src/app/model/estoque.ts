@@ -11,6 +11,14 @@ export interface EstoqueItem {
   imagem: string | null;
   saldo_atual: number;
   saldo_utilizavel: number;
+  lotes_vencidos: number;
+  lotes_vence_hoje: number;
+  lotes_criticos: number;
+  lotes_atencao: number;
+  proxima_validade: string | null;
+  dias_para_proxima_validade: number | null;
+  status_proxima_validade: StatusValidade | null;
+  status_proxima_validade_descricao: string | null;
   data_atualizacao: string;
   possui_carga_inicial: boolean;
 }

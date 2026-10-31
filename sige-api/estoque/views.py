@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
 
-from django.db.models import Case, Count, Exists, IntegerField, OuterRef, Prefetch, Q, Value, When
+from django.db.models import Case, Count, Exists, IntegerField, Min, OuterRef, Prefetch, Q, Value, When
 from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from rest_framework import status, viewsets
@@ -68,7 +68,55 @@ class EstoqueViewSet(RBACMixin, BaseFiltroMixin, viewsets.ReadOnlyModelViewSet):
     ordering = ['item_generico__descricao']
 
     def get_queryset(self):
-        return super().get_queryset().prefetch_related(
+        hoje = data_atual_estoque()
+        return super().get_queryset().annotate(
+            lotes_vencidos=Count(
+                'lotes',
+                filter=Q(
+                    lotes__saldo_atual__gt=0,
+                    lotes__legado=False,
+                    lotes__data_validade__lt=hoje,
+                ),
+                distinct=True,
+            ),
+            lotes_vence_hoje=Count(
+                'lotes',
+                filter=Q(
+                    lotes__saldo_atual__gt=0,
+                    lotes__legado=False,
+                    lotes__data_validade=hoje,
+                ),
+                distinct=True,
+            ),
+            lotes_criticos=Count(
+                'lotes',
+                filter=Q(
+                    lotes__saldo_atual__gt=0,
+                    lotes__legado=False,
+                    lotes__data_validade__gte=hoje + timedelta(days=1),
+                    lotes__data_validade__lte=hoje + timedelta(days=7),
+                ),
+                distinct=True,
+            ),
+            lotes_atencao=Count(
+                'lotes',
+                filter=Q(
+                    lotes__saldo_atual__gt=0,
+                    lotes__legado=False,
+                    lotes__data_validade__gte=hoje + timedelta(days=8),
+                    lotes__data_validade__lte=hoje + timedelta(days=30),
+                ),
+                distinct=True,
+            ),
+            proxima_validade=Min(
+                'lotes__data_validade',
+                filter=Q(
+                    lotes__saldo_atual__gt=0,
+                    lotes__legado=False,
+                    lotes__data_validade__gte=hoje,
+                ),
+            ),
+        ).prefetch_related(
             Prefetch(
                 'lotes',
                 queryset=lotes_utilizaveis_queryset(),

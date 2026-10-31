@@ -7,12 +7,13 @@ import { EstoqueConsolidado, EstoqueItem } from '../../model/estoque';
 import { EstoqueService } from '../../service/estoque.service';
 import { EstadoListagemService } from '../../service/estado-listagem.service';
 import { Acao, pode, Recurso } from '../../security/rbac';
+import { DetalhesLotesEstoque } from './detalhes-lotes-estoque/detalhes-lotes-estoque';
 import { BarraPesquisa } from '../utils/barra-pesquisa/barra-pesquisa';
 
 @Component({
   selector: 'app-estoque',
   standalone: true,
-  imports: [BarraPesquisa, CommonModule, RouterLink],
+  imports: [BarraPesquisa, CommonModule, DetalhesLotesEstoque, RouterLink],
   templateUrl: './estoque.html',
   styleUrl: './estoque.scss',
 })
@@ -48,6 +49,19 @@ export class Estoque {
   carregando = false;
   erro = '';
   totalItens = 0;
+  itemLotesSelecionado: EstoqueItem | null = null;
+
+  get podeVerValidadeEstoquista(): boolean {
+    return this.pode(this.Recurso.ESTOQUE, this.Acao.REGISTRAR_SAIDA);
+  }
+
+  get podeVerValidadeNutricionista(): boolean {
+    return this.pode(this.Recurso.PAINEL_NUTRICIONISTA, this.Acao.CONSULTAR);
+  }
+
+  get podeVerIndicadoresValidade(): boolean {
+    return this.podeVerValidadeEstoquista || this.podeVerValidadeNutricionista;
+  }
 
   constructor(
     private estoqueService: EstoqueService,
@@ -174,6 +188,65 @@ export class Estoque {
     return this.agruparPorCategoria && (
       index === 0 || this.itens[index - 1].categoria !== this.itens[index].categoria
     );
+  }
+
+  abrirLotes(item: EstoqueItem): void {
+    if (!this.pode(this.Recurso.ESTOQUE, this.Acao.CONSULTAR)) {
+      return;
+    }
+
+    this.itemLotesSelecionado = item;
+  }
+
+  fecharLotes(): void {
+    this.itemLotesSelecionado = null;
+  }
+
+  abrirLotesPorTeclado(event: KeyboardEvent, item: EstoqueItem): void {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    event.preventDefault();
+    this.abrirLotes(item);
+  }
+
+  temValidadePrioritaria(item: EstoqueItem): boolean {
+    const proximos = Number(item.lotes_vence_hoje || 0)
+      + Number(item.lotes_criticos || 0)
+      + Number(item.lotes_atencao || 0);
+    return proximos > 0 || (
+      this.podeVerValidadeEstoquista && Number(item.lotes_vencidos || 0) > 0
+    );
+  }
+
+  textoProximaValidade(item: EstoqueItem): string {
+    if (!item.proxima_validade || item.dias_para_proxima_validade === null) {
+      return '';
+    }
+
+    if (item.dias_para_proxima_validade === 0) {
+      return 'Próxima validade: hoje';
+    }
+    if (item.dias_para_proxima_validade === 1) {
+      return 'Próxima validade em 1 dia';
+    }
+    return `Próxima validade em ${item.dias_para_proxima_validade} dias`;
+  }
+
+  classeProximaValidade(item: EstoqueItem): string {
+    switch (item.status_proxima_validade) {
+      case 'VENCE_HOJE':
+        return 'text-danger';
+      case 'CRITICO':
+        return 'text-warning';
+      case 'ATENCAO':
+        return 'text-info';
+      case 'REGULAR':
+        return 'text-secondary';
+      default:
+        return 'text-secondary';
+    }
   }
 }
 

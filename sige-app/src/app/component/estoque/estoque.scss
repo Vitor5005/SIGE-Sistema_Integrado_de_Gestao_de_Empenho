@@ -144,6 +144,29 @@
   }
 }
 
+.estoque-card.is-clickable {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--sige-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.estoque-table__row.is-clickable {
+  cursor: pointer;
+
+  &:hover td,
+  &:focus-visible td {
+    background: var(--sige-surface-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sige-color-primary);
+    outline-offset: -2px;
+  }
+}
+
 .estoque-card__imagem {
   display: flex;
   align-items: center;
@@ -298,6 +321,31 @@
   background: var(--sige-surface-muted);
 }
 
+.estoque-validade-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sige-space-2);
+  min-width: 0;
+}
+
+.estoque-validade-resumo__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sige-space-1);
+}
+
+.estoque-validade-badge {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.estoque-validade-proxima {
+  color: var(--sige-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .filtros-estoque {
   display: grid;
   grid-template-columns: 2fr 1fr auto;
@@ -336,6 +384,38 @@
 
 .estoque-table .estoque-col-saldo {
   width: 17%;
+}
+
+.estoque-table--com-validade {
+  min-width: 64rem;
+
+  .estoque-col-catmat {
+    width: 10%;
+  }
+
+  .estoque-col-descricao {
+    width: 20%;
+  }
+
+  .estoque-col-unidade {
+    width: 15%;
+  }
+
+  .estoque-col-categoria {
+    width: 18%;
+  }
+
+  .estoque-col-saldo {
+    width: 15%;
+  }
+
+  .estoque-col-validade {
+    width: 22%;
+  }
+
+  .estoque-validade-resumo {
+    gap: var(--sige-space-1);
+  }
 }
 
 .estoque-table th.sige-cell--number,
@@ -832,26 +912,205 @@
   border-radius: var(--sige-radius-md);
 }
 
-.rastreabilidade-backdrop {
+.lotes-item-resumo {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sige-space-3);
+  margin-bottom: var(--sige-space-4);
+
+  div {
+    min-width: 0;
+    padding: var(--sige-space-3);
+    background: var(--sige-surface-muted);
+    border-radius: var(--sige-radius-md);
+  }
+
+  span {
+    display: block;
+    color: var(--sige-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  strong {
+    display: block;
+    margin-top: var(--sige-space-1);
+    color: var(--sige-text-primary);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+}
+
+.lotes-validade-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sige-space-2);
+  margin-top: var(--sige-space-4);
+  padding: var(--sige-space-3);
+  background: var(--sige-surface-subtle);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-md);
+}
+
+.lotes-validade-resumo__titulo {
+  margin: 0;
+  color: var(--sige-text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.lotes-validade-resumo__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sige-space-1);
+}
+
+.lotes-validade-resumo__proxima {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sige-space-1);
+  margin: var(--sige-space-1) 0 0;
+  padding-top: var(--sige-space-2);
+  color: var(--sige-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  border-top: 1px solid var(--sige-border);
+
+  strong {
+    color: var(--sige-text-primary);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.lotes-item-tabela {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  .sige-list-table {
+    width: 100%;
+    min-width: 48rem;
+    table-layout: fixed;
+
+    th:nth-child(1),
+    td:nth-child(1) {
+      width: 18%;
+    }
+
+    th:nth-child(2),
+    td:nth-child(2) {
+      width: 17%;
+    }
+
+    th:nth-child(3),
+    td:nth-child(3) {
+      width: 20%;
+    }
+
+    th:nth-child(4),
+    td:nth-child(4) {
+      width: 21%;
+    }
+
+    th:nth-child(5),
+    td:nth-child(5) {
+      width: 24%;
+    }
+  }
+}
+
+.lote-situacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sige-space-2);
+  min-width: 0;
+}
+
+.lote-situacao__chevron {
+  flex: 0 0 auto;
+  color: var(--sige-text-secondary);
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.lotes-item-row {
+  &.is-zero {
+    color: var(--sige-text-secondary);
+  }
+
+  &.is-clickable {
+    cursor: pointer;
+
+    &:hover td,
+    &:focus-visible td {
+      background: var(--sige-surface-muted);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--sige-color-primary);
+      outline-offset: -2px;
+    }
+
+    &:hover .lote-situacao__chevron,
+    &:focus-visible .lote-situacao__chevron {
+      color: var(--sige-color-primary);
+      transform: translateX(2px);
+    }
+  }
+}
+
+.lotes-item-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sige-space-1);
+  margin-bottom: var(--sige-space-3);
+  padding: var(--sige-space-1) var(--sige-space-2);
+  color: var(--sige-color-primary);
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  border-radius: var(--sige-radius-md);
+
+  &:hover {
+    background: var(--sige-surface-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sige-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.estoque-modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 1050;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sige-space-4);
   background: rgb(0 0 0 / 45%);
 }
 
-.rastreabilidade-drawer {
+.estoque-modal {
   display: flex;
   flex-direction: column;
-  width: min(100%, 52rem);
-  height: 100vh;
+  width: min(96vw, 78rem);
+  max-height: 92vh;
   color: var(--sige-text-primary);
   background: var(--sige-surface-card);
+  border: 1px solid var(--sige-border);
+  border-radius: var(--sige-radius-lg);
   box-shadow: var(--sige-shadow-md);
+  overflow: hidden;
 }
 
-.rastreabilidade-drawer__header {
+.estoque-modal__header {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -866,14 +1125,26 @@
   }
 }
 
-.rastreabilidade-drawer__body {
-  flex: 1;
+.estoque-modal__header-main {
+  min-width: 0;
+}
+
+.estoque-modal__body {
+  flex: 1 1 auto;
   min-height: 0;
   padding: var(--sige-space-4);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.rastreabilidade-drawer__section {
+.estoque-modal__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sige-space-2);
+  padding-top: var(--sige-space-4);
+}
+
+.rastreabilidade-section {
   padding-block: var(--sige-space-4);
   border-bottom: 1px solid var(--sige-border);
 
@@ -896,8 +1167,17 @@
 
 .rastreabilidade-resumo,
 .rastreabilidade-origem {
+  margin: 0;
+
+  > p {
+    margin: 0 0 var(--sige-space-3);
+    color: var(--sige-text-secondary);
+  }
+}
+
+.rastreabilidade-dados {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--sige-space-3);
   margin: 0;
 
@@ -922,14 +1202,40 @@
   }
 }
 
+.rastreabilidade-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sige-space-2);
+  margin-top: var(--sige-space-4);
+  padding-top: var(--sige-space-4);
+  border-top: 1px solid var(--sige-border);
+}
+
 .rastreabilidade-historico {
   width: 100%;
-  min-width: 43rem;
   margin: 0;
+
+  .table {
+    min-width: 43rem;
+  }
 
   th,
   td {
     vertical-align: top;
+  }
+
+  &__entrada,
+  &__saida {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  &__entrada {
+    color: var(--sige-color-primary-strong);
+  }
+
+  &__saida {
+    color: var(--sige-text-primary);
   }
 }
 
@@ -940,17 +1246,31 @@
     flex-direction: column;
   }
 
-  .rastreabilidade-drawer {
-    width: 100%;
+  .lotes-item-resumo {
+    grid-template-columns: 1fr;
   }
 
-  .rastreabilidade-drawer__header,
-  .rastreabilidade-drawer__body {
+  .estoque-modal-backdrop {
+    padding: var(--sige-space-2);
+  }
+
+  .estoque-modal {
+    width: 100%;
+    max-height: 96vh;
+  }
+
+  .estoque-modal__header,
+  .estoque-modal__body {
     padding: var(--sige-space-3);
   }
 
-  .rastreabilidade-resumo,
-  .rastreabilidade-origem {
+  .rastreabilidade-dados {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .rastreabilidade-dados {
     grid-template-columns: 1fr;
   }
 }
