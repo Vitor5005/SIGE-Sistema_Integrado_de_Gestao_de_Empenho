@@ -39,7 +39,13 @@ from estoque.models import (
     MovimentacaoLote,
 )
 from usuario.models import Usuario
-from utils.estoque_services import FUSO_ESTOQUE, registrar_carga_inicial, registrar_recebimento
+from utils.estoque_services import (
+    FUSO_ESTOQUE,
+    data_atual_estoque,
+    registrar_carga_inicial,
+    registrar_recebimento,
+    status_lote_validade,
+)
 from utils.rbac import Papel
 
 
@@ -659,20 +665,18 @@ def seed_recebimentos(ordens, estoquista):
         )
 
 
-def _lotes_carga_inicial_demo(*, dados, indice, data_carga):
-    if timezone.is_aware(data_carga):
-        data_local = timezone.localtime(data_carga, FUSO_ESTOQUE).date()
-    else:
-        data_local = data_carga.date()
+def _lotes_carga_inicial_demo(*, dados, indice, hoje):
+    dias_status_demo = (-5, 0, 3, 15, 90)
     quantidade = Decimal(dados['quantidade']).quantize(Decimal('0.001'))
 
     def lote(sequencia, quantidade_lote, dias):
         return {
             'numero_lote': f"INI-{dados['catmat']}-{sequencia:03d}",
-            'data_validade': data_local + timedelta(days=dias),
+            'data_validade': hoje + timedelta(days=dias),
             'quantidade': quantidade_lote,
         }
 
+    dias_primeiro_lote = dias_status_demo[indice % len(dias_status_demo)]
     if indice % 2 == 0:
         primeira_parcela = (quantidade / Decimal('2')).quantize(
             Decimal('0.001'),
@@ -681,15 +685,16 @@ def _lotes_carga_inicial_demo(*, dados, indice, data_carga):
         segunda_parcela = (quantidade - primeira_parcela).quantize(Decimal('0.001'))
         if primeira_parcela > Decimal('0.000') and segunda_parcela > Decimal('0.000'):
             return [
-                lote(1, primeira_parcela, 120 + indice),
-                lote(2, segunda_parcela, 240 + indice),
+                lote(1, primeira_parcela, dias_primeiro_lote),
+                lote(2, segunda_parcela, 120 + indice),
             ]
-    return [lote(1, quantidade, 120 + indice)]
+    return [lote(1, quantidade, dias_primeiro_lote)]
 
 
 def seed_carga_inicial_estoque(estoquista):
     """Cadastra os gêneros só de estoque e registra a carga inicial de cada um."""
     data_carga = timezone.now()
+    hoje = data_atual_estoque()
     for indice, dados in enumerate(ITENS_CARGA_INICIAL):
         genero = ItemGenerico.objects.create(
             catmat=dados['catmat'],
@@ -704,7 +709,7 @@ def seed_carga_inicial_estoque(estoquista):
             lotes=_lotes_carga_inicial_demo(
                 dados=dados,
                 indice=indice,
-                data_carga=data_carga,
+                hoje=hoje,
             ),
             justificativa='Carga inicial de desenvolvimento do estoque físico do R.U.',
             usuario=estoquista,
@@ -884,6 +889,24 @@ def validar_seed():
         raise RuntimeError('A demonstração não pode possuir saldo negativo em lote.')
     if not LoteEstoque.objects.filter(legado=False, saldo_atual__gt=0).exists():
         raise RuntimeError('A demonstração deve possuir ao menos um lote real com saldo positivo.')
+    hoje = data_atual_estoque()
+    status_presentes_validade = {
+        status_lote_validade(lote, hoje)
+        for lote in LoteEstoque.objects.filter(legado=False, saldo_atual__gt=0)
+    }
+    status_esperados = {
+        'VENCIDO',
+        'VENCE_HOJE',
+        'CRITICO',
+        'ATENCAO',
+        'REGULAR',
+    }
+    status_ausentes = status_esperados - status_presentes_validade
+    if status_ausentes:
+        raise RuntimeError(
+            'A demonstra\u00e7\u00e3o n\u00e3o cobre todos os estados de validade positivos. '
+            f'Ausentes: {", ".join(sorted(status_ausentes))}.'
+        )
     estoques_com_multiplos_lotes_reais = (
         LoteEstoque.objects
         .filter(legado=False, saldo_atual__gt=0)
@@ -902,6 +925,15 @@ def imprimir_resumo():
         status: OrdemEntrega.objects.filter(status=status).count()
         for status in ('esp', 'par', 'con')
     }
+    hoje = data_atual_estoque()
+    por_status_validade = {
+        status: 0
+        for status in ('VENCIDO', 'VENCE_HOJE', 'CRITICO', 'ATENCAO', 'REGULAR')
+    }
+    for lote in LoteEstoque.objects.filter(legado=False, saldo_atual__gt=0):
+        status_validade = status_lote_validade(lote, hoje)
+        if status_validade in por_status_validade:
+            por_status_validade[status_validade] += 1
     print('\n✓ Seed concluído com sucesso!')
     print(f'  - Usuários: {Usuario.objects.count()}')
     print(f'  - Estoques: {Estoque.objects.count()}')
@@ -910,6 +942,16 @@ def imprimir_resumo():
     print(
         '  - Pendências abertas: '
         f'{PendenciaFornecedor.objects.filter(status=PendenciaFornecedor.Status.ABERTA).count()}'
+    )
+
+
+    print(
+        '  - Validades: '
+        f"vencidos={por_status_validade['VENCIDO']}, "
+        f"hoje={por_status_validade['VENCE_HOJE']}, "
+        f"cr\u00edticos={por_status_validade['CRITICO']}, "
+        f"aten\u00e7\u00e3o={por_status_validade['ATENCAO']}, "
+        f"regulares={por_status_validade['REGULAR']}"
     )
 
 

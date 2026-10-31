@@ -116,16 +116,14 @@
     }
 
     @if (podeVerAlertas) {
-    <div class="dropdown">
       <button
         class="alertas-botao"
         type="button"
         id="menuAlertas"
-        data-bs-toggle="dropdown"
-        data-bs-auto-close="outside"
-        aria-expanded="false"
+        [attr.aria-expanded]="alertasAbertos"
+        aria-controls="painelAlertas"
         [attr.aria-label]="totalAlertas ? totalAlertas + ' notificações' : 'Notificações'"
-        (click)="carregarAlertas()"
+        (click)="alternarAlertas()"
       >
         <i class="bi bi-bell" aria-hidden="true"></i>
         @if (totalAlertas) {
@@ -133,22 +131,59 @@
         }
       </button>
 
-      <div class="dropdown-menu dropdown-menu-end dropdown-menu--sige alertas-dropdown" aria-labelledby="menuAlertas">
-        <div class="alertas-cabecalho">
-          <strong>Notificações</strong>
-          <button type="button" class="alertas-limpar" [disabled]="limpandoAlertas || !totalAlertasLimpaveis"
-            title="Marca como ciente todos os avisos já atendidos" (click)="limparAlertas()">
-            <i class="bi bi-check2-all" aria-hidden="true"></i> Limpar
-          </button>
+      @if (alertasAbertos) {
+      <div class="alertas-backdrop" (click)="fecharAlertas()"></div>
+      <aside
+        id="painelAlertas"
+        class="alertas-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tituloAlertas"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="alertas-drawer__cabecalho">
+          <div class="alertas-drawer__identidade">
+            <span class="alertas-drawer__icone" aria-hidden="true"><i class="bi bi-bell"></i></span>
+            <div>
+              <h2 id="tituloAlertas" class="alertas-drawer__titulo">Notificações</h2>
+              <p class="alertas-drawer__total">{{ totalAlertas === 1 ? '1 aviso' : totalAlertas + ' avisos' }}</p>
+            </div>
+          </div>
+          <div class="alertas-drawer__acoes">
+            <button type="button" class="alertas-limpar" [disabled]="limpandoAlertas || !totalAlertasLimpaveis"
+              title="Marca como ciente todos os avisos já atendidos" (click)="limparAlertas()">
+              <i class="bi bi-check2-all" aria-hidden="true"></i> Limpar
+            </button>
+            <button type="button" class="alertas-drawer__fechar" aria-label="Fechar notificações" (click)="fecharAlertas()">
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+          </div>
         </div>
 
-        @if (podeVerCardapios) {
-        <span class="dropdown-header">Cardápios</span>
+        <div class="alertas-drawer__conteudo">
+        @if (totalAlertas === 0 && !possuiErroAlertasVisiveis) {
+        <div class="alertas-estado-vazio">
+          <span class="alertas-estado-vazio__icone" aria-hidden="true"><i class="bi bi-bell-slash"></i></span>
+          <strong class="alertas-estado-vazio__titulo">Nenhuma notificação no momento</strong>
+          <p class="alertas-estado-vazio__descricao">Quando houver algo que exija sua atenção, os avisos aparecerão aqui.</p>
+        </div>
+        }
+
+        @if (podeVerCardapios && (totalCardapiosPendentes > 0 || erroCardapiosPendentes)) {
+
+        <section class="alertas-secao">
+          <h3 class="alertas-secao-titulo">
+            <span class="alertas-secao-titulo__principal">
+              <span class="alertas-secao-titulo__icone"><i class="bi bi-calendar3" aria-hidden="true"></i></span>
+              <span>Cardápios</span>
+            </span>
+            @if (totalCardapiosPendentes > 0) {
+            <span class="alertas-secao-titulo__contador">{{ totalCardapiosPendentes }}</span>
+            }
+          </h3>
 
         @if (erroCardapiosPendentes) {
         <p class="alertas-vazio">Não foi possível carregar os cardápios.</p>
-        } @else if (!cardapiosPendentes.length) {
-        <p class="alertas-vazio">Nenhum cardápio aguardando você.</p>
         } @else {
         <ul class="alertas-lista">
           @for (cardapio of cardapiosPendentes; track cardapio.id) {
@@ -165,25 +200,35 @@
             }
             <div class="alerta-rodape">
               <span>{{ cardapio.criado_por_nome }} · {{ cardapio.total_itens }} gênero(s)</span>
-              <a class="alerta-ciente" [routerLink]="['/cardapio']" [queryParams]="{ id: cardapio.id }"
-                (click)="reabrirSeJaAberta('/cardapio', cardapio.id)">Abrir</a>
+              <a class="alerta-ciente alerta-ciente--navegacao" [routerLink]="['/cardapio']" [queryParams]="{ id: cardapio.id }"
+                (click)="reabrirSeJaAberta('/cardapio', cardapio.id)">
+                Abrir <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+              </a>
             </div>
           </li>
           }
         </ul>
         @if (totalCardapiosPendentes > cardapiosPendentes.length) {
-        <p class="alertas-vazio">E mais {{ totalCardapiosPendentes - cardapiosPendentes.length }} cardápio(s).</p>
+        <p class="alertas-secao__mais">E mais {{ totalCardapiosPendentes - cardapiosPendentes.length }} cardápio(s).</p>
         }
         }
+        </section>
         }
 
-        @if (podeVerRespostasReforco) {
-        <span class="dropdown-header">Respostas aos seus pedidos de reforço</span>
+        @if (podeVerRespostasReforco && (totalRespostasReforco > 0 || erroRespostasReforco)) {
+        <section class="alertas-secao">
+          <h3 class="alertas-secao-titulo">
+            <span class="alertas-secao-titulo__principal">
+              <span class="alertas-secao-titulo__icone"><i class="bi bi-chat-square-check" aria-hidden="true"></i></span>
+              <span>Respostas aos seus pedidos de reforço</span>
+            </span>
+            @if (totalRespostasReforco > 0) {
+            <span class="alertas-secao-titulo__contador">{{ totalRespostasReforco }}</span>
+            }
+          </h3>
 
         @if (erroRespostasReforco) {
         <p class="alertas-vazio">Não foi possível carregar as respostas.</p>
-        } @else if (!respostasReforco.length) {
-        <p class="alertas-vazio">Nenhuma resposta nova.</p>
         } @else {
         <ul class="alertas-lista">
           @for (resposta of respostasReforco; track resposta.id) {
@@ -200,8 +245,10 @@
             <p class="alerta-motivo">"{{ resposta.resposta }}"</p>
             }
             <div class="alerta-rodape">
-              <a [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: resposta.empenho_id }"
-                (click)="marcarRespostaVista(resposta); reabrirSeJaAberta('/visualizar-empenho', resposta.empenho_id)">Empenho {{ resposta.empenho_codigo }}</a>
+              <a class="alerta-acao" [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: resposta.empenho_id }"
+                (click)="marcarRespostaVista(resposta); reabrirSeJaAberta('/visualizar-empenho', resposta.empenho_id)">
+                Empenho {{ resposta.empenho_codigo }} <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+              </a>
               <button type="button" class="alerta-ciente" [disabled]="marcandoVistaId === resposta.id"
                 (click)="marcarRespostaVista(resposta)">
                 <i class="bi bi-check2" aria-hidden="true"></i> Ok
@@ -211,18 +258,26 @@
           }
         </ul>
         @if (totalRespostasReforco > respostasReforco.length) {
-        <p class="alertas-vazio">E mais {{ totalRespostasReforco - respostasReforco.length }} resposta(s).</p>
+        <p class="alertas-secao__mais">E mais {{ totalRespostasReforco - respostasReforco.length }} resposta(s).</p>
         }
         }
+        </section>
         }
 
-        @if (podeVerReforcos) {
-        <span class="dropdown-header">Pedidos de reforço</span>
+        @if (podeVerReforcos && (totalReforcos > 0 || erroReforcos)) {
+        <section class="alertas-secao">
+          <h3 class="alertas-secao-titulo">
+            <span class="alertas-secao-titulo__principal">
+              <span class="alertas-secao-titulo__icone"><i class="bi bi-arrow-up-circle" aria-hidden="true"></i></span>
+              <span>Pedidos de reforço</span>
+            </span>
+            @if (totalReforcos > 0) {
+            <span class="alertas-secao-titulo__contador">{{ totalReforcos }}</span>
+            }
+          </h3>
 
         @if (erroReforcos) {
         <p class="alertas-vazio">Não foi possível carregar os pedidos de reforço.</p>
-        } @else if (!reforcos.length) {
-        <p class="alertas-vazio">Nenhum pedido de reforço aguardando.</p>
         } @else {
         <ul class="alertas-lista">
           @for (reforco of reforcos; track reforco.id) {
@@ -237,27 +292,35 @@
             <p class="alerta-motivo">"{{ reforco.justificativa }}"</p>
             <div class="alerta-rodape">
               <span>Empenho {{ reforco.empenho_codigo }}</span>
-              <a class="alerta-ciente" [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: reforco.empenho_id }"
+              <a class="alerta-ciente alerta-ciente--navegacao" [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: reforco.empenho_id }"
                 (click)="reabrirSeJaAberta('/visualizar-empenho', reforco.empenho_id)">
-                Analisar
+                Analisar <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
               </a>
             </div>
           </li>
           }
         </ul>
         @if (totalReforcos > reforcos.length) {
-        <p class="alertas-vazio">E mais {{ totalReforcos - reforcos.length }} pedido(s).</p>
+        <p class="alertas-secao__mais">E mais {{ totalReforcos - reforcos.length }} pedido(s).</p>
         }
         }
+        </section>
         }
 
-        @if (podeVerReforcosParaPedido) {
-        <span class="dropdown-header">Reforços realizados pelo Diretor</span>
+        @if (podeVerReforcosParaPedido && (totalReforcosParaPedido > 0 || erroReforcosParaPedido)) {
+        <section class="alertas-secao">
+          <h3 class="alertas-secao-titulo">
+            <span class="alertas-secao-titulo__principal">
+              <span class="alertas-secao-titulo__icone"><i class="bi bi-check-circle" aria-hidden="true"></i></span>
+              <span>Reforços realizados pelo Diretor</span>
+            </span>
+            @if (totalReforcosParaPedido > 0) {
+            <span class="alertas-secao-titulo__contador">{{ totalReforcosParaPedido }}</span>
+            }
+          </h3>
 
         @if (erroReforcosParaPedido) {
         <p class="alertas-vazio">Não foi possível carregar os reforços.</p>
-        } @else if (!reforcosParaPedido.length) {
-        <p class="alertas-vazio">Nenhum reforço novo.</p>
         } @else {
         <ul class="alertas-lista">
           @for (reforco of reforcosParaPedido; track reforco.id) {
@@ -271,9 +334,9 @@
               Solicite a entrega ao fornecedor.
             </p>
             <div class="alerta-rodape">
-              <a [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: reforco.empenho_id }"
+              <a class="alerta-acao" [routerLink]="['/visualizar-empenho']" [queryParams]="{ id: reforco.empenho_id }"
                 (click)="reabrirSeJaAberta('/visualizar-empenho', reforco.empenho_id)">
-                Empenho {{ reforco.empenho_codigo }}
+                Empenho {{ reforco.empenho_codigo }} <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
               </a>
               <button type="button" class="alerta-ciente" [disabled]="marcandoReforcoCienteId === reforco.id"
                 (click)="marcarReforcoCiente(reforco)">
@@ -284,13 +347,39 @@
           }
         </ul>
         @if (totalReforcosParaPedido > reforcosParaPedido.length) {
-        <p class="alertas-vazio">E mais {{ totalReforcosParaPedido - reforcosParaPedido.length }} reforço(s).</p>
+        <p class="alertas-secao__mais">E mais {{ totalReforcosParaPedido - reforcosParaPedido.length }} reforço(s).</p>
         }
         }
+        </section>
         }
 
-        @if (podeVerAlertasValidade) {
-        <span class="dropdown-header">Validades do estoque</span>
+        @if (podeVerAlertasValidade && (totalAlertasValidade > 0 || erroAlertasValidade)) {
+        <section class="alertas-secao alertas-secao--validade">
+          <h3 class="alertas-secao-titulo">
+            <span class="alertas-secao-titulo__principal">
+              <span class="alertas-secao-titulo__icone"><i class="bi bi-calendar2-exclamation" aria-hidden="true"></i></span>
+              <span>Validades do estoque</span>
+            </span>
+            @if (totalAlertasValidade > 0) {
+            <span class="alertas-secao-titulo__contador">{{ totalAlertasValidade }}</span>
+            }
+          </h3>
+          @if (totalValidadesVencidas || totalValidadesHoje || totalValidadesCriticas || totalValidadesAtencao) {
+          <p class="alertas-validade-resumo">
+            @if (totalValidadesVencidas) {
+            <span class="alertas-validade-resumo__item alertas-validade-resumo__item--vencido">{{ totalValidadesVencidas }} vencido(s)</span>
+            }
+            @if (totalValidadesHoje) {
+            <span class="alertas-validade-resumo__item alertas-validade-resumo__item--hoje">{{ totalValidadesHoje }} vence hoje</span>
+            }
+            @if (totalValidadesCriticas) {
+            <span class="alertas-validade-resumo__item alertas-validade-resumo__item--critico">{{ totalValidadesCriticas }} crítico(s)</span>
+            }
+            @if (totalValidadesAtencao) {
+            <span class="alertas-validade-resumo__item alertas-validade-resumo__item--atencao">{{ totalValidadesAtencao }} atenção</span>
+            }
+          </p>
+          }
 
         @if (erroAlertasValidade) {
         <p class="alertas-vazio">Não foi possível carregar os alertas de validade.</p>
@@ -299,7 +388,7 @@
         } @else {
         <ul class="alertas-lista">
           @for (lote of alertasValidade; track lote.id) {
-          <li class="alerta-item alerta-item--validade">
+          <li class="alerta-item alerta-item--validade" [attr.data-status]="lote.status">
             <div class="alerta-topo">
               <strong>{{ lote.descricao }}</strong>
               <span [class]="classeStatusValidade(lote)">{{ lote.status_descricao }}</span>
@@ -308,20 +397,37 @@
             <p class="alerta-prazo">Validade: {{ formatarDataCivil(lote.data_validade) }} · {{ textoPrazoValidade(lote) }}</p>
             <div class="alerta-rodape">
               <span></span>
-              <a class="alerta-ciente" routerLink="/estoque/validades">Ver validades</a>
+              <a class="alerta-ciente alerta-ciente--navegacao" routerLink="/estoque/validades" (click)="fecharAlertas()">
+                <i class="bi bi-calendar2-check" aria-hidden="true"></i> Ver validades
+              </a>
             </div>
           </li>
           }
         </ul>
         @if (totalAlertasValidade > alertasValidade.length) {
-        <p class="alertas-vazio">E mais {{ totalAlertasValidade - alertasValidade.length }} lote(s).</p>
+        <p class="alertas-secao__mais">E mais {{ totalAlertasValidade - alertasValidade.length }} lote(s).</p>
         }
-        <p class="alertas-vazio"><a routerLink="/estoque/validades">Ver todos os lotes e validades</a></p>
+        <div class="alertas-secao__rodape">
+          <a class="alertas-secao__link" routerLink="/estoque/validades" (click)="fecharAlertas()">
+            <span>Ver todos os lotes e validades</span>
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+          </a>
+        </div>
         }
+        </section>
         }
 
-        @if (podeVerEntregasProximas) {
-        <span class="dropdown-header">Entregas previstas</span>
+        @if (podeVerEntregasProximas && (totalEntregasProximas > 0 || erroEntregasProximas)) {
+        <section class="alertas-secao alertas-secao--entregas">
+          <h3 class="alertas-secao-titulo">
+            <span class="alertas-secao-titulo__principal">
+              <span class="alertas-secao-titulo__icone"><i class="bi bi-truck" aria-hidden="true"></i></span>
+              <span>Entregas previstas</span>
+            </span>
+            @if (totalEntregasProximas > 0) {
+            <span class="alertas-secao-titulo__contador">{{ totalEntregasProximas }}</span>
+            }
+          </h3>
 
         @if (erroEntregasProximas) {
         <p class="alertas-vazio">Não foi possível carregar as entregas.</p>
@@ -330,10 +436,23 @@
         } @else {
         <ul class="alertas-lista">
           @for (ordem of entregasProximas; track ordem.id) {
-          <li class="alerta-item">
+          <li
+            class="alerta-item"
+            [class.alerta-item--atrasada]="entregaAtrasada(ordem)"
+            [class.alerta-item--prevista]="!entregaAtrasada(ordem)"
+          >
             <div class="alerta-topo">
               <strong>{{ ordem.empenho.ata.fornecedor.nome_fantasia }}</strong>
-              <span>{{ entregaAtrasada(ordem) ? 'Atrasada' : 'Prevista' }} · {{ ordem.data_entrega_prevista | date: 'dd/MM/yyyy' }}</span>
+              <span class="alerta-topo__meta">
+                <span
+                  class="alerta-status"
+                  [class.alerta-status--atrasado]="entregaAtrasada(ordem)"
+                  [class.alerta-status--prevista]="!entregaAtrasada(ordem)"
+                >
+                  {{ entregaAtrasada(ordem) ? 'Atrasada' : 'Prevista' }}
+                </span>
+                <span>{{ ordem.data_entrega_prevista | date: 'dd/MM/yyyy' }}</span>
+              </span>
             </div>
             <p class="alerta-resumo">
               Ordem <b>{{ ordem.codigo }}</b> · Empenho {{ ordem.empenho.codigo }}
@@ -341,19 +460,31 @@
             </p>
             <div class="alerta-rodape">
               <span></span>
-              <a class="alerta-ciente" routerLink="/visualizar-entregas">Ver entregas</a>
+              <a class="alerta-ciente alerta-ciente--navegacao" routerLink="/visualizar-entregas" (click)="fecharAlertas()">
+                <i class="bi bi-truck" aria-hidden="true"></i> Ver entregas
+              </a>
             </div>
           </li>
           }
         </ul>
         @if (totalEntregasProximas > entregasProximas.length) {
-        <p class="alertas-vazio">E mais {{ totalEntregasProximas - entregasProximas.length }} entrega(s).</p>
+        <p class="alertas-secao__mais">E mais {{ totalEntregasProximas - entregasProximas.length }} entrega(s).</p>
         }
         }
+        </section>
         }
 
-        @if (podeVerPendencias) {
-        <span class="dropdown-header">Pendências de fornecedores</span>
+        @if (podeVerPendencias && (totalPendencias > 0 || erroPendencias)) {
+        <section class="alertas-secao alertas-secao--pendencias">
+          <h3 class="alertas-secao-titulo">
+            <span class="alertas-secao-titulo__principal">
+              <span class="alertas-secao-titulo__icone"><i class="bi bi-exclamation-diamond" aria-hidden="true"></i></span>
+              <span>Pendências de fornecedores</span>
+            </span>
+            @if (totalPendencias > 0) {
+            <span class="alertas-secao-titulo__contador">{{ totalPendencias }}</span>
+            }
+          </h3>
 
         @if (erroPendencias) {
         <p class="alertas-vazio">Não foi possível carregar as pendências.</p>
@@ -385,12 +516,14 @@
           }
         </ul>
         @if (totalPendencias > pendencias.length) {
-        <p class="alertas-vazio">E mais {{ totalPendencias - pendencias.length }} pendência(s).</p>
+        <p class="alertas-secao__mais">E mais {{ totalPendencias - pendencias.length }} pendência(s).</p>
         }
         }
+        </section>
         }
-      </div>
-    </div>
+        </div>
+      </aside>
+      }
     }
 
     <div class="dropdown">

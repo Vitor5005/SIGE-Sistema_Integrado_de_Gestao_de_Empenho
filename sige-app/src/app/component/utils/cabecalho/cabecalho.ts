@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, DestroyRef, inject } from '@angular/core';
+import { Component, DestroyRef, HostListener, inject, OnDestroy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, RouteReuseStrategy, Router, RouterLink, RouterLinkActive } from "@angular/router";
 import { filter, forkJoin, Observable } from 'rxjs';
@@ -30,7 +30,7 @@ type TokenPayload = {
   templateUrl: './cabecalho.html',
   styleUrl: './cabecalho.scss',
 })
-export class Cabecalho {
+export class Cabecalho implements OnDestroy {
   readonly pode = pode;
   readonly Acao = Acao;
   readonly Recurso = Recurso;
@@ -96,7 +96,19 @@ export class Cabecalho {
       || this.podeVerAlertasValidade;
   }
 
+  get possuiErroAlertasVisiveis(): boolean {
+    return (this.podeVerCardapios && this.erroCardapiosPendentes)
+      || (this.podeVerRespostasReforco && this.erroRespostasReforco)
+      || (this.podeVerReforcos && this.erroReforcos)
+      || (this.podeVerReforcosParaPedido && this.erroReforcosParaPedido)
+      || (this.podeVerAlertasValidade && this.erroAlertasValidade)
+      || (this.podeVerEntregasProximas && this.erroEntregasProximas)
+      || (this.podeVerPendencias && this.erroPendencias);
+  }
+
   limpandoAlertas = false;
+  alertasAbertos = false;
+  private overflowBodyAlertasAnterior: string | null = null;
 
   /** Avisos que só pedem ciência (o "Ciente"/"Ok" de cada item); o botão "Limpar" dispensa todos. */
   get totalAlertasLimpaveis(): number {
@@ -173,6 +185,59 @@ export class Cabecalho {
     this.carregarEntregasProximas();
     this.carregarCardapiosPendentes();
     this.carregarAlertasValidade();
+  }
+
+  abrirAlertas(): void {
+    if (this.alertasAbertos) {
+      return;
+    }
+
+    this.alertasAbertos = true;
+    this.bloquearScrollAlertas();
+    this.carregarAlertas();
+  }
+
+  fecharAlertas(): void {
+    if (!this.alertasAbertos) {
+      return;
+    }
+
+    this.alertasAbertos = false;
+    this.liberarScrollAlertas();
+  }
+
+  alternarAlertas(): void {
+    if (this.alertasAbertos) {
+      this.fecharAlertas();
+      return;
+    }
+
+    this.abrirAlertas();
+  }
+
+  private bloquearScrollAlertas(): void {
+    if (typeof document === 'undefined' || this.overflowBodyAlertasAnterior !== null) {
+      return;
+    }
+
+    this.overflowBodyAlertasAnterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+
+  private liberarScrollAlertas(): void {
+    if (typeof document === 'undefined' || this.overflowBodyAlertasAnterior === null) {
+      return;
+    }
+
+    document.body.style.overflow = this.overflowBodyAlertasAnterior;
+    this.overflowBodyAlertasAnterior = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  aoPressionarEscape(): void {
+    if (this.alertasAbertos) {
+      this.fecharAlertas();
+    }
   }
 
   carregarAlertasValidade(): void {
@@ -439,7 +504,15 @@ export class Cabecalho {
     // O cabeçalho vive durante toda a sessão: atualiza as notificações a cada troca de tela.
     this.router.events
       .pipe(filter(evento => evento instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.carregarAlertas());
+      .subscribe(() => {
+        this.fecharAlertas();
+        this.carregarAlertas();
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.alertasAbertos = false;
+    this.liberarScrollAlertas();
   }
 
   private readonly destroyRef = inject(DestroyRef);
@@ -451,6 +524,8 @@ export class Cabecalho {
    * Nesse caso a tela é recriada para buscar os dados de novo.
    */
   reabrirSeJaAberta(rota: string, id: number): void {
+    this.fecharAlertas();
+
     const destino = this.router.createUrlTree([rota], { queryParams: { id } });
     if (this.router.url !== this.router.serializeUrl(destino)) {
       return;
